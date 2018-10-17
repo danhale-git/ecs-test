@@ -27,9 +27,9 @@ class FastNoiseJobSystem
             }
         }
 
-        static int FastFloor(float f) { return (f >= 0 ? (int)f : (int)f - 1); }
+        int FastFloor(float f) { return (f >= 0 ? (int)f : (int)f - 1); }
 
-        static float GradCoord2D(int seed, int x, int y, float xd, float yd)
+        float GradCoord2D(int seed, int x, int y, float xd, float yd)
         {
             int hash = seed;
             hash ^= X_PRIME * x;
@@ -111,18 +111,18 @@ class FastNoiseJobSystem
         
 		public NativeArray<float> heightMap;
 
-        [ReadOnly]
-		public float3 offset;
-		public int matrixSize;
-        public int seed;
-        public float frequency;
+        [ReadOnly] public float3 offset;
+        [ReadOnly] public int matrixSize;
+        [ReadOnly] public int seed;
+        [ReadOnly] public float frequency;
+        [ReadOnly] public JobUtil util;
 
         //  Fill flattened 2D array with noise matrix
         public void Execute(int i)
         {
-            float3 position = Util.Unflatten2D(i, matrixSize) + offset;
+            float3 position = util.Unflatten2D(i, matrixSize) + offset;
 
-			heightMap[i] = Util.To01(GetSimplex(position.x, position.z, seed, frequency));
+			heightMap[i] = util.To01(GetSimplex(position.x, position.z, seed, frequency));
         }
     }
 
@@ -142,7 +142,8 @@ class FastNoiseJobSystem
 			offset = chunkPosition,
 			matrixSize = matrixSize,
             seed = seed,
-            frequency = frequency
+            frequency = frequency,
+			util = new JobUtil()
         };
 
         //  Fill native array

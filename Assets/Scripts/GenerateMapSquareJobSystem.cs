@@ -9,15 +9,15 @@ class GenerateMapSquareJobSystem
 	{
 		public NativeArray<int> blocks;
 
-		[ReadOnly]
-		public NativeArray<int> heightMap;
-		public int chunkSize;
+		[ReadOnly] public NativeArray<int> heightMap;
+		[ReadOnly] public int chunkSize;
+		[ReadOnly] public JobUtil util;
 
 		public void Execute(int i)
 		{
 			//	Get local position in heightmap
-			float3 pos = Util.Unflatten(i, chunkSize, chunkSize, chunkSize);
-			int hMapIndex = Util.Flatten2D((int)pos.x+1, (int)pos.z+1, chunkSize+2);
+			float3 pos = util.Unflatten(i, chunkSize, chunkSize, chunkSize);
+			int hMapIndex = util.Flatten2D((int)pos.x+1, (int)pos.z+1, chunkSize+2);
 
 			if(pos.y+1 < heightMap[hMapIndex])
 				blocks[i] = 1;
@@ -41,7 +41,8 @@ class GenerateMapSquareJobSystem
 		{
 			blocks = blocks,
 			heightMap = heightMap,
-			chunkSize = chunkSize
+			chunkSize = chunkSize,
+			util = new JobUtil()
 		};
 		
 		//  Fill native array

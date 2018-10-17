@@ -2,6 +2,37 @@
 using UnityEngine;
 using Unity.Mathematics;
 
+public struct JobUtil
+{
+    public float3 Unflatten(int index, int xLength, int yLength, int zLength)
+    {
+        int x = index / (xLength * zLength);
+        int y = (index - x * yLength * zLength) / zLength;
+        int z = index - x * xLength * zLength - y * zLength;
+
+        return new float3(x, y, z);
+    }
+    public int Flatten(int x, int y, int z)
+    {
+        return x * y * z;
+    }
+    public float3 Unflatten2D(int index, int size)
+    {
+        int x = index / size;
+        int z = index % size;
+
+        return new float3(x, 0, z);
+    }
+    public int Flatten2D(int x, int z, int size)
+    {
+        return (z * size) + x;
+    }
+    public float To01(float value)
+	{
+		return (value * 0.5f) + 0.5f;
+	}
+}
+
 public static class Util
 {
     public static float3 Unflatten(int index, int xLength, int yLength, int zLength)
