@@ -9,8 +9,6 @@ class FastNoiseJobSystem
     {
         //  Copied from FastNoise.cs
         #region Noise
-        const int m_seed = 1234;
-	    const float m_frequency = 0.1f;
         const int X_PRIME = 1619;
 	    const int Y_PRIME = 31337;
 
@@ -45,7 +43,7 @@ class FastNoiseJobSystem
             return xd * g.x + yd * g.y;
         }
             
-         float GetSimplex(float x, float y)
+        float GetSimplex(float x, float y, int m_seed, float m_frequency)
         {
             return SingleSimplex(m_seed, x * m_frequency, y * m_frequency);
         }
@@ -115,34 +113,40 @@ class FastNoiseJobSystem
 
         [ReadOnly]
 		public float3 offset;
-		public int chunkSize;
+		public int matrixSize;
+        public int seed;
+        public float frequency;
 
         //  Fill flattened 2D array with noise matrix
         public void Execute(int i)
         {
-            float3 position = Util.Unflatten2D(i, chunkSize);
+            float3 position = Util.Unflatten2D(i, matrixSize) + offset;
 
-			heightMap[i] = Util.To01(GetSimplex(position.x, position.z));
+			heightMap[i] = Util.To01(GetSimplex(position.x, position.z, seed, frequency));
         }
     }
 
     
 
-    public float[] GetSimplexMatrix(float3 chunkPosition, int chunkSize)
+    public float[] GetSimplexMatrix(float3 chunkPosition, int matrixSize, int seed, float frequency)
     {
+        int arrayLength = (int)math.pow(matrixSize, 2);
+
         //  Native and normal array
-        var heightMap = new NativeArray<float>(chunkSize * chunkSize, Allocator.Persistent);
-		float[] heightMapArray = new float[chunkSize * chunkSize];
+        var heightMap = new NativeArray<float>(arrayLength, Allocator.TempJob);
+		float[] heightMapArray = new float[arrayLength];
 
         var job = new SimplexJob()
         {
             heightMap = heightMap,
 			offset = chunkPosition,
-			chunkSize = chunkSize,
+			matrixSize = matrixSize,
+            seed = seed,
+            frequency = frequency
         };
 
         //  Fill native array
-        JobHandle jobHandle = job.Schedule(chunkSize * chunkSize, 64);
+        JobHandle jobHandle = job.Schedule(arrayLength, 64);
         jobHandle.Complete();
 
         //  Copy to normal array and return

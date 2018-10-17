@@ -17,6 +17,7 @@ public class ChunkManager
     static EntityArchetype archetype;
 
     static FastNoiseJobSystem terrain;
+    static GenerateMapSquareJobSystem blockGenerator;
 
     
     public ChunkManager()
@@ -25,6 +26,7 @@ public class ChunkManager
 
 		//	Create noise job system
         terrain = new FastNoiseJobSystem();
+        blockGenerator = new GenerateMapSquareJobSystem();
 
         //  Get entity manager
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
@@ -42,50 +44,55 @@ public class ChunkManager
 
 		//	Entity
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        Entity cube = entityManager.CreateEntity(archetype);
-        entityManager.SetComponentData(cube, new Position {Value = position});
+        Entity meshObject = entityManager.CreateEntity(archetype);
+        entityManager.SetComponentData(meshObject, new Position {Value = position});
 
-        //	Noise
-        float[] noise = terrain.GetSimplexMatrix(position, chunkSize);
-        int[] heightMap = new int[noise.Length];
+        //  Generate blocks
+        int[] blocks = GenerateBLocks(position);
 
-		//	Matrix
+		//	Mesh
 		List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
-
-		//	Noise to height map
-        for(int i = 0; i < noise.Length; i++)
-        {
-            heightMap[i] = (int)(noise[i] * chunkSize);
-        }
-
+        
 		//	Get mesh
         for(int i = 0; i < math.pow(chunkSize, 3); i++)
         {
             //  Local pos
             float3 pos = Util.Unflatten(i, chunkSize, chunkSize, chunkSize);
-            Vector3 blockPosition = new Vector3(pos.x, pos.y, pos.z);
 
-			//	Height map
-            int hMapIndex = Util.Flatten2D((int)pos.x, (int)pos.z, chunkSize);
-            if( heightMap[hMapIndex] < pos.y ) continue;
+            if(blocks[i] != 1) continue;
 
 			//	Get cube mesh
             for(int f = 0; f < 6; f++)
             {
                 triangles.AddRange(MeshManager.Cube.Triangles(vertices.Count));
-                vertices.AddRange(MeshManager.Cube.Vertices(f, blockPosition));
+                vertices.AddRange(MeshManager.Cube.Vertices(f, pos));
             }
         }
 
 		//	Apply mesh
         Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
-        entityManager.AddSharedComponentData(cube, MakeMesh(vertices, triangles, material));
+        entityManager.AddSharedComponentData(meshObject, MakeMesh(vertices, triangles, material));
 
 		//	Debug wire
         Vector3 center = position + (new Vector3(0.5f, 0.5f, 0.5f) * (chunkSize - 1));
         CustomDebugTools.WireCube(center, chunkSize, Color.green);
 	}
+
+    static int[] GenerateBLocks(Vector3 position)
+    {
+        //	Noise
+        int heightMapSize = chunkSize + 2;
+        float[] noise = terrain.GetSimplexMatrix(position, heightMapSize, 1234, 0.1f);
+
+        //  Noise to height map
+        int[] heightMap = new int[noise.Length];
+        for(int i = 0; i < noise.Length; i++)
+            heightMap[i] = (int)(noise[i] * chunkSize);
+
+        //  Generate blocks
+        return blockGenerator.GetBlocks(heightMap);
+    }
 
 	//	Create mesh
 	static MeshInstanceRenderer MakeMesh(List<Vector3> vertices, List<int> triangles, Material material)

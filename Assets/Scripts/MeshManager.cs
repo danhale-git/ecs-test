@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Mathematics;
 
+
 public static class MeshManager
 {
     //	Cube corners
@@ -19,8 +20,9 @@ public static class MeshManager
 
     public static class Cube
 	{
-		public static Vector3[] Vertices(int faceInt, Vector3 offset)
+		public static Vector3[] Vertices(int faceInt, float3 _offset)
 		{	
+			Vector3 offset = (Vector3)_offset;
 			Faces face = (Faces)faceInt;
 			switch(face)
 			{
