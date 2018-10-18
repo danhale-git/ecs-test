@@ -4,8 +4,11 @@ using Unity.Mathematics;
 
 public struct JobUtil
 {
-    public float3 Unflatten(int index, int xLength, int yLength, int zLength)
+    public float3 Unflatten(int index, int xLength, int yLength=0, int zLength=0)
     {
+        if(yLength == 0) yLength = xLength;
+        if(zLength == 0) zLength = xLength;
+
         int x = index / (xLength * zLength);
         int y = (index - x * yLength * zLength) / zLength;
         int z = index - x * xLength * zLength - y * zLength;
@@ -35,8 +38,11 @@ public struct JobUtil
 
 public static class Util
 {
-    public static float3 Unflatten(int index, int xLength, int yLength, int zLength)
+    public static float3 Unflatten(int index, int xLength, int yLength=0, int zLength=0)
     {
+        if(yLength == 0) yLength = xLength;
+        if(zLength == 0) zLength = xLength;
+        
         int x = index / (xLength * zLength);
         int y = (index - x * yLength * zLength) / zLength;
         int z = index - x * xLength * zLength - y * zLength;
