@@ -10,7 +10,7 @@ using Unity.Mathematics;
 
 public class ChunkManager
 {
-	public static int chunkSize = 12;
+	public static int chunkSize = 8;
     public static int chunkSizePlusTwo = chunkSize + 2;
 
 	static EntityManager entityManager;
@@ -20,6 +20,7 @@ public class ChunkManager
     static FastNoiseJobSystem terrain;
     static GenerateMapSquareJobSystem blockGenerator;
     static CheckBlockExposureJobSystem checkBlockExposure;
+    static GenerateMeshJobSystem meshGenerator;
 
     
     public ChunkManager()
@@ -30,6 +31,7 @@ public class ChunkManager
         terrain = new FastNoiseJobSystem();
         blockGenerator = new GenerateMapSquareJobSystem();
         checkBlockExposure = new CheckBlockExposureJobSystem();
+        meshGenerator = new GenerateMeshJobSystem();
 
         //  Get entity manager
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
@@ -59,7 +61,8 @@ public class ChunkManager
         List<int> triangles = new List<int>();
 
 		//	Apply mesh
-        Mesh mesh = MeshManager.GetMesh(position, exposedFaces, blocks);
+        //Mesh mesh = MeshManager.GetMesh(position, exposedFaces, blocks);
+        Mesh mesh = meshGenerator.GetMesh(exposedFaces, blocks);
         Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
         entityManager.AddSharedComponentData(meshObject, MakeMesh(mesh, material));
 
@@ -71,7 +74,7 @@ public class ChunkManager
     static int[] GenerateBlocks(Vector3 position)
     {
         //	Noise
-        float[] noise = terrain.GetSimplexMatrix(position, chunkSizePlusTwo, 5678, 0.1f);
+        float[] noise = terrain.GetSimplexMatrix(position, chunkSizePlusTwo, 5678, 0.05f);
 
         //  Noise to height map
         int[] heightMap = new int[noise.Length];

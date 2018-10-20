@@ -57,10 +57,6 @@ public static class MeshManager
 		for(int i = 0; i < math.pow(chunkSize, 3); i++)
         {
 			if(blocks[i] == 0) continue;
-			Debug.Log("created block");
-
-			bool drewSomething = false;
-
 
 			float3 pos = Util.Unflatten(i, chunkSize);
 
@@ -68,40 +64,32 @@ public static class MeshManager
 			{
 				triangles.AddRange(Cube.Triangles(vertices.Count));
 				vertices.AddRange(Cube.Vertices(0, pos));
-				drewSomething = true;
 			}
 			if(exposedFaces[i].left == 1)
 			{
 				triangles.AddRange(Cube.Triangles(vertices.Count));
 				vertices.AddRange(Cube.Vertices(1, pos));
-				drewSomething = true;
 			}
 			if(exposedFaces[i].up == 1)
 			{
 				triangles.AddRange(Cube.Triangles(vertices.Count));
 				vertices.AddRange(Cube.Vertices(2, pos));
-				drewSomething = true;
 			}
 			if(exposedFaces[i].down == 1)
 			{
 				triangles.AddRange(Cube.Triangles(vertices.Count));
 				vertices.AddRange(Cube.Vertices(3, pos));
-				drewSomething = true;
 			}
 			if(exposedFaces[i].forward == 1)
 			{
 				triangles.AddRange(Cube.Triangles(vertices.Count));
 				vertices.AddRange(Cube.Vertices(4, pos));
-				drewSomething = true;
 			}
 			if(exposedFaces[i].back == 1)
 			{
 				triangles.AddRange(Cube.Triangles(vertices.Count));
 				vertices.AddRange(Cube.Vertices(5, pos));
-				drewSomething = true;
 			}
-        	if(drewSomething)Debug.Log("drew a face on block");
-
 		}
 
 

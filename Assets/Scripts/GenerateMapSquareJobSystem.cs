@@ -15,7 +15,6 @@ class GenerateMapSquareJobSystem
 
 		public void Execute(int i)
 		{
-			if(i == 100) Debug.Log("::"+util.Unflatten(i, chunkSize));
 			//	Get local position in heightmap
 			float3 pos = util.Unflatten(i, chunkSize);
 			int hMapIndex = util.Flatten2D((int)pos.x+1, (int)pos.z+1, chunkSize+2);
