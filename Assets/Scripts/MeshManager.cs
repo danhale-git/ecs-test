@@ -17,22 +17,22 @@ public static class MeshManager
 	readonly static Vector3 v6 = new Vector3( 	 0.5f,  0.5f,	-0.5f );	//	right top back
 	readonly static Vector3 v7 = new Vector3( 	-0.5f,  0.5f,	-0.5f );	//	left top back
 
-    public enum Faces { TOP, BOTTOM, RIGHT, LEFT, FRONT, BACK };
+    public enum FacesEnum { RIGHT, LEFT, UP, DOWN, FORWARD, BACK };
 
     public static class Cube
 	{
 		public static Vector3[] Vertices(int faceInt, float3 _offset)
 		{	
 			Vector3 offset = (Vector3)_offset;
-			Faces face = (Faces)faceInt;
+			FacesEnum face = (FacesEnum)faceInt;
 			switch(face)
 			{
-				case Faces.TOP: 	return new Vector3[] {v7+offset, v6+offset, v5+offset, v4+offset};
-				case Faces.BOTTOM: 	return new Vector3[] {v0+offset, v1+offset, v2+offset, v3+offset};
-				case Faces.RIGHT: 	return new Vector3[] {v5+offset, v6+offset, v2+offset, v1+offset};
-				case Faces.LEFT: 	return new Vector3[] {v7+offset, v4+offset, v0+offset, v3+offset};
-				case Faces.FRONT: 	return new Vector3[] {v4+offset, v5+offset, v1+offset, v0+offset};
-				case Faces.BACK: 	return new Vector3[] {v6+offset, v7+offset, v3+offset, v2+offset};
+				case FacesEnum.RIGHT: 	return new Vector3[] {v5+offset, v6+offset, v2+offset, v1+offset};
+				case FacesEnum.LEFT: 	return new Vector3[] {v7+offset, v4+offset, v0+offset, v3+offset};
+				case FacesEnum.UP: 	return new Vector3[] {v7+offset, v6+offset, v5+offset, v4+offset};
+				case FacesEnum.DOWN: 	return new Vector3[] {v0+offset, v1+offset, v2+offset, v3+offset};
+				case FacesEnum.FORWARD: 	return new Vector3[] {v4+offset, v5+offset, v1+offset, v0+offset};
+				case FacesEnum.BACK: 	return new Vector3[] {v6+offset, v7+offset, v3+offset, v2+offset};
 				default: 			return null;
 			}		
 		}
@@ -43,18 +43,67 @@ public static class MeshManager
 		}
 	}
 
-	public static Mesh GetCube(float3 offset)
+	public static Mesh GetMesh(float3 offset, Faces[] exposedFaces, int[] blocks)
 	{
 		Mesh mesh = new Mesh();
+		int chunkSize = ChunkManager.chunkSize;
 
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
 
-        for(int i = 0; i < 6; i++)
+		Debug.Log(blocks.Length);
+
+
+		for(int i = 0; i < math.pow(chunkSize, 3); i++)
         {
-            triangles.AddRange(Cube.Triangles(vertices.Count));
-            vertices.AddRange(Cube.Vertices(i, offset));
-        }
+			if(blocks[i] == 0) continue;
+			Debug.Log("created block");
+
+			bool drewSomething = false;
+
+
+			float3 pos = Util.Unflatten(i, chunkSize);
+
+			if(exposedFaces[i].right == 1)
+			{
+				triangles.AddRange(Cube.Triangles(vertices.Count));
+				vertices.AddRange(Cube.Vertices(0, pos));
+				drewSomething = true;
+			}
+			if(exposedFaces[i].left == 1)
+			{
+				triangles.AddRange(Cube.Triangles(vertices.Count));
+				vertices.AddRange(Cube.Vertices(1, pos));
+				drewSomething = true;
+			}
+			if(exposedFaces[i].up == 1)
+			{
+				triangles.AddRange(Cube.Triangles(vertices.Count));
+				vertices.AddRange(Cube.Vertices(2, pos));
+				drewSomething = true;
+			}
+			if(exposedFaces[i].down == 1)
+			{
+				triangles.AddRange(Cube.Triangles(vertices.Count));
+				vertices.AddRange(Cube.Vertices(3, pos));
+				drewSomething = true;
+			}
+			if(exposedFaces[i].forward == 1)
+			{
+				triangles.AddRange(Cube.Triangles(vertices.Count));
+				vertices.AddRange(Cube.Vertices(4, pos));
+				drewSomething = true;
+			}
+			if(exposedFaces[i].back == 1)
+			{
+				triangles.AddRange(Cube.Triangles(vertices.Count));
+				vertices.AddRange(Cube.Vertices(5, pos));
+				drewSomething = true;
+			}
+        	if(drewSomething)Debug.Log("drew a face on block");
+
+		}
+
 
 		mesh.SetVertices(vertices);
 		mesh.SetTriangles(triangles, 0);
@@ -63,4 +112,6 @@ public static class MeshManager
 
 		return mesh;
 	}
+
+
 }

@@ -15,9 +15,13 @@ public struct JobUtil
 
         return new float3(x, y, z);
     }
-    public int Flatten(int x, int y, int z)
+    public int Flatten(int x, int y, int z, int size)
     {
-        return x * y * z;
+        return z + size * (y + size * x);
+    }
+    public int Flatten(float x, float y, float z, int size)
+    {
+        return (int)(z + size * (y + size * x));
     }
     public float3 Unflatten2D(int index, int size)
     {
@@ -48,10 +52,15 @@ public static class Util
         int z = index - x * xLength * zLength - y * zLength;
 
         return new float3(x, y, z);
+        //return new float3(z, y, x);
     }
-    public static int Flatten(int x, int y, int z)
+    public static int Flatten(int x, int y, int z, int size)
     {
-        return x * y * z;
+        return z + size * (y + size * x);
+    }
+    public static int Flatten(float x, float y, float z, int size)
+    {
+        return (int)(z + size * (y + size * x));
     }
     public static float3 Unflatten2D(int index, int size)
     {

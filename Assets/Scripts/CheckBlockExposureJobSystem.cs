@@ -7,7 +7,7 @@ class CheckBlockExposureJobSystem
 {
 	struct CheckJob : IJobParallelFor
 	{
-		public NativeArray<int> exposedSides;
+		public NativeArray<Faces> exposedFaces;
 
 		[ReadOnly]public NativeArray<int> blocks;
 		[ReadOnly] public int chunkSize;
@@ -18,27 +18,29 @@ class CheckBlockExposureJobSystem
 			//	Get local position in heightmap
 			float3 pos = util.Unflatten(i, chunkSize);
 
-			//	TODO check adjacent chunks instead
+			int right, left, up, down, front, back;
+
+			//	TODO check adjacent chunks instead of this silly if statement
 			if(	  !(pos.x == chunkSize-1 	|| pos.y == chunkSize-1 || pos.z == chunkSize-1 ||
 					pos.x == 0 				|| pos.y == 0 			|| pos.z == 0)	)
 			{
-				/*int index = i * 6;
+				right =	blocks[util.Flatten(pos.x+1,	pos.y,		pos.z, chunkSize)] 		== 0 ? 1 : 0;
+				left = 	blocks[util.Flatten(pos.x-1,	pos.y,		pos.z, chunkSize)] 		== 0 ? 1 : 0;
+				up =   	blocks[util.Flatten(pos.x,		pos.y+1,	pos.z, chunkSize)] 		== 0 ? 1 : 0;
+				down = 	blocks[util.Flatten(pos.x,		pos.y-1,	pos.z, chunkSize)] 		== 0 ? 1 : 0;
+				front =	blocks[util.Flatten(pos.x,		pos.y,		pos.z+1, chunkSize)]	== 0 ? 1 : 0;
+				back = 	blocks[util.Flatten(pos.x,		pos.y,		pos.z-1, chunkSize)] 	== 0 ? 1 : 0;
 
-				exposedSides[i+0] = blocks[util.Flatten((int)pos.x,		(int)pos.y+1,	(int)pos.z)] 	== 0 ? 1 : 0;
-				exposedSides[i+1] = blocks[util.Flatten((int)pos.x,		(int)pos.y-1,	(int)pos.z)] 	== 0 ? 1 : 0;
-				exposedSides[i+2] = blocks[util.Flatten((int)pos.x+1,	(int)pos.y,		(int)pos.z)] 	== 0 ? 1 : 0;
-				exposedSides[i+3] = blocks[util.Flatten((int)pos.x-1,	(int)pos.y,		(int)pos.z)] 	== 0 ? 1 : 0;
-				exposedSides[i+4] = blocks[util.Flatten((int)pos.x,		(int)pos.y,		(int)pos.z+1)]	== 0 ? 1 : 0;
-				exposedSides[i+5] = blocks[util.Flatten((int)pos.x,		(int)pos.y,		(int)pos.z-1)] 	== 0 ? 1 : 0;*/
+				exposedFaces[i] = new Faces(right, left, up, down, front, back);
 			}
-			
-			//	TODO find a way to avoid indexes larger than _blocks.Length - nested native arrays? nested job execution?
-			//	Maybe fuck the array and just start generated vertices and triangles. 
-
+			else
+			{
+				exposedFaces[i] = new Faces(0,0,0,0,0,0);
+			}
 		}
 	}
 
-	public int[] GetExposure(int[] _blocks)
+	public Faces[] GetExposure(int[] _blocks)
 	{
 		int chunkSize = ChunkManager.chunkSize;
 
@@ -46,14 +48,11 @@ class CheckBlockExposureJobSystem
 		var blocks = new NativeArray<int>(_blocks.Length, Allocator.TempJob);
 		blocks.CopyFrom(_blocks);
 
-		var exposedSides = new NativeArray<int>(_blocks.Length * 6, Allocator.TempJob);
-		int[] exposedSidesArray = new int[exposedSides.Length];
-
-		//var vertices = new NativeList<float3>();
-		//var triangles = new NativeList<int>();
+		var exposedFaces = new NativeArray<Faces>(_blocks.Length, Allocator.TempJob);
+		Faces[] exposedSidesArray = new Faces[exposedFaces.Length];
 
 		var job = new CheckJob(){
-			exposedSides = exposedSides,
+			exposedFaces = exposedFaces,
 			blocks = blocks,
 			chunkSize = chunkSize,
 			util = new JobUtil()
@@ -64,10 +63,10 @@ class CheckBlockExposureJobSystem
         jobHandle.Complete();
 
 		//	Copy to normal array and return
-		exposedSides.CopyTo(exposedSidesArray);
+		exposedFaces.CopyTo(exposedSidesArray);
 
 		blocks.Dispose();
-		exposedSides.Dispose();
+		exposedFaces.Dispose();
 
 		return exposedSidesArray;
 	}

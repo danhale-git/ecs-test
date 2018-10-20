@@ -10,8 +10,8 @@ using Unity.Mathematics;
 
 public class ChunkManager
 {
-	public static int chunkSize = 8;
-    public static int chunkSizeB = 10;
+	public static int chunkSize = 12;
+    public static int chunkSizePlusTwo = chunkSize + 2;
 
 	static EntityManager entityManager;
     static MeshInstanceRenderer renderer;
@@ -52,35 +52,16 @@ public class ChunkManager
 
         //  Generate blocks
         int[] blocks = GenerateBlocks(position);
-        int[] exposure = checkBlockExposure.GetExposure(blocks);
+        Faces[] exposedFaces = checkBlockExposure.GetExposure(blocks);
 
 		//	Mesh
 		List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
-        
-		//	Get mesh
-        for(int i = 0; i < math.pow(chunkSize, 3); i++)
-        {
-            //  Local pos
-            float3 pos = Util.Unflatten(i, chunkSize, chunkSize, chunkSize);
-
-            if(blocks[i] != 1) continue;
-
-            int exposureIndex = i * 6;
-
-			//	Get cube mesh
-            for(int f = 0; f < 6; f++)
-            {
-                //if(exposure[exposureIndex+f] == 0) continue;
-
-                triangles.AddRange(MeshManager.Cube.Triangles(vertices.Count));
-                vertices.AddRange(MeshManager.Cube.Vertices(f, pos));
-            }
-        }
 
 		//	Apply mesh
+        Mesh mesh = MeshManager.GetMesh(position, exposedFaces, blocks);
         Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
-        entityManager.AddSharedComponentData(meshObject, MakeMesh(vertices, triangles, material));
+        entityManager.AddSharedComponentData(meshObject, MakeMesh(mesh, material));
 
 		//	Debug wire
         Vector3 center = position + (new Vector3(0.5f, 0.5f, 0.5f) * (chunkSize - 1));
@@ -90,8 +71,7 @@ public class ChunkManager
     static int[] GenerateBlocks(Vector3 position)
     {
         //	Noise
-        int heightMapSize = chunkSizeB;
-        float[] noise = terrain.GetSimplexMatrix(position, heightMapSize, 1234, 0.1f);
+        float[] noise = terrain.GetSimplexMatrix(position, chunkSizePlusTwo, 5678, 0.1f);
 
         //  Noise to height map
         int[] heightMap = new int[noise.Length];
@@ -103,15 +83,8 @@ public class ChunkManager
     }
 
 	//	Create mesh
-	static MeshInstanceRenderer MakeMesh(List<Vector3> vertices, List<int> triangles, Material material)
+	static MeshInstanceRenderer MakeMesh(Mesh mesh, Material material)
     {
-        Mesh mesh = new Mesh();
-
-        mesh.SetVertices(vertices);
-        mesh.SetTriangles(triangles, 0);
-        mesh.RecalculateNormals();
-        UnityEditor.MeshUtility.Optimize(mesh);
-
         renderer = new MeshInstanceRenderer();
         renderer.mesh = mesh;
         renderer.material = material;
