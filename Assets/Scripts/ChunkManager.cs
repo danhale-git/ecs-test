@@ -61,8 +61,8 @@ public class ChunkManager
         List<int> triangles = new List<int>();
 
 		//	Apply mesh
-        //Mesh mesh = MeshManager.GetMesh(position, exposedFaces, blocks);
         Mesh mesh = meshGenerator.GetMesh(exposedFaces, blocks);
+        Mesh otherMesh = meshGenerator.GetChunkMesh(exposedFaces, blocks);
         Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
         entityManager.AddSharedComponentData(meshObject, MakeMesh(mesh, material));
 
