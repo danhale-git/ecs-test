@@ -14,11 +14,13 @@ public class Bootstrapper
     static EntityArchetype archetype;
 
     public static ChunkManager chunks;
+    public static MapManager mapManager;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Initialise()
     {
         chunks = new ChunkManager();
+        mapManager = new MapManager();
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -29,7 +31,8 @@ public class Bootstrapper
             for(int z = 0; z < 3; z++)
             {
                 Vector3 position = new Vector3(x*chunkSize, 0, z*chunkSize);
-               chunks.GenerateChunk(position);
+                int[] heightMap = mapManager.GenerateMapSquare(position);
+                chunks.GenerateChunk(position, heightMap);
             }
 
     }

@@ -7,31 +7,30 @@ using Unity.Entities;
 using Unity.Transforms;
 using Unity.Rendering;
 using Unity.Mathematics;
+using Unity.Collections;
 
 public class ChunkManager
 {
 	public static int chunkSize = 12;
-    public static int chunkSizePlusTwo = chunkSize + 2;
+    //public static int chunkSizePlusTwo = chunkSize + 2;
 
 	static EntityManager entityManager;
     static MeshInstanceRenderer renderer;
     static EntityArchetype archetype;
 
-    static FastNoiseJobSystem terrain;
     static GenerateMapSquareJobSystem blockGenerator;
     static CheckBlockExposureJobSystem checkBlockExposure;
     static GenerateMeshJobSystem meshGenerator;
 
-    
+
     public ChunkManager()
     {
         Debug.Log("chunk manager initialised");
 
-		//	Create noise job system
-        terrain = new FastNoiseJobSystem();
-        blockGenerator = new GenerateMapSquareJobSystem();
+		//	Create job systems
         checkBlockExposure = new CheckBlockExposureJobSystem();
         meshGenerator = new GenerateMeshJobSystem();
+        blockGenerator = new GenerateMapSquareJobSystem();
 
         //  Get entity manager
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
@@ -44,7 +43,7 @@ public class ChunkManager
             );
     }
 	
-	public void GenerateChunk(Vector3 position)
+	public void GenerateChunk(Vector3 position, int[] heightMap)
 	{
 		//	Entity
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
@@ -52,7 +51,7 @@ public class ChunkManager
         entityManager.SetComponentData(meshObject, new Position {Value = position});
 
         //  Generate blocks
-        int[] blocks = GenerateBlocks(position);
+        int[] blocks = blockGenerator.GetBlocks(heightMap);
         Faces[] exposedFaces = checkBlockExposure.GetExposure(blocks);
 
 		//	Mesh
@@ -61,7 +60,6 @@ public class ChunkManager
 
 		//	Apply mesh
         Mesh mesh = meshGenerator.GetMesh(exposedFaces, blocks);
-        //Mesh otherMesh = meshGenerator.GetChunkMesh(exposedFaces, blocks);
         Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
         entityManager.AddSharedComponentData(meshObject, MakeMesh(mesh, material));
 
@@ -69,20 +67,6 @@ public class ChunkManager
         Vector3 center = position + (new Vector3(0.5f, 0.5f, 0.5f) * (chunkSize - 1));
         CustomDebugTools.WireCube(center, chunkSize, Color.white);
 	}
-
-    static int[] GenerateBlocks(Vector3 position)
-    {
-        //	Noise
-        float[] noise = terrain.GetSimplexMatrix(position, chunkSizePlusTwo, 5678, 0.05f);
-
-        //  Noise to height map
-        int[] heightMap = new int[noise.Length];
-        for(int i = 0; i < noise.Length; i++)
-            heightMap[i] = (int)(noise[i] * chunkSize);
-
-        //  Generate blocks
-        return blockGenerator.GetBlocks(heightMap);
-    }
 
 	//	Create mesh
 	static MeshInstanceRenderer MakeMesh(Mesh mesh, Material material)
