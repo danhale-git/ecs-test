@@ -46,7 +46,7 @@ class GenerateMapSquareJobSystem
 		};
 		
 		//  Fill native array
-        JobHandle jobHandle = job.Schedule(blockArrayLength, 64);
+        JobHandle jobHandle = job.Schedule(blockArrayLength, 1);
         jobHandle.Complete();
 
 		//	Copy to normal array and return

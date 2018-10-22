@@ -131,23 +131,9 @@ class GenerateMeshJobSystem
 		return mesh;
 	}
 
-	struct BlockMesh
+	#region Incorrect solution
+	struct GetTrianglesJob : IJobParallelFor
 	{
-		public readonly int vertCount;
-		public readonly NativeArray<float3> vertices;
-		public readonly NativeArray<int> triangles;
-
-		public BlockMesh(NativeArray<float3> vertices, NativeArray<int> triangles)
-		{
-			this.vertices = vertices;
-			this.triangles = triangles;
-			this.vertCount = vertices.Length;
-		}
-	}
-
-	struct ChunkMeshJob : IJobParallelFor
-	{
-		public NativeArray<BlockMesh> blockMeshes;
 		public int vertCount;
 
 		[ReadOnly] public NativeArray<Faces> faces;
@@ -159,6 +145,8 @@ class GenerateMeshJobSystem
 
 		[ReadOnly] public int chunkSize;
 		[ReadOnly] public JobUtil util;
+
+		public NativeArray<int> longArray;	//DEBUG
 
 		NativeArray<int> FaceArray(Faces faces)
 		{
@@ -172,9 +160,8 @@ class GenerateMeshJobSystem
 			return array;
 		}
 
-		BlockMesh GetValues(int index, float3 blockPosition)//, NativeArray<float3> verts, NativeArray<int> tris)
+		void GetValues(int index, float3 blockPosition)//, NativeArray<float3> verts, NativeArray<int> tris)
 		{
-			BlockMesh meshData;
 			NativeArray<int> faceArray = FaceArray(faces[index]);
 
 			int triCount = (int)(vertCount * 1.5);
@@ -210,23 +197,16 @@ class GenerateMeshJobSystem
 				}
 			}
 
-			meshData = new BlockMesh(verts, tris);	
-
 			faceArray.Dispose();
 			verts.Dispose();
 			tris.Dispose();
-
-			return meshData;
 		}
 
 		public void Execute(int i)
 		{
 			//	Get local position in heightmap
 			float3 pos = util.Unflatten(i, chunkSize);
-
-			blockMeshes[i] = GetValues(i, pos);
-
-
+			longArray[i*2] = 0;
 		}
 	}
 
@@ -258,20 +238,25 @@ class GenerateMeshJobSystem
 		}
 
 		//	Native arrays
-		NativeArray<BlockMesh> blockMeshes = new NativeArray<BlockMesh>(exposedFaces.Length, Allocator.TempJob);
 		NativeArray<Faces> faces = new NativeArray<Faces>(exposedFaces.Length, Allocator.TempJob);
 		faces.CopyFrom(exposedFaces);
 
-		var job = new ChunkMeshJob()
+		NativeArray<int> longArray = new NativeArray<int>(exposedFaces.Length*2, Allocator.TempJob);	//DEBUG
+
+		var job = new GetTrianglesJob()
 		{
-			blockMeshes = blockMeshes,
 			vertCount = 0,
 			faces = faces,
 			mesh = new MeshGen2(0),
 			//blocks = blocks,
 			chunkSize = chunkSize,
-			util = new JobUtil()
+			util = new JobUtil(),
+
+			longArray = longArray
 		};
+
+		JobHandle handle = job.Schedule(exposedFaces.Length, 1);
+		handle.Complete();
 
 
 		Mesh mesh = new Mesh();
@@ -279,6 +264,10 @@ class GenerateMeshJobSystem
 		mesh.SetTriangles(triangles, 0);
 		mesh.RecalculateNormals();
 		UnityEditor.MeshUtility.Optimize(mesh);*/
+
+		faces.Dispose();
+		longArray.Dispose();
+
 
 		return mesh;
 	}
@@ -383,4 +372,5 @@ class GenerateMeshJobSystem
 			return new int[] {3+offset, 1+offset, 0+offset, 3+offset, 2+offset, 1+offset};
 		}
 	}
+	#endregion
 }

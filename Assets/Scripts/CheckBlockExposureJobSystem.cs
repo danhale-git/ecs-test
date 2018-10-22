@@ -59,7 +59,7 @@ class CheckBlockExposureJobSystem
 			};
 		
 		//  Fill native array
-        JobHandle jobHandle = job.Schedule(_blocks.Length, 64);
+        JobHandle jobHandle = job.Schedule(_blocks.Length, 1);
         jobHandle.Complete();
 
 		//	Copy to normal array and return

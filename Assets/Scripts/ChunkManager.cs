@@ -10,7 +10,7 @@ using Unity.Mathematics;
 
 public class ChunkManager
 {
-	public static int chunkSize = 8;
+	public static int chunkSize = 12;
     public static int chunkSizePlusTwo = chunkSize + 2;
 
 	static EntityManager entityManager;
@@ -40,13 +40,12 @@ public class ChunkManager
         //  New archetype with mesh and position
         archetype = entityManager.CreateArchetype(
             ComponentType.Create<Position>(),
-            ComponentType.Create<MeshInstanceRendererComponent>());
+            ComponentType.Create<MeshInstanceRendererComponent>()
+            );
     }
 	
-	public void GenerateChunk()
+	public void GenerateChunk(Vector3 position)
 	{
-        Vector3 position = new float3(0, 0, 0);
-
 		//	Entity
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
         Entity meshObject = entityManager.CreateEntity(archetype);
@@ -62,13 +61,13 @@ public class ChunkManager
 
 		//	Apply mesh
         Mesh mesh = meshGenerator.GetMesh(exposedFaces, blocks);
-        Mesh otherMesh = meshGenerator.GetChunkMesh(exposedFaces, blocks);
+        //Mesh otherMesh = meshGenerator.GetChunkMesh(exposedFaces, blocks);
         Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
         entityManager.AddSharedComponentData(meshObject, MakeMesh(mesh, material));
 
 		//	Debug wire
         Vector3 center = position + (new Vector3(0.5f, 0.5f, 0.5f) * (chunkSize - 1));
-        CustomDebugTools.WireCube(center, chunkSize, Color.green);
+        CustomDebugTools.WireCube(center, chunkSize, Color.white);
 	}
 
     static int[] GenerateBlocks(Vector3 position)

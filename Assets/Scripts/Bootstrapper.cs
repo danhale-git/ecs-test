@@ -24,7 +24,14 @@ public class Bootstrapper
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Start()
     {
-       chunks.GenerateChunk();
+        int chunkSize = ChunkManager.chunkSize;
+        for(int x = 0; x < 3; x++)
+            for(int z = 0; z < 3; z++)
+            {
+                Vector3 position = new Vector3(x*chunkSize, 0, z*chunkSize);
+               chunks.GenerateChunk(position);
+            }
+
     }
 
 }
