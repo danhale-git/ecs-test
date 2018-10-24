@@ -18,6 +18,10 @@ class CheckBlockExposureJobSystem
 			//	Get local position in heightmap
 			float3 pos = util.Unflatten(i, chunkSize);
 
+			//	Air blocks can't be exposed
+			//	TODO is this right? Maybe prevent drawing air block in mesh code instead
+			if(blocks[i] == 0) return;
+
 			int right, left, up, down, forward, back;
 
 			//	TODO check adjacent chunks instead of this silly if statement
@@ -40,7 +44,7 @@ class CheckBlockExposureJobSystem
 		}
 	}
 
-	public Faces[] GetExposure(int[] _blocks, out int exposedBlockCount)
+	public Faces[] GetExposure(int[] _blocks, out int faceCount)
 	{
 		int chunkSize = ChunkManager.chunkSize;
 
@@ -68,25 +72,23 @@ class CheckBlockExposureJobSystem
 		blocks.Dispose();
 		exposedFaces.Dispose();
 
-		exposedBlockCount = GetExposedBlockIndices(exposedFacesArray);
+		faceCount = GetExposedBlockIndices(exposedFacesArray);
 
 		return exposedFacesArray;
 	}
 
 	int GetExposedBlockIndices(Faces[] faces)
 	{
-		int exposedBlockCount = 0;
 		int faceCount = 0;
 		for(int i = 0; i < faces.Length; i++)
 		{
-			int count = faces[i].Count();
+			int count = faces[i].count;
 			if(count > 0)
 			{
-				exposedBlockCount += 1;
 				faces[i].faceIndex = faceCount;
 				faceCount += count;
 			}
 		}
-		return exposedBlockCount;
+		return faceCount;
 	}
 }

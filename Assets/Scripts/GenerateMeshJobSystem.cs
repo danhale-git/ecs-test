@@ -6,148 +6,94 @@ using Unity.Mathematics;
 
 class GenerateMeshJobSystem
 {
-	struct BlockMeshJob : IJob
-	{
-		public NativeList<float3> verts;
-		public NativeList<int> tris;
-		
-		[ReadOnly]public int vertCount;
-		[ReadOnly]public float3 position;
-		[ReadOnly]public Faces exposure;
-		[ReadOnly]public MeshGen mesh;
-
-		public int localVertCount;
-
-		public void GetValues(int side)
-		{
-			//	Vertices
-			NativeArray<float3> v = new NativeArray<float3>(4, Allocator.Temp);
-			v.CopyFrom(mesh.Vertices(side, position));
-			
-			//	Triangles
-			NativeArray<int> t = new NativeArray<int>(6, Allocator.Temp);
-			t.CopyFrom(mesh.Triangles(vertCount + localVertCount));
-
-			localVertCount += v.Length;
-			
-			verts.AddRange(v);
-			tris.AddRange(t);
-
-			v.Dispose();
-			t.Dispose();
-		}
-
-		//	Add vertices and triangles for exposed faces
-		public void Execute()
-		{
-			if(exposure.right == 1)
-			{
-				GetValues(0);
-			}
-			if(exposure.left == 1)
-			{
-				GetValues(1);
-			}
-			if(exposure.up == 1)
-			{
-				GetValues(2);
-			}
-			if(exposure.down == 1)
-			{
-				GetValues(3);
-			}
-			if(exposure.forward == 1)
-			{
-				GetValues(4);
-			}
-			if(exposure.back == 1)
-			{
-				GetValues(5);
-			}
-		}
-	}
-
-	public Mesh GetMesh(Faces[] exposedFaces, int[] blocks)
-	{
-		int chunkSize = ChunkManager.chunkSize;
-		int blockArrayLength = (int)math.pow(chunkSize, 3);
-
-		List<int> triangles = new List<int>();
-		List<Vector3> vertices = new List<Vector3>();
-
-		int vertCount = 0;
-
-		//MeshGen meshGen = new MeshGen(position);
-		
-
-		for(int i = 0; i < blockArrayLength; i++)
-		{
-			if(blocks[i] == 0) continue;
-
-			float3 position = Util.Unflatten(i, chunkSize);
-
-			//	counts are kept in Faces struct
-			int vCount = exposedFaces[i].count * 4;
-			int tCount = exposedFaces[i].count * 6;
-
-			NativeList<float3> verts = new NativeList<float3>(vCount, Allocator.TempJob);
-			NativeList<int> tris = new NativeList<int>(tCount, Allocator.TempJob);
-			
-			var job = new BlockMeshJob()
-			{
-				verts = verts,
-				tris = tris,
-
-				vertCount = vertCount,
-				position = position,
-				exposure = exposedFaces[i],
-				mesh = new MeshGen(0),
-
-				localVertCount = 0
-			};
-
-			vertCount += vCount;
-
-			//	TODO: job.Schedule().Complete();
-			JobHandle jobHandle = job.Schedule();
-			jobHandle.Complete();
-
-			for(int t = 0; t < tris.Length; t++)
-				triangles.Add(tris[t]);
-
-			for(int v = 0; v < verts.Length; v++)
-				vertices.Add(verts[v]);
-
-			verts.Dispose();
-			tris.Dispose();
-		}
-
-		Mesh mesh = new Mesh();
-		mesh.SetVertices(vertices);
-		mesh.SetTriangles(triangles, 0);
-		mesh.RecalculateNormals();
-		UnityEditor.MeshUtility.Optimize(mesh);
-
-		return mesh;
-	}
-
 	struct VertJob : IJobParallelFor
 	{
-		public NativeArray<float3> verts;
-		public NativeArray<int> startIndices;
-		public NativeArray<Faces> faces;
-		public MeshGen meshGenerator;
+		[NativeDisableParallelForRestriction] public NativeArray<float3> vertices;
+		[NativeDisableParallelForRestriction] public NativeArray<int> triangles;
+		
+		[ReadOnly] public NativeArray<Faces> faces;
+
+		[ReadOnly] public MeshGenerator meshGenerator;
+		[ReadOnly] public JobUtil util;
+		[ReadOnly] public int chunkSize;
+
+		//	Vertices for given side
+		int GetVerts(int side, float3 position, int index)
+		{
+			NativeArray<float3> verts = new NativeArray<float3>(4, Allocator.Temp);
+			verts.CopyFrom(meshGenerator.Vertices(side, position));
+
+			for(int v = 0; v < 4; v++)
+				vertices[index+v] =  verts[v];
+
+			verts.Dispose();
+			return 4;
+		}
+
+		//	Triangles are always the same set, offset to vertex index
+		int GetTris(int index, int vertIndex)
+		{
+			NativeArray<int> tris = new NativeArray<int>(6, Allocator.Temp);
+			tris.CopyFrom(meshGenerator.Triangles(vertIndex));
+
+			for(int t = 0; t < 6; t++)
+				triangles[index+t] =  tris[t];
+
+			tris.Dispose();
+			return 6;
+		}
 
 		public void Execute(int i)
 		{
-            for (int f = startIndices[i]; f < faces[i].count; i++)
-            {
-				//if(faces[i][f]) verts[i] += meshGenerator.GetFace();
+			//	Skip blocks that aren't exposed
+			if(faces[i].count == 0) return;
+
+			//	Get block position for vertex offset
+			float3 pos = util.Unflatten(i, chunkSize);
+
+			//	Current local indices
+			int vertIndex = 0;
+			int triIndex = 0;
+
+			//	Block starting indices
+			int vertOffset = faces[i].faceIndex * 4;
+			int triOffset = faces[i].faceIndex * 6;
+
+			//	Vertices and Triangles for exposed sides
+            if(faces[i].right == 1)
+			{
+				triIndex += GetTris(triIndex+triOffset, vertIndex+vertOffset);
+				vertIndex += GetVerts(0, pos, vertIndex+vertOffset);
 			}
+			if(faces[i].left == 1)
+			{
+				triIndex += GetTris(triIndex+triOffset, vertIndex+vertOffset);
+				vertIndex += GetVerts(1, pos, vertIndex+vertOffset);
+			}
+			if(faces[i].up == 1)
+			{
+				triIndex += GetTris(triIndex+triOffset, vertIndex+vertOffset);
+				vertIndex += GetVerts(2, pos, vertIndex+vertOffset);
+			}
+			if(faces[i].down == 1)
+			{
+				triIndex += GetTris(triIndex+triOffset, vertIndex+vertOffset);
+				vertIndex += GetVerts(3, pos, vertIndex+vertOffset);
+			}
+			if(faces[i].forward == 1)
+			{
+				triIndex += GetTris(triIndex+triOffset, vertIndex+vertOffset);
+				vertIndex += GetVerts(4, pos, vertIndex+vertOffset);
+			}
+			if(faces[i].back == 1)
+			{
+				triIndex += GetTris(triIndex+triOffset, vertIndex+vertOffset);
+				vertIndex += GetVerts(5, pos, vertIndex+vertOffset);
+			}	
 		}
 	}
 
-	struct MeshGen
+	struct MeshGenerator
 	{
 		//	Cube corners
 		float3 v0;
@@ -159,8 +105,7 @@ class GenerateMeshJobSystem
 		float3 v6;
 		float3 v7;
 
-
-		public MeshGen(byte constParam)
+		public MeshGenerator(byte constParam)
 		{
 			v0 = new float3( 	-0.5f, -0.5f,	 0.5f );	//	left bottom front
 			v2 = new float3( 	 0.5f, -0.5f,	-0.5f );	//	right bottom back
@@ -195,4 +140,58 @@ class GenerateMeshJobSystem
 			return new int[] {3+offset, 1+offset, 0+offset, 3+offset, 2+offset, 1+offset};
 		}
 	}
+
+	public Mesh GetMesh2(Faces[] exposedFaces, int faceCount)
+	{
+		int chunkSize = ChunkManager.chunkSize;
+
+		//	Determine vertex and triangle arrays using face count
+		NativeArray<float3> vertices = new NativeArray<float3>(faceCount * 4, Allocator.TempJob);
+		NativeArray<int> triangles = new NativeArray<int>(faceCount * 6, Allocator.TempJob);
+
+		NativeArray<Faces> faces = new NativeArray<Faces>(exposedFaces.Length, Allocator.TempJob);
+		faces.CopyFrom(exposedFaces);
+
+		var job = new VertJob()
+		{
+			vertices = vertices,
+			triangles = triangles,
+			faces = faces,
+
+			util = new JobUtil(),
+			meshGenerator = new MeshGenerator(0),
+			chunkSize = chunkSize
+		};
+
+		//	Run job
+		JobHandle handle = job.Schedule(faces.Length, 1);
+		handle.Complete();
+
+		//	Copy native arrays to normal arrays
+		Vector3[] verticesArray = new Vector3[vertices.Length];
+		for(int i = 0; i < vertices.Length; i++)
+			verticesArray[i] = vertices[i];
+
+		int[] trianglesArray = new int[triangles.Length];
+		triangles.CopyTo(trianglesArray);
+		
+		vertices.Dispose();
+		triangles.Dispose();
+		faces.Dispose();
+
+		return MakeMesh(verticesArray, trianglesArray);
+	}
+
+	Mesh MakeMesh(Vector3[] vertices, int[] triangles)
+	{
+		Mesh mesh = new Mesh();
+		mesh.vertices = vertices;
+		mesh.SetTriangles(triangles, 0);
+		mesh.RecalculateNormals();
+		UnityEditor.MeshUtility.Optimize(mesh);
+
+		return mesh;
+	}
+
+	
 }

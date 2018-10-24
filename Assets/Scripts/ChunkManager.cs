@@ -51,16 +51,16 @@ public class ChunkManager
         entityManager.SetComponentData(meshObject, new Position {Value = position});
 
         //  Generate blocks
-        int exposedBlockCount;
+        int faceCount;
         int[] blocks = blockGenerator.GetBlocks(heightMap);
-        Faces[] exposedFaces = checkBlockExposure.GetExposure(blocks, out exposedBlockCount);
+        Faces[] exposedFaces = checkBlockExposure.GetExposure(blocks, out faceCount);
 
 		//	Mesh
 		List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
 
 		//	Apply mesh
-        Mesh mesh = meshGenerator.GetMesh(exposedFaces, blocks);
+        Mesh mesh = meshGenerator.GetMesh2(exposedFaces, faceCount);
         Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
         entityManager.AddSharedComponentData(meshObject, MakeMesh(mesh, material));
 
