@@ -9,7 +9,7 @@ class CheckBlockExposureJobSystem
 	{
 		public NativeArray<Faces> exposedFaces;
 
-		[ReadOnly]public NativeArray<int> blocks;
+		[ReadOnly] public NativeArray<int> blocks;
 		[ReadOnly] public int chunkSize;
 		[ReadOnly] public JobUtil util;
 
@@ -18,7 +18,7 @@ class CheckBlockExposureJobSystem
 			//	Get local position in heightmap
 			float3 pos = util.Unflatten(i, chunkSize);
 
-			int right, left, up, down, front, back;
+			int right, left, up, down, forward, back;
 
 			//	TODO check adjacent chunks instead of this silly if statement
 			if(	  !(pos.x == chunkSize-1 	|| pos.y == chunkSize-1 || pos.z == chunkSize-1 ||
@@ -28,19 +28,19 @@ class CheckBlockExposureJobSystem
 				left = 	blocks[util.Flatten(pos.x-1,	pos.y,		pos.z, chunkSize)] 		== 0 ? 1 : 0;
 				up =   	blocks[util.Flatten(pos.x,		pos.y+1,	pos.z, chunkSize)] 		== 0 ? 1 : 0;
 				down = 	blocks[util.Flatten(pos.x,		pos.y-1,	pos.z, chunkSize)] 		== 0 ? 1 : 0;
-				front =	blocks[util.Flatten(pos.x,		pos.y,		pos.z+1, chunkSize)]	== 0 ? 1 : 0;
+				forward=blocks[util.Flatten(pos.x,		pos.y,		pos.z+1, chunkSize)]	== 0 ? 1 : 0;
 				back = 	blocks[util.Flatten(pos.x,		pos.y,		pos.z-1, chunkSize)] 	== 0 ? 1 : 0;
 
-				exposedFaces[i] = new Faces(right, left, up, down, front, back);
+				exposedFaces[i] = new Faces(right, left, up, down, forward, back, 0);
 			}
 			else
 			{
-				exposedFaces[i] = new Faces(0,0,0,0,0,0);
+				exposedFaces[i] = new Faces(0,0,0,0,0,0,0);
 			}
 		}
 	}
 
-	public Faces[] GetExposure(int[] _blocks)
+	public Faces[] GetExposure(int[] _blocks, out int exposedBlockCount)
 	{
 		int chunkSize = ChunkManager.chunkSize;
 
@@ -49,7 +49,7 @@ class CheckBlockExposureJobSystem
 		blocks.CopyFrom(_blocks);
 
 		var exposedFaces = new NativeArray<Faces>(_blocks.Length, Allocator.TempJob);
-		Faces[] exposedSidesArray = new Faces[exposedFaces.Length];
+		Faces[] exposedFacesArray = new Faces[exposedFaces.Length];
 
 		var job = new CheckJob(){
 			exposedFaces = exposedFaces,
@@ -63,11 +63,30 @@ class CheckBlockExposureJobSystem
         jobHandle.Complete();
 
 		//	Copy to normal array and return
-		exposedFaces.CopyTo(exposedSidesArray);
+		exposedFaces.CopyTo(exposedFacesArray);
 
 		blocks.Dispose();
 		exposedFaces.Dispose();
 
-		return exposedSidesArray;
+		exposedBlockCount = GetExposedBlockIndices(exposedFacesArray);
+
+		return exposedFacesArray;
+	}
+
+	int GetExposedBlockIndices(Faces[] faces)
+	{
+		int exposedBlockCount = 0;
+		int faceCount = 0;
+		for(int i = 0; i < faces.Length; i++)
+		{
+			int count = faces[i].Count();
+			if(count > 0)
+			{
+				exposedBlockCount += 1;
+				faces[i].faceIndex = faceCount;
+				faceCount += count;
+			}
+		}
+		return exposedBlockCount;
 	}
 }

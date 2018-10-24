@@ -2,7 +2,8 @@
 {
 	public readonly int right, left, up, down, forward, back;
 	public readonly int count;
-	public Faces(int right, int left, int up, int down, int forward, int back)
+	public int faceIndex;
+	public Faces(int right, int left, int up, int down, int forward, int back, int faceIndex)
 	{
 		this.right = right;
 		this.left = left;
@@ -11,12 +12,12 @@
 		this.forward = forward;
 		this.back = back;
 
-		count = 0;
-		count += right;
-		count += left;
-		count += up;
-		count += down;
-		count += forward;
-		count += back;
+		count = right + left + up + down + forward + back;
+
+		this.faceIndex = faceIndex;
+	}
+	public int Count()
+	{
+		return right + left + up + down + forward + back;
 	}
 }

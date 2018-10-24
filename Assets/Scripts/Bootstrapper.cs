@@ -27,8 +27,8 @@ public class Bootstrapper
     static void Start()
     {
         int chunkSize = ChunkManager.chunkSize;
-        for(int x = 0; x < 3; x++)
-            for(int z = 0; z < 3; z++)
+        for(int x = 0; x < 1; x++)
+            for(int z = 0; z < 1; z++)
             {
                 Vector3 position = new Vector3(x*chunkSize, 0, z*chunkSize);
                 int[] heightMap = mapManager.GenerateMapSquare(position);

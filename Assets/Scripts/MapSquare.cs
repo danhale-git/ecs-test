@@ -2,7 +2,7 @@
 {
 	enum Generated { NONE, CELL, POI, HEIGHT, BLOCKS, MESH }
     System.Collections.Generic.List<Unity.Entities.Entity> meshObject;
-	int[] heightMap;
+	public int[] heightMap;
 
     public MapSquare(int[] heightMap)
     {

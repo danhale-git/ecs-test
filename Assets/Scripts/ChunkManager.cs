@@ -51,8 +51,9 @@ public class ChunkManager
         entityManager.SetComponentData(meshObject, new Position {Value = position});
 
         //  Generate blocks
+        int exposedBlockCount;
         int[] blocks = blockGenerator.GetBlocks(heightMap);
-        Faces[] exposedFaces = checkBlockExposure.GetExposure(blocks);
+        Faces[] exposedFaces = checkBlockExposure.GetExposure(blocks, out exposedBlockCount);
 
 		//	Mesh
 		List<Vector3> vertices = new List<Vector3>();
