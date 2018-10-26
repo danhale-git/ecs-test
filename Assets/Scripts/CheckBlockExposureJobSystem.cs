@@ -46,7 +46,7 @@ class CheckBlockExposureJobSystem
 
 	public Faces[] GetExposure(int[] _blocks, out int faceCount)
 	{
-		int chunkSize = ChunkManager.chunkSize;
+		int chunkSize = MapManager.chunkSize;
 
 		//	Native and normal array
 		var blocks = new NativeArray<int>(_blocks.Length, Allocator.TempJob);

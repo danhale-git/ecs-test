@@ -1,13 +1,15 @@
-﻿public struct MapSquare
+﻿public class MapSquare
 {
-	enum Generated { NONE, CELL, POI, HEIGHT, BLOCKS, MESH }
-    System.Collections.Generic.List<Unity.Entities.Entity> meshObject;
+    public System.Collections.Generic.List<Unity.Entities.Entity> meshObjects;
+    public int[] blocks;
 
-	public int[] heightMap;
+	public enum Stages { CREATE, CELL, POI, HEIGHT, BLOCKS, MESH }
+    public Stages stage;
 
-    public MapSquare(int[] heightMap)
+    public MapSquare(bool placeholder)
     {
-		this.meshObject = new System.Collections.Generic.List<Unity.Entities.Entity>();
-		this.heightMap = heightMap;
+		this.meshObjects = new System.Collections.Generic.List<Unity.Entities.Entity>();
+        this.stage = 0;
+        this.blocks = null;
     }
 }

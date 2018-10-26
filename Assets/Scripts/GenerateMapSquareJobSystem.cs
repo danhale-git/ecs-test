@@ -26,7 +26,7 @@ class GenerateMapSquareJobSystem
 
 	public int[] GetBlocks(int[] _heightMap)
 	{
-		int chunkSize = ChunkManager.chunkSize;
+		int chunkSize = MapManager.chunkSize;
 		int blockArrayLength = (int)math.pow(chunkSize, 3);
 
 		//	Native and normal array

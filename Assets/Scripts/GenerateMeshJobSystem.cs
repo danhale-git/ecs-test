@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
-using Unity.Collections;
+﻿using UnityEngine;
+
 using Unity.Jobs;
+using Unity.Collections;
 using Unity.Mathematics;
 
 class GenerateMeshJobSystem
@@ -141,9 +141,9 @@ class GenerateMeshJobSystem
 		}
 	}
 
-	public Mesh GetMesh2(Faces[] exposedFaces, int faceCount)
+	public Mesh GetMesh(Faces[] exposedFaces, int faceCount)
 	{
-		int chunkSize = ChunkManager.chunkSize;
+		int chunkSize = MapManager.chunkSize;
 
 		//	Determine vertex and triangle arrays using face count
 		NativeArray<float3> vertices = new NativeArray<float3>(faceCount * 4, Allocator.TempJob);
@@ -167,14 +167,16 @@ class GenerateMeshJobSystem
 		JobHandle handle = job.Schedule(faces.Length, 1);
 		handle.Complete();
 
-		//	Copy native arrays to normal arrays
+		//	Vert (float3) native array to (Vector3) array
 		Vector3[] verticesArray = new Vector3[vertices.Length];
 		for(int i = 0; i < vertices.Length; i++)
 			verticesArray[i] = vertices[i];
 
+		//	Tri native array to array
 		int[] trianglesArray = new int[triangles.Length];
 		triangles.CopyTo(trianglesArray);
 		
+
 		vertices.Dispose();
 		triangles.Dispose();
 		faces.Dispose();
@@ -192,6 +194,4 @@ class GenerateMeshJobSystem
 
 		return mesh;
 	}
-
-	
 }

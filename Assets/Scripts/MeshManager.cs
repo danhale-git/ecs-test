@@ -46,7 +46,7 @@ public static class MeshManager
 	public static Mesh GetMesh(float3 offset, Faces[] exposedFaces, int[] blocks)
 	{
 		Mesh mesh = new Mesh();
-		int chunkSize = ChunkManager.chunkSize;
+		int chunkSize = MapManager.chunkSize;
 
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
