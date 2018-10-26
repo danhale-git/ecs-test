@@ -9,9 +9,31 @@ class CheckBlockExposureJobSystem
 	{
 		public NativeArray<Faces> exposedFaces;
 
+		[ReadOnly] public NativeArray<int> right;
+		[ReadOnly] public NativeArray<int> left;
+		[ReadOnly] public NativeArray<int> up;
+		[ReadOnly] public NativeArray<int> down;
+		[ReadOnly] public NativeArray<int> forward;
+		[ReadOnly] public NativeArray<int> back;
+
+
 		[ReadOnly] public NativeArray<int> blocks;
 		[ReadOnly] public int chunkSize;
 		[ReadOnly] public JobUtil util;
+
+		int FaceExposed(float3 position, float3 direction)
+		{
+			float3 pos = position + direction;
+
+			if(pos.x == chunkSize) 	return right[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
+			if(pos.x < 0)			return left[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
+			if(pos.y == chunkSize) 	return up[util.WrapAndFlatten(pos, chunkSize)] 		== 0 ? 1 : 0;
+			if(pos.y < 0)			return down[util.WrapAndFlatten(pos, chunkSize)]	== 0 ? 1 : 0;
+			if(pos.z == chunkSize) 	return forward[util.WrapAndFlatten(pos, chunkSize)] == 0 ? 1 : 0;
+			if(pos.z < 0)			return back[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
+
+			return blocks[util.Flatten(pos, chunkSize)] == 0 ? 1 : 0;
+		}
 
 		public void Execute(int i)
 		{
@@ -25,26 +47,18 @@ class CheckBlockExposureJobSystem
 			int right, left, up, down, forward, back;
 
 			//	TODO check adjacent chunks instead of this silly if statement
-			if(	  !(pos.x == chunkSize-1 	|| pos.y == chunkSize-1 || pos.z == chunkSize-1 ||
-					pos.x == 0 				|| pos.y == 0 			|| pos.z == 0)	)
-			{
-				right =	blocks[util.Flatten(pos.x+1,	pos.y,		pos.z, chunkSize)] 		== 0 ? 1 : 0;
-				left = 	blocks[util.Flatten(pos.x-1,	pos.y,		pos.z, chunkSize)] 		== 0 ? 1 : 0;
-				up =   	blocks[util.Flatten(pos.x,		pos.y+1,	pos.z, chunkSize)] 		== 0 ? 1 : 0;
-				down = 	blocks[util.Flatten(pos.x,		pos.y-1,	pos.z, chunkSize)] 		== 0 ? 1 : 0;
-				forward=blocks[util.Flatten(pos.x,		pos.y,		pos.z+1, chunkSize)]	== 0 ? 1 : 0;
-				back = 	blocks[util.Flatten(pos.x,		pos.y,		pos.z-1, chunkSize)] 	== 0 ? 1 : 0;
+			right =	FaceExposed(pos, new float3( 1,	0, 0));
+			left = 	FaceExposed(pos, new float3(-1,	0, 0));
+			up =   	FaceExposed(pos, new float3( 0,	1, 0));
+			down = 	FaceExposed(pos, new float3( 0,-1, 0));
+			forward=FaceExposed(pos, new float3( 0,	0, 1));
+			back = 	FaceExposed(pos, new float3( 0,	0,-1));
 
-				exposedFaces[i] = new Faces(right, left, up, down, forward, back, 0);
-			}
-			else
-			{
-				exposedFaces[i] = new Faces(0,0,0,0,0,0,0);
-			}
+			exposedFaces[i] = new Faces(right, left, up, down, forward, back, 0);
 		}
 	}
 
-	public Faces[] GetExposure(int[] _blocks, out int faceCount)
+	public Faces[] GetExposure(int[][] _adjacent, int[] _blocks, out int faceCount)
 	{
 		int chunkSize = MapManager.chunkSize;
 
@@ -55,11 +69,30 @@ class CheckBlockExposureJobSystem
 		var exposedFaces = new NativeArray<Faces>(_blocks.Length, Allocator.TempJob);
 		Faces[] exposedFacesArray = new Faces[exposedFaces.Length];
 
+		NativeArray<int>[] adjacent = new NativeArray<int>[] {
+			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
+			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
+			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
+			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
+			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
+			new NativeArray<int>(_blocks.Length, Allocator.TempJob)
+		};
+
+		for(int i = 0; i < 6; i++)
+			adjacent[i].CopyFrom(_adjacent[i]);
+
 		var job = new CheckJob(){
 			exposedFaces = exposedFaces,
 			blocks = blocks,
 			chunkSize = chunkSize,
-			util = new JobUtil()
+			util = new JobUtil(),
+
+			right = adjacent[0],
+			left = adjacent[1],
+			up = adjacent[2],
+			down = adjacent[3],
+			forward = adjacent[4],
+			back = adjacent[5]
 			};
 		
 		//  Fill native array
@@ -71,6 +104,9 @@ class CheckBlockExposureJobSystem
 
 		blocks.Dispose();
 		exposedFaces.Dispose();
+
+		for(int i = 0; i < 6; i++)
+			adjacent[i].Dispose();
 
 		faceCount = GetExposedBlockIndices(exposedFacesArray);
 
@@ -91,4 +127,6 @@ class CheckBlockExposureJobSystem
 		}
 		return faceCount;
 	}
+
+	
 }

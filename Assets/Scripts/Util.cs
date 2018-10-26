@@ -23,6 +23,10 @@ public struct JobUtil
     {
         return (int)(z + size * (y + size * x));
     }
+    public int Flatten(float3 xyz, int size)
+    {
+        return (int)(xyz.z + size * (xyz.y + size * xyz.x));
+    }
     public float3 Unflatten2D(int index, int size)
     {
         int x = index / size;
@@ -38,6 +42,28 @@ public struct JobUtil
 	{
 		return (value * 0.5f) + 0.5f;
 	}
+    public float3 WrapBlockIndex(float3 index, int chunkSize)
+	{
+		float[] vector = new float[3] {	index.x,
+									    index.y,
+									    index.z};
+
+		for(int i = 0; i < 3; i++)
+		{
+			//	if below min then max
+			if(vector[i] == -1) 
+				vector[i] = chunkSize-1; 
+			//	if above max then min
+			else if(vector[i] == chunkSize) 
+				vector[i] = 0;
+		}
+
+		return new float3(vector[0], vector[1], vector[2]);
+	}
+    public int WrapAndFlatten(float3 position, int chunkSize)
+    {
+        return Flatten(WrapBlockIndex(position, chunkSize), chunkSize);
+    }
 }
 
 public static class Util

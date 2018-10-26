@@ -53,8 +53,8 @@ public class MapManager
 
 	public void GenerateRadius(Vector3 center, int radius)
 	{
-		PositionsInSpiral(center, radius, CreateStage);
-		PositionsInSpiral(center, radius, BlockStage);
+		PositionsInSpiral(center, radius+1, CreateStage);
+		PositionsInSpiral(center, radius+1, BlockStage);
 		PositionsInSpiral(center, radius, DrawStage);
 	}
 
@@ -94,7 +94,11 @@ public class MapManager
 
 		//	Mesh Data
         int faceCount;
-        Faces[] exposedFaces = checkBlockExposure.GetExposure(mapSquare.blocks, out faceCount);
+        Faces[] exposedFaces = checkBlockExposure.GetExposure(
+			GetAdjacentSquares(position),
+			mapSquare.blocks,
+			out faceCount);
+
 		List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
 
@@ -107,12 +111,34 @@ public class MapManager
         entityManager.AddSharedComponentData(meshObject, renderer);
 	}
 
+	int[][] GetAdjacentSquares(Vector3 position)
+	{
+		float3 pos = position;
+		int[][] adjacent = new int[6][];
+		
+		adjacent[0] = map[pos + (new float3( 1,	0, 0) * chunkSize)].blocks;
+		adjacent[1] = map[pos + (new float3(-1,	0, 0) * chunkSize)].blocks;
+
+		//adjacent[2] = map[pos + (new float3( 0,	1, 0) * chunkSize)].blocks;
+		//adjacent[3] = map[pos + (new float3( 0,-1, 0) * chunkSize)].blocks;
+		adjacent[2] = map[pos + (new float3( 0,	0, 0) * chunkSize)].blocks;
+		adjacent[3] = map[pos + (new float3( 0, 0, 0) * chunkSize)].blocks;
+
+		adjacent[4] = map[pos + (new float3( 0,	0, 1) * chunkSize)].blocks;
+		adjacent[5] = map[pos + (new float3( 0,	0,-1) * chunkSize)].blocks;
+
+		return adjacent;
+	}
+
 	delegate void GenerationStage(Vector3 position);
 	void PositionsInSpiral(Vector3 center, int radius, GenerationStage delegateOperation)
 	{
 		Vector3 position = center;
-		//	Trim radius to allow buffer of generated chunks
+
+		//	Generate center block
 		delegateOperation(position);
+
+		radius-=1;//DEBUG
 
 		int increment = 1;
 		for(int i = 0; i < radius; i++)
