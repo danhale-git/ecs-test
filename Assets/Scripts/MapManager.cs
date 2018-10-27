@@ -11,10 +11,14 @@ using Unity.Mathematics;
 using Unity.Collections;
 
 
-public class MapManager
+public class MapManager : ComponentSystem
 {
+	//	DEBUG
+	PlayerController player;
+
 	//	Settings
 	public static int chunkSize = 8;
+	public static int viewDistance = 4;
 	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
 
 	//	Entities
@@ -33,6 +37,9 @@ public class MapManager
 
 	public MapManager()
 	{
+		//	DEBUG
+		player = GameObject.FindObjectOfType<PlayerController>();
+
 		//  Get entity manager
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
@@ -45,6 +52,8 @@ public class MapManager
 		//  New archetype with mesh and position
         archetype = entityManager.CreateArchetype(
             ComponentType.Create<Position>(),
+			ComponentType.Create<Rigidbody>(),
+			ComponentType.Create<MeshCollider>(),
             ComponentType.Create<MeshInstanceRendererComponent>()
             );
 
@@ -52,8 +61,21 @@ public class MapManager
 		GenerateRadius(Vector3.zero, 2);
 	}
 
+	float timer = 0;
+	protected override void OnUpdate()
+	{
+		if(Time.fixedTime - timer > 1)
+		{
+			timer = Time.fixedTime;
+			GenerateRadius(Util.VoxelOwner(player.transform.position, chunkSize), viewDistance);
+		}
+	}
+
+	
+
 	public void GenerateRadius(Vector3 center, int radius)
 	{
+		center = new Vector3(center.x, 0, center.z);
 		PositionsInSpiral(center, radius+1, CreateStage);
 		PositionsInSpiral(center, radius+1, BlockStage);
 		PositionsInSpiral(center, radius, DrawStage);
@@ -64,15 +86,18 @@ public class MapManager
 		float3 pos = position;
 		if(map.ContainsKey(pos)) return;
 
+		Debug.Log("created");
+
 		MapSquare square = new MapSquare(true);
 		map[pos] = square;
 	}
 
 	void BlockStage(Vector3 position)
 	{
-		Debug.Log("BlockStage: "+position);
 		MapSquare mapSquare = map[(float3)position];
 		if(mapSquare.stage != MapSquare.Stages.CREATE) return;
+
+		Debug.Log("blocks");
 
 		//	Noise
         float[] noise = terrain.GetSimplexMatrix(position, chunkSize, 5678, 0.05f);
@@ -89,6 +114,9 @@ public class MapManager
 	void DrawStage(Vector3 position)
 	{
 		MapSquare mapSquare = map[(float3)position];
+		if(mapSquare.stage != MapSquare.Stages.BLOCKS) return;
+
+		Debug.Log("draw");
 
 		//	Entity
         Entity meshObject = entityManager.CreateEntity(archetype);

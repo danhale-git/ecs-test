@@ -130,8 +130,6 @@ class FastNoiseJobSystem
 
     public float[] GetSimplexMatrix(float3 chunkPosition, int chunkSize, int seed, float frequency)
     {
-		Debug.Log("GetNoise: "+chunkPosition);
-
         int arrayLength = (int)math.pow(chunkSize, 2);
 
         //  Native and normal array
