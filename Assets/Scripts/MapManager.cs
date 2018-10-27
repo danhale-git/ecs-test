@@ -52,12 +52,9 @@ public class MapManager : ComponentSystem
 		//  New archetype with mesh and position
         archetype = entityManager.CreateArchetype(
             ComponentType.Create<Position>(),
-			ComponentType.Create<Rigidbody>(),
-			ComponentType.Create<MeshCollider>(),
             ComponentType.Create<MeshInstanceRendererComponent>()
             );
 
-		//GenerateRadius(new Vector3(100, 50, 100), 2);
 		GenerateRadius(Vector3.zero, 2);
 	}
 
@@ -67,11 +64,11 @@ public class MapManager : ComponentSystem
 		if(Time.fixedTime - timer > 1)
 		{
 			timer = Time.fixedTime;
-			GenerateRadius(Util.VoxelOwner(player.transform.position, chunkSize), viewDistance);
+			GenerateRadius(
+				Util.VoxelOwner(player.transform.position, chunkSize),
+				viewDistance);
 		}
 	}
-
-	
 
 	public void GenerateRadius(Vector3 center, int radius)
 	{
@@ -86,8 +83,6 @@ public class MapManager : ComponentSystem
 		float3 pos = position;
 		if(map.ContainsKey(pos)) return;
 
-		Debug.Log("created");
-
 		MapSquare square = new MapSquare(true);
 		map[pos] = square;
 	}
@@ -97,17 +92,15 @@ public class MapManager : ComponentSystem
 		MapSquare mapSquare = map[(float3)position];
 		if(mapSquare.stage != MapSquare.Stages.CREATE) return;
 
-		Debug.Log("blocks");
-
 		//	Noise
-        float[] noise = terrain.GetSimplexMatrix(position, chunkSize, 5678, 0.05f);
+        float[] noise = terrain.GetSimplexMatrix(8, position, chunkSize, 5678, 0.05f);
 
         //  Noise to height map
         int[] heightMap = new int[noise.Length];
         for(int i = 0; i < noise.Length; i++)
             heightMap[i] = (int)(noise[i] * chunkSize);
 
-		mapSquare.blocks = blockGenerator.GetBlocks(heightMap);
+		mapSquare.blocks = blockGenerator.GetBlocks(4, heightMap);
 		mapSquare.stage = MapSquare.Stages.BLOCKS;
 	}
 
@@ -116,8 +109,6 @@ public class MapManager : ComponentSystem
 		MapSquare mapSquare = map[(float3)position];
 		if(mapSquare.stage != MapSquare.Stages.BLOCKS) return;
 
-		Debug.Log("draw");
-
 		//	Entity
         Entity meshObject = entityManager.CreateEntity(archetype);
         entityManager.SetComponentData(meshObject, new Position {Value = position});
@@ -125,6 +116,7 @@ public class MapManager : ComponentSystem
 		//	Mesh Data
         int faceCount;
         Faces[] exposedFaces = checkBlockExposure.GetExposure(
+			8,
 			GetAdjacentSquares(position),
 			mapSquare.blocks,
 			out faceCount);
@@ -133,7 +125,7 @@ public class MapManager : ComponentSystem
         List<int> triangles = new List<int>();
 
 		//	Apply mesh
-        Mesh mesh = meshGenerator.GetMesh(exposedFaces, faceCount);
+        Mesh mesh = meshGenerator.GetMesh(2, exposedFaces, faceCount);
 		renderer = new MeshInstanceRenderer();
         renderer.mesh = mesh;
         renderer.material = material;
@@ -141,25 +133,7 @@ public class MapManager : ComponentSystem
         entityManager.AddSharedComponentData(meshObject, renderer);
 	}
 
-	int[][] GetAdjacentSquares(Vector3 position)
-	{
-		float3 pos = position;
-		int[][] adjacent = new int[6][];
-		
-		adjacent[0] = map[pos + (new float3( 1,	0, 0) * chunkSize)].blocks;
-		adjacent[1] = map[pos + (new float3(-1,	0, 0) * chunkSize)].blocks;
-
-		//adjacent[2] = map[pos + (new float3( 0,	1, 0) * chunkSize)].blocks;
-		//adjacent[3] = map[pos + (new float3( 0,-1, 0) * chunkSize)].blocks;
-		adjacent[2] = map[pos + (new float3( 0,	0, 0) * chunkSize)].blocks;
-		adjacent[3] = map[pos + (new float3( 0, 0, 0) * chunkSize)].blocks;
-
-		adjacent[4] = map[pos + (new float3( 0,	0, 1) * chunkSize)].blocks;
-		adjacent[5] = map[pos + (new float3( 0,	0,-1) * chunkSize)].blocks;
-
-		return adjacent;
-	}
-
+	//	Execute delegate in a spiral of chunk positions moving out from center
 	delegate void GenerationStage(Vector3 position);
 	void PositionsInSpiral(Vector3 center, int radius, GenerationStage ExecuteStage)
 	{
@@ -207,5 +181,24 @@ public class MapManager : ComponentSystem
 			position += Vector3.right * chunkSize;
 		ExecuteStage(position);
 		}
+	}
+
+	int[][] GetAdjacentSquares(Vector3 position)
+	{
+		float3 pos = position;
+		int[][] adjacent = new int[6][];
+		
+		adjacent[0] = map[pos + (new float3( 1,	0, 0) * chunkSize)].blocks;
+		adjacent[1] = map[pos + (new float3(-1,	0, 0) * chunkSize)].blocks;
+
+		//adjacent[2] = map[pos + (new float3( 0,	1, 0) * chunkSize)].blocks;
+		//adjacent[3] = map[pos + (new float3( 0,-1, 0) * chunkSize)].blocks;
+		adjacent[2] = map[pos + (new float3( 0,	0, 0) * chunkSize)].blocks;
+		adjacent[3] = map[pos + (new float3( 0, 0, 0) * chunkSize)].blocks;
+
+		adjacent[4] = map[pos + (new float3( 0,	0, 1) * chunkSize)].blocks;
+		adjacent[5] = map[pos + (new float3( 0,	0,-1) * chunkSize)].blocks;
+
+		return adjacent;
 	}
 }

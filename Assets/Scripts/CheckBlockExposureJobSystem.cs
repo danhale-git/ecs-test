@@ -58,7 +58,7 @@ class CheckBlockExposureJobSystem
 		}
 	}
 
-	public Faces[] GetExposure(int[][] _adjacent, int[] _blocks, out int faceCount)
+	public Faces[] GetExposure(int batchSize, int[][] _adjacent, int[] _blocks, out int faceCount)
 	{
 		int chunkSize = MapManager.chunkSize;
 
@@ -96,7 +96,7 @@ class CheckBlockExposureJobSystem
 			};
 		
 		//  Fill native array
-        JobHandle jobHandle = job.Schedule(_blocks.Length, 1);
+        JobHandle jobHandle = job.Schedule(_blocks.Length, batchSize);
         jobHandle.Complete();
 
 		//	Copy to normal array and return

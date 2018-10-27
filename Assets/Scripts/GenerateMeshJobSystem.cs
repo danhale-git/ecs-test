@@ -141,7 +141,7 @@ class GenerateMeshJobSystem
 		}
 	}
 
-	public Mesh GetMesh(Faces[] exposedFaces, int faceCount)
+	public Mesh GetMesh(int batchSize, Faces[] exposedFaces, int faceCount)
 	{
 		int chunkSize = MapManager.chunkSize;
 
@@ -164,7 +164,7 @@ class GenerateMeshJobSystem
 		};
 
 		//	Run job
-		JobHandle handle = job.Schedule(faces.Length, 1);
+		JobHandle handle = job.Schedule(faces.Length, batchSize);
 		handle.Complete();
 
 		//	Vert (float3) native array to (Vector3) array

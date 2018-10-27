@@ -128,7 +128,7 @@ class FastNoiseJobSystem
         }
     }
 
-    public float[] GetSimplexMatrix(float3 chunkPosition, int chunkSize, int seed, float frequency)
+    public float[] GetSimplexMatrix(int batchSize, float3 chunkPosition, int chunkSize, int seed, float frequency)
     {
         int arrayLength = (int)math.pow(chunkSize, 2);
 
@@ -147,7 +147,7 @@ class FastNoiseJobSystem
         };
 
         //  Fill native array
-        JobHandle jobHandle = job.Schedule(arrayLength, 1);
+        JobHandle jobHandle = job.Schedule(arrayLength, batchSize);
         jobHandle.Complete();
 
         //  Copy to normal array and return

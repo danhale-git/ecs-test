@@ -24,7 +24,7 @@ class GenerateMapSquareJobSystem
 		}
 	}
 
-	public int[] GetBlocks(int[] _heightMap)
+	public int[] GetBlocks(int batchSize, int[] _heightMap)
 	{
 		int chunkSize = MapManager.chunkSize;
 		int blockArrayLength = (int)math.pow(chunkSize, 3);
@@ -46,7 +46,7 @@ class GenerateMapSquareJobSystem
 		};
 		
 		//  Fill native array
-        JobHandle jobHandle = job.Schedule(blockArrayLength, 1);
+        JobHandle jobHandle = job.Schedule(blockArrayLength, batchSize);
         jobHandle.Complete();
 
 		//	Copy to normal array and return
