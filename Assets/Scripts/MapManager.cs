@@ -14,7 +14,7 @@ using Unity.Collections;
 public class MapManager
 {
 	//	Settings
-	public static int chunkSize = 12;
+	public static int chunkSize = 8;
 	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
 
 	//	Entities
@@ -48,6 +48,7 @@ public class MapManager
             ComponentType.Create<MeshInstanceRendererComponent>()
             );
 
+		//GenerateRadius(new Vector3(100, 50, 100), 2);
 		GenerateRadius(Vector3.zero, 2);
 	}
 
@@ -69,6 +70,7 @@ public class MapManager
 
 	void BlockStage(Vector3 position)
 	{
+		Debug.Log("BlockStage: "+position);
 		MapSquare mapSquare = map[(float3)position];
 		if(mapSquare.stage != MapSquare.Stages.CREATE) return;
 
@@ -131,12 +133,12 @@ public class MapManager
 	}
 
 	delegate void GenerationStage(Vector3 position);
-	void PositionsInSpiral(Vector3 center, int radius, GenerationStage delegateOperation)
+	void PositionsInSpiral(Vector3 center, int radius, GenerationStage ExecuteStage)
 	{
 		Vector3 position = center;
 
 		//	Generate center block
-		delegateOperation(position);
+		ExecuteStage(position);
 
 		radius-=1;//DEBUG
 
@@ -147,12 +149,12 @@ public class MapManager
 			for(int r = 0; r < increment; r++)
 			{
 				position += Vector3.right * chunkSize;
-				delegateOperation(position);
+				ExecuteStage(position);
 			}
 			for(int b = 0; b < increment; b++)
 			{
 				position += Vector3.back * chunkSize;
-				delegateOperation(position);
+				ExecuteStage(position);
 			}
 
 			increment++;
@@ -161,12 +163,12 @@ public class MapManager
 			for(int l = 0; l < increment; l++)
 			{
 				position += Vector3.left * chunkSize;
-				delegateOperation(position);
+				ExecuteStage(position);
 			}
 			for(int f = 0; f < increment; f++)
 			{
 				position += Vector3.forward * chunkSize;
-				delegateOperation(position);
+				ExecuteStage(position);
 			}
 
 			increment++;
@@ -175,7 +177,7 @@ public class MapManager
 		for(int r = 0; r < increment - 1; r++)
 		{
 			position += Vector3.right * chunkSize;
-		delegateOperation(position);
+		ExecuteStage(position);
 		}
 	}
 }

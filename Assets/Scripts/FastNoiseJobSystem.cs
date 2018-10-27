@@ -112,7 +112,7 @@ class FastNoiseJobSystem
 		public NativeArray<float> heightMap;
 
         [ReadOnly] public float3 offset;
-        [ReadOnly] public int matrixSize;
+        [ReadOnly] public int chunkSize;
         [ReadOnly] public int seed;
         [ReadOnly] public float frequency;
         [ReadOnly] public JobUtil util;
@@ -120,15 +120,19 @@ class FastNoiseJobSystem
         //  Fill flattened 2D array with noise matrix
         public void Execute(int i)
         {
-            float3 position = util.Unflatten2D(i, matrixSize) + offset;
+            float3 position = util.Unflatten2D(i, chunkSize) + offset;
+
+            if(position.y == 50) Debug.Log(util.Unflatten2D(i, chunkSize)+" + "+offset+" = "+position);
 
 			heightMap[i] = util.To01(GetSimplex(position.x, position.z, seed, frequency));
         }
     }
 
-    public float[] GetSimplexMatrix(float3 chunkPosition, int matrixSize, int seed, float frequency)
+    public float[] GetSimplexMatrix(float3 chunkPosition, int chunkSize, int seed, float frequency)
     {
-        int arrayLength = (int)math.pow(matrixSize, 2);
+		Debug.Log("GetNoise: "+chunkPosition);
+
+        int arrayLength = (int)math.pow(chunkSize, 2);
 
         //  Native and normal array
         var heightMap = new NativeArray<float>(arrayLength, Allocator.TempJob);
@@ -138,7 +142,7 @@ class FastNoiseJobSystem
         {
             heightMap = heightMap,
 			offset = chunkPosition,
-			matrixSize = matrixSize,
+			chunkSize = chunkSize,
             seed = seed,
             frequency = frequency,
 			util = new JobUtil()

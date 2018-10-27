@@ -29,8 +29,8 @@ public struct JobUtil
     }
     public float3 Unflatten2D(int index, int size)
     {
-        int x = index / size;
-        int z = index % size;
+        int x = index % size;
+        int z = index / size;
 
         return new float3(x, 0, z);
     }
@@ -90,8 +90,8 @@ public static class Util
     }
     public static float3 Unflatten2D(int index, int size)
     {
-        int x = index / size;
-        int z = index % size;
+        int x = index % size;
+        int z = index / size;
 
         return new float3(x, 0, z);
     }
