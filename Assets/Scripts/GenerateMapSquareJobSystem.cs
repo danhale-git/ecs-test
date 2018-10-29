@@ -2,9 +2,11 @@
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Burst;
 
 class GenerateMapSquareJobSystem
 {
+	[BurstCompile]
 	struct GenerateJob : IJobParallelFor
 	{
 		public NativeArray<int> blocks;

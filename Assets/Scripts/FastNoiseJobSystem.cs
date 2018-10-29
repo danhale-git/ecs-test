@@ -2,30 +2,62 @@
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Burst;
 
 class FastNoiseJobSystem
 {
+    [BurstCompile]
     struct SimplexJob : IJobParallelFor
     {
         //  Copied from FastNoise.cs
         #region Noise
-        const int X_PRIME = 1619;
-	    const int Y_PRIME = 31337;
+        
+        #endregion
+        
+		public NativeArray<float> heightMap;
 
-        static readonly Float2[] GRAD_2D = {
-		new Float2(-1,-1), new Float2( 1,-1), new Float2(-1, 1), new Float2( 1, 1),
-		new Float2( 0,-1), new Float2(-1, 0), new Float2( 0, 1), new Float2( 1, 0),
-	    };
+        [ReadOnly] public float3 offset;
+        [ReadOnly] public int chunkSize;
+        [ReadOnly] public int seed;
+        [ReadOnly] public float frequency;
+        [ReadOnly] public JobUtil util;
+        [ReadOnly] public Simplex noise;
 
-        private struct Float2
+        //  Fill flattened 2D array with noise matrix
+        public void Execute(int i)
         {
-            public readonly float x, y;
-            public Float2(float x, float y)
-            {
-                this.x = x;
-                this.y = y;
-            }
+            float3 position = util.Unflatten2D(i, chunkSize) + offset;
+
+			heightMap[i] = util.To01(noise.GetSimplex(position.x, position.z, seed, frequency));
         }
+    }
+
+    struct Simplex
+    {
+        NativeArray<float2> GRAD_2D;
+
+        int X_PRIME;
+	    int Y_PRIME;
+
+        public Simplex(byte param)
+        {
+            GRAD_2D = new NativeArray<float2>(8, Allocator.TempJob);
+            GRAD_2D[0] = new float2(-1,-1); 
+            GRAD_2D[1] = new float2( 1,-1); 
+            GRAD_2D[2] = new float2(-1, 1); 
+            GRAD_2D[3] = new float2( 1, 1);
+            GRAD_2D[4] = new float2( 0,-1); 
+            GRAD_2D[5] = new float2(-1, 0); 
+            GRAD_2D[6] = new float2( 0, 1); 
+            GRAD_2D[7] = new float2( 1, 0);
+
+            X_PRIME = 1619;
+            Y_PRIME = 31337;
+        }
+        public void Dispose()
+        {
+            GRAD_2D.Dispose();
+        }  
 
         int FastFloor(float f) { return (f >= 0 ? (int)f : (int)f - 1); }
 
@@ -38,12 +70,12 @@ class FastNoiseJobSystem
             hash = hash * hash * hash * 60493;
             hash = (hash >> 13) ^ hash;
 
-            Float2 g = GRAD_2D[hash & 7];
+            float2 g = GRAD_2D[hash & 7];
 
             return xd * g.x + yd * g.y;
         }
             
-        float GetSimplex(float x, float y, int m_seed, float m_frequency)
+        public float GetSimplex(float x, float y, int m_seed, float m_frequency)
         {
             return SingleSimplex(m_seed, x * m_frequency, y * m_frequency);
         }
@@ -107,25 +139,6 @@ class FastNoiseJobSystem
 
             return 50 * (n0 + n1 + n2);
         }
-        #endregion
-        
-		public NativeArray<float> heightMap;
-
-        [ReadOnly] public float3 offset;
-        [ReadOnly] public int chunkSize;
-        [ReadOnly] public int seed;
-        [ReadOnly] public float frequency;
-        [ReadOnly] public JobUtil util;
-
-        //  Fill flattened 2D array with noise matrix
-        public void Execute(int i)
-        {
-            float3 position = util.Unflatten2D(i, chunkSize) + offset;
-
-            if(position.y == 50) Debug.Log(util.Unflatten2D(i, chunkSize)+" + "+offset+" = "+position);
-
-			heightMap[i] = util.To01(GetSimplex(position.x, position.z, seed, frequency));
-        }
     }
 
     public float[] GetSimplexMatrix(int batchSize, float3 chunkPosition, int chunkSize, int seed, float frequency)
@@ -143,7 +156,8 @@ class FastNoiseJobSystem
 			chunkSize = chunkSize,
             seed = seed,
             frequency = frequency,
-			util = new JobUtil()
+			util = new JobUtil(),
+            noise = new Simplex(0)
         };
 
         //  Fill native array
@@ -153,6 +167,7 @@ class FastNoiseJobSystem
         //  Copy to normal array and return
 		heightMap.CopyTo(heightMapArray);
         heightMap.Dispose();
+        job.noise.Dispose();
 
 		return heightMapArray;
     }

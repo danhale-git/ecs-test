@@ -2,9 +2,11 @@
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Burst;
 
 class CheckBlockExposureJobSystem
 {
+	[BurstCompile]
 	struct CheckJob : IJobParallelFor
 	{
 		public NativeArray<Faces> exposedFaces;
@@ -23,7 +25,7 @@ class CheckBlockExposureJobSystem
 
 		int FaceExposed(float3 position, float3 direction)
 		{
-			float3 pos = position + direction;
+			int3 pos = (int3)(position + direction);
 
 			if(pos.x == chunkSize) 	return right[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
 			if(pos.x < 0)			return left[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;

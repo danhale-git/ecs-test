@@ -3,9 +3,12 @@
 using Unity.Jobs;
 using Unity.Collections;
 using Unity.Mathematics;
+using Unity.Burst;
 
 class GenerateMeshJobSystem
 {
+	//[BurstCompile]
+	//DisposeSentinal errors
 	struct VertJob : IJobParallelFor
 	{
 		[NativeDisableParallelForRestriction] public NativeArray<float3> vertices;
@@ -20,8 +23,8 @@ class GenerateMeshJobSystem
 		//	Vertices for given side
 		int GetVerts(int side, float3 position, int index)
 		{
-			NativeArray<float3> verts = new NativeArray<float3>(4, Allocator.Temp);
-			verts.CopyFrom(meshGenerator.Vertices(side, position));
+			NativeArray<float3> verts = new NativeArray<float3>(4, Allocator.TempJob);
+			meshGenerator.Vertices(verts, side, position);
 
 			for(int v = 0; v < 4; v++)
 				vertices[index+v] =  verts[v];
@@ -33,8 +36,8 @@ class GenerateMeshJobSystem
 		//	Triangles are always the same set, offset to vertex index
 		int GetTris(int index, int vertIndex)
 		{
-			NativeArray<int> tris = new NativeArray<int>(6, Allocator.Temp);
-			tris.CopyFrom(meshGenerator.Triangles(vertIndex));
+			NativeArray<int> tris = new NativeArray<int>(6, Allocator.TempJob);
+			meshGenerator.Triangles(tris, vertIndex);
 
 			for(int t = 0; t < 6; t++)
 				triangles[index+t] =  tris[t];
@@ -105,7 +108,7 @@ class GenerateMeshJobSystem
 		float3 v6;
 		float3 v7;
 
-		public MeshGenerator(byte constParam)
+		public MeshGenerator(byte param)
 		{
 			v0 = new float3( 	-0.5f, -0.5f,	 0.5f );	//	left bottom front
 			v2 = new float3( 	 0.5f, -0.5f,	-0.5f );	//	right bottom back
@@ -117,27 +120,41 @@ class GenerateMeshJobSystem
 			v7 = new float3( 	-0.5f,  0.5f,	-0.5f );	//	left top back
 		}
 
-		public enum FacesEnum { RIGHT, LEFT, UP, DOWN, FORWARD, BACK };
+		void BuildVertArray(NativeArray<float3> array, float3 a, float3 b, float3 c, float3 d)
+		{
+			array[0] = a;
+			array[1] = b;
+			array[2] = c;
+			array[3] = d;
+		}
 
+		void BuildTriArray(NativeArray<int> array, int a, int b, int c, int d, int e, int f)
+		{
+			array[0] = a;
+			array[1] = b;
+			array[2] = c;
+			array[3] = d;
+			array[4] = e;
+			array[5] = f;
+		}
 		
-		public float3[] Vertices(int faceInt, float3 offset)
+		public void Vertices(NativeArray<float3> array, int faceInt, float3 offset)
 		{	
-			FacesEnum face = (FacesEnum)faceInt;
-			switch(face)
+			switch(faceInt)
 			{
-				case FacesEnum.RIGHT: 	return new float3[] {v5+offset, v6+offset, v2+offset, v1+offset};
-				case FacesEnum.LEFT: 	return new float3[] {v7+offset, v4+offset, v0+offset, v3+offset};
-				case FacesEnum.UP: 		return new float3[] {v7+offset, v6+offset, v5+offset, v4+offset};
-				case FacesEnum.DOWN: 	return new float3[] {v0+offset, v1+offset, v2+offset, v3+offset};
-				case FacesEnum.FORWARD: return new float3[] {v4+offset, v5+offset, v1+offset, v0+offset};
-				case FacesEnum.BACK: 	return new float3[] {v6+offset, v7+offset, v3+offset, v2+offset};
-				default: 				return null;
+				case 0: 	BuildVertArray(array, v5+offset, v6+offset, v2+offset, v1+offset); break;
+				case 1: 	BuildVertArray(array, v7+offset, v4+offset, v0+offset, v3+offset); break;
+				case 2: 		BuildVertArray(array, v7+offset, v6+offset, v5+offset, v4+offset); break;
+				case 3: 	BuildVertArray(array, v0+offset, v1+offset, v2+offset, v3+offset); break;
+				case 4:	BuildVertArray(array, v4+offset, v5+offset, v1+offset, v0+offset); break;
+				case 5: 	BuildVertArray(array, v6+offset, v7+offset, v3+offset, v2+offset); break;
+				default: 				BuildVertArray(array, float3.zero, float3.zero, float3.zero, float3.zero); break;
 			}		
 		}
 
-		public int[] Triangles(int offset)
+		public void Triangles(NativeArray<int> array, int offset)
 		{
-			return new int[] {3+offset, 1+offset, 0+offset, 3+offset, 2+offset, 1+offset};
+			BuildTriArray(array, 3+offset, 1+offset, 0+offset, 3+offset, 2+offset, 1+offset);
 		}
 	}
 
