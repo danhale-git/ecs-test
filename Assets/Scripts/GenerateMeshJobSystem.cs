@@ -138,17 +138,19 @@ class GenerateMeshJobSystem
 			array[5] = f;
 		}
 		
+		//	TODO build arrays only once, store in job as struct of arrays (use fancy to-array thing).
+		//	Just reference this class in GetMesh() to build that struct
 		public void Vertices(NativeArray<float3> array, int faceInt, float3 offset)
 		{	
 			switch(faceInt)
 			{
 				case 0: 	BuildVertArray(array, v5+offset, v6+offset, v2+offset, v1+offset); break;
 				case 1: 	BuildVertArray(array, v7+offset, v4+offset, v0+offset, v3+offset); break;
-				case 2: 		BuildVertArray(array, v7+offset, v6+offset, v5+offset, v4+offset); break;
+				case 2: 	BuildVertArray(array, v7+offset, v6+offset, v5+offset, v4+offset); break;
 				case 3: 	BuildVertArray(array, v0+offset, v1+offset, v2+offset, v3+offset); break;
-				case 4:	BuildVertArray(array, v4+offset, v5+offset, v1+offset, v0+offset); break;
+				case 4:		BuildVertArray(array, v4+offset, v5+offset, v1+offset, v0+offset); break;
 				case 5: 	BuildVertArray(array, v6+offset, v7+offset, v3+offset, v2+offset); break;
-				default: 				BuildVertArray(array, float3.zero, float3.zero, float3.zero, float3.zero); break;
+				default: 	BuildVertArray(array, float3.zero, float3.zero, float3.zero, float3.zero); break;
 			}		
 		}
 

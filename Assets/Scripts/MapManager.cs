@@ -18,7 +18,7 @@ public class MapManager : ComponentSystem
 
 	//	Settings
 	public static int chunkSize = 8;
-	public static int viewDistance = 4;
+	public static int viewDistance = 8;
 	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
 
 	//	Entities
@@ -43,7 +43,7 @@ public class MapManager : ComponentSystem
 		//  Get entity manager
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
-		//	Job Systems
+		//	Create job systems
         terrain = new FastNoiseJobSystem();
 		checkBlockExposure = new CheckBlockExposureJobSystem();
         meshGenerator = new GenerateMeshJobSystem();
@@ -58,6 +58,7 @@ public class MapManager : ComponentSystem
 		GenerateRadius(Vector3.zero, 2);
 	}
 
+	//	Generate chunks on timer expire
 	float timer = 0;
 	protected override void OnUpdate()
 	{
@@ -70,15 +71,20 @@ public class MapManager : ComponentSystem
 		}
 	}
 
+	//	Generate chunks
 	public void GenerateRadius(Vector3 center, int radius)
 	{
 		center = new Vector3(center.x, 0, center.z);
-		PositionsInSpiral(center, radius+1, CreateStage);
+		//	Create chunk instance
+		PositionsInSpiral(center, radius+1, InstanceStage);
+		//	Generate blocks 
 		PositionsInSpiral(center, radius+1, BlockStage);
+		//	Create Mesh
 		PositionsInSpiral(center, radius, DrawStage);
 	}
 
-	void CreateStage(Vector3 position)
+	//	Create MapSquare instances
+	void InstanceStage(Vector3 position)
 	{
 		float3 pos = position;
 		if(map.ContainsKey(pos)) return;
