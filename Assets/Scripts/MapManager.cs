@@ -16,6 +16,8 @@ public class MapManager : ComponentSystem
 	//	DEBUG
 	PlayerController player;
 
+	int batchSize = 128;
+
 	//	Settings
 	public static int chunkSize = 8;
 	public static int viewDistance = 8;
@@ -106,7 +108,7 @@ public class MapManager : ComponentSystem
         for(int i = 0; i < noise.Length; i++)
             heightMap[i] = (int)(noise[i] * chunkSize);
 
-		mapSquare.blocks = blockGenerator.GetBlocks(4, heightMap);
+		mapSquare.blocks = blockGenerator.GetBlocks(batchSize, heightMap);
 		mapSquare.stage = MapSquare.Stages.BLOCKS;
 	}
 
@@ -122,7 +124,7 @@ public class MapManager : ComponentSystem
 		//	Mesh Data
         int faceCount;
         Faces[] exposedFaces = checkBlockExposure.GetExposure(
-			8,
+			batchSize,
 			GetAdjacentSquares(position),
 			mapSquare.blocks,
 			out faceCount);
@@ -131,7 +133,7 @@ public class MapManager : ComponentSystem
         List<int> triangles = new List<int>();
 
 		//	Apply mesh
-        Mesh mesh = meshGenerator.GetMesh(2, exposedFaces, faceCount);
+        Mesh mesh = meshGenerator.GetMesh(batchSize, exposedFaces, faceCount);
 		renderer = new MeshInstanceRenderer();
         renderer.mesh = mesh;
         renderer.material = material;
