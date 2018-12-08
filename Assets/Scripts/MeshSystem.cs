@@ -12,125 +12,115 @@ using UnityEditor;
 [UpdateAfter(typeof(BlockSystem))]
 public class MeshSystem : ComponentSystem
 {
-	//Util util;
 	EntityManager entityManager;
 	ArchetypeChunkEntityType entityType;
 	EntityArchetype meshArchetype;
 
 	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
 
-	ComponentType chunkType;
-	ComponentType blockType;
-	ComponentType meshType;
-
-	ArchetypeChunkComponentType<Chunk> ChunkType;
-	EntityArchetypeQuery newChunkQuery;
+	ArchetypeChunkComponentType<MapChunk> chunkType;
+	EntityArchetypeQuery meshQuery;
 
 	int chunkSize;
 
 	float3 worldStartPosition;
 
-	protected override void OnCreateManager ()
+	protected override void OnCreateManager()
 	{
-		entityManager = World.Active.GetOrCreateManager<EntityManager> ();
+		entityManager = World.Active.GetOrCreateManager<EntityManager>();
+		chunkSize = MapChunkSystem.chunkSize;
 
-		chunkSize = ChunkSystem.chunkSize;
-
+		//	Archetype for mesh entities
 		meshArchetype = entityManager.CreateArchetype
 			(
-			ComponentType.Create<Position> (), 
-			ComponentType.Create<MeshInstanceRendererComponent> ()  
+			ComponentType.Create<Position>(), 
+			ComponentType.Create<MeshInstanceRendererComponent>()  
 			);
 
-		newChunkQuery = new EntityArchetypeQuery
+		//	Chunks with block data and no mesh
+		meshQuery = new EntityArchetypeQuery
 		{
-			Any = Array.Empty<ComponentType> (),
-			None = new ComponentType [] { typeof(MESH) },
-			All = new ComponentType [] { typeof(Chunk), typeof(BLOCKS) }
+			Any = Array.Empty<ComponentType>(),
+			None = new ComponentType[] { typeof(MESH), typeof(MapEdge) },
+			All = new ComponentType[] { typeof(MapChunk), typeof(BLOCKS) }
 		};
 	}
 	
-	protected override void OnUpdate ()
+	protected override void OnUpdate()
 	{
-		entityType = GetArchetypeChunkEntityType ();
-		ChunkType = GetArchetypeChunkComponentType<Chunk> ();
+		entityType = GetArchetypeChunkEntityType();
+		chunkType = GetArchetypeChunkComponentType<MapChunk>();
 
-		NativeArray<ArchetypeChunk> dataChunks = entityManager.CreateArchetypeChunkArray (newChunkQuery, Allocator.TempJob);
-		if (dataChunks.Length == 0)
-		{
-			dataChunks.Dispose ();
-		}
+		NativeArray<ArchetypeChunk> dataChunks = entityManager.CreateArchetypeChunkArray(meshQuery, Allocator.TempJob);
+		if(dataChunks.Length == 0)
+			dataChunks.Dispose();
 		else
-		{
-			ProcessChunks (dataChunks);
-		}
+			ProcessChunks(dataChunks);
 	}
 
 	void ProcessChunks(NativeArray<ArchetypeChunk> dataChunks)
 	{
-		//EntityCommandBuffer eCBuffer = new EntityCommandBuffer (Allocator.Temp);
-		int entitiesLength;
-
-		for (int d = 0; d < dataChunks.Length; d++)
+		for(int d = 0; d < dataChunks.Length; d++)
 		{
-			var dataChunk = dataChunks [d];
-			var entities = dataChunk.GetNativeArray (entityType);
-			var chunks = dataChunk.GetNativeArray (ChunkType);
+			var dataChunk = dataChunks[d];
+			var entities = dataChunk.GetNativeArray(entityType);
+			var chunks = dataChunk.GetNativeArray(chunkType);
 
-			entitiesLength = entities.Length;
-            NativeArray<Entity> entityArray = new NativeArray<Entity> (entitiesLength, Allocator.TempJob);
-            entityArray.CopyFrom (entities);
-            NativeArray<Chunk> chunkArray = new NativeArray<Chunk> (chunks.Length, Allocator.TempJob);
-            chunkArray.CopyFrom (chunks);
+			//	Native arrays much be used as use of entityManager invalidates the 'entities' array
+			int entitiesLength = entities.Length;
+            NativeArray<Entity> entityArray = new NativeArray<Entity>(entitiesLength, Allocator.TempJob);
+            entityArray.CopyFrom(entities);
+            NativeArray<MapChunk> chunkArray = new NativeArray<MapChunk>(chunks.Length, Allocator.TempJob);
+            chunkArray.CopyFrom(chunks);
 
-			for (int e = 0; e < entities.Length; e++)
+			for(int e = 0; e < entities.Length; e++)
 			{
-				var ourChunkEntity = entityArray [e];
-				var ourChunk = chunkArray [e];
-				var chunkWorldPosition = ourChunk.worldPosition;
+				var ourChunkEntity = entityArray[e];
+				var chunkWorldPosition = chunkArray[e].worldPosition;
 
-				DynamicBuffer<Block> blockBuffer = entityManager.GetBuffer<Block> (ourChunkEntity);
-
-				Entity meshEntity = entityManager.CreateEntity (meshArchetype);
-                entityManager.SetComponentData (meshEntity, new Position { Value = chunkWorldPosition });
-
-				//int requiredBlockArraySize = chunkSize * chunkSize * chunkSize;
-
+				//	Check block face exposure
+				Entity[] adjacentChunks = MapChunkSystem.GetAdjacentSquares(chunkWorldPosition);
 				int faceCount;
-				Faces[] facesArray = GetFaces(16, entityManager.GetBuffer<Block> (ourChunkEntity), out faceCount);
-				NativeArray<Faces> faces = new NativeArray<Faces>(facesArray.Length, Allocator.TempJob);
+				Faces[] facesArray = GetFaces(
+					16,
+					adjacentChunks,
+					entityManager.GetBuffer<Block>(ourChunkEntity),
+					out faceCount
+					);
+
+				NativeArray<Faces> faces = new NativeArray<Faces>(facesArray.Length,
+				Allocator.TempJob);
 				faces.CopyFrom(facesArray);
 
 				if(faceCount == 0) return;
 
-				Mesh mesh = GetMesh(16, faces, faceCount);
+				Entity meshEntity = entityManager.CreateEntity(meshArchetype);
+                entityManager.SetComponentData(meshEntity, new Position { Value = chunkWorldPosition });
+
+				Mesh mesh = GetMesh(16, faces, entityManager.GetBuffer<Block>(ourChunkEntity), faceCount);
 				MeshInstanceRenderer renderer = new MeshInstanceRenderer();
         		renderer.mesh = mesh;
         		renderer.material = material;
 
 		        entityManager.AddSharedComponentData(meshEntity, renderer);
 	
-				entityManager.AddComponent (ourChunkEntity, typeof (MESH));
+				entityManager.AddComponent(ourChunkEntity, typeof(MESH));
 
 				faces.Dispose();
 			}
 
-			//eCBuffer.Playback (entityManager);
-			//eCBuffer.Dispose ();
-
 			entityArray.Dispose();
 			chunkArray.Dispose();
-			dataChunks.Dispose ();
+			dataChunks.Dispose();
 		}
 	}
 
-
-	public Faces[] GetFaces(int batchSize, /*int[][] _adjacent,*/ DynamicBuffer<Block> _blocks, out int faceCount)
+	public Faces[] GetFaces(int batchSize, Entity[] adjacentChunks, DynamicBuffer<Block> _blocks, out int faceCount)
 	{
 		var exposedFaces = new NativeArray<Faces>(_blocks.Length, Allocator.TempJob);
 		Faces[] exposedFacesArray = new Faces[exposedFaces.Length];
 
-		/*NativeArray<int>[] adjacent = new NativeArray<int>[] {
+		NativeArray<int>[] adjacent = new NativeArray<int>[] {
 			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
 			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
 			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
@@ -140,7 +130,11 @@ public class MeshSystem : ComponentSystem
 		};
 
 		for(int i = 0; i < 6; i++)
-			adjacent[i].CopyFrom(_adjacent[i]);*/
+		{
+			DynamicBuffer<Block> buffer = entityManager.GetBuffer<Block>(adjacentChunks[i]);
+			for(int b = 0; b < buffer.Length; b++)
+				adjacent[i][b] = buffer[b].blockType;
+		}
 
 		var job = new CheckBlockFacesJob(){
 			exposedFaces = exposedFaces,
@@ -148,20 +142,20 @@ public class MeshSystem : ComponentSystem
 			chunkSize = chunkSize,
 			util = new JobUtil(),
 
-			/*right = adjacent[0],
+			right = adjacent[0],
 			left = adjacent[1],
 			up = adjacent[2],
 			down = adjacent[3],
 			forward = adjacent[4],
-			back = adjacent[5]*/
+			back = adjacent[5]
 			};
 		
 		//  Fill native array
         JobHandle jobHandle = job.Schedule(_blocks.Length, batchSize);
         jobHandle.Complete();
 
-		/*for(int i = 0; i < 6; i++)
-			adjacent[i].Dispose();*/
+		for(int i = 0; i < 6; i++)
+			adjacent[i].Dispose();
 
 		exposedFaces.CopyTo(exposedFacesArray);
 		exposedFaces.Dispose();
@@ -187,17 +181,21 @@ public class MeshSystem : ComponentSystem
 	}
 
 
-	public Mesh GetMesh(int batchSize, NativeArray<Faces> faces, int faceCount)
+	public Mesh GetMesh(int batchSize, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, int faceCount)
 	{
 		//	Determine vertex and triangle arrays using face count
 		NativeArray<float3> vertices = new NativeArray<float3>(faceCount * 4, Allocator.TempJob);
 		NativeArray<int> triangles = new NativeArray<int>(faceCount * 6, Allocator.TempJob);
+		NativeArray<float4> colors = new NativeArray<float4>(faceCount * 4, Allocator.TempJob);
 
 		var job = new GenerateMeshJob()
 		{
 			vertices = vertices,
 			triangles = triangles,
+			colors = colors,
+
 			faces = faces,
+			blocks = blocks,
 
 			util = new JobUtil(),
 			//meshGenerator = new MeshGenerator(0),
@@ -210,10 +208,20 @@ public class MeshSystem : ComponentSystem
 		JobHandle handle = job.Schedule(faces.Length, batchSize);
 		handle.Complete();
 
-		//	Vert (float3) native array to (Vector3) array
+		//	Vert(float3) native array to(Vector3) array
 		Vector3[] verticesArray = new Vector3[vertices.Length];
+		Color[] colorsArray = new Color[colors.Length];
 		for(int i = 0; i < vertices.Length; i++)
+		{
 			verticesArray[i] = vertices[i];
+			colorsArray[i] = new Color
+				(
+					colors[i].x,
+					colors[i].y,
+					colors[i].z,
+					colors[i].w
+				);
+		}
 
 		//	Tri native array to array
 		int[] trianglesArray = new int[triangles.Length];
@@ -221,18 +229,19 @@ public class MeshSystem : ComponentSystem
 		
 		vertices.Dispose();
 		triangles.Dispose();
+		colors.Dispose();
 
-		return MakeMesh(verticesArray, trianglesArray);
+		return MakeMesh(verticesArray, trianglesArray, colorsArray);
 	}
 
-	Mesh MakeMesh(Vector3[] vertices, int[] triangles)
+	Mesh MakeMesh(Vector3[] vertices, int[] triangles, Color[] colors)
 	{
 		Mesh mesh = new Mesh();
 		mesh.vertices = vertices;
 		mesh.SetTriangles(triangles, 0);
+		mesh.colors = colors;
 		mesh.RecalculateNormals();
 		UnityEditor.MeshUtility.Optimize(mesh);
-		//mesh.RecalculateNormals();
 
 		return mesh;
 	}

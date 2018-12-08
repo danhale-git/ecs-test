@@ -16,8 +16,4 @@
 
 		this.faceIndex = faceIndex;
 	}
-	/*public int Count()
-	{
-		return right + left + up + down + forward + back;
-	}*/
 }

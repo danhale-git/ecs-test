@@ -1,11 +1,8 @@
 ﻿using Unity.Entities;
 using Unity.Mathematics;
 
-public struct Chunk : IComponentData
+public struct MapChunk : IComponentData
 {
-	public enum Stages { CREATE, CELL, POI, HEIGHT, BLOCKS, MESH }
-    public Stages stage;
-
 	public float3 worldPosition;
 }
 
@@ -24,3 +21,6 @@ public struct POI : IComponentData { }
 public struct HEIGHT : IComponentData { }
 public struct BLOCKS : IComponentData { }
 public struct MESH : IComponentData { }
+
+public struct MapEdge : IComponentData { }
+

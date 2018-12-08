@@ -4,6 +4,7 @@ using Unity.Jobs;
 using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Burst;
+using Unity.Entities;
 
 //[BurstCompile]
 //DisposeSentinal errors
@@ -11,7 +12,9 @@ struct GenerateMeshJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<float3> vertices;
 	[NativeDisableParallelForRestriction] public NativeArray<int> triangles;
+	[NativeDisableParallelForRestriction] public NativeArray<float4> colors;
 	
+	[ReadOnly] public DynamicBuffer<Block> blocks;
 	[ReadOnly] public NativeArray<Faces> faces;
 
 	//[ReadOnly] public MeshGenerator meshGenerator;
@@ -21,7 +24,7 @@ struct GenerateMeshJob : IJobParallelFor
 	[ReadOnly] public CubeVertices baseVerts;
 
 	//	Vertices for given side
-	int GetVerts(int side, float3 position, int index)
+	void GetVerts(int side, float3 position, int index)
 	{
 		switch(side)
 		{
@@ -69,12 +72,10 @@ struct GenerateMeshJob : IJobParallelFor
 				Debug.Log("bad index!");
 				break;
 		}
-
-		return 4;
 	}
 
 	//	Triangles are always the same set, offset to vertex index
-	int GetTris(int index, int vertIndex)
+	void GetTris(int index, int vertIndex)
 	{
 		triangles[index+0] = 3 + vertIndex; 
 		triangles[index+1] = 1 + vertIndex; 
@@ -82,8 +83,6 @@ struct GenerateMeshJob : IJobParallelFor
 		triangles[index+3] = 3 + vertIndex; 
 		triangles[index+4] = 2 + vertIndex; 
 		triangles[index+5] = 1 + vertIndex;
-
-		return 6;
 	}
 
 	public void Execute(int i)
@@ -144,7 +143,12 @@ struct GenerateMeshJob : IJobParallelFor
 			triIndex += 6;
 			GetVerts(5, pos, vertIndex+vertOffset);
 			vertIndex +=  4;
-		}	
+		}
+
+		for(int v = 0; v < vertIndex; v++)
+		{
+			colors[v+vertOffset] = BlockTypes.color[blocks[i].blockType];
+		}	 
 	}
 }
 
