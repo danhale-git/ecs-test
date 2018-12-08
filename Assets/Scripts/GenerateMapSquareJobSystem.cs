@@ -3,28 +3,11 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Burst;
+using Unity.Entities;
 
 class GenerateMapSquareJobSystem
 {
-	[BurstCompile]
-	struct GenerateJob : IJobParallelFor
-	{
-		public NativeArray<int> blocks;
-
-		[ReadOnly] public NativeArray<int> heightMap;
-		[ReadOnly] public int chunkSize;
-		[ReadOnly] public JobUtil util;
-
-		public void Execute(int i)
-		{
-			//	Get local position in heightmap
-			float3 pos = util.Unflatten(i, chunkSize);
-			int hMapIndex = util.Flatten2D((int)pos.x, (int)pos.z, chunkSize);
-
-			if(pos.y < heightMap[hMapIndex])
-				blocks[i] = 1;
-		}
-	}
+	EndFrameBarrier m_barrier;
 
 	public int[] GetBlocks(int batchSize, int[] _heightMap)
 	{
@@ -39,7 +22,7 @@ class GenerateMapSquareJobSystem
 		var heightMap = new NativeArray<int>(_heightMap.Length, Allocator.TempJob);
 		heightMap.CopyFrom(_heightMap);
 
-		var job = new GenerateJob()
+		var job = new GenerateMapSquareJob()
 		{
 			blocks = blocks,
 			heightMap = heightMap,
