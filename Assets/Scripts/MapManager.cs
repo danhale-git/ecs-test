@@ -16,7 +16,7 @@ public class MapManager : ComponentSystem
 	//	DEBUG
 	PlayerController player;
 
-	int batchSize = 128;
+	int batchSize = 16;
 
 	//	Settings
 	public static int chunkSize = 8;
@@ -84,6 +84,9 @@ public class MapManager : ComponentSystem
 		//	Create Mesh
 		PositionsInSpiral(center, radius, DrawStage);
 	}
+
+
+
 
 	//	Create MapSquare instances
 	void InstanceStage(Vector3 position)
