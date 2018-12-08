@@ -13,12 +13,16 @@ public class Bootstrapper
     static MeshInstanceRenderer renderer;
     static EntityArchetype archetype;
 
-    public static MapManager mapManager;
+    //public static MapManager mapManager;
+    
+    //public static TerrainSystem terrainSystem;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Initialise()
     {
-        mapManager = new MapManager();
+        //mapManager = new MapManager();
+
+        //terrainSystem = new TerrainSystem();
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]

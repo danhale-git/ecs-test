@@ -11,7 +11,7 @@ using Unity.Mathematics;
 using Unity.Collections;
 
 
-public class MapManager : ComponentSystem
+public class MapManager// : ComponentSystem
 {
 	//	DEBUG
 	PlayerController player;
@@ -20,6 +20,7 @@ public class MapManager : ComponentSystem
 
 	//	Settings
 	public static int chunkSize = 8;
+	public static int blockListLength = 0;
 	public static int viewDistance = 8;
 	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
 
@@ -39,6 +40,8 @@ public class MapManager : ComponentSystem
 
 	public MapManager()
 	{
+		blockListLength = (int)math.pow(MapManager.chunkSize, 3);
+
 		//	DEBUG
 		player = GameObject.FindObjectOfType<PlayerController>();
 
@@ -62,7 +65,7 @@ public class MapManager : ComponentSystem
 
 	//	Generate chunks on timer expire
 	float timer = 0;
-	protected override void OnUpdate()
+	/*protected override void OnUpdate()
 	{
 		if(Time.fixedTime - timer > 1)
 		{
@@ -71,7 +74,7 @@ public class MapManager : ComponentSystem
 				Util.VoxelOwner(player.transform.position, chunkSize),
 				viewDistance);
 		}
-	}
+	}*/
 
 	//	Generate chunks
 	public void GenerateRadius(Vector3 center, int radius)

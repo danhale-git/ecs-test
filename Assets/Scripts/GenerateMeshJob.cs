@@ -187,7 +187,7 @@ public struct CubeVertices
 				case 6: return v6;
 				case 7: return v7;
 				default:
-					Debug.Log("bad index!");
+					Debug.Log("bad index!!!!!!!!!!!!!!!!!!!!!!!!!");
 					return v0;
 			}
 		}

@@ -7,8 +7,6 @@ using Unity.Entities;
 
 class GenerateMapSquareJobSystem
 {
-	EndFrameBarrier m_barrier;
-
 	public int[] GetBlocks(int batchSize, int[] _heightMap)
 	{
 		int chunkSize = MapManager.chunkSize;
