@@ -15,7 +15,7 @@ public class MapChunkSystem : ComponentSystem
 	//	All chunks
 	public static Dictionary<float3, Entity> map;
 
-	public static int chunkSize = 16;
+	public static int chunkSize = 8;
 	public static int viewDistance = 8;
 
 	protected override void OnCreateManager()

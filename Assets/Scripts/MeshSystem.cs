@@ -140,7 +140,7 @@ public class MeshSystem : ComponentSystem
 				adjacent[i][b] = buffer[b].blockType;
 		}
 
-		var job = new CheckBlockFacesJob(){
+		var job = new BlockFacesJob(){
 			exposedFaces = exposedFaces,
 			blocks = _blocks,
 			chunkSize = chunkSize,
@@ -185,7 +185,7 @@ public class MeshSystem : ComponentSystem
 		NativeArray<int> triangles = new NativeArray<int>(faceCount * 6, Allocator.TempJob);
 		NativeArray<float4> colors = new NativeArray<float4>(faceCount * 4, Allocator.TempJob);
 
-		var job = new GenerateMeshJob()
+		var job = new MeshJob()
 		{
 			vertices = vertices,
 			triangles = triangles,

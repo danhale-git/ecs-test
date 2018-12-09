@@ -6,7 +6,7 @@ using Unity.Burst;
 using Unity.Entities;
 
 [BurstCompile]
-struct CheckBlockFacesJob : IJobParallelFor
+struct BlockFacesJob : IJobParallelFor
 {
 	public NativeArray<Faces> exposedFaces;
 

@@ -121,7 +121,7 @@ public class BlockSystem : ComponentSystem
 
 		var blocks = new NativeArray<Block>(blockArrayLength, Allocator.TempJob);
 
-		var job = new GenerateBlocksJob()
+		var job = new BlocksJob()
 		{
 			blocks = blocks,
 			heightMap = heightMap,

@@ -6,7 +6,7 @@ using Unity.Burst;
 using Unity.Entities;
 
 [BurstCompile]
-struct GenerateBlocksJob : IJobParallelFor
+struct BlocksJob : IJobParallelFor
 {
 	public NativeArray<Block> blocks;
 

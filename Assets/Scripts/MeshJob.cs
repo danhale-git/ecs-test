@@ -8,7 +8,7 @@ using Unity.Entities;
 
 //[BurstCompile]
 //DisposeSentinal errors
-struct GenerateMeshJob : IJobParallelFor
+struct MeshJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<float3> vertices;
 	[NativeDisableParallelForRestriction] public NativeArray<int> triangles;
@@ -64,13 +64,7 @@ struct GenerateMeshJob : IJobParallelFor
 				vertices[index+2] = baseVerts[3]+position;
 				vertices[index+3] = baseVerts[2]+position;
 				break;
-			default:
-				vertices[index+0] = float3.zero;
-				vertices[index+1] = float3.zero;
-				vertices[index+2] = float3.zero;
-				vertices[index+3] = float3.zero;
-				Debug.Log("bad index!");
-				break;
+			default: throw new System.ArgumentOutOfRangeException("Index out of range 5: " + side);
 		}
 	}
 
