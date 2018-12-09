@@ -2,7 +2,10 @@
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
+using Unity.Jobs;
+using Unity.Collections;
 
+[UpdateAfter(typeof(MapSquareSystem))]
 public class MapChunkSystem : ComponentSystem
 {
 	PlayerController player;
@@ -10,34 +13,35 @@ public class MapChunkSystem : ComponentSystem
 	EntityManager entityManager;
 
 	//	Chunk data
-	EntityArchetype chunkArchetype;
+	EntityArchetype mapChunkArchetype;
+	EntityArchetype mapSquareArchetype;
 
 	//	All chunks
-	public static Dictionary<float3, Entity> map;
+	public static Dictionary<float3, Entity> chunks;
 
-	public static int chunkSize = 8;
-	public static int viewDistance = 8;
+	static int chunkSize;
+	int viewDistance;
 
 	protected override void OnCreateManager()
 	{
+		chunkSize = TerrainSettings.chunkSize;
+		viewDistance = TerrainSettings.viewDistance;
+
 		player = GameObject.FindObjectOfType<PlayerController>();
 
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
-		map = new Dictionary<float3, Entity>();
+		chunks = new Dictionary<float3, Entity>();
 
-		chunkArchetype = entityManager.CreateArchetype(
+		mapChunkArchetype = entityManager.CreateArchetype(
 				ComponentType.Create<MapChunk>(),
 				ComponentType.Create<Block>(),
 				ComponentType.Create<CREATE>()
 			);
-
-		//	Initial generation
-		GenerateRadius(Vector3.zero, viewDistance);
 	}
 
 
 	//	Continuous generation
-	float timer = 0;
+	float timer = 1.5f;
 	protected override void OnUpdate()
 	{
 		//	Timer
@@ -62,26 +66,24 @@ public class MapChunkSystem : ComponentSystem
 			for(int z = -radius; z <= radius; z++)
 			{
 				//	Chunk is at the edge of the map
-				bool edge = false;
-				if( x == -radius ||
-					x ==  radius ||
-					z == -radius ||
-					z ==  radius    )
-					edge = true;
+				bool edge=( x == -radius ||
+							x ==  radius ||
+							z == -radius ||
+							z ==  radius   );
 
 				Vector3 offset = new Vector3(x*chunkSize, 0, z*chunkSize);
-				CreateNewChunk(center + offset, edge);
+				CreateChunk(center + offset, edge);
 			}
 
 	}
 
 	//	Create one chunk
-	private void CreateNewChunk(Vector3 position, bool edge)
+	void CreateChunk(Vector3 position, bool edge)
 	{
 		Entity chunkEntity;
 
 		//	Chunk already exists
-		if(map.TryGetValue(position, out chunkEntity))
+		if(chunks.TryGetValue(position, out chunkEntity))
 		{
 			//	Chunk was at the edge but isn't now
 			if(!edge && entityManager.HasComponent(chunkEntity, typeof(MapEdge)) )
@@ -92,15 +94,17 @@ public class MapChunkSystem : ComponentSystem
 			return;
 		}
 
+		CustomDebugTools.WireCubeChunk(position, chunkSize - 1, new Color(1,1,1,0.2f), false);
+
 		//	Create chunk entity
-		chunkEntity = entityManager.CreateEntity(chunkArchetype);
+		chunkEntity = entityManager.CreateEntity(mapChunkArchetype);
 		MapChunk chunkComponent = new MapChunk { worldPosition = position };
 		entityManager.SetComponentData(chunkEntity, chunkComponent);
 
 		//	Chunk is at map edge
 		if(edge) entityManager.AddComponent(chunkEntity, typeof(MapEdge));
 
-		map.Add(position, chunkEntity);
+		chunks.Add(position, chunkEntity);
 	}
 
 	public static Entity[] GetAdjacentSquares(Vector3 position)
@@ -108,16 +112,16 @@ public class MapChunkSystem : ComponentSystem
 		float3 pos = position;
 		Entity[] adjacent = new Entity[6];
 		
-		adjacent[0] = map[pos +(new float3( 1,	0, 0) * chunkSize)];
-		adjacent[1] = map[pos +(new float3(-1,	0, 0) * chunkSize)];
+		adjacent[0] = chunks[pos +(new float3( 1,	0, 0) * chunkSize)];
+		adjacent[1] = chunks[pos +(new float3(-1,	0, 0) * chunkSize)];
 
 		//adjacent[2] = map[pos +(new float3( 0,	1, 0) * chunkSize)];
 		//adjacent[3] = map[pos +(new float3( 0,-1, 0) * chunkSize)];
-		adjacent[2] = map[pos +(new float3( 0,	0, 0) * chunkSize)];
-		adjacent[3] = map[pos +(new float3( 0, 0, 0) * chunkSize)];
+		adjacent[2] = chunks[pos +(new float3( 0,	0, 0) * chunkSize)];
+		adjacent[3] = chunks[pos +(new float3( 0, 0, 0) * chunkSize)];
 
-		adjacent[4] = map[pos +(new float3( 0,	0, 1) * chunkSize)];
-		adjacent[5] = map[pos +(new float3( 0,	0,-1) * chunkSize)];
+		adjacent[4] = chunks[pos +(new float3( 0,	0, 1) * chunkSize)];
+		adjacent[5] = chunks[pos +(new float3( 0,	0,-1) * chunkSize)];
 
 		return adjacent;
 	}

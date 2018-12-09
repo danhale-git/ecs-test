@@ -18,7 +18,7 @@ public class BlockSystem : ComponentSystem
 	protected override void OnCreateManager()
 	{
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
-		chunkSize = MapChunkSystem.chunkSize;
+		chunkSize = TerrainSettings.chunkSize;
 
 		//	Chunks without block data
 		newChunkQuery = new EntityArchetypeQuery
@@ -97,7 +97,7 @@ public class BlockSystem : ComponentSystem
 
         var job = new FastNoiseJob()
         {
-            heightMap = heightMap,
+            noiseMap = heightMap,
 			offset = chunkPosition,
 			chunkSize = chunkSize,
             seed = seed,

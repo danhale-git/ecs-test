@@ -141,7 +141,7 @@ struct MeshJob : IJobParallelFor
 
 		for(int v = 0; v < vertIndex; v++)
 		{
-			colors[v+vertOffset] = BlockTypes.color[blocks[i].blockType];
+			colors[v+vertOffset] = BlockTypes.color[blocks[i].type];
 		}	 
 	}
 }

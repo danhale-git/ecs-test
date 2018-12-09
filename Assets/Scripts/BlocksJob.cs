@@ -26,8 +26,8 @@ struct BlocksJob : IJobParallelFor
 
 		blocks[i] = new Block
 		{
-				blockIndex = i, 
-				blockType = type,
+				index = i, 
+				type = type,
 				localPosition = pos,
 		};
 	}

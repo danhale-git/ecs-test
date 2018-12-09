@@ -12,7 +12,7 @@ struct FastNoiseJob : IJobParallelFor
     
     #endregion
     
-    public NativeArray<float> heightMap;
+    public NativeArray<float> noiseMap;
 
     [ReadOnly] public float3 offset;
     [ReadOnly] public int chunkSize;
@@ -26,7 +26,7 @@ struct FastNoiseJob : IJobParallelFor
     {
         float3 position = util.Unflatten2D(i, chunkSize) + offset;
 
-        heightMap[i] = util.To01(noise.GetSimplex(position.x, position.z, seed, frequency));
+        noiseMap[i] = util.To01(noise.GetSimplex(position.x, position.z, seed, frequency));
     }
 }
 

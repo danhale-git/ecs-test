@@ -28,7 +28,7 @@ public class MeshSystem : ComponentSystem
 	protected override void OnCreateManager()
 	{
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
-		chunkSize = MapChunkSystem.chunkSize;
+		chunkSize = TerrainSettings.chunkSize;
 
 		//	Archetype for mesh entities
 		meshArchetype = entityManager.CreateArchetype
@@ -137,7 +137,7 @@ public class MeshSystem : ComponentSystem
 		{
 			DynamicBuffer<Block> buffer = entityManager.GetBuffer<Block>(adjacentChunks[i]);
 			for(int b = 0; b < buffer.Length; b++)
-				adjacent[i][b] = buffer[b].blockType;
+				adjacent[i][b] = buffer[b].type;
 		}
 
 		var job = new BlockFacesJob(){

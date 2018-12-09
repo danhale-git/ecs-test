@@ -32,7 +32,7 @@ struct BlockFacesJob : IJobParallelFor
 		if(pos.z == chunkSize) 	return forward[util.WrapAndFlatten(pos, chunkSize)] == 0 ? 1 : 0;
 		if(pos.z < 0)			return back[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
 
-		return blocks[util.Flatten(pos, chunkSize)].blockType == 0 ? 1 : 0;
+		return blocks[util.Flatten(pos, chunkSize)].type == 0 ? 1 : 0;
 	}
 
 	public void Execute(int i)
@@ -42,7 +42,7 @@ struct BlockFacesJob : IJobParallelFor
 
 		//	Air blocks can't be exposed
 		//	TODO is this right? Maybe prevent drawing air block in mesh code instead
-		if(blocks[i].blockType == 0) return;
+		if(blocks[i].type == 0) return;
 
 		int right, left, up, down, forward, back;
 
