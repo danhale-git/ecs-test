@@ -5,36 +5,36 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using MyComponents;
 
-[UpdateAfter(typeof(MapChunkSystem))]
+[UpdateAfter(typeof(MapCubeSystem))]
 public class BlockSystem : ComponentSystem
 {
 	EntityManager entityManager;
-	int chunkSize;
+	int cubeSize;
 
 	ArchetypeChunkEntityType entityType;
-	ArchetypeChunkComponentType<MapChunk> chunkType;
-	EntityArchetypeQuery mapChunkQuery;
+	ArchetypeChunkComponentType<MapCube> cubeType;
+	EntityArchetypeQuery cubeQuery;
 
 	protected override void OnCreateManager()
 	{
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
-		chunkSize = TerrainSettings.chunkSize;
+		cubeSize = TerrainSettings.cubeSize;
 
 		//	Chunks without block data
-		mapChunkQuery = new EntityArchetypeQuery
+		cubeQuery = new EntityArchetypeQuery
 		{
 			Any = Array.Empty<ComponentType>(),
-			None = new ComponentType [] { typeof(BLOCKS) },
-			All = new ComponentType [] { typeof(MapChunk), typeof(CREATE) }
+			None = Array.Empty<ComponentType>(),
+			All = new ComponentType [] { typeof(MapCube), typeof(Tags.GenerateBlocks) }
 		};
 	}
 	
 	protected override void OnUpdate()
 	{
 		entityType = GetArchetypeChunkEntityType();
-		chunkType = GetArchetypeChunkComponentType<MapChunk>();
+		cubeType = GetArchetypeChunkComponentType<MapCube>();
 
-		NativeArray<ArchetypeChunk> dataChunks = entityManager.CreateArchetypeChunkArray(mapChunkQuery, Allocator.TempJob);
+		NativeArray<ArchetypeChunk> dataChunks = entityManager.CreateArchetypeChunkArray(cubeQuery, Allocator.TempJob);
 
 		if(dataChunks.Length == 0)
 			dataChunks.Dispose();
@@ -50,19 +50,19 @@ public class BlockSystem : ComponentSystem
 		{
 			var dataChunk = dataChunks[d];
 			var entities = dataChunk.GetNativeArray(entityType);
-			var chunks = dataChunk.GetNativeArray(chunkType);
+			var cubes = dataChunk.GetNativeArray(cubeType);
 
 			for(int e = 0; e < entities.Length; e++)
 			{
-				var chunkEntity = entities[e];
-				var chunkWorldPosition = chunks[e].worldPosition;
+				var cubeEntity = entities[e];
+				var cubeWorldPosition = cubes[e].worldPosition;
 
 				//	Generate height map
-				NativeArray<float> noiseMap = GetSimplexMatrix(chunkWorldPosition, chunkSize, 5678, 0.05f);
+				NativeArray<float> noiseMap = GetSimplexMatrix(cubeWorldPosition, cubeSize, 5678, 0.05f);
 				NativeArray<int> heightMap = new NativeArray<int>(noiseMap.Length, Allocator.Temp);
 
 				for(int i = 0; i < noiseMap.Length; i++)
-				    heightMap[i] = (int)(noiseMap[i] * chunkSize);
+				    heightMap[i] = (int)(noiseMap[i] * cubeSize);
 
 				noiseMap.Dispose();
 
@@ -71,13 +71,13 @@ public class BlockSystem : ComponentSystem
 				heightMap.Dispose();
 
 				//	Block data for this chunk
-				DynamicBuffer<Block> blockBuffer = entityManager.GetBuffer<Block>(chunkEntity);
-				blockBuffer.ResizeUninitialized((int)math.pow(chunkSize, 3));
+				DynamicBuffer<Block> blockBuffer = entityManager.GetBuffer<Block>(cubeEntity);
+				blockBuffer.ResizeUninitialized((int)math.pow(cubeSize, 3));
 
 				for(int b = 0; b < blocks.Length; b++)
 					blockBuffer [b] = blocks[b];
 
-				commandBuffer.AddComponent(chunkEntity, new BLOCKS());
+				commandBuffer.RemoveComponent(cubeEntity, typeof(Tags.GenerateBlocks));
 				
 				blocks.Dispose();
 			}
@@ -117,7 +117,7 @@ public class BlockSystem : ComponentSystem
 
 	public NativeArray<Block> GetBlocks(int batchSize, NativeArray<int> heightMap)
 	{
-		int blockArrayLength = (int)math.pow(chunkSize, 3);
+		int blockArrayLength = (int)math.pow(cubeSize, 3);
 
 		var blocks = new NativeArray<Block>(blockArrayLength, Allocator.TempJob);
 
@@ -125,7 +125,7 @@ public class BlockSystem : ComponentSystem
 		{
 			blocks = blocks,
 			heightMap = heightMap,
-			chunkSize = chunkSize,
+			chunkSize = cubeSize,
 			util = new JobUtil()
 		};
 		

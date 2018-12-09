@@ -19,17 +19,17 @@ public class MeshSystem : ComponentSystem
 
 	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
 
-	ArchetypeChunkComponentType<MapChunk> chunkType;
-	EntityArchetypeQuery meshQuery;
+	ArchetypeChunkComponentType<MapCube> cubeType;
+	EntityArchetypeQuery cubeQuery;
 
-	int chunkSize;
+	int cubeSize;
 
 	float3 worldStartPosition;
 
 	protected override void OnCreateManager()
 	{
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
-		chunkSize = TerrainSettings.chunkSize;
+		cubeSize = TerrainSettings.cubeSize;
 
 		//	Archetype for mesh entities
 		meshArchetype = entityManager.CreateArchetype
@@ -39,20 +39,20 @@ public class MeshSystem : ComponentSystem
 			);
 
 		//	Chunks with block data and no mesh
-		meshQuery = new EntityArchetypeQuery
+		cubeQuery = new EntityArchetypeQuery
 		{
 			Any = Array.Empty<ComponentType>(),
-			None = new ComponentType[] { typeof(MESH), typeof(MyTags.DoNotDraw) },
-			All = new ComponentType[] { typeof(MapChunk), typeof(BLOCKS) }
+			None = Array.Empty<ComponentType>(),
+			All = new ComponentType[] { typeof(MapCube), typeof(Tags.DrawMesh) }
 		};
 	}
 	
 	protected override void OnUpdate()
 	{
 		entityType = GetArchetypeChunkEntityType();
-		chunkType = GetArchetypeChunkComponentType<MapChunk>();
+		cubeType = GetArchetypeChunkComponentType<MapCube>();
 
-		NativeArray<ArchetypeChunk> dataChunks = entityManager.CreateArchetypeChunkArray(meshQuery, Allocator.TempJob);
+		NativeArray<ArchetypeChunk> dataChunks = entityManager.CreateArchetypeChunkArray(cubeQuery, Allocator.TempJob);
 		if(dataChunks.Length == 0)
 			dataChunks.Dispose();
 		else
@@ -65,43 +65,44 @@ public class MeshSystem : ComponentSystem
 		{
 			var dataChunk = dataChunks[d];
 			var entities = dataChunk.GetNativeArray(entityType);
-			var chunks = dataChunk.GetNativeArray(chunkType);
+			var cubes = dataChunk.GetNativeArray(cubeType);
 
 			//	Native arrays much be used as use of entityManager invalidates the 'entities' array
 			int entitiesLength = entities.Length;
             NativeArray<Entity> entityArray = new NativeArray<Entity>(entitiesLength, Allocator.Persistent);
             entityArray.CopyFrom(entities);
-            NativeArray<MapChunk> chunkArray = new NativeArray<MapChunk>(chunks.Length, Allocator.Persistent);
-            chunkArray.CopyFrom(chunks);
+            NativeArray<MapCube> cubeArray = new NativeArray<MapCube>(cubes.Length, Allocator.Persistent);
+            cubeArray.CopyFrom(cubes);
 
 			for(int e = 0; e < entities.Length; e++)
 			{
-				var ourChunkEntity = entityArray[e];
-				var chunkWorldPosition = chunkArray[e].worldPosition;
+				var cubeEntity = entityArray[e];
+				var cubeWorldPosition = cubeArray[e].worldPosition;
 
 				//	Check block face exposure
-				Entity[] adjacentChunks = MapChunkSystem.GetAdjacentSquares(chunkWorldPosition);
+				Entity[] adjacentChunks = MapCubeSystem.GetAdjacentSquares(cubeWorldPosition);
 				int faceCount;
 				NativeArray<Faces> faces = CheckBlockFaces(
 					16,
 					adjacentChunks,
-					entityManager.GetBuffer<Block>(ourChunkEntity),
+					entityManager.GetBuffer<Block>(cubeEntity),
 					out faceCount
 					);
 
 				//	Skip mesh entity if no exposed faces
 				if(faceCount != 0)
 				{
-					Mesh mesh = GetMesh(16, faces, entityManager.GetBuffer<Block>(ourChunkEntity), faceCount);
-					CreateMeshEntity(mesh, chunkWorldPosition);
-					entityManager.AddComponent(ourChunkEntity, typeof(MESH));
+					Mesh mesh = GetMesh(16, faces, entityManager.GetBuffer<Block>(cubeEntity), faceCount);
+					CreateMeshEntity(mesh, cubeWorldPosition);
 				}
+
+				entityManager.RemoveComponent(cubeEntity, typeof(Tags.DrawMesh));
 
 				faces.Dispose();
 			}
 
 			entityArray.Dispose();
-			chunkArray.Dispose();
+			cubeArray.Dispose();
 			dataChunks.Dispose();
 		}
 	}
@@ -134,17 +135,17 @@ public class MeshSystem : ComponentSystem
 		};
 
 		//	Get block types from buffers
-		for(int i = 0; i < 6; i++)
+		/*for(int i = 0; i < 6; i++)
 		{
 			DynamicBuffer<Block> buffer = entityManager.GetBuffer<Block>(adjacentChunks[i]);
 			for(int b = 0; b < buffer.Length; b++)
 				adjacent[i][b] = buffer[b].type;
-		}
+		}*/
 
 		var job = new BlockFacesJob(){
 			exposedFaces = exposedFaces,
 			blocks = _blocks,
-			chunkSize = chunkSize,
+			chunkSize = cubeSize,
 			util = new JobUtil(),
 
 			/*right = adjacent[0],
@@ -196,7 +197,7 @@ public class MeshSystem : ComponentSystem
 			blocks = blocks,
 
 			util = new JobUtil(),
-			chunkSize = chunkSize,
+			chunkSize = cubeSize,
 
 			baseVerts = new CubeVertices(true)
 		};

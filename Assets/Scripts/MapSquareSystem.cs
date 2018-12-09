@@ -15,23 +15,19 @@ public class MapSquareSystem : ComponentSystem
 	//	Square data
 	EntityArchetype mapSquareArchetype;
 
-	//	All squares
-	public static Dictionary<float2, Entity> map;
-
-	int chunkSize;
+	int cubeSize;
 	int viewDistance;
 	int terrainHeight;
 
 	protected override void OnCreateManager()
 	{
-		chunkSize = TerrainSettings.chunkSize;
+		cubeSize = TerrainSettings.cubeSize;
 		viewDistance = TerrainSettings.viewDistance;
 		terrainHeight = TerrainSettings.terrainHeight;
 
 		player = GameObject.FindObjectOfType<PlayerController>();
 
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
-		map = new Dictionary<float2, Entity>();
 
 		mapSquareArchetype = entityManager.CreateArchetype(
 				ComponentType.Create<MapSquare>(),
@@ -51,7 +47,7 @@ public class MapSquareSystem : ComponentSystem
 
 			//	Generate map in radius around player
 			GenerateRadius(
-				Util.VoxelOwner(player.transform.position, chunkSize),
+				Util.VoxelOwner(player.transform.position, cubeSize),
 				viewDistance);
 		}
 	}
@@ -71,7 +67,7 @@ public class MapSquareSystem : ComponentSystem
 							z == -radius ||
 							z ==  radius   );
 
-				Vector3 offset = new Vector3(x*chunkSize, 0, z*chunkSize);
+				Vector3 offset = new Vector3(x*cubeSize, 0, z*cubeSize);
 				CreateSquare(center + offset, edge);
 			}
 
@@ -82,21 +78,8 @@ public class MapSquareSystem : ComponentSystem
 		Entity squareEntity;
 		Vector2 position = new Vector2(pos.x, pos.z);
 
-		//	Square already exists
-		if(map.TryGetValue(position, out squareEntity))
-		{
-			//	Square was at the edge but isn't now
-			if(!edge && entityManager.HasComponent(squareEntity, typeof(MyTags.DoNotDraw)) )
-			{
-				Debug.Log("removing square edge");
-				//	Remove MapEdge tag
-				entityManager.RemoveComponent(squareEntity, typeof(MyTags.DoNotDraw));
-			}
-			return;
-		}
-
 		Color debugColor = edge ? new Color(1f,.2f,.2f,0.2f) : new Color(.2f,1f,.2f,0.2f);
-		CustomDebugTools.WireCubeChunk(pos, chunkSize, debugColor, true);
+		CustomDebugTools.WireCubeChunk(pos, cubeSize, debugColor, true);
 
 		//	Create square entity
 		squareEntity = entityManager.CreateEntity(mapSquareArchetype);
@@ -105,14 +88,14 @@ public class MapSquareSystem : ComponentSystem
 
 		NativeArray<int> heightMap = GetHeightMap(
 			new float3(position.x,0, position.y),
-			chunkSize,
+			cubeSize,
 			5678,
 			0.05f,
 			terrainHeight);
 
 		//	Get heightmap
 		DynamicBuffer<Height> heightBuffer = entityManager.GetBuffer<Height>(squareEntity);
-		heightBuffer.ResizeUninitialized((int)math.pow(chunkSize, 2));
+		heightBuffer.ResizeUninitialized((int)math.pow(cubeSize, 2));
 		
 		//	Fill Dynamic Buffer
 		for(int h = 0; h < heightMap.Length; h++)
@@ -127,9 +110,9 @@ public class MapSquareSystem : ComponentSystem
 
 		heightMap.Dispose();
 
-		if(edge) entityManager.AddComponent(squareEntity, typeof(MyTags.DoNotDraw));
-
-		map.Add(position, squareEntity);
+		if(!edge) entityManager.AddComponent(squareEntity, typeof(Tags.DrawMesh));
+		entityManager.AddComponent(squareEntity, typeof(Tags.GenerateBlocks));
+		entityManager.AddComponent(squareEntity, typeof(Tags.CreateCubes));
 	}
 
 	public NativeArray<int> GetHeightMap(float3 chunkPosition, int chunkSize, int seed, float frequency, int maxHeight)

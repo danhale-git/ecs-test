@@ -21,7 +21,7 @@ public static class CustomDebugTools
 
     public static void WireCubeChunk(Vector3 chunkPosition, int size, Color color, bool _2D = false)
     {
-        int chunkSize2 = TerrainSettings.chunkSize / 2;
+        int chunkSize2 = TerrainSettings.cubeSize / 2;
         Vector3 chunkCenter = new Vector3(chunkPosition.x + chunkSize2, chunkPosition.y + chunkSize2, chunkPosition.z + chunkSize2);
         WireCube(chunkCenter, size, color, _2D);
     }
