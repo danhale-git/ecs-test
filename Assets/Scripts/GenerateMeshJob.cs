@@ -190,9 +190,7 @@ public struct CubeVertices
 				case 5: return v5;
 				case 6: return v6;
 				case 7: return v7;
-				default:
-					Debug.Log("bad index!!!!!!!!!!!!!!!!!!!!!!!!!");
-					return v0;
+				default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + vert);
 			}
 		}
 	}

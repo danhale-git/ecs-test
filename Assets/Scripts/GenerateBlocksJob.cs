@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using Unity.Burst;
 using Unity.Entities;
 
-//[BurstCompile]
+[BurstCompile]
 struct GenerateBlocksJob : IJobParallelFor
 {
 	public NativeArray<Block> blocks;

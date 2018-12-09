@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using Unity.Burst;
 using Unity.Entities;
 
-//[BurstCompile]
+[BurstCompile]
 struct CheckBlockFacesJob : IJobParallelFor
 {
 	public NativeArray<Faces> exposedFaces;

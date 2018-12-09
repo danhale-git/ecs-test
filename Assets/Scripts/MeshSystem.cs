@@ -81,30 +81,20 @@ public class MeshSystem : ComponentSystem
 				//	Check block face exposure
 				Entity[] adjacentChunks = MapChunkSystem.GetAdjacentSquares(chunkWorldPosition);
 				int faceCount;
-				Faces[] facesArray = GetFaces(
+				NativeArray<Faces> faces = CheckBlockFaces(
 					16,
 					adjacentChunks,
 					entityManager.GetBuffer<Block>(ourChunkEntity),
 					out faceCount
 					);
 
-				NativeArray<Faces> faces = new NativeArray<Faces>(facesArray.Length,
-				Allocator.TempJob);
-				faces.CopyFrom(facesArray);
-
-				if(faceCount == 0) return;
-
-				Entity meshEntity = entityManager.CreateEntity(meshArchetype);
-                entityManager.SetComponentData(meshEntity, new Position { Value = chunkWorldPosition });
-
-				Mesh mesh = GetMesh(16, faces, entityManager.GetBuffer<Block>(ourChunkEntity), faceCount);
-				MeshInstanceRenderer renderer = new MeshInstanceRenderer();
-        		renderer.mesh = mesh;
-        		renderer.material = material;
-
-		        entityManager.AddSharedComponentData(meshEntity, renderer);
-	
-				entityManager.AddComponent(ourChunkEntity, typeof(MESH));
+				//	Skip mesh entity if no exposed faces
+				if(faceCount != 0)
+				{
+					Mesh mesh = GetMesh(16, faces, entityManager.GetBuffer<Block>(ourChunkEntity), faceCount);
+					CreateMeshEntity(mesh, chunkWorldPosition);
+					entityManager.AddComponent(ourChunkEntity, typeof(MESH));
+				}
 
 				faces.Dispose();
 			}
@@ -115,11 +105,24 @@ public class MeshSystem : ComponentSystem
 		}
 	}
 
-	public Faces[] GetFaces(int batchSize, Entity[] adjacentChunks, DynamicBuffer<Block> _blocks, out int faceCount)
+	//	Create entity with mesh at position
+	void CreateMeshEntity(Mesh mesh, float3 chunkWorldPosition)
+	{
+		Entity meshEntity = entityManager.CreateEntity(meshArchetype);
+		entityManager.SetComponentData(meshEntity, new Position { Value = chunkWorldPosition });
+		
+		MeshInstanceRenderer renderer = new MeshInstanceRenderer();
+		renderer.mesh = mesh;
+		renderer.material = material;
+
+		entityManager.AddSharedComponentData(meshEntity, renderer);
+	}
+
+	public NativeArray<Faces> CheckBlockFaces(int batchSize, Entity[] adjacentChunks, DynamicBuffer<Block> _blocks, out int faceCount)
 	{
 		var exposedFaces = new NativeArray<Faces>(_blocks.Length, Allocator.TempJob);
-		Faces[] exposedFacesArray = new Faces[exposedFaces.Length];
 
+		//	Block types for all adjacent chunks
 		NativeArray<int>[] adjacent = new NativeArray<int>[] {
 			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
 			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
@@ -129,6 +132,7 @@ public class MeshSystem : ComponentSystem
 			new NativeArray<int>(_blocks.Length, Allocator.TempJob)
 		};
 
+		//	Get block types from buffers
 		for(int i = 0; i < 6; i++)
 		{
 			DynamicBuffer<Block> buffer = entityManager.GetBuffer<Block>(adjacentChunks[i]);
@@ -150,36 +154,29 @@ public class MeshSystem : ComponentSystem
 			back = adjacent[5]
 			};
 		
-		//  Fill native array
         JobHandle jobHandle = job.Schedule(_blocks.Length, batchSize);
         jobHandle.Complete();
 
+		//	Dispose of adjacent block type arrays
 		for(int i = 0; i < 6; i++)
 			adjacent[i].Dispose();
 
-		exposedFaces.CopyTo(exposedFacesArray);
-		exposedFaces.Dispose();
-
-		faceCount = GetExposedBlockIndices(exposedFacesArray);
-
-		return exposedFacesArray;
-	}
-
-	int GetExposedBlockIndices(Faces[] faces)
-	{
-		int faceCount = 0;
-		for(int i = 0; i < faces.Length; i++)
+		//	Count total exposed faces and set face indices	
+		faceCount = 0;
+		for(int i = 0; i < exposedFaces.Length; i++)
 		{
-			int count = faces[i].count;
+			int count = exposedFaces[i].count;
 			if(count > 0)
 			{
-				faces[i].faceIndex = faceCount;
+				Faces blockFaces = exposedFaces[i];
+				blockFaces.faceIndex = faceCount;
+				exposedFaces[i] = blockFaces;
 				faceCount += count;
 			}
 		}
-		return faceCount;
-	}
 
+		return exposedFaces;
+	}
 
 	public Mesh GetMesh(int batchSize, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, int faceCount)
 	{
@@ -198,7 +195,6 @@ public class MeshSystem : ComponentSystem
 			blocks = blocks,
 
 			util = new JobUtil(),
-			//meshGenerator = new MeshGenerator(0),
 			chunkSize = chunkSize,
 
 			baseVerts = new CubeVertices(true)
@@ -208,7 +204,7 @@ public class MeshSystem : ComponentSystem
 		JobHandle handle = job.Schedule(faces.Length, batchSize);
 		handle.Complete();
 
-		//	Vert(float3) native array to(Vector3) array
+		//	Convert vertices and colors from float3/float4 to Vector3/Color
 		Vector3[] verticesArray = new Vector3[vertices.Length];
 		Color[] colorsArray = new Color[colors.Length];
 		for(int i = 0; i < vertices.Length; i++)
