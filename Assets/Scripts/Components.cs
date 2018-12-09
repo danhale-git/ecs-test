@@ -1,6 +1,8 @@
 ﻿using Unity.Entities;
 using Unity.Mathematics;
 
+namespace MyComponents
+{
 //	Map chunk
 
 public struct MapChunk : IComponentData
@@ -38,7 +40,12 @@ public struct Height : IBufferElementData
 	public float2 localPosition;
 }
 
+}
 
+namespace MyTags
+{
 
-public struct MapEdge : IComponentData { }
+public struct DoNotDraw : IComponentData { }
+public struct GenerateBlocks : IComponentData { }
 
+}

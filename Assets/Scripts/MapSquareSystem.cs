@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using Unity.Jobs;
 using Unity.Collections;
+using MyComponents;
 
 public class MapSquareSystem : ComponentSystem
 {
@@ -11,10 +12,10 @@ public class MapSquareSystem : ComponentSystem
 
 	EntityManager entityManager;
 
-	//	Chunk data
+	//	Square data
 	EntityArchetype mapSquareArchetype;
 
-	//	All chunks
+	//	All squares
 	public static Dictionary<float2, Entity> map;
 
 	int chunkSize;
@@ -85,10 +86,11 @@ public class MapSquareSystem : ComponentSystem
 		if(map.TryGetValue(position, out squareEntity))
 		{
 			//	Square was at the edge but isn't now
-			if(!edge && entityManager.HasComponent(squareEntity, typeof(MapEdge)) )
+			if(!edge && entityManager.HasComponent(squareEntity, typeof(MyTags.DoNotDraw)) )
 			{
+				Debug.Log("removing square edge");
 				//	Remove MapEdge tag
-				entityManager.RemoveComponent(squareEntity, typeof(MapEdge));
+				entityManager.RemoveComponent(squareEntity, typeof(MyTags.DoNotDraw));
 			}
 			return;
 		}
@@ -125,6 +127,8 @@ public class MapSquareSystem : ComponentSystem
 
 		heightMap.Dispose();
 
+		if(edge) entityManager.AddComponent(squareEntity, typeof(MyTags.DoNotDraw));
+
 		map.Add(position, squareEntity);
 	}
 
@@ -159,5 +163,4 @@ public class MapSquareSystem : ComponentSystem
 
 		return heightMap;
     }
-
 }

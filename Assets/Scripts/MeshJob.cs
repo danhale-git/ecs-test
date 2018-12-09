@@ -5,6 +5,7 @@ using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Burst;
 using Unity.Entities;
+using MyComponents;
 
 //[BurstCompile]
 //DisposeSentinal errors

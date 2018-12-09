@@ -4,6 +4,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Burst;
 using Unity.Entities;
+using MyComponents;
 
 [BurstCompile]
 struct BlocksJob : IJobParallelFor

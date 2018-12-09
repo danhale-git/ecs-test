@@ -4,18 +4,19 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Burst;
 using Unity.Entities;
+using MyComponents;
 
 [BurstCompile]
 struct BlockFacesJob : IJobParallelFor
 {
 	public NativeArray<Faces> exposedFaces;
 
-	[ReadOnly] public NativeArray<int> right;
+	/*[ReadOnly] public NativeArray<int> right;
 	[ReadOnly] public NativeArray<int> left;
 	[ReadOnly] public NativeArray<int> up;
 	[ReadOnly] public NativeArray<int> down;
 	[ReadOnly] public NativeArray<int> forward;
-	[ReadOnly] public NativeArray<int> back;
+	[ReadOnly] public NativeArray<int> back;*/
 
 	[ReadOnly] public DynamicBuffer<Block> blocks;
 	[ReadOnly] public int chunkSize;
@@ -25,12 +26,12 @@ struct BlockFacesJob : IJobParallelFor
 	{
 		int3 pos = (int3)(position + direction);
 
-		if(pos.x == chunkSize) 	return right[util.WrapAndFlatten(pos, chunkSize)]   == 0 ? 1 : 0;
-		if(pos.x < 0)			return left[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
-		if(pos.y == chunkSize) 	return up[util.WrapAndFlatten(pos, chunkSize)] 	    == 0 ? 1 : 0;
-		if(pos.y < 0)			return down[util.WrapAndFlatten(pos, chunkSize)]	== 0 ? 1 : 0;
-		if(pos.z == chunkSize) 	return forward[util.WrapAndFlatten(pos, chunkSize)] == 0 ? 1 : 0;
-		if(pos.z < 0)			return back[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
+		if(pos.x == chunkSize) 	return 0;//right[util.WrapAndFlatten(pos, chunkSize)]   == 0 ? 1 : 0;
+		if(pos.x < 0)			return 0;//left[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
+		if(pos.y == chunkSize) 	return 0;//up[util.WrapAndFlatten(pos, chunkSize)] 	    == 0 ? 1 : 0;
+		if(pos.y < 0)			return 0;//down[util.WrapAndFlatten(pos, chunkSize)]	== 0 ? 1 : 0;
+		if(pos.z == chunkSize) 	return 0;//forward[util.WrapAndFlatten(pos, chunkSize)] == 0 ? 1 : 0;
+		if(pos.z < 0)			return 0;//back[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
 
 		return blocks[util.Flatten(pos, chunkSize)].type == 0 ? 1 : 0;
 	}

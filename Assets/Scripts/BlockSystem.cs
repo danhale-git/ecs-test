@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using MyComponents;
 
 [UpdateAfter(typeof(MapChunkSystem))]
 public class BlockSystem : ComponentSystem
@@ -12,8 +13,7 @@ public class BlockSystem : ComponentSystem
 
 	ArchetypeChunkEntityType entityType;
 	ArchetypeChunkComponentType<MapChunk> chunkType;
-
-	EntityArchetypeQuery newChunkQuery;
+	EntityArchetypeQuery mapChunkQuery;
 
 	protected override void OnCreateManager()
 	{
@@ -21,7 +21,7 @@ public class BlockSystem : ComponentSystem
 		chunkSize = TerrainSettings.chunkSize;
 
 		//	Chunks without block data
-		newChunkQuery = new EntityArchetypeQuery
+		mapChunkQuery = new EntityArchetypeQuery
 		{
 			Any = Array.Empty<ComponentType>(),
 			None = new ComponentType [] { typeof(BLOCKS) },
@@ -34,7 +34,7 @@ public class BlockSystem : ComponentSystem
 		entityType = GetArchetypeChunkEntityType();
 		chunkType = GetArchetypeChunkComponentType<MapChunk>();
 
-		NativeArray<ArchetypeChunk> dataChunks = entityManager.CreateArchetypeChunkArray(newChunkQuery, Allocator.TempJob);
+		NativeArray<ArchetypeChunk> dataChunks = entityManager.CreateArchetypeChunkArray(mapChunkQuery, Allocator.TempJob);
 
 		if(dataChunks.Length == 0)
 			dataChunks.Dispose();

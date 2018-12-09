@@ -5,6 +5,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
+using MyComponents;
 
 using UnityEngine;
 using UnityEditor;
@@ -41,7 +42,7 @@ public class MeshSystem : ComponentSystem
 		meshQuery = new EntityArchetypeQuery
 		{
 			Any = Array.Empty<ComponentType>(),
-			None = new ComponentType[] { typeof(MESH), typeof(MapEdge) },
+			None = new ComponentType[] { typeof(MESH), typeof(MyTags.DoNotDraw) },
 			All = new ComponentType[] { typeof(MapChunk), typeof(BLOCKS) }
 		};
 	}
@@ -68,9 +69,9 @@ public class MeshSystem : ComponentSystem
 
 			//	Native arrays much be used as use of entityManager invalidates the 'entities' array
 			int entitiesLength = entities.Length;
-            NativeArray<Entity> entityArray = new NativeArray<Entity>(entitiesLength, Allocator.TempJob);
+            NativeArray<Entity> entityArray = new NativeArray<Entity>(entitiesLength, Allocator.Persistent);
             entityArray.CopyFrom(entities);
-            NativeArray<MapChunk> chunkArray = new NativeArray<MapChunk>(chunks.Length, Allocator.TempJob);
+            NativeArray<MapChunk> chunkArray = new NativeArray<MapChunk>(chunks.Length, Allocator.Persistent);
             chunkArray.CopyFrom(chunks);
 
 			for(int e = 0; e < entities.Length; e++)
@@ -146,12 +147,12 @@ public class MeshSystem : ComponentSystem
 			chunkSize = chunkSize,
 			util = new JobUtil(),
 
-			right = adjacent[0],
+			/*right = adjacent[0],
 			left = adjacent[1],
 			up = adjacent[2],
 			down = adjacent[3],
 			forward = adjacent[4],
-			back = adjacent[5]
+			back = adjacent[5]*/
 			};
 		
         JobHandle jobHandle = job.Schedule(_blocks.Length, batchSize);
