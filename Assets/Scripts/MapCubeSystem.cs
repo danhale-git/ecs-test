@@ -114,7 +114,10 @@ public class MapCubeSystem : ComponentSystem
 
 		//	Chunk is at map edge
 		if(!edge)
+		{
+			CustomDebugTools.WireCubeChunk(position, cubeSize/3, new Color(1f, 1f, 1, 1f), true);
 			commandBuffer.AddComponent<Tags.DrawMesh>(new Tags.DrawMesh());
+		}
 		
 		commandBuffer.AddComponent<Tags.GenerateBlocks>(new Tags.GenerateBlocks());
 

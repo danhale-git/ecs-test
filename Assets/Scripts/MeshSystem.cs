@@ -97,6 +97,7 @@ public class MeshSystem : ComponentSystem
 				}
 
 				entityManager.RemoveComponent(cubeEntity, typeof(Tags.DrawMesh));
+				entityManager.AddComponent(cubeEntity, typeof(Tags.MeshDrawn));
 
 				faces.Dispose();
 			}

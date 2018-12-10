@@ -50,4 +50,5 @@ namespace Tags
 	public struct CreateCubes : IComponentData { }
 	public struct GenerateBlocks : IComponentData { }
 	public struct DrawMesh : IComponentData { }
+	public struct MeshDrawn : IComponentData { }
 }
