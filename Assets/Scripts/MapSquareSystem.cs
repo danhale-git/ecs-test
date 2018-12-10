@@ -35,7 +35,11 @@ public class MapSquareSystem : ComponentSystem
 
 		mapSquareArchetype = entityManager.CreateArchetype(
 				ComponentType.Create<MapSquare>(),
-				ComponentType.Create<Height>()
+				ComponentType.Create<Height>(),
+				ComponentType.Create<CubePosition>(),
+				ComponentType.Create<Block>(),
+				ComponentType.Create<CubeCount>()
+
 			);
 
 		//	All map squares
@@ -130,7 +134,6 @@ public class MapSquareSystem : ComponentSystem
 			entityManager.AddComponent(squareEntity, typeof(Tags.CreateCubes));
 		}
 
-		Debug.Log("squares: " + edge);
 		if(!edge && !entityManager.HasComponent<Tags.DrawMesh>(squareEntity) &&
 		   !entityManager.HasComponent<Tags.MeshDrawn>(squareEntity))
 		{
@@ -171,29 +174,6 @@ public class MapSquareSystem : ComponentSystem
 		return heightMap;
     }
 
-	/*//[BurstCompile]
-	struct FindSquareAtPosition : IJobParallelFor
-	{
-		public Entity mapSquare;
-		public int found;
-
-		[ReadOnly] public NativeArray<MapSquare> squares;
-		[ReadOnly] public NativeArray<Entity> entities;
-		[ReadOnly] public float2 position;
-
-		public void Execute(int i)
-		{
-			//if(found == 1) return;
-
-			if((squares[i].worldPosition == position).x && (squares[i].worldPosition == position).y)
-			{
-				mapSquare = entities[i];
-				found = 1;
-				Debug.Log("found "+found);
-			}
-		}
-	}*/
-
 	bool MapSquareAtPosition(float2 position, out Entity mapSquare)
 	{
 		entityType = GetArchetypeChunkEntityType();
@@ -203,7 +183,6 @@ public class MapSquareSystem : ComponentSystem
 
 		if(dataChunks.Length == 0)
 		{
-			Debug.Log("no chunks");
 			dataChunks.Dispose();
 			mapSquare = new Entity();
 			return false;
@@ -231,7 +210,6 @@ public class MapSquareSystem : ComponentSystem
 			}
 		}
 
-		Debug.Log("not found");
 		dataChunks.Dispose();
 		mapSquare = new Entity();
 		return false;

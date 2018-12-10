@@ -11,7 +11,7 @@ namespace MyComponents
 		public Entity parentMapSquare;
 	}
 
-	[InternalBufferCapacity (0)]
+	[InternalBufferCapacity(0)]
 	public struct Block : IBufferElementData
 	{
 		public int index; 
@@ -19,12 +19,16 @@ namespace MyComponents
 		public float3 localPosition;
 		//public float3 parentChunkWorldPosition;
 	}
-	public struct CREATE : IComponentData { }
-	public struct CELL : IComponentData { }
-	public struct POI : IComponentData { }
-	public struct HEIGHT : IComponentData { }
-	public struct BLOCKS : IComponentData { }
-	public struct MESH : IComponentData { }
+
+	[InternalBufferCapacity(100)]
+	public struct CubePosition : IBufferElementData
+	{
+		public int y;
+	}
+	public struct CubeCount : IBufferElementData
+	{
+		public int count;
+	}
 
 	//	Map square
 
@@ -32,7 +36,7 @@ namespace MyComponents
 	{
 		public float2 worldPosition;
 	}
-	[InternalBufferCapacity (0)]
+	[InternalBufferCapacity(0)]
 	public struct Height : IBufferElementData
 	{
 		public int index; 

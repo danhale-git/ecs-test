@@ -35,8 +35,7 @@ public class MapCubeSystem : ComponentSystem
 
 		mapChunkArchetype = entityManager.CreateArchetype(
 				ComponentType.Create<MapCube>(),
-				ComponentType.Create<Block>(),
-				ComponentType.Create<CREATE>()
+				ComponentType.Create<Block>()
 			);
 
 		//	Map squares without chunks
