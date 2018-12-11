@@ -86,7 +86,7 @@ struct MeshJob : IJobParallelFor
 		if(faces[i].count == 0) return;
 
 		//	Get block position for vertex offset
-		float3 pos = util.Unflatten(i, chunkSize);
+		float3 pos = blocks[i].localPosition;
 
 		//	Current local indices
 		int vertIndex = 0;

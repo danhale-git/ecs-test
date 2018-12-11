@@ -114,18 +114,23 @@ public class CubeSystem : ComponentSystem
 	{
 		var blocks = new NativeArray<Block>(blockArrayLength, Allocator.TempJob);
 
-		var job = new BlocksJob()
-		{
-			blocks = blocks,
-			cubes = cubes,
+		int singleCubeArrayLength = (int)math.pow(cubeSize, 3);
 
-			heightMap = heightMap,
-			chunkSize = cubeSize,
-			util = new JobUtil()
-		};
+		for(int i = 0; i < cubes.Length; i++)
+		{
+			var job = new BlocksJob()
+			{
+				blocks = blocks,
+				cubeStart = i * singleCubeArrayLength,
+				cubePosY = cubes[i].y,
+
+				heightMap = heightMap,
+				cubeSize = cubeSize,
+				util = new JobUtil()
+			};
 		
-        JobHandle jobHandle = job.Schedule(blockArrayLength, batchSize);
-        jobHandle.Complete();
+        	job.Schedule(singleCubeArrayLength, batchSize).Complete();	
+		}
 
 		return blocks;
 	}

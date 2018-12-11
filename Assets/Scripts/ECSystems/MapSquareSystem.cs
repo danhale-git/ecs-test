@@ -49,6 +49,8 @@ public class MapSquareSystem : ComponentSystem
 			None = System.Array.Empty<ComponentType>(),
 			All = new ComponentType [] { typeof(MapSquare) }
 		};
+
+		//CreateSquare(Vector3.zero, false);
 	}
 
 
@@ -98,8 +100,8 @@ public class MapSquareSystem : ComponentSystem
 
 		if(!exists)
 		{
-			Color debugColor = edge ? new Color(1f,.2f,.2f,0f) : new Color(.2f,1f,.2f,0.2f);
-			CustomDebugTools.WireCubeChunk(pos, cubeSize, debugColor, true);
+			Color debugColor = edge ? new Color(1f,.2f,.2f,.5f) : new Color(.2f,1f,.2f,0.5f);
+			CustomDebugTools.WireCubeChunk(pos, cubeSize, debugColor, false);
 
 			//	Create square entity
 			squareEntity = entityManager.CreateEntity(mapSquareArchetype);
@@ -131,8 +133,11 @@ public class MapSquareSystem : ComponentSystem
 			heightMap.Dispose();
 
 			DynamicBuffer<CubePosition> cubeBuffer = entityManager.GetBuffer<CubePosition>(squareEntity);
-			CubePosition cubePos = new CubePosition { y = 0};
-			cubeBuffer.Add(cubePos);
+			CubePosition cubePos1 = new CubePosition { y = 0};
+			CubePosition cubePos2 = new CubePosition { y = cubeSize};
+
+			cubeBuffer.Add(cubePos1);
+			cubeBuffer.Add(cubePos2);
 
 			entityManager.AddComponent(squareEntity, typeof(Tags.GenerateBlocks));
 			entityManager.AddComponent(squareEntity, typeof(Tags.CreateCubes));
@@ -141,7 +146,6 @@ public class MapSquareSystem : ComponentSystem
 		if(!edge && !entityManager.HasComponent<Tags.DrawMesh>(squareEntity))
 		{
 			entityManager.AddComponent(squareEntity, typeof(Tags.DrawMesh));
-			CustomDebugTools.WireCubeChunk(pos, cubeSize-2, new Color(0, 1, 0, 1f), true);
 		}
 	}
 

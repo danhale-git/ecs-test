@@ -103,6 +103,7 @@ public class MeshSystem : ComponentSystem
 												);
 
 				DynamicBuffer<Block> blockBuffer		= entityManager.GetBuffer<Block>(entity);
+				DynamicBuffer<CubePosition> cubes		= entityManager.GetBuffer<CubePosition>(entity);
 
 				//	Check block face exposure
 				Entity[] adjacentChunks = MapCubeSystem.GetAdjacentSquares(cubeWorldPosition);
@@ -112,7 +113,8 @@ public class MeshSystem : ComponentSystem
 					adjacentChunks,
 					//blockAccessor[e],
 					blockBuffer,
-					out faceCount
+					out faceCount,
+					cubes.ToNativeArray()
 					);
 
 				//	Skip mesh entity if no exposed faces
@@ -151,9 +153,11 @@ public class MeshSystem : ComponentSystem
 		entityManager.AddSharedComponentData(meshEntity, renderer);
 	}
 
-	public NativeArray<Faces> CheckBlockFaces(int batchSize, Entity[] adjacentChunks, DynamicBuffer<Block> _blocks, out int faceCount)
+	public NativeArray<Faces> CheckBlockFaces(int batchSize, Entity[] adjacentChunks, DynamicBuffer<Block> _blocks, out int faceCount, NativeArray<CubePosition> cubes)
 	{
 		var exposedFaces = new NativeArray<Faces>(_blocks.Length, Allocator.TempJob);
+
+		int singleCubeArrayLength = (int)math.pow(cubeSize, 3);
 
 		//	Block types for all adjacent chunks
 		NativeArray<int>[] adjacent = new NativeArray<int>[] {
@@ -173,22 +177,28 @@ public class MeshSystem : ComponentSystem
 				adjacent[i][b] = buffer[b].type;
 		}*/
 
-		var job = new BlockFacesJob(){
-			exposedFaces = exposedFaces,
-			blocks = _blocks,
-			chunkSize = cubeSize,
-			util = new JobUtil(),
+		for(int i = 0; i < cubes.Length; i++)
+		{
+			var job = new BlockFacesJob(){
+				exposedFaces = exposedFaces,
 
-			/*right = adjacent[0],
-			left = adjacent[1],
-			up = adjacent[2],
-			down = adjacent[3],
-			forward = adjacent[4],
-			back = adjacent[5]*/
-			};
-		
-        JobHandle jobHandle = job.Schedule(_blocks.Length, batchSize);
-        jobHandle.Complete();
+				cubeStart = i * singleCubeArrayLength,
+				cubePosY = cubes[i].y,
+
+				blocks = _blocks,
+				chunkSize = cubeSize,
+				util = new JobUtil(),
+
+				/*right = adjacent[0],
+				left = adjacent[1],
+				up = adjacent[2],
+				down = adjacent[3],
+				forward = adjacent[4],
+				back = adjacent[5]*/
+				};
+			
+			job.Schedule(singleCubeArrayLength, batchSize).Complete();
+		}
 
 		//	Dispose of adjacent block type arrays
 		for(int i = 0; i < 6; i++)
