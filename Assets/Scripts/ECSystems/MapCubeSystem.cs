@@ -26,7 +26,7 @@ public class MapCubeSystem : ComponentSystem
 
 	protected override void OnCreateManager()
 	{
-		cubeSize = TerrainSettings.cubeSize;
+		/*cubeSize = TerrainSettings.cubeSize;
 		viewDistance = TerrainSettings.viewDistance;
 
 		player = GameObject.FindObjectOfType<PlayerController>();
@@ -44,12 +44,12 @@ public class MapCubeSystem : ComponentSystem
 			Any = Array.Empty<ComponentType>(),
 			None = new ComponentType [] { },
 			All = new ComponentType [] { typeof(MapSquare), typeof(Tags.CreateCubes) }
-		};
+		};*/
 	}
 
 	protected override void OnUpdate()
 	{
-		entityType = GetArchetypeChunkEntityType();
+		/*entityType = GetArchetypeChunkEntityType();
 		squareType = GetArchetypeChunkComponentType<MapSquare>();
 
 		NativeArray<ArchetypeChunk> dataChunks = entityManager.CreateArchetypeChunkArray(mapSquareQuery, Allocator.TempJob);
@@ -57,7 +57,7 @@ public class MapCubeSystem : ComponentSystem
 		if(dataChunks.Length == 0)
 			dataChunks.Dispose();
 		else
-			ProcessChunks(dataChunks);
+			ProcessChunks(dataChunks);*/
 	}
 
 
@@ -77,7 +77,7 @@ public class MapCubeSystem : ComponentSystem
 				var squareWorldPosition = squares[e].worldPosition;
 
 
-				DynamicBuffer<Height> heightBuffer = entityManager.GetBuffer<Height>(squareEntity);
+				//DynamicBuffer<Height> heightBuffer = entityManager.GetBuffer<Height>(squareEntity);
 
 				float3 cPos = new float3(squareWorldPosition.x, 0, squareWorldPosition.y);
 

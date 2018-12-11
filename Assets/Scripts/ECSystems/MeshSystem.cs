@@ -10,26 +10,36 @@ using MyComponents;
 using UnityEngine;
 using UnityEditor;
 
-[UpdateAfter(typeof(BlockSystem))]
+[UpdateAfter(typeof(CubeSystem))]
 public class MeshSystem : ComponentSystem
 {
 	EntityManager entityManager;
-	ArchetypeChunkEntityType entityType;
 	EntityArchetype meshArchetype;
-
-	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
-
-	ArchetypeChunkComponentType<MapCube> cubeType;
-	EntityArchetypeQuery cubeQuery;
 
 	int cubeSize;
 
-	float3 worldStartPosition;
+	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
+
+	ArchetypeChunkEntityType entityType;
+
+	ArchetypeChunkComponentType<MapSquare> mapSquareType;
+
+	ArchetypeChunkBufferType<Block> blocksType;
+	ArchetypeChunkBufferType<CubePosition> cubePosType;
+
+	EntityArchetypeQuery mapSquareQuery;
 
 	protected override void OnCreateManager()
 	{
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 		cubeSize = TerrainSettings.cubeSize;
+
+		mapSquareQuery = new EntityArchetypeQuery
+		{
+			Any 	= Array.Empty<ComponentType>(),
+			None 	= Array.Empty<ComponentType>(),
+			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.DrawMesh) }
+		};
 
 		//	Archetype for mesh entities
 		meshArchetype = entityManager.CreateArchetype
@@ -37,47 +47,62 @@ public class MeshSystem : ComponentSystem
 			ComponentType.Create<Position>(), 
 			ComponentType.Create<MeshInstanceRendererComponent>()  
 			);
-
-		//	Chunks with block data and no mesh
-		cubeQuery = new EntityArchetypeQuery
-		{
-			Any = Array.Empty<ComponentType>(),
-			None = Array.Empty<ComponentType>(),
-			All = new ComponentType[] { typeof(MapCube), typeof(Tags.DrawMesh) }
-		};
 	}
-	
+
 	protected override void OnUpdate()
 	{
-		entityType = GetArchetypeChunkEntityType();
-		cubeType = GetArchetypeChunkComponentType<MapCube>();
+		entityType 		= GetArchetypeChunkEntityType();
 
-		NativeArray<ArchetypeChunk> dataChunks = entityManager.CreateArchetypeChunkArray(cubeQuery, Allocator.TempJob);
-		if(dataChunks.Length == 0)
-			dataChunks.Dispose();
-		else
-			ProcessChunks(dataChunks);
+		mapSquareType	= GetArchetypeChunkComponentType<MapSquare>();
+
+		blocksType 		= GetArchetypeChunkBufferType<Block>();
+		cubePosType 	= GetArchetypeChunkBufferType<CubePosition>();
+
+		NativeArray<ArchetypeChunk> chunks;
+		chunks	= entityManager.CreateArchetypeChunkArray(
+						mapSquareQuery, Allocator.TempJob
+						);
+
+		if(chunks.Length == 0) chunks.Dispose();
+		else DrawMesh(chunks);
+			
 	}
 
-	void ProcessChunks(NativeArray<ArchetypeChunk> dataChunks)
+	void DrawMesh(NativeArray<ArchetypeChunk> chunks)
 	{
-		for(int d = 0; d < dataChunks.Length; d++)
-		{
-			var dataChunk = dataChunks[d];
-			var entities = dataChunk.GetNativeArray(entityType);
-			var cubes = dataChunk.GetNativeArray(cubeType);
+		EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
-			//	Native arrays much be used as use of entityManager invalidates the 'entities' array
-			int entitiesLength = entities.Length;
-            NativeArray<Entity> entityArray = new NativeArray<Entity>(entitiesLength, Allocator.Persistent);
-            entityArray.CopyFrom(entities);
-            NativeArray<MapCube> cubeArray = new NativeArray<MapCube>(cubes.Length, Allocator.Persistent);
-            cubeArray.CopyFrom(cubes);
+		for(int c = 0; c < chunks.Length; c++)
+		{
+			ArchetypeChunk chunk = chunks[c];
+			NativeArray<Entity> _entities 					= chunk.GetNativeArray(entityType);
+
+			NativeArray<MapSquare> _mapSquares 				= chunk.GetNativeArray(mapSquareType);
+
+			//BufferAccessor<Block> blockAccessor 			= chunk.GetBufferAccessor(blocksType);
+			//BufferAccessor<CubePosition> cubePosAccessor 	= chunk.GetBufferAccessor(cubePosType);
+
+
+			NativeArray<Entity> entities 					= new NativeArray<Entity>(_entities.Length, Allocator.TempJob);
+			entities.CopyFrom(_entities);
+
+			NativeArray<MapSquare> mapSquares 				= new NativeArray<MapSquare>(_mapSquares.Length, Allocator.TempJob);
+			mapSquares.CopyFrom(_mapSquares);
+
+			//BufferAccessor<Block> blockAccessor 			= new NativeArray<Block>();
+			//BufferAccessor<CubePosition> cubePosAccessor 	= new NativeArray<CubePosition>();
 
 			for(int e = 0; e < entities.Length; e++)
 			{
-				var cubeEntity = entityArray[e];
-				var cubeWorldPosition = cubeArray[e].worldPosition;
+				//	TODO add nativeArray wrapper
+				var entity = entities[e];
+				float3 cubeWorldPosition 	= new float3(
+												mapSquares[e].worldPosition.x,
+												0,
+												mapSquares[e].worldPosition.y
+												);
+
+				DynamicBuffer<Block> blockBuffer		= entityManager.GetBuffer<Block>(entity);
 
 				//	Check block face exposure
 				Entity[] adjacentChunks = MapCubeSystem.GetAdjacentSquares(cubeWorldPosition);
@@ -85,28 +110,33 @@ public class MeshSystem : ComponentSystem
 				NativeArray<Faces> faces = CheckBlockFaces(
 					16,
 					adjacentChunks,
-					entityManager.GetBuffer<Block>(cubeEntity),
+					//blockAccessor[e],
+					blockBuffer,
 					out faceCount
 					);
 
 				//	Skip mesh entity if no exposed faces
 				if(faceCount != 0)
 				{
-					Mesh mesh = GetMesh(16, faces, entityManager.GetBuffer<Block>(cubeEntity), faceCount);
+					Mesh mesh = GetMesh(16, faces, blockBuffer/*blockAccessor[e]*/, faceCount);
 					CreateMeshEntity(mesh, cubeWorldPosition);
 				}
 
-				entityManager.RemoveComponent(cubeEntity, typeof(Tags.DrawMesh));
-				entityManager.AddComponent(cubeEntity, typeof(Tags.MeshDrawn));
+				entityManager.RemoveComponent(entity, typeof(Tags.DrawMesh));
 
 				faces.Dispose();
 			}
 
-			entityArray.Dispose();
-			cubeArray.Dispose();
-			dataChunks.Dispose();
+			commandBuffer.Playback(entityManager);
+			commandBuffer.Dispose();
+
+			mapSquares.Dispose();
+			entities.Dispose();
+
+			chunks.Dispose();
 		}
 	}
+
 
 	//	Create entity with mesh at position
 	void CreateMeshEntity(Mesh mesh, float3 chunkWorldPosition)

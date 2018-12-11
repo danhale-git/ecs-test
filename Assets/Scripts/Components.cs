@@ -25,10 +25,11 @@ namespace MyComponents
 	{
 		public int y;
 	}
-	public struct CubeCount : IBufferElementData
+
+	/*public struct CubeCount : IComponentData
 	{
 		public int count;
-	}
+	}*/
 
 	//	Map square
 
@@ -41,7 +42,7 @@ namespace MyComponents
 	{
 		public int index; 
 		public int height;
-		public float2 localPosition;
+		//public float2 localPosition;
 	}
 
 

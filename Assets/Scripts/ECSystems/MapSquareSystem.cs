@@ -37,8 +37,8 @@ public class MapSquareSystem : ComponentSystem
 				ComponentType.Create<MapSquare>(),
 				ComponentType.Create<Height>(),
 				ComponentType.Create<CubePosition>(),
-				ComponentType.Create<Block>(),
-				ComponentType.Create<CubeCount>()
+				ComponentType.Create<Block>()
+				//ComponentType.Create<CubeCount>()
 
 			);
 
@@ -123,19 +123,22 @@ public class MapSquareSystem : ComponentSystem
 				heightBuffer[h] = new Height
 				{ 
 					index = h,
-					height = heightMap[h],
-					localPosition = position
+					height = heightMap[h]
+					//localPosition = position
 				};
 			}
 
 			heightMap.Dispose();
 
+			DynamicBuffer<CubePosition> cubeBuffer = entityManager.GetBuffer<CubePosition>(squareEntity);
+			CubePosition cubePos = new CubePosition { y = 0};
+			cubeBuffer.Add(cubePos);
+
 			entityManager.AddComponent(squareEntity, typeof(Tags.GenerateBlocks));
 			entityManager.AddComponent(squareEntity, typeof(Tags.CreateCubes));
 		}
 
-		if(!edge && !entityManager.HasComponent<Tags.DrawMesh>(squareEntity) &&
-		   !entityManager.HasComponent<Tags.MeshDrawn>(squareEntity))
+		if(!edge && !entityManager.HasComponent<Tags.DrawMesh>(squareEntity))
 		{
 			entityManager.AddComponent(squareEntity, typeof(Tags.DrawMesh));
 			CustomDebugTools.WireCubeChunk(pos, cubeSize-2, new Color(0, 1, 0, 1f), true);
