@@ -3,39 +3,9 @@ using Unity.Mathematics;
 
 namespace MyComponents
 {
-	//	Map chunk
-
-	public struct MapCube : IComponentData
-	{
-		public float3 worldPosition;
-		public Entity parentMapSquare;
-	}
-
-	[InternalBufferCapacity(0)]
-	public struct Block : IBufferElementData
-	{
-		public int index; 
-		public int type;
-		public float3 localPosition;
-		//public float3 parentChunkWorldPosition;
-	}
-
-	[InternalBufferCapacity(100)]
-	public struct CubePosition : IBufferElementData
-	{
-		public int y;
-	}
-
-	/*public struct CubeCount : IComponentData
-	{
-		public int count;
-	}*/
-
-	//	Map square
-
 	public struct MapSquare : IComponentData
 	{
-		public float2 worldPosition;
+		public float2 position;
 	}
 	[InternalBufferCapacity(0)]
 	public struct Height : IBufferElementData
@@ -45,7 +15,18 @@ namespace MyComponents
 		//public float2 localPosition;
 	}
 
-
+	[InternalBufferCapacity(100)]
+	public struct MapCube : IBufferElementData
+	{
+		public int yPos;
+	}
+	[InternalBufferCapacity(0)]
+	public struct Block : IBufferElementData
+	{
+		public int index; 
+		public int type;
+		public float3 localPosition;
+	}
 }
 
 namespace Tags

@@ -1,4 +1,4 @@
-﻿using System;
+﻿/*using System;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -17,7 +17,7 @@ public class BlockSystem : ComponentSystem
 
 	protected override void OnCreateManager()
 	{
-		/*entityManager = World.Active.GetOrCreateManager<EntityManager>();
+		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 		cubeSize = TerrainSettings.cubeSize;
 
 		//	Chunks without block data
@@ -26,12 +26,12 @@ public class BlockSystem : ComponentSystem
 			Any = Array.Empty<ComponentType>(),
 			None = Array.Empty<ComponentType>(),
 			All = new ComponentType [] { typeof(MapCube), typeof(Tags.GenerateBlocks) }
-		};*/
+		};
 	}
 	
 	protected override void OnUpdate()
 	{
-		/*entityType = GetArchetypeChunkEntityType();
+		entityType = GetArchetypeChunkEntityType();
 		cubeType = GetArchetypeChunkComponentType<MapCube>();
 
 		NativeArray<ArchetypeChunk> dataChunks = entityManager.CreateArchetypeChunkArray(cubeQuery, Allocator.TempJob);
@@ -39,10 +39,10 @@ public class BlockSystem : ComponentSystem
 		if(dataChunks.Length == 0)
 			dataChunks.Dispose();
 		else
-			ProcessChunks(dataChunks);*/
+			ProcessChunks(dataChunks);
 	}
 
-	/*void ProcessChunks(NativeArray<ArchetypeChunk> dataChunks)
+	void ProcessChunks(NativeArray<ArchetypeChunk> dataChunks)
 	{
 		EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
@@ -133,5 +133,5 @@ public class BlockSystem : ComponentSystem
         jobHandle.Complete();
 
 		return blocks;
-	}*/
-} 
+	}
+} */

@@ -18,7 +18,7 @@ public class CubeSystem : ComponentSystem
 	//ArchetypeChunkComponentType<CubeCount> cubeCountType;
 
 	ArchetypeChunkBufferType<Block> blocksType;
-	ArchetypeChunkBufferType<CubePosition> cubePosType;
+	ArchetypeChunkBufferType<MapCube> cubePosType;
 	ArchetypeChunkBufferType<Height> heightmapType;
 
 	EntityArchetypeQuery mapSquareQuery;
@@ -44,7 +44,7 @@ public class CubeSystem : ComponentSystem
 		//cubeCountType 	= GetArchetypeChunkComponentType<CubeCount>();
 
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
-		cubePosType 	= GetArchetypeChunkBufferType<CubePosition>();
+		cubePosType 	= GetArchetypeChunkBufferType<MapCube>();
 		heightmapType 	= GetArchetypeChunkBufferType<Height>();
 
 		NativeArray<ArchetypeChunk> chunks;
@@ -70,18 +70,18 @@ public class CubeSystem : ComponentSystem
 			//NativeArray<CubeCount> cubeCounts 			= chunk.GetNativeArray(cubeCountType);
 
 			BufferAccessor<Block> blockAccessor 			= chunk.GetBufferAccessor(blocksType);
-			BufferAccessor<CubePosition> cubePosAccessor 	= chunk.GetBufferAccessor(cubePosType);
+			BufferAccessor<MapCube> cubePosAccessor 	= chunk.GetBufferAccessor(cubePosType);
 			BufferAccessor<Height> heightmapAccessor 		= chunk.GetBufferAccessor(heightmapType);
 
 			for(int e = 0; e < mapSquares.Length; e++)
 			{
 				Entity entity = entities[e];
 				MapSquare mapSquare = mapSquares[e];
-				float2 position = mapSquare.worldPosition;
+				float2 position = mapSquare.position;
 
 				DynamicBuffer<Block> blockBuffer 		= blockAccessor[e];
 
-				DynamicBuffer<CubePosition> cubes		= cubePosAccessor[e];
+				DynamicBuffer<MapCube> cubes		= cubePosAccessor[e];
 				DynamicBuffer<Height> heightmap			= heightmapAccessor[e];
 
 				int blockArrayLength = (int)math.pow(cubeSize, 3) * cubes.Length;
@@ -110,7 +110,7 @@ public class CubeSystem : ComponentSystem
 		}
 	}
 
-	public NativeArray<Block> GetBlocks(int batchSize, int blockArrayLength, NativeArray<Height> heightMap, NativeArray<CubePosition> cubes)
+	public NativeArray<Block> GetBlocks(int batchSize, int blockArrayLength, NativeArray<Height> heightMap, NativeArray<MapCube> cubes)
 	{
 		var blocks = new NativeArray<Block>(blockArrayLength, Allocator.TempJob);
 
@@ -122,7 +122,7 @@ public class CubeSystem : ComponentSystem
 			{
 				blocks = blocks,
 				cubeStart = i * singleCubeArrayLength,
-				cubePosY = cubes[i].y,
+				cubePosY = cubes[i].yPos,
 
 				heightMap = heightMap,
 				cubeSize = cubeSize,

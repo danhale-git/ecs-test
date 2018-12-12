@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿/*using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -26,7 +26,7 @@ public class MapCubeSystem : ComponentSystem
 
 	protected override void OnCreateManager()
 	{
-		/*cubeSize = TerrainSettings.cubeSize;
+		cubeSize = TerrainSettings.cubeSize;
 		viewDistance = TerrainSettings.viewDistance;
 
 		player = GameObject.FindObjectOfType<PlayerController>();
@@ -44,12 +44,12 @@ public class MapCubeSystem : ComponentSystem
 			Any = Array.Empty<ComponentType>(),
 			None = new ComponentType [] { },
 			All = new ComponentType [] { typeof(MapSquare), typeof(Tags.CreateCubes) }
-		};*/
+		};
 	}
 
 	protected override void OnUpdate()
 	{
-		/*entityType = GetArchetypeChunkEntityType();
+		entityType = GetArchetypeChunkEntityType();
 		squareType = GetArchetypeChunkComponentType<MapSquare>();
 
 		NativeArray<ArchetypeChunk> dataChunks = entityManager.CreateArchetypeChunkArray(mapSquareQuery, Allocator.TempJob);
@@ -57,7 +57,7 @@ public class MapCubeSystem : ComponentSystem
 		if(dataChunks.Length == 0)
 			dataChunks.Dispose();
 		else
-			ProcessChunks(dataChunks);*/
+			ProcessChunks(dataChunks);
 	}
 
 
@@ -128,7 +128,7 @@ public class MapCubeSystem : ComponentSystem
 		float3 pos = position;
 		Entity[] adjacent = new Entity[6];
 		
-		/*adjacent[0] = chunks[pos +(new float3( 1,	0, 0) * chunkSize)];
+		adjacent[0] = chunks[pos +(new float3( 1,	0, 0) * chunkSize)];
 
 
 		if(!chunks.ContainsKey(pos +(new float3(-1,	0, 0) * chunkSize)))
@@ -146,8 +146,8 @@ public class MapCubeSystem : ComponentSystem
 		adjacent[3] = chunks[pos +(new float3( 0, 0, 0) * chunkSize)];
 
 		adjacent[4] = chunks[pos +(new float3( 0,	0, 1) * chunkSize)];
-		adjacent[5] = chunks[pos +(new float3( 0,	0,-1) * chunkSize)];*/
+		adjacent[5] = chunks[pos +(new float3( 0,	0,-1) * chunkSize)];
 
 		return adjacent;
 	}
-}
+}*/

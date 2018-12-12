@@ -4,6 +4,8 @@ using Unity.Mathematics;
 using UnityEngine;
 using Unity.Jobs;
 using Unity.Collections;
+using Unity.Transforms;
+using Unity.Rendering;
 using MyComponents;
 
 public class MapSquareSystem : ComponentSystem
@@ -34,9 +36,11 @@ public class MapSquareSystem : ComponentSystem
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
 		mapSquareArchetype = entityManager.CreateArchetype(
+				ComponentType.Create<Position>(), 
+				ComponentType.Create<MeshInstanceRendererComponent>(),
 				ComponentType.Create<MapSquare>(),
 				ComponentType.Create<Height>(),
-				ComponentType.Create<CubePosition>(),
+				ComponentType.Create<MapCube>(),
 				ComponentType.Create<Block>()
 				//ComponentType.Create<CubeCount>()
 
@@ -105,7 +109,7 @@ public class MapSquareSystem : ComponentSystem
 
 			//	Create square entity
 			squareEntity = entityManager.CreateEntity(mapSquareArchetype);
-			MapSquare squareComponent = new MapSquare { worldPosition = position };
+			MapSquare squareComponent = new MapSquare { position = position };
 			entityManager.SetComponentData(squareEntity, squareComponent);
 
 			NativeArray<int> heightMap = GetHeightMap(
@@ -132,19 +136,15 @@ public class MapSquareSystem : ComponentSystem
 
 			heightMap.Dispose();
 
-			DynamicBuffer<CubePosition> cubeBuffer = entityManager.GetBuffer<CubePosition>(squareEntity);
-			CubePosition cubePos1 = new CubePosition { y = 0};
-			CubePosition cubePos2 = new CubePosition { y = cubeSize};
+			DynamicBuffer<MapCube> cubeBuffer = entityManager.GetBuffer<MapCube>(squareEntity);
+			MapCube cubePos1 = new MapCube { yPos = 0};
+			MapCube cubePos2 = new MapCube { yPos = cubeSize};
 
 			cubeBuffer.Add(cubePos1);
 			cubeBuffer.Add(cubePos2);
 
 			entityManager.AddComponent(squareEntity, typeof(Tags.GenerateBlocks));
 			entityManager.AddComponent(squareEntity, typeof(Tags.CreateCubes));
-		}
-
-		if(!edge && !entityManager.HasComponent<Tags.DrawMesh>(squareEntity))
-		{
 			entityManager.AddComponent(squareEntity, typeof(Tags.DrawMesh));
 		}
 	}
@@ -204,7 +204,7 @@ public class MapSquareSystem : ComponentSystem
 			for(int e = 0; e < entities.Length; e++)
 			{
 				var squareEntity = entities[e];
-				var squareWorldPosition = squares[e].worldPosition;
+				var squareWorldPosition = squares[e].position;
 
 				if(	position.x == squareWorldPosition.x &&
 					position.y == squareWorldPosition.y)

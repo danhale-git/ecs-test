@@ -29,12 +29,12 @@ struct BlockFacesJob : IJobParallelFor
 	{
 		int3 pos = (int3)(position + direction);
 
-		if(pos.x == chunkSize) 	return 0;//right[util.WrapAndFlatten(pos, chunkSize)]   == 0 ? 1 : 0;
-		if(pos.x < 0)			return 0;//left[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
-		if(pos.y == chunkSize) 	return 0;//up[util.WrapAndFlatten(pos, chunkSize)] 	    == 0 ? 1 : 0;
-		if(pos.y < 0)			return 0;//down[util.WrapAndFlatten(pos, chunkSize)]	== 0 ? 1 : 0;
-		if(pos.z == chunkSize) 	return 0;//forward[util.WrapAndFlatten(pos, chunkSize)] == 0 ? 1 : 0;
-		if(pos.z < 0)			return 0;//back[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
+		if(pos.x == chunkSize) 	return 1;//right[util.WrapAndFlatten(pos, chunkSize)]   == 0 ? 1 : 0;
+		if(pos.x < 0)			return 1;//left[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
+		if(pos.y == chunkSize) 	return 1;//up[util.WrapAndFlatten(pos, chunkSize)] 	    == 0 ? 1 : 0;
+		if(pos.y < 0)			return 1;//down[util.WrapAndFlatten(pos, chunkSize)]	== 0 ? 1 : 0;
+		if(pos.z == chunkSize) 	return 1;//forward[util.WrapAndFlatten(pos, chunkSize)] == 0 ? 1 : 0;
+		if(pos.z < 0)			return 1;//back[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
 
 		//float3 localPos = new float3(pos.x, pos.y-cubePosY, pos.z);
 

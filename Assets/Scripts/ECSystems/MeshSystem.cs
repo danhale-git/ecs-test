@@ -13,6 +13,8 @@ using UnityEditor;
 [UpdateAfter(typeof(CubeSystem))]
 public class MeshSystem : ComponentSystem
 {
+	int batchSize = 32;
+
 	EntityManager entityManager;
 	EntityArchetype meshArchetype;
 
@@ -25,7 +27,7 @@ public class MeshSystem : ComponentSystem
 	ArchetypeChunkComponentType<MapSquare> mapSquareType;
 
 	ArchetypeChunkBufferType<Block> blocksType;
-	ArchetypeChunkBufferType<CubePosition> cubePosType;
+	ArchetypeChunkBufferType<MapCube> cubePosType;
 
 	EntityArchetypeQuery mapSquareQuery;
 
@@ -56,7 +58,7 @@ public class MeshSystem : ComponentSystem
 		mapSquareType	= GetArchetypeChunkComponentType<MapSquare>();
 
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
-		cubePosType 	= GetArchetypeChunkBufferType<CubePosition>();
+		cubePosType 	= GetArchetypeChunkBufferType<MapCube>();
 
 		NativeArray<ArchetypeChunk> chunks;
 		chunks	= entityManager.CreateArchetypeChunkArray(
@@ -75,56 +77,36 @@ public class MeshSystem : ComponentSystem
 		for(int c = 0; c < chunks.Length; c++)
 		{
 			ArchetypeChunk chunk = chunks[c];
-			NativeArray<Entity> _entities 					= chunk.GetNativeArray(entityType);
+			NativeArray<Entity> entities 					= chunk.GetNativeArray(entityType);
 
-			NativeArray<MapSquare> _mapSquares 				= chunk.GetNativeArray(mapSquareType);
+			NativeArray<MapSquare> mapSquares 				= chunk.GetNativeArray(mapSquareType);
 
-			//BufferAccessor<Block> blockAccessor 			= chunk.GetBufferAccessor(blocksType);
-			//BufferAccessor<CubePosition> cubePosAccessor 	= chunk.GetBufferAccessor(cubePosType);
-
-
-			NativeArray<Entity> entities 					= new NativeArray<Entity>(_entities.Length, Allocator.TempJob);
-			entities.CopyFrom(_entities);
-
-			NativeArray<MapSquare> mapSquares 				= new NativeArray<MapSquare>(_mapSquares.Length, Allocator.TempJob);
-			mapSquares.CopyFrom(_mapSquares);
-
-			//BufferAccessor<Block> blockAccessor 			= new NativeArray<Block>();
-			//BufferAccessor<CubePosition> cubePosAccessor 	= new NativeArray<CubePosition>();
+			BufferAccessor<Block> blockAccessor 			= chunk.GetBufferAccessor(blocksType);
+			BufferAccessor<MapCube> cubePosAccessor 	= chunk.GetBufferAccessor(cubePosType);
 
 			for(int e = 0; e < entities.Length; e++)
 			{
 				//	TODO add nativeArray wrapper
 				var entity = entities[e];
-				float3 cubeWorldPosition 	= new float3(
-												mapSquares[e].worldPosition.x,
-												0,
-												mapSquares[e].worldPosition.y
-												);
-
-				DynamicBuffer<Block> blockBuffer		= entityManager.GetBuffer<Block>(entity);
-				DynamicBuffer<CubePosition> cubes		= entityManager.GetBuffer<CubePosition>(entity);
 
 				//	Check block face exposure
-				Entity[] adjacentChunks = MapCubeSystem.GetAdjacentSquares(cubeWorldPosition);
+				Entity[] adjacentChunks = new Entity[] {};
 				int faceCount;
 				NativeArray<Faces> faces = CheckBlockFaces(
-					16,
 					adjacentChunks,
-					//blockAccessor[e],
-					blockBuffer,
+					blockAccessor[e],
 					out faceCount,
-					cubes.ToNativeArray()
+					cubePosAccessor[e]
 					);
 
 				//	Skip mesh entity if no exposed faces
 				if(faceCount != 0)
 				{
-					Mesh mesh = GetMesh(16, faces, blockBuffer/*blockAccessor[e]*/, faceCount);
-					CreateMeshEntity(mesh, cubeWorldPosition);
+					Mesh mesh = GetMesh(16, faces, blockAccessor[e], faceCount);
+					CreateMeshEntity(mesh, mapSquares[e].position, entity, commandBuffer);
 				}
 
-				entityManager.RemoveComponent(entity, typeof(Tags.DrawMesh));
+				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 
 				faces.Dispose();
 			}
@@ -132,50 +114,39 @@ public class MeshSystem : ComponentSystem
 			commandBuffer.Playback(entityManager);
 			commandBuffer.Dispose();
 
-			mapSquares.Dispose();
-			entities.Dispose();
-
 			chunks.Dispose();
 		}
 	}
 
 
 	//	Create entity with mesh at position
-	void CreateMeshEntity(Mesh mesh, float3 chunkWorldPosition)
+	void CreateMeshEntity(Mesh mesh, float2 pos, Entity entity, EntityCommandBuffer commandBuffer)
 	{
-		Entity meshEntity = entityManager.CreateEntity(meshArchetype);
-		entityManager.SetComponentData(meshEntity, new Position { Value = chunkWorldPosition });
+		float3 position = new float3(pos.x, 0, pos.y);
+		commandBuffer.SetComponent(entity, new Position { Value = position });
 		
 		MeshInstanceRenderer renderer = new MeshInstanceRenderer();
 		renderer.mesh = mesh;
 		renderer.material = material;
 
-		entityManager.AddSharedComponentData(meshEntity, renderer);
+		commandBuffer.AddSharedComponent(entity, renderer);
 	}
 
-	public NativeArray<Faces> CheckBlockFaces(int batchSize, Entity[] adjacentChunks, DynamicBuffer<Block> _blocks, out int faceCount, NativeArray<CubePosition> cubes)
+	public NativeArray<Faces> CheckBlockFaces(Entity[] adjacentChunks, DynamicBuffer<Block> blocks, out int faceCount, DynamicBuffer<MapCube> cubes)
 	{
-		var exposedFaces = new NativeArray<Faces>(_blocks.Length, Allocator.TempJob);
+		var exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
 
 		int singleCubeArrayLength = (int)math.pow(cubeSize, 3);
 
 		//	Block types for all adjacent chunks
 		NativeArray<int>[] adjacent = new NativeArray<int>[] {
-			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
-			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
-			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
-			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
-			new NativeArray<int>(_blocks.Length, Allocator.TempJob),
-			new NativeArray<int>(_blocks.Length, Allocator.TempJob)
+			new NativeArray<int>(blocks.Length, Allocator.TempJob),
+			new NativeArray<int>(blocks.Length, Allocator.TempJob),
+			new NativeArray<int>(blocks.Length, Allocator.TempJob),
+			new NativeArray<int>(blocks.Length, Allocator.TempJob),
+			new NativeArray<int>(blocks.Length, Allocator.TempJob),
+			new NativeArray<int>(blocks.Length, Allocator.TempJob)
 		};
-
-		//	Get block types from buffers
-		/*for(int i = 0; i < 6; i++)
-		{
-			DynamicBuffer<Block> buffer = entityManager.GetBuffer<Block>(adjacentChunks[i]);
-			for(int b = 0; b < buffer.Length; b++)
-				adjacent[i][b] = buffer[b].type;
-		}*/
 
 		for(int i = 0; i < cubes.Length; i++)
 		{
@@ -183,9 +154,9 @@ public class MeshSystem : ComponentSystem
 				exposedFaces = exposedFaces,
 
 				cubeStart = i * singleCubeArrayLength,
-				cubePosY = cubes[i].y,
+				cubePosY = cubes[i].yPos,
 
-				blocks = _blocks,
+				blocks = blocks,
 				chunkSize = cubeSize,
 				util = new JobUtil(),
 
