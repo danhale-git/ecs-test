@@ -3,10 +3,7 @@ using Unity.Mathematics;
 
 namespace MyComponents
 {
-	public struct MapSquare : IComponentData
-	{
-		public float2 position;
-	}
+	public struct MapSquare : IComponentData { }
 	[InternalBufferCapacity(0)]
 	public struct Height : IBufferElementData
 	{

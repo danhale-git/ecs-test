@@ -10,55 +10,55 @@ using MyComponents;
 
 public class MapSquareSystem : ComponentSystem
 {
-	PlayerController player;
-
 	EntityManager entityManager;
+
+	//	Player GameObject
+	PlayerController player;
 
 	//	Square data
 	EntityArchetype mapSquareArchetype;
 
+	//	Terrain settings
 	int cubeSize;
 	int viewDistance;
 	int terrainHeight;
 
 	ArchetypeChunkEntityType entityType;
-	ArchetypeChunkComponentType<MapSquare> squareType;
+
+	ArchetypeChunkComponentType<Position> 	positionType;
+
+
 	EntityArchetypeQuery mapSquareQuery;
 
 	protected override void OnCreateManager()
 	{
-		cubeSize = TerrainSettings.cubeSize;
-		viewDistance = TerrainSettings.viewDistance;
-		terrainHeight = TerrainSettings.terrainHeight;
+		cubeSize 		= TerrainSettings.cubeSize;
+		viewDistance 	= TerrainSettings.viewDistance;
+		terrainHeight 	= TerrainSettings.terrainHeight;
 
 		player = GameObject.FindObjectOfType<PlayerController>();
 
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
 		mapSquareArchetype = entityManager.CreateArchetype(
-				ComponentType.Create<Position>(), 
-				ComponentType.Create<MeshInstanceRendererComponent>(),
-				ComponentType.Create<MapSquare>(),
-				ComponentType.Create<Height>(),
-				ComponentType.Create<MapCube>(),
-				ComponentType.Create<Block>()
-				//ComponentType.Create<CubeCount>()
-
+			ComponentType.Create<Position>(), 
+			ComponentType.Create<MeshInstanceRendererComponent>(),
+			ComponentType.Create<MapSquare>(),
+			ComponentType.Create<Height>(),
+			ComponentType.Create<MapCube>(),
+			ComponentType.Create<Block>()
 			);
 
 		//	All map squares
-		mapSquareQuery = new EntityArchetypeQuery
-		{
-			Any = System.Array.Empty<ComponentType>(),
-			None = System.Array.Empty<ComponentType>(),
-			All = new ComponentType [] { typeof(MapSquare) }
-		};
-
-		//CreateSquare(Vector3.zero, false);
+		mapSquareQuery = new EntityArchetypeQuery{		
+			Any 	= System.Array.Empty<ComponentType>(),
+			None 	= System.Array.Empty<ComponentType>(),
+			All 	= new ComponentType [] { typeof(MapSquare) }
+			};
 	}
 
 
-	//	Continuous generation
+	//	Continually generate map squares
 	float timer = 1.5f;
 	protected override void OnUpdate()
 	{
@@ -79,15 +79,17 @@ public class MapSquareSystem : ComponentSystem
 	{
 		center = new Vector3(center.x, 0, center.z);
 
-		//	Generate map in square
+		//	Generate grid of map squares in radius
 		for(int x = -radius; x <= radius; x++)
 			for(int z = -radius; z <= radius; z++)
 			{
 				//	Chunk is at the edge of the map
-				bool edge=( x == -radius ||
-							x ==  radius ||
-							z == -radius ||
-							z ==  radius   );
+				bool edge = (
+					x == -radius ||
+					x ==  radius ||
+					z == -radius ||
+					z ==  radius
+					);
 
 				Vector3 offset = new Vector3(x*cubeSize, 0, z*cubeSize);
 				CreateSquare(center + offset, edge);
@@ -95,42 +97,48 @@ public class MapSquareSystem : ComponentSystem
 
 	}
 
-	void CreateSquare(Vector3 pos, bool edge)
+	//	Create map square and generate height map
+	void CreateSquare(Vector3 position, bool edge)
 	{
-		Entity squareEntity;
-		Vector2 position = new Vector2(pos.x, pos.z);
+		if(position.y != 0)
+			throw new System.ArgumentOutOfRangeException(
+				"Map Square Y position must be 0: "+position.y
+				);
 
-		bool exists = MapSquareAtPosition(position, out squareEntity);
+		Entity squareEntity;	
 
-		if(!exists)
+		if(!GetMapSquares(position, out squareEntity))
 		{
-			Color debugColor = edge ? new Color(1f,.2f,.2f,.5f) : new Color(.2f,1f,.2f,0.5f);
-			CustomDebugTools.WireCubeChunk(pos, cubeSize, debugColor, false);
+			Debug.Log("creating square");
+			Color debugColor = new Color(1,1,1,0.5f);
+			CustomDebugTools.SetWireCubeChunk(position, cubeSize, debugColor);
 
 			//	Create square entity
 			squareEntity = entityManager.CreateEntity(mapSquareArchetype);
-			MapSquare squareComponent = new MapSquare { position = position };
-			entityManager.SetComponentData(squareEntity, squareComponent);
 
-			NativeArray<int> heightMap = GetHeightMap(
-				new float3(position.x,0, position.y),
-				cubeSize,
-				5678,
-				0.05f,
-				terrainHeight);
+			//	Set position
+			entityManager.SetComponentData(
+			squareEntity,
+			new Position{
+				Value = position
+			});
 
 			//	Get heightmap
+			NativeArray<int> heightMap = GetHeightMap(
+				position,
+				cubeSize,
+				terrainHeight);
+
+			//	Heightmap to Dynamic Buffer
 			DynamicBuffer<Height> heightBuffer = entityManager.GetBuffer<Height>(squareEntity);
 			heightBuffer.ResizeUninitialized((int)math.pow(cubeSize, 2));
 			
-			//	Fill Dynamic Buffer
 			for(int h = 0; h < heightMap.Length; h++)
 			{
 				heightBuffer[h] = new Height
 				{ 
-					index = h,
-					height = heightMap[h]
-					//localPosition = position
+					index 	= h,
+					height 	= heightMap[h]
 				};
 			}
 
@@ -149,7 +157,7 @@ public class MapSquareSystem : ComponentSystem
 		}
 	}
 
-	public NativeArray<int> GetHeightMap(float3 chunkPosition, int chunkSize, int seed, float frequency, int maxHeight)
+	public NativeArray<int> GetHeightMap(float3 chunkPosition, int chunkSize, int maxHeight)
     {
         int arrayLength = (int)math.pow(chunkSize, 2);
 
@@ -157,17 +165,16 @@ public class MapSquareSystem : ComponentSystem
 
         var job = new FastNoiseJob()
         {
-            noiseMap = noiseMap,
-			offset = chunkPosition,
-			chunkSize = chunkSize,
-            seed = seed,
-            frequency = frequency,
-			util = new JobUtil(),
-            noise = new SimplexNoiseGenerator(0)
+            noiseMap 	= noiseMap,
+			offset 		= chunkPosition,
+			chunkSize	= chunkSize,
+            seed 		= TerrainSettings.seed,
+            frequency 	= TerrainSettings.frequency,
+			util 		= new JobUtil(),
+            noise 		= new SimplexNoiseGenerator(0)
         };
 
-        JobHandle jobHandle = job.Schedule(arrayLength, 16);
-        jobHandle.Complete();
+        job.Schedule(arrayLength, 16).Complete();
 
         job.noise.Dispose();
 
@@ -181,44 +188,104 @@ public class MapSquareSystem : ComponentSystem
 		return heightMap;
     }
 
-	bool MapSquareAtPosition(float2 position, out Entity mapSquare)
+	//	Get map square by position
+	bool GetMapSquares(float3 position, out Entity mapSquare)
 	{
 		entityType = GetArchetypeChunkEntityType();
-		squareType = GetArchetypeChunkComponentType<MapSquare>();
 
-		NativeArray<ArchetypeChunk> dataChunks = entityManager.CreateArchetypeChunkArray(mapSquareQuery, Allocator.TempJob);
+		positionType	= GetArchetypeChunkComponentType<Position>();
 
-		if(dataChunks.Length == 0)
+		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
+			mapSquareQuery,
+			Allocator.TempJob
+			);
+
+		if(chunks.Length == 0)
 		{
-			dataChunks.Dispose();
+			chunks.Dispose();
 			mapSquare = new Entity();
 			return false;
 		}
 
-		for(int d = 0; d < dataChunks.Length; d++)
+		for(int d = 0; d < chunks.Length; d++)
 		{
-			var dataChunk = dataChunks[d];
-			var entities = dataChunk.GetNativeArray(entityType);
-			var squares = dataChunk.GetNativeArray(squareType);
+			ArchetypeChunk chunk = chunks[d];
+
+			NativeArray<Entity> entities 	= chunk.GetNativeArray(entityType);
+			NativeArray<Position> positions = chunk.GetNativeArray(positionType);
 
 			for(int e = 0; e < entities.Length; e++)
 			{
-				var squareEntity = entities[e];
-				var squareWorldPosition = squares[e].position;
+				Entity entity = entities[e];
 
-				if(	position.x == squareWorldPosition.x &&
-					position.y == squareWorldPosition.y)
+				if(	position.x == positions[e].Value.x &&
+					position.z == positions[e].Value.z)
 				{
-					mapSquare = squareEntity;
-					dataChunks.Dispose();
+					mapSquare = entity;
+					chunks.Dispose();
 					return true;
 				}
 
 			}
 		}
 
-		dataChunks.Dispose();
+		chunks.Dispose();
 		mapSquare = new Entity();
 		return false;
+	}
+
+	//	Get multiple map squares by positions
+	bool GetMapSquares(List<float3> positionsList, out Entity[] mapSquares)
+	{
+		List<Entity> mapSquaresList = new List<Entity>();
+
+		entityType = GetArchetypeChunkEntityType();
+
+		positionType = GetArchetypeChunkComponentType<Position>();
+
+		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
+			mapSquareQuery,
+			Allocator.TempJob
+			);
+
+		if(chunks.Length == 0)
+		{
+			chunks.Dispose();
+			mapSquares = mapSquaresList.ToArray();
+			return false;
+		}
+
+		for(int d = 0; d < chunks.Length; d++)
+		{
+			ArchetypeChunk chunk = chunks[d];
+
+			NativeArray<Entity> entities 	= chunk.GetNativeArray(entityType);
+			NativeArray<Position> positions = chunk.GetNativeArray(positionType);
+
+			for(int e = 0; e < entities.Length; e++)
+			{
+				Entity entity = entities[e];
+
+				foreach(float3 position in positionsList)
+				{
+
+					if(	position.x == positions[e].Value.x &&
+						position.z == positions[e].Value.z)
+					{
+						mapSquaresList.Add(entity);
+						if(mapSquaresList.Count == positionsList.Count)
+							break;
+					}
+				}
+			}
+		}
+
+		chunks.Dispose();
+		mapSquares = mapSquaresList.ToArray();
+
+		if(mapSquares.Length == positionsList.Count)
+			return true;
+		else 
+			return false;
 	}
 }

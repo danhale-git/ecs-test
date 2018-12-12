@@ -53,6 +53,18 @@ public static class Util
 	                            new Vector3( 	 0.5f,  0.5f,	 0.5f ) };	//	right front top
     }
 
+    public static Vector3[] CubeVectorsPointFiveOffset()
+    {
+        return new Vector3[] {  new Vector3(0, 0, 1),	//	left front bottom
+	                            new Vector3(1, 0, 0),	//	right back bottom
+	                            new Vector3(0, 0, 0), 	//	left back bottom
+	                            new Vector3(1, 0, 1),	//	right front bottom
+	                            new Vector3(0, 1, 1),	//	left front top
+	                            new Vector3(1, 1, 0),	//	right back top
+	                            new Vector3(0, 1, 0),	//	left back top
+	                            new Vector3(1, 1, 1) };	//	right front top
+    }
+
     public static Vector3 VoxelOwner(Vector3 voxel, int chunkSize)
 	{
 		int x = Mathf.FloorToInt(voxel.x / chunkSize);
