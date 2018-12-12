@@ -23,13 +23,13 @@ public static class CustomDebugTools
     public static void AddWireCubeChunk(Vector3 chunkPosition, int size, Color color, bool _2D = false)
     {
         int chunkSize2 = TerrainSettings.cubeSize / 2;
-        Vector3 chunkCenter = new Vector3(chunkPosition.x + chunkSize2, chunkPosition.y + chunkSize2, chunkPosition.z + chunkSize2);
-        WireCube(chunkCenter, size, color, _2D);
+        //Vector3 chunkCenter = new Vector3(chunkPosition.x + chunkSize2, chunkPosition.y + chunkSize2, chunkPosition.z + chunkSize2);
+        WireCube(chunkPosition, size, color, _2D);
     }
     public static void SetWireCubeChunk(Vector3 chunkPosition, int size, Color color, bool _2D = false)
     {
         int chunkSize2 = TerrainSettings.cubeSize / 2;
-        Vector3 chunkCenter = new Vector3(chunkPosition.x + chunkSize2, chunkPosition.y + chunkSize2, chunkPosition.z + chunkSize2);
+        //Vector3 chunkCenter = new Vector3(chunkPosition.x + chunkSize2, chunkPosition.y + chunkSize2, chunkPosition.z + chunkSize2);
         WireCubeDict(chunkPosition, size, color, _2D);
     }
 
@@ -66,7 +66,7 @@ public static class CustomDebugTools
         Vector3[] v = new Vector3[cubeVectors.Length];
         for(int i = 0; i < cubeVectors.Length; i++)
         {
-            v[i] = (cubeVectors[i] * size) + center;
+            v[i] = ((cubeVectors[i] * size) + center) - (Vector3.one / 2);
         }
 
         lines.Add(new DebugLine(v[4], v[6], color));

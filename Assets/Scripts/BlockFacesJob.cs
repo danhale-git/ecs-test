@@ -13,15 +13,15 @@ struct BlockFacesJob : IJobParallelFor
 
 	/*[ReadOnly] public NativeArray<int> right;
 	[ReadOnly] public NativeArray<int> left;
-	[ReadOnly] public NativeArray<int> up;
-	[ReadOnly] public NativeArray<int> down;
 	[ReadOnly] public NativeArray<int> forward;
 	[ReadOnly] public NativeArray<int> back;*/
 
 	[ReadOnly] public int cubeStart;
+	[ReadOnly] public int aboveStart;
+	[ReadOnly] public int belowStart;
 	[ReadOnly] public int cubePosY;
-
 	[ReadOnly] public DynamicBuffer<Block> blocks;
+	
 	[ReadOnly] public int chunkSize;
 	[ReadOnly] public JobUtil util;
 
@@ -29,24 +29,32 @@ struct BlockFacesJob : IJobParallelFor
 	{
 		int3 pos = (int3)(position + direction);
 
-		if(pos.x == chunkSize) 	return 1;//right[util.WrapAndFlatten(pos, chunkSize)]   == 0 ? 1 : 0;
-		if(pos.x < 0)			return 1;//left[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
-		if(pos.y == chunkSize) 	return 1;//up[util.WrapAndFlatten(pos, chunkSize)] 	    == 0 ? 1 : 0;
-		if(pos.y < 0)			return 1;//down[util.WrapAndFlatten(pos, chunkSize)]	== 0 ? 1 : 0;
-		if(pos.z == chunkSize) 	return 1;//forward[util.WrapAndFlatten(pos, chunkSize)] == 0 ? 1 : 0;
-		if(pos.z < 0)			return 1;//back[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
+
+		//	Outside this cube
+		if(pos.x == chunkSize) 	return 0;//right[util.WrapAndFlatten(pos, chunkSize)]   == 0 ? 1 : 0;
+		if(pos.x < 0)			return 0;//left[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
+
+
+		if(pos.y == chunkSize)
+			return blocks[util.WrapAndFlatten(pos, chunkSize) + aboveStart].type == 0 ? 1 : 0;
+		if(pos.y < 0)
+			return blocks[util.WrapAndFlatten(pos, chunkSize) + belowStart].type == 0 ? 1 : 0;
+
+		
+		if(pos.z == chunkSize) 	return 0;//forward[util.WrapAndFlatten(pos, chunkSize)] == 0 ? 1 : 0;
+		if(pos.z < 0)			return 0;//back[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
 
 		//float3 localPos = new float3(pos.x, pos.y-cubePosY, pos.z);
 
-
+		//	Inside this cube
 		return blocks[util.Flatten(pos, chunkSize) + cubeStart].type == 0 ? 1 : 0;
 	}
 
 	public void Execute(int i)
 	{
-		//	Get local position in heightmap
-		float3 pos = util.Unflatten(i, chunkSize);
-		float3 position = new float3(pos.x, pos.y+cubePosY, pos.z);
+		//	Get local position
+		float3 positionInCube = util.Unflatten(i, chunkSize);
+		//float3 squarePos = new float3(cubePos.x, cubePos.y+cubePosY, cubePos.z);
 
 		//	Air blocks can't be exposed
 		//	TODO is this right? Maybe prevent drawing air block in mesh code instead
@@ -54,12 +62,12 @@ struct BlockFacesJob : IJobParallelFor
 
 		int right, left, up, down, forward, back;
 
-		right =	FaceExposed(pos, new float3( 1,	0, 0));
-		left = 	FaceExposed(pos, new float3(-1,	0, 0));
-		up =   	FaceExposed(pos, new float3( 0,	1, 0));
-		down = 	FaceExposed(pos, new float3( 0,   -1, 0));
-		forward=FaceExposed(pos, new float3( 0,	0, 1));
-		back = 	FaceExposed(pos, new float3( 0,	0,-1));
+		right 	= FaceExposed(positionInCube, new float3( 1,	0, 0));
+		left 	= FaceExposed(positionInCube, new float3(-1,	0, 0));
+		up 	 	= FaceExposed(positionInCube, new float3( 0,	1, 0));
+		down 	= FaceExposed(positionInCube, new float3( 0,   -1, 0));
+		forward	= FaceExposed(positionInCube, new float3( 0,	0, 1));
+		back 	= FaceExposed(positionInCube, new float3( 0,	0,-1));
 
 		exposedFaces[i+cubeStart] = new Faces(right, left, up, down, forward, back, 0);
 	}

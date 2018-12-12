@@ -3,6 +3,8 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Transforms;
+using UnityEngine;
 using MyComponents;
 
 [UpdateAfter(typeof(MapSquareSystem))]
@@ -13,9 +15,6 @@ public class CubeSystem : ComponentSystem
 
 
 	ArchetypeChunkEntityType entityType;
-
-	ArchetypeChunkComponentType<MapSquare> mapSquareType;
-	//ArchetypeChunkComponentType<CubeCount> cubeCountType;
 
 	ArchetypeChunkBufferType<Block> blocksType;
 	ArchetypeChunkBufferType<MapCube> cubePosType;
@@ -40,9 +39,6 @@ public class CubeSystem : ComponentSystem
 	{
 		entityType 		= GetArchetypeChunkEntityType();
 
-		mapSquareType	= GetArchetypeChunkComponentType<MapSquare>();
-		//cubeCountType 	= GetArchetypeChunkComponentType<CubeCount>();
-
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
 		cubePosType 	= GetArchetypeChunkBufferType<MapCube>();
 		heightmapType 	= GetArchetypeChunkBufferType<Height>();
@@ -66,23 +62,18 @@ public class CubeSystem : ComponentSystem
 			ArchetypeChunk chunk = chunks[c];
 			NativeArray<Entity> entities 					= chunk.GetNativeArray(entityType);
 
-			NativeArray<MapSquare> mapSquares 				= chunk.GetNativeArray(mapSquareType);
-			//NativeArray<CubeCount> cubeCounts 			= chunk.GetNativeArray(cubeCountType);
-
 			BufferAccessor<Block> blockAccessor 			= chunk.GetBufferAccessor(blocksType);
-			BufferAccessor<MapCube> cubePosAccessor 	= chunk.GetBufferAccessor(cubePosType);
+			BufferAccessor<MapCube> cubePosAccessor 		= chunk.GetBufferAccessor(cubePosType);
 			BufferAccessor<Height> heightmapAccessor 		= chunk.GetBufferAccessor(heightmapType);
 
-			for(int e = 0; e < mapSquares.Length; e++)
+			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity = entities[e];
-				MapSquare mapSquare = mapSquares[e];
-				float2 position = mapSquare.position;
 
-				DynamicBuffer<Block> blockBuffer 		= blockAccessor[e];
+				DynamicBuffer<Block> blockBuffer 	= blockAccessor[e];
 
 				DynamicBuffer<MapCube> cubes		= cubePosAccessor[e];
-				DynamicBuffer<Height> heightmap			= heightmapAccessor[e];
+				DynamicBuffer<Height> heightmap		= heightmapAccessor[e];
 
 				int blockArrayLength = (int)math.pow(cubeSize, 3) * cubes.Length;
 
@@ -97,6 +88,9 @@ public class CubeSystem : ComponentSystem
 
 				for(int b = 0; b < blocks.Length; b++)
 					blockBuffer [b] = blocks[b];
+
+				CustomDebugTools.AddWireCubeChunk(entityManager.GetComponentData<Position>(entity).Value, cubeSize-2, Color.cyan);
+				Debug.Log("length cube: "+entityManager.GetBuffer<Block>(entity).Length);
 
 				commandBuffer.RemoveComponent(entity, typeof(Tags.GenerateBlocks));
 

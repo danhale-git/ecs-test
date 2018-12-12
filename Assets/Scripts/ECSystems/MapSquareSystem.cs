@@ -46,7 +46,7 @@ public class MapSquareSystem : ComponentSystem
 			ComponentType.Create<MapSquare>(),
 			ComponentType.Create<Height>(),
 			ComponentType.Create<MapCube>(),
-			ComponentType.Create<Block>()
+			ComponentType.Create<Block>()	
 			);
 
 		//	All map squares
@@ -59,12 +59,14 @@ public class MapSquareSystem : ComponentSystem
 
 
 	//	Continually generate map squares
-	float timer = 1.5f;
+	float timer = -1f;
+	bool debug = true;
 	protected override void OnUpdate()
 	{
 		//	Timer
-		if(Time.fixedTime - timer > 1)
+		 if(Time.fixedTime - timer > 1)
 		{
+			debug = false;
 			timer = Time.fixedTime;
 
 			//	Generate map in radius around player
@@ -110,7 +112,7 @@ public class MapSquareSystem : ComponentSystem
 		if(!GetMapSquares(position, out squareEntity))
 		{
 			Debug.Log("creating square");
-			Color debugColor = new Color(1,1,1,0.5f);
+			Color debugColor = edge ? new Color(1,0,0,0.5f) : new Color(1,1,1,0.5f);
 			CustomDebugTools.SetWireCubeChunk(position, cubeSize, debugColor);
 
 			//	Create square entity
@@ -138,7 +140,7 @@ public class MapSquareSystem : ComponentSystem
 				heightBuffer[h] = new Height
 				{ 
 					index 	= h,
-					height 	= heightMap[h]
+					height 	= heightMap[h] + cubeSize
 				};
 			}
 
@@ -147,13 +149,27 @@ public class MapSquareSystem : ComponentSystem
 			DynamicBuffer<MapCube> cubeBuffer = entityManager.GetBuffer<MapCube>(squareEntity);
 			MapCube cubePos1 = new MapCube { yPos = 0};
 			MapCube cubePos2 = new MapCube { yPos = cubeSize};
+			MapCube cubePos3 = new MapCube { yPos = cubeSize*2};
+			MapCube cubePos4 = new MapCube { yPos = cubeSize*3};
 
 			cubeBuffer.Add(cubePos1);
 			cubeBuffer.Add(cubePos2);
+			cubeBuffer.Add(cubePos3);
+			cubeBuffer.Add(cubePos4);
 
 			entityManager.AddComponent(squareEntity, typeof(Tags.GenerateBlocks));
-			entityManager.AddComponent(squareEntity, typeof(Tags.CreateCubes));
 			entityManager.AddComponent(squareEntity, typeof(Tags.DrawMesh));
+
+			//	Leave a buffer of one to guarantee adjacent block data when culling faces	
+			if(edge)
+			{
+				entityManager.AddComponent(squareEntity, typeof(Tags.MapEdge));
+			}
+		}
+		else if (!edge && entityManager.HasComponent<Tags.MapEdge>(squareEntity))
+		{
+			//	Square is no longer at the edge of the map
+			entityManager.RemoveComponent(squareEntity, typeof(Tags.MapEdge));
 		}
 	}
 
