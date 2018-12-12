@@ -94,19 +94,22 @@ public class MeshSystem : ComponentSystem
 			//	Iterate over map square entities
 			for(int e = 0; e < entities.Length; e++)
 			{
+				//	Get all adjacent blocks and skip if not any are missing
+				DynamicBuffer<Block>[] adjacentBlocks;
+				if(!GetAdjacentBuffers(positions[e].Value, out adjacentBlocks))
+					continue;
+
 				Entity entity = entities[e];
 				float2 position = new float2(
 					positions[e].Value.x,
 					positions[e].Value.z
 					);
 
-
 				//	Check block face exposure
-				Entity[] 	adjacentChunks = new Entity[] {};
-				int 		faceCount;
+				int faceCount;
 
 				NativeArray<Faces> faces = CheckBlockFaces(
-					adjacentChunks,
+					adjacentBlocks,
 					blockAccessor[e],
 					out faceCount,
 					cubeAccessor[e]
@@ -131,31 +134,24 @@ public class MeshSystem : ComponentSystem
 
 			chunks.Dispose();
 		}
-	}
-
-
-	// Apply mesh to MapSquare entity
-	void SetMeshComponent(Mesh mesh, float2 pos, Entity entity, EntityCommandBuffer commandBuffer)
-	{
-		MeshInstanceRenderer renderer = new MeshInstanceRenderer();
-		renderer.mesh = mesh;
-		renderer.material = material;
-
-		commandBuffer.AddSharedComponent(entity, renderer);
-	}
+	}	
 
 	//	Generate structs with int values showing face exposure for each block
-	public NativeArray<Faces> CheckBlockFaces(Entity[] adjacentChunks, DynamicBuffer<Block> blocks, out int faceCount, DynamicBuffer<MapCube> cubes)
+	public NativeArray<Faces> CheckBlockFaces(DynamicBuffer<Block>[] adjacentBlocks, DynamicBuffer<Block> blocks, out int faceCount, DynamicBuffer<MapCube> cubes)
 	{
 		var exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
 
-		//	Block types for all adjacent chunks
-		NativeArray<int>[] adjacent = new NativeArray<int>[] {
-			new NativeArray<int>(blocks.Length, Allocator.TempJob),
-			new NativeArray<int>(blocks.Length, Allocator.TempJob),
-			new NativeArray<int>(blocks.Length, Allocator.TempJob),
-			new NativeArray<int>(blocks.Length, Allocator.TempJob)
-		};
+		NativeArray<Block>[] adjacent = new NativeArray<Block>[] {
+			new NativeArray<Block>(adjacentBlocks[0].Length, Allocator.TempJob),
+			new NativeArray<Block>(adjacentBlocks[0].Length, Allocator.TempJob),
+			new NativeArray<Block>(adjacentBlocks[0].Length, Allocator.TempJob),
+			new NativeArray<Block>(adjacentBlocks[0].Length, Allocator.TempJob)
+			};
+
+		for(int i = 0; i < 4; i++)
+		{
+			adjacent[i].CopyFrom(adjacentBlocks[i].ToNativeArray());
+		}
 
 		//	Leave a buffer of one to guarantee adjacent block data
 		for(int i = 1; i < cubes.Length-1; i++)
@@ -163,28 +159,27 @@ public class MeshSystem : ComponentSystem
 			var job = new BlockFacesJob(){
 				exposedFaces = exposedFaces,
 
+				blocks 	= blocks,
+				right 	= adjacent[0],
+				left 	= adjacent[1],
+				forward = adjacent[2],
+				back 	= adjacent[3],
+
 				cubeStart 	= (i  ) * cubeArrayLength,
 				aboveStart 	= (i+1) * cubeArrayLength,
 				belowStart 	= (i-1) * cubeArrayLength,
 				
-				cubePosY 	= cubes[i].yPos,
-				blocks 		= blocks,
-
-				chunkSize 	= cubeSize,
-				util 		= new JobUtil(),
-
-				/*right 	= adjacent[0],
-				left 		= adjacent[1],
-				forward 	= adjacent[4],
-				back 		= adjacent[5]*/
+				cubeSize 	= cubeSize,
+				util 		= new JobUtil()
 				};
 			
 			job.Schedule(cubeArrayLength, batchSize).Complete();
 		}
 
-		//	Dispose of adjacent block type arrays
 		for(int i = 0; i < 4; i++)
+		{
 			adjacent[i].Dispose();
+		}
 
 		//	Count total exposed faces and set face indices	
 		faceCount = 0;
@@ -266,15 +261,28 @@ public class MeshSystem : ComponentSystem
 		return mesh;
 	}
 
-	//	Get multiple map squares by positions
-	/*bool GetBuffers(float3 mapSquare, out NativeArray<DynamicBuffer<Block>> mapSquares)
+	// Apply mesh to MapSquare entity
+	void SetMeshComponent(Mesh mesh, float2 pos, Entity entity, EntityCommandBuffer commandBuffer)
 	{
-		mapSquares = new NativeArray<DynamicBuffer<Block>>(4, Allocator.TempJob);
-		int count = 0;
+		MeshInstanceRenderer renderer = new MeshInstanceRenderer();
+		renderer.mesh = mesh;
+		renderer.material = material;
 
-		entityType = GetArchetypeChunkEntityType();
+		commandBuffer.AddSharedComponent(entity, renderer);
+	}
 
-		positionType = GetArchetypeChunkComponentType<Position>();
+	//	Get multiple map squares by positions
+	//	TODO if we can't find 4 adjacent cause blocks aren't generated. just skip it
+	bool GetAdjacentBuffers(float3 centerPosition, out DynamicBuffer<Block>[] buffers)
+	{
+		float3[] adjacentPositions = new float3[4] {
+			centerPosition + (new float3( 1,  0,  0) * cubeSize),
+			centerPosition + (new float3(-1,  0,  0) * cubeSize),
+			centerPosition + (new float3( 0,  0,  1) * cubeSize),
+			centerPosition + (new float3( 0,  0, -1) * cubeSize)
+		};
+
+		buffers = new DynamicBuffer<Block>[4];
 
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			bufferQuery,
@@ -287,37 +295,38 @@ public class MeshSystem : ComponentSystem
 			return false;
 		}
 
+		int count = 0;
 		for(int d = 0; d < chunks.Length; d++)
 		{
 			ArchetypeChunk chunk = chunks[d];
 
-			NativeArray<Entity> entities 	= chunk.GetNativeArray(entityType);
+			NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
 			NativeArray<Position> positions = chunk.GetNativeArray(positionType);
+			BufferAccessor<Block> blocks	= chunk.GetBufferAccessor(blocksType);
 
-			for(int e = 0; e < entities.Length; e++)
+			for(int e = 0; e < positions.Length; e++)
 			{
-				Entity entity = entities[e];
 
-				foreach(float3 position in positionsList)
+				for(int p = 0; p < 4; p++)
 				{
-
+					float3 position = adjacentPositions[p];
 					if(	position.x == positions[e].Value.x &&
 						position.z == positions[e].Value.z)
 					{
-						mapSquaresList.Add(entity);
-						if(mapSquaresList.Count == positionsList.Count)
-							break;
+						buffers[p] = blocks[e];
+						count++;
+
+						if(count == 4)
+						{
+							chunks.Dispose();
+							return true;
+						}
 					}
 				}
 			}
 		}
 
 		chunks.Dispose();
-		mapSquares = mapSquaresList.ToArray();
-
-		if(mapSquares.Length == positionsList.Count)
-			return true;
-		else 
-			return false;
-	}*/
+		return false;
+	}
 } 

@@ -89,9 +89,6 @@ public class CubeSystem : ComponentSystem
 				for(int b = 0; b < blocks.Length; b++)
 					blockBuffer [b] = blocks[b];
 
-				CustomDebugTools.AddWireCubeChunk(entityManager.GetComponentData<Position>(entity).Value, cubeSize-2, Color.cyan);
-				Debug.Log("length cube: "+entityManager.GetBuffer<Block>(entity).Length);
-
 				commandBuffer.RemoveComponent(entity, typeof(Tags.GenerateBlocks));
 
 				blocks.Dispose();

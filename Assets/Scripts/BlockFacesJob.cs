@@ -11,64 +11,65 @@ struct BlockFacesJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<Faces> exposedFaces;
 
-	/*[ReadOnly] public NativeArray<int> right;
-	[ReadOnly] public NativeArray<int> left;
-	[ReadOnly] public NativeArray<int> forward;
-	[ReadOnly] public NativeArray<int> back;*/
+	//	Block data for this and adjacent map squares
+	[ReadOnly] public DynamicBuffer<Block> blocks;
+	[ReadOnly] public NativeArray<Block> right;
+	[ReadOnly] public NativeArray<Block> left;
+	[ReadOnly] public NativeArray<Block> forward;
+	[ReadOnly] public NativeArray<Block> back;
 
+	//	Indices where cubes in this map square begin
 	[ReadOnly] public int cubeStart;
 	[ReadOnly] public int aboveStart;
 	[ReadOnly] public int belowStart;
-	[ReadOnly] public int cubePosY;
-	[ReadOnly] public DynamicBuffer<Block> blocks;
-	
-	[ReadOnly] public int chunkSize;
+
+	[ReadOnly] public int cubeSize;
 	[ReadOnly] public JobUtil util;
 
 	int FaceExposed(float3 position, float3 direction)
 	{
+		//	Adjacent position
 		int3 pos = (int3)(position + direction);
 
-
 		//	Outside this cube
-		if(pos.x == chunkSize) 	return 0;//right[util.WrapAndFlatten(pos, chunkSize)]   == 0 ? 1 : 0;
-		if(pos.x < 0)			return 0;//left[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
-
-
-		if(pos.y == chunkSize)
-			return blocks[util.WrapAndFlatten(pos, chunkSize) + aboveStart].type == 0 ? 1 : 0;
+		if(pos.x == cubeSize)
+			return right[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type 		== 0 ? 1 : 0;
+		if(pos.x < 0)
+			return left[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type 		== 0 ? 1 : 0;
+		if(pos.y == cubeSize)
+			return blocks[util.WrapAndFlatten(pos, cubeSize) + aboveStart].type 	== 0 ? 1 : 0;
 		if(pos.y < 0)
-			return blocks[util.WrapAndFlatten(pos, chunkSize) + belowStart].type == 0 ? 1 : 0;
-
-		
-		if(pos.z == chunkSize) 	return 0;//forward[util.WrapAndFlatten(pos, chunkSize)] == 0 ? 1 : 0;
-		if(pos.z < 0)			return 0;//back[util.WrapAndFlatten(pos, chunkSize)] 	== 0 ? 1 : 0;
-
-		//float3 localPos = new float3(pos.x, pos.y-cubePosY, pos.z);
+			return blocks[util.WrapAndFlatten(pos, cubeSize) + belowStart].type		== 0 ? 1 : 0;
+		if(pos.z == cubeSize)
+			return forward[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type 	== 0 ? 1 : 0;
+		if(pos.z < 0)
+			return back[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type		== 0 ? 1 : 0;
 
 		//	Inside this cube
-		return blocks[util.Flatten(pos, chunkSize) + cubeStart].type == 0 ? 1 : 0;
+		return blocks[util.Flatten(pos, cubeSize) + cubeStart].type == 0 ? 1 : 0;
 	}
 
 	public void Execute(int i)
 	{
-		//	Get local position
-		float3 positionInCube = util.Unflatten(i, chunkSize);
-		//float3 squarePos = new float3(cubePos.x, cubePos.y+cubePosY, cubePos.z);
+		//	Get local position in cube
+		float3 positionInCube = util.Unflatten(i, cubeSize);
 
-		//	Air blocks can't be exposed
-		//	TODO is this right? Maybe prevent drawing air block in mesh code instead
+		//	Skip invisible blocks
 		if(blocks[i + cubeStart].type == 0) return;
 
-		int right, left, up, down, forward, back;
+		//	Get get exposed block faces
+		exposedFaces[i+cubeStart] = new Faces(
+			FaceExposed(positionInCube, new float3( 1,	0, 0)),		//	right
+			FaceExposed(positionInCube, new float3(-1,	0, 0)),		//	left
+			FaceExposed(positionInCube, new float3( 0,	1, 0)),		//	up
+			FaceExposed(positionInCube, new float3( 0,   -1, 0)),	//	down	
+			FaceExposed(positionInCube, new float3( 0,	0, 1)),		//	forward
+			FaceExposed(positionInCube, new float3( 0,	0,-1)),		//	back
+			0														//	Face index is set later
+			);
 
-		right 	= FaceExposed(positionInCube, new float3( 1,	0, 0));
-		left 	= FaceExposed(positionInCube, new float3(-1,	0, 0));
-		up 	 	= FaceExposed(positionInCube, new float3( 0,	1, 0));
-		down 	= FaceExposed(positionInCube, new float3( 0,   -1, 0));
-		forward	= FaceExposed(positionInCube, new float3( 0,	0, 1));
-		back 	= FaceExposed(positionInCube, new float3( 0,	0,-1));
 
-		exposedFaces[i+cubeStart] = new Faces(right, left, up, down, forward, back, 0);
+
+
 	}
 }

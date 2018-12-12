@@ -111,7 +111,6 @@ public class MapSquareSystem : ComponentSystem
 
 		if(!GetMapSquares(position, out squareEntity))
 		{
-			Debug.Log("creating square");
 			Color debugColor = edge ? new Color(1,0,0,0.5f) : new Color(1,1,1,0.5f);
 			CustomDebugTools.SetWireCubeChunk(position, cubeSize, debugColor);
 

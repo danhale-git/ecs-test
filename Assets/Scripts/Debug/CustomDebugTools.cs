@@ -35,10 +35,13 @@ public static class CustomDebugTools
 
     public static void WireCubeDict(Vector3 center, int size, Color color, bool _2D = false)
     {
+        
         Vector3[] v = new Vector3[cubeVectors.Length];
         for(int i = 0; i < cubeVectors.Length; i++)
         {
-            v[i] = ((cubeVectors[i] * size) + center) - (Vector3.one / 2);
+            Vector3 vector = ((cubeVectors[i] * size) + center) - (Vector3.one / 2);
+            if(_2D) vector = vector + (Vector3.up * 50);
+            v[i] = vector;
         }
 
         linesDict[center] = new List<DebugLine>();
