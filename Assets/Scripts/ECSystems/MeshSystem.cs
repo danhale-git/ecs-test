@@ -24,7 +24,6 @@ public class MeshSystem : ComponentSystem
 	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
 
 	ArchetypeChunkEntityType 				entityType;
-//	ArchetypeChunkComponentType<MapSquare> 	squareType;
 	ArchetypeChunkComponentType<Position> 	positionType;
 	ArchetypeChunkBufferType<MapCube> 		cubeType;
 	ArchetypeChunkBufferType<Block> 		blocksType;
@@ -59,14 +58,14 @@ public class MeshSystem : ComponentSystem
 	protected override void OnUpdate()
 	{
 		entityType 		= GetArchetypeChunkEntityType();
-//		squareType		= GetArchetypeChunkComponentType<MapSquare>();
 		positionType 	= GetArchetypeChunkComponentType<Position>();
 		cubeType 		= GetArchetypeChunkBufferType<MapCube>();
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
 
 		NativeArray<ArchetypeChunk> chunks;
 		chunks	= entityManager.CreateArchetypeChunkArray(
-			squareQuery, Allocator.TempJob
+			squareQuery,
+			Allocator.TempJob
 			);
 
 		if(chunks.Length == 0) chunks.Dispose();
@@ -85,7 +84,6 @@ public class MeshSystem : ComponentSystem
 
 			//	Get chunk data
 			NativeArray<Entity> 	entities 		= chunk.GetNativeArray(entityType);
-//			NativeArray<MapSquare> 	squares 		= chunk.GetNativeArray(squareType);
 			NativeArray<Position> 	positions		= chunk.GetNativeArray(positionType);
 			BufferAccessor<MapCube> cubeAccessor 	= chunk.GetBufferAccessor(cubeType);
 			BufferAccessor<Block> 	blockAccessor 	= chunk.GetBufferAccessor(blocksType);
@@ -94,10 +92,13 @@ public class MeshSystem : ComponentSystem
 			//	Iterate over map square entities
 			for(int e = 0; e < entities.Length; e++)
 			{
-				//	Get all adjacent blocks and skip if not any are missing
+				//	Get all adjacent blocks and skip if any are missing
 				DynamicBuffer<Block>[] adjacentBlocks;
 				if(!GetAdjacentBuffers(positions[e].Value, out adjacentBlocks))
+				{
+					CustomDebugTools.SetWireCubeChunk(positions[e].Value, cubeSize -1, Color.red);
 					continue;
+				}
 
 				Entity entity = entities[e];
 				float2 position = new float2(
@@ -156,7 +157,7 @@ public class MeshSystem : ComponentSystem
 		//	Leave a buffer of one to guarantee adjacent block data
 		for(int i = 1; i < cubes.Length-1; i++)
 		{
-			var job = new BlockFacesJob(){
+			var job = new FacesJob(){
 				exposedFaces = exposedFaces,
 
 				blocks 	= blocks,
@@ -201,9 +202,9 @@ public class MeshSystem : ComponentSystem
 	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, int faceCount)
 	{
 		//	Determine vertex and triangle arrays using face count
-		NativeArray<float3> vertices = new NativeArray<float3>(	faceCount * 4, Allocator.TempJob);
-		NativeArray<int> triangles = new NativeArray<int>(		faceCount * 6, Allocator.TempJob);
-		NativeArray<float4> colors = new NativeArray<float4>(	faceCount * 4, Allocator.TempJob);
+		NativeArray<float3> vertices 	= new NativeArray<float3>(faceCount * 4, Allocator.TempJob);
+		NativeArray<int> triangles 		= new NativeArray<int>	 (faceCount * 6, Allocator.TempJob);
+		NativeArray<float4> colors 		= new NativeArray<float4>(faceCount * 4, Allocator.TempJob);
 
 		var job = new MeshJob(){
 			vertices 	= vertices,

@@ -23,10 +23,8 @@ public class MapSquareSystem : ComponentSystem
 	int viewDistance;
 	int terrainHeight;
 
-	ArchetypeChunkEntityType entityType;
-
+	ArchetypeChunkEntityType 				entityType;
 	ArchetypeChunkComponentType<Position> 	positionType;
-
 
 	EntityArchetypeQuery mapSquareQuery;
 
@@ -109,9 +107,10 @@ public class MapSquareSystem : ComponentSystem
 
 		Entity squareEntity;	
 
-		if(!GetMapSquares(position, out squareEntity))
+		//	Square does not exist yet
+		if(!GetMapSquare(position, out squareEntity))
 		{
-			Color debugColor = edge ? new Color(1,0,0,0.5f) : new Color(1,1,1,0.5f);
+			Color debugColor = edge ? new Color(0,1,0,0.2f) : new Color(1,1,1,0.2f);
 			CustomDebugTools.SetWireCubeChunk(position, cubeSize, debugColor);
 
 			//	Create square entity
@@ -120,15 +119,13 @@ public class MapSquareSystem : ComponentSystem
 			//	Set position
 			entityManager.SetComponentData(
 			squareEntity,
-			new Position{
-				Value = position
-			});
+			new Position{ Value = position });
 
 			//	Get heightmap
 			NativeArray<int> heightMap = GetHeightMap(
 				position,
-				cubeSize,
-				terrainHeight);
+				terrainHeight
+				);
 
 			//	Heightmap to Dynamic Buffer
 			DynamicBuffer<Height> heightBuffer = entityManager.GetBuffer<Height>(squareEntity);
@@ -146,6 +143,8 @@ public class MapSquareSystem : ComponentSystem
 			heightMap.Dispose();
 
 			DynamicBuffer<MapCube> cubeBuffer = entityManager.GetBuffer<MapCube>(squareEntity);
+
+			//	TODO: Proper cube terrain height checks and cube culling
 			MapCube cubePos1 = new MapCube { yPos = 0};
 			MapCube cubePos2 = new MapCube { yPos = cubeSize};
 			MapCube cubePos3 = new MapCube { yPos = cubeSize*2};
@@ -156,45 +155,43 @@ public class MapSquareSystem : ComponentSystem
 			cubeBuffer.Add(cubePos3);
 			cubeBuffer.Add(cubePos4);
 
+			//	Add tags to generate block data and draw mesh
 			entityManager.AddComponent(squareEntity, typeof(Tags.GenerateBlocks));
 			entityManager.AddComponent(squareEntity, typeof(Tags.DrawMesh));
 
 			//	Leave a buffer of one to guarantee adjacent block data when culling faces	
 			if(edge)
-			{
 				entityManager.AddComponent(squareEntity, typeof(Tags.MapEdge));
-			}
 		}
+		//	Square exists and used to be at the edge of the map
 		else if (!edge && entityManager.HasComponent<Tags.MapEdge>(squareEntity))
-		{
-			//	Square is no longer at the edge of the map
 			entityManager.RemoveComponent(squareEntity, typeof(Tags.MapEdge));
-		}
 	}
 
-	public NativeArray<int> GetHeightMap(float3 chunkPosition, int chunkSize, int maxHeight)
+	public NativeArray<int> GetHeightMap(float3 position, int maxHeight)
     {
-        int arrayLength = (int)math.pow(chunkSize, 2);
+		//	Flattened 2D array noise data matrix
+        var noiseMap = new NativeArray<float>((int)math.pow(cubeSize, 2), Allocator.TempJob);
 
-        var noiseMap = new NativeArray<float>(arrayLength, Allocator.TempJob);
-
-        var job = new FastNoiseJob()
-        {
-            noiseMap 	= noiseMap,
-			offset 		= chunkPosition,
-			chunkSize	= chunkSize,
-            seed 		= TerrainSettings.seed,
-            frequency 	= TerrainSettings.frequency,
-			util 		= new JobUtil(),
-            noise 		= new SimplexNoiseGenerator(0)
+        var job = new FastNoiseJob(){
+            noiseMap 	= noiseMap,						//	Noise map matrix to be filled
+			offset 		= position,						//	Position of this map square
+			cubeSize	= cubeSize,						//	Length of one side of a square/cube	
+            seed 		= TerrainSettings.seed,			//	Perlin noise seed
+            frequency 	= TerrainSettings.frequency,	//	Perlin noise frequency
+			util 		= new JobUtil(),				//	Utilities
+            noise 		= new SimplexNoiseGenerator(0)	//	FastNoise.GetSimplex adapted for Jobs
         };
 
-        job.Schedule(arrayLength, 16).Complete();
+        job.Schedule(noiseMap.Length, 16).Complete();
 
+		//	Dispose of NativeArrays in noise struct
         job.noise.Dispose();
 
+		//	Convert noise (0-1) into heights (0-maxHeight)
 		NativeArray<int> heightMap = new NativeArray<int>(noiseMap.Length, Allocator.Temp);
 
+		//	TODO: Jobify this
 		for(int i = 0; i < noiseMap.Length; i++)
 		    heightMap[i] = (int)(noiseMap[i] * maxHeight);
 
@@ -204,10 +201,9 @@ public class MapSquareSystem : ComponentSystem
     }
 
 	//	Get map square by position
-	bool GetMapSquares(float3 position, out Entity mapSquare)
+	bool GetMapSquare(float3 position, out Entity mapSquare)
 	{
-		entityType = GetArchetypeChunkEntityType();
-
+		entityType	 	= GetArchetypeChunkEntityType();
 		positionType	= GetArchetypeChunkComponentType<Position>();
 
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
@@ -247,60 +243,5 @@ public class MapSquareSystem : ComponentSystem
 		chunks.Dispose();
 		mapSquare = new Entity();
 		return false;
-	}
-
-	//	Get multiple map squares by positions
-	bool GetMapSquares(List<float3> positionsList, out Entity[] mapSquares)
-	{
-		List<Entity> mapSquaresList = new List<Entity>();
-
-		entityType = GetArchetypeChunkEntityType();
-
-		positionType = GetArchetypeChunkComponentType<Position>();
-
-		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-			mapSquareQuery,
-			Allocator.TempJob
-			);
-
-		if(chunks.Length == 0)
-		{
-			chunks.Dispose();
-			mapSquares = mapSquaresList.ToArray();
-			return false;
-		}
-
-		for(int d = 0; d < chunks.Length; d++)
-		{
-			ArchetypeChunk chunk = chunks[d];
-
-			NativeArray<Entity> entities 	= chunk.GetNativeArray(entityType);
-			NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-
-			for(int e = 0; e < entities.Length; e++)
-			{
-				Entity entity = entities[e];
-
-				foreach(float3 position in positionsList)
-				{
-
-					if(	position.x == positions[e].Value.x &&
-						position.z == positions[e].Value.z)
-					{
-						mapSquaresList.Add(entity);
-						if(mapSquaresList.Count == positionsList.Count)
-							break;
-					}
-				}
-			}
-		}
-
-		chunks.Dispose();
-		mapSquares = mapSquaresList.ToArray();
-
-		if(mapSquares.Length == positionsList.Count)
-			return true;
-		else 
-			return false;
 	}
 }
