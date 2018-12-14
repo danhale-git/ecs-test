@@ -6,36 +6,6 @@ using Unity.Burst;
 using Unity.Entities;
 using MyComponents;
 
-/*[BurstCompile]
-struct BlocksJob : IJobParallelFor
-{
-	public NativeArray<Block> blocks;
-
-	[ReadOnly] public NativeArray<int> heightMap;
-	[ReadOnly] public int chunkSize;
-	[ReadOnly] public JobUtil util;
-
-	public void Execute(int i)
-	{
-		//	Get local position in heightmap
-		float3 pos = util.Unflatten(i, chunkSize);
-		int hMapIndex = util.Flatten2D((int)pos.x, (int)pos.z, chunkSize);
-		int type = 0;
-
-		if(pos.y < heightMap[hMapIndex])
-			type = 1;
-
-		blocks[i] = new Block
-		{
-				index = i, 
-				type = type,
-				localPosition = pos,
-		};
-	}
-}*/
-
-//	TODO, support multiple cubes
-//[BurstCompile]
 struct BlocksJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<Block> blocks;
