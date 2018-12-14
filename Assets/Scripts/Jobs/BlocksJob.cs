@@ -33,7 +33,7 @@ struct BlocksJob : IJobParallelFor
 		{
 			index = i, 
 			type = type,
-			localPosition = position,
+			squareLocalPosition = position,
 		};
 	}
 }
