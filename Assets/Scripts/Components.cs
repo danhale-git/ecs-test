@@ -5,11 +5,14 @@ namespace MyComponents
 {
 	public enum CubeComposition { MIXED, SOLID, AIR};
 
-	public struct MapSquare : IComponentData { }
+	public struct MapSquare : IComponentData
+	{
+		public int highestBlock;
+		public int lowestBlock;
+	}
 	[InternalBufferCapacity(0)]
 	public struct Height : IBufferElementData
 	{
-		public int index; 
 		public int height;
 	}
 

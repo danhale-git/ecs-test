@@ -137,26 +137,38 @@ public class MapSquareSystem : ComponentSystem
 			new Position{ Value = position });
 
 			//	Get heightmap
-			NativeArray<int> heightMap = GetHeightMap(
-				position,
-				terrainHeight
-				);
+			NativeArray<int> heightMap = GetHeightMap(position);
 
 			//	Heightmap to Dynamic Buffer
 			DynamicBuffer<Height> heightBuffer = entityManager.GetBuffer<Height>(squareEntity);
 			heightBuffer.ResizeUninitialized((int)math.pow(cubeSize, 2));
+
+			int highestBlock = 0;
+			int lowestBlock = terrainHeight;
 			
 			for(int h = 0; h < heightMap.Length; h++)
 			{
+				int height = heightMap[h] + cubeSize;
 				heightBuffer[h] = new Height
 				{ 
-					index 	= h,
-					height 	= heightMap[h] + cubeSize
+					height = height
 				};
+
+				if(height > highestBlock)
+					highestBlock = height;
+				if(height < lowestBlock)
+					lowestBlock = height;
 			}
 
 			heightMap.Dispose();
 
+			MapSquare mapSquareComponent = new MapSquare{
+				highestBlock 	= highestBlock,
+				lowestBlock 	= lowestBlock
+			};
+			entityManager.SetComponentData<MapSquare>(squareEntity, mapSquareComponent);
+
+			//	Create cubes
 			DynamicBuffer<MapCube> cubeBuffer = entityManager.GetBuffer<MapCube>(squareEntity);
 
 			//	TODO: Proper cube terrain height checks and cube culling
@@ -185,7 +197,7 @@ public class MapSquareSystem : ComponentSystem
 			entityManager.RemoveComponent(squareEntity, typeof(Tags.MapEdge)); return 0;
 	}
 
-	public NativeArray<int> GetHeightMap(float3 position, int maxHeight)
+	public NativeArray<int> GetHeightMap(float3 position)
     {
 		//	Flattened 2D array noise data matrix
         var noiseMap = new NativeArray<float>((int)math.pow(cubeSize, 2), Allocator.TempJob);
@@ -210,7 +222,7 @@ public class MapSquareSystem : ComponentSystem
 
 		//	TODO: Jobify this
 		for(int i = 0; i < noiseMap.Length; i++)
-		    heightMap[i] = (int)(noiseMap[i] * maxHeight);
+		    heightMap[i] = (int)(noiseMap[i] * terrainHeight);
 
 		noiseMap.Dispose();
 

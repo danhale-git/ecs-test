@@ -9,8 +9,7 @@ using MyComponents;
 struct BlocksJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<Block> blocks;
-	public int hasAirBlocks;
-	public int hasSolidBlocks;
+	[NativeDisableParallelForRestriction] public NativeArray<int> hasAir_hasSolid;
 
 	[ReadOnly] public int cubeStart;
 	[ReadOnly] public int cubePosY;
@@ -28,15 +27,13 @@ struct BlocksJob : IJobParallelFor
 		int hMapIndex = util.Flatten2D((int)pos.x, (int)pos.z, cubeSize);
 		int type = 0;
 
-		if(position.y < heightMap[hMapIndex].height)
+		if(position.y <= heightMap[hMapIndex].height)
 		{
 			type = 1;
-			hasSolidBlocks = 1;
+			hasAir_hasSolid[1] = 1;
 		}
 		else
-		{
-			hasAirBlocks = 1;
-		}
+			hasAir_hasSolid[0] = 1;
 
 		blocks[i + cubeStart] = new Block
 		{

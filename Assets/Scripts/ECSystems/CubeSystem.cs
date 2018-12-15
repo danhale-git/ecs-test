@@ -116,12 +116,10 @@ public class CubeSystem : ComponentSystem
 		//	Iterate over one cube at a time, generating blocks for the map square
 		for(int i = 0; i < cubes.Length; i++)
 		{
-			int _hasAirBlocks = 0;
-			int _hasSolidBlocks = 0;
+			NativeArray<int> hasAir_hasSolid = new NativeArray<int>(2, Allocator.TempJob);
 			var job = new BlocksJob()
 			{
-				hasAirBlocks = _hasAirBlocks,
-				hasSolidBlocks = _hasSolidBlocks,
+				hasAir_hasSolid = hasAir_hasSolid,
 
 				blocks = blocks,
 				cubeStart = i * singleCubeArrayLength,
@@ -132,12 +130,15 @@ public class CubeSystem : ComponentSystem
 				util = new JobUtil()
 			};
 
-        	job.Schedule(singleCubeArrayLength, batchSize).Complete();	
+        	job.Schedule(singleCubeArrayLength, batchSize).Complete();
 
 			//	Store the composition of the cube
-			MapCube cube = SetComposition(job.hasAirBlocks, job.hasSolidBlocks, cubes[i]);
+			MapCube cube = SetComposition(job.hasAir_hasSolid[0], job.hasAir_hasSolid[1], cubes[i]);
 			cubes[i] = cube;
+
+			hasAir_hasSolid.Dispose();
 		}
+
 
 		return blocks;
 	}
