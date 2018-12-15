@@ -97,7 +97,9 @@ public class MeshSystem : ComponentSystem
 				if(!GetAdjacentBuffers(positions[e].Value, out adjacentBlocks))
 				{
 					CustomDebugTools.SetWireCubeChunk(positions[e].Value, cubeSize -1, Color.red);
-					continue;
+					throw new System.IndexOutOfRangeException(
+						"GetAdjacentBuffers returned "+adjacentBlocks.Length+" out of 4 adjacent squares."
+						);
 				}
 
 				Entity entity = entities[e];
@@ -129,12 +131,11 @@ public class MeshSystem : ComponentSystem
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 				faces.Dispose();
 			}
-
-			commandBuffer.Playback(entityManager);
-			commandBuffer.Dispose();
-
-			chunks.Dispose();
 		}
+		commandBuffer.Playback(entityManager);
+		commandBuffer.Dispose();
+
+		chunks.Dispose();
 	}	
 
 	//	Generate structs with int values showing face exposure for each block
@@ -301,7 +302,7 @@ public class MeshSystem : ComponentSystem
 		{
 			ArchetypeChunk chunk = chunks[d];
 
-			NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
+			NativeArray<Entity> entities 	= chunk.GetNativeArray(entityType);
 			NativeArray<Position> positions = chunk.GetNativeArray(positionType);
 			BufferAccessor<Block> blocks	= chunk.GetBufferAccessor(blocksType);
 

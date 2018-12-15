@@ -28,6 +28,9 @@ public class MapSquareSystem : ComponentSystem
 
 	EntityArchetypeQuery mapSquareQuery;
 
+	float timer = -1f;
+	float3 previousMapSquare;
+
 	protected override void OnCreateManager()
 	{
 		cubeSize 		= TerrainSettings.cubeSize;
@@ -57,27 +60,40 @@ public class MapSquareSystem : ComponentSystem
 
 
 	//	Continually generate map squares
-	float timer = -1f;
+	
 	bool debug = true;
 	protected override void OnUpdate()
 	{
+		float3 currentMapSquare = SquarePosition(player.transform.position);
+		
+		//	Generate map in radius around player
+			GenerateRadius(
+				currentMapSquare,
+				viewDistance);
+				
 		//	Timer
 		 if(Time.fixedTime - timer > 1)
 		{
 			debug = false;
 			timer = Time.fixedTime;
-
-			//	Generate map in radius around player
-			GenerateRadius(
-				Util.VoxelOwner(player.transform.position, cubeSize),
-				viewDistance);
+			
 		}
+	}
+
+	float3 SquarePosition(float3 pointInWorld)
+	{
+		int x = ((int)math.floor(pointInWorld.x / cubeSize)) * cubeSize;
+		int y = ((int)math.floor(pointInWorld.y / cubeSize)) * cubeSize;
+		int z = ((int)math.floor(pointInWorld.z / cubeSize)) * cubeSize;
+		return new float3(x, y, z);
 	}
 
 	//	Create squares
 	public void GenerateRadius(Vector3 center, int radius)
 	{
 		center = new Vector3(center.x, 0, center.z);
+
+		int squaresCreated = 0;
 
 		//	Generate grid of map squares in radius
 		for(int x = -radius; x <= radius; x++)
@@ -92,16 +108,15 @@ public class MapSquareSystem : ComponentSystem
 					);
 
 				Vector3 offset = new Vector3(x*cubeSize, 0, z*cubeSize);
-				CreateSquare(center + offset, edge);
+				squaresCreated += CreateSquare(center + offset, edge);
 			}
-
 	}
 
 	//	Create map square and generate height map
-	void CreateSquare(Vector3 position, bool edge)
+	int CreateSquare(Vector3 position, bool edge)
 	{
 		if(position.y != 0)
-			throw new System.ArgumentOutOfRangeException(
+			throw new System.ArgumentException(
 				"Map Square Y position must be 0: "+position.y
 				);
 
@@ -162,10 +177,12 @@ public class MapSquareSystem : ComponentSystem
 			//	Leave a buffer of one to guarantee adjacent block data when culling faces	
 			if(edge)
 				entityManager.AddComponent(squareEntity, typeof(Tags.MapEdge));
+
+			return 1;
 		}
 		//	Square exists and used to be at the edge of the map
 		else if (!edge && entityManager.HasComponent<Tags.MapEdge>(squareEntity))
-			entityManager.RemoveComponent(squareEntity, typeof(Tags.MapEdge));
+			entityManager.RemoveComponent(squareEntity, typeof(Tags.MapEdge)); return 0;
 	}
 
 	public NativeArray<int> GetHeightMap(float3 position, int maxHeight)

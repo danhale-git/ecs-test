@@ -41,7 +41,7 @@ public class CubeSystem : ComponentSystem
 		entityType 		= GetArchetypeChunkEntityType();
 
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
-		cubeType 	= GetArchetypeChunkBufferType<MapCube>();
+		cubeType 		= GetArchetypeChunkBufferType<MapCube>();
 		heightmapType 	= GetArchetypeChunkBufferType<Height>();
 
 		NativeArray<ArchetypeChunk> chunks;
@@ -52,7 +52,6 @@ public class CubeSystem : ComponentSystem
 
 		if(chunks.Length == 0) chunks.Dispose();
 		else GenerateCubes(chunks);
-			
 	}
 
 	void GenerateCubes(NativeArray<ArchetypeChunk> chunks)
@@ -66,9 +65,9 @@ public class CubeSystem : ComponentSystem
 			NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
 
 			BufferAccessor<Block> blockAccessor 		= chunk.GetBufferAccessor(blocksType);
-			BufferAccessor<MapCube> cubeAccessor 	= chunk.GetBufferAccessor(cubeType);
+			BufferAccessor<MapCube> cubeAccessor 		= chunk.GetBufferAccessor(cubeType);
 			BufferAccessor<Height> heightmapAccessor 	= chunk.GetBufferAccessor(heightmapType);
-
+			
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity = entities[e];
@@ -84,11 +83,11 @@ public class CubeSystem : ComponentSystem
 
 				//	Generate block data from height map
 				NativeArray<Block> blocks 	= GetBlocks(
-												1,
-												blockArrayLength,
-												heightmap.ToNativeArray(),
-												cubes.ToNativeArray()
-												);
+					1,
+					blockArrayLength,
+					heightmap.ToNativeArray(),
+					cubes.ToNativeArray()
+					);
 
 				//	Fill buffer
 				for(int b = 0; b < blocks.Length; b++)
@@ -98,12 +97,12 @@ public class CubeSystem : ComponentSystem
 
 				blocks.Dispose();
 			}
-
-			commandBuffer.Playback(entityManager);
-			commandBuffer.Dispose();
-
-			chunks.Dispose();
 		}
+		
+		commandBuffer.Playback(entityManager);
+		commandBuffer.Dispose();
+
+		chunks.Dispose();
 	}
 
 	NativeArray<Block> GetBlocks(int batchSize, int blockArrayLength, NativeArray<Height> heightMap, NativeArray<MapCube> cubes)
@@ -113,8 +112,6 @@ public class CubeSystem : ComponentSystem
 
 		//	Size of a single cube's flattened block array
 		int singleCubeArrayLength = (int)math.pow(cubeSize, 3);
-
-		
 
 		//	Iterate over one cube at a time, generating blocks for the map square
 		for(int i = 0; i < cubes.Length; i++)
@@ -139,7 +136,6 @@ public class CubeSystem : ComponentSystem
 
 			//	Store the composition of the cube
 			MapCube cube = SetComposition(job.hasAirBlocks, job.hasSolidBlocks, cubes[i]);
-			Debug.Log(job.hasAirBlocks+" "+job.hasSolidBlocks);
 			cubes[i] = cube;
 		}
 
@@ -150,7 +146,6 @@ public class CubeSystem : ComponentSystem
 	MapCube SetComposition(int hasAirBlocks, int hasSolidBlocks, MapCube cube)
 	{
 		CubeComposition composition = CubeComposition.AIR;
-		Debug.Log(hasAirBlocks+" "+hasSolidBlocks);
 
 		if(hasAirBlocks == 1 && hasSolidBlocks == 0)		//	All air blocks
 			composition = CubeComposition.AIR;	
