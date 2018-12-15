@@ -17,7 +17,7 @@ public class CubeSystem : ComponentSystem
 	ArchetypeChunkEntityType entityType;
 
 	ArchetypeChunkBufferType<Block> 	blocksType;
-	ArchetypeChunkBufferType<MapCube> 	cubePosType;
+	ArchetypeChunkBufferType<MapCube> 	cubeType;
 	ArchetypeChunkBufferType<Height> 	heightmapType;
 
 	EntityArchetypeQuery mapSquareQuery;
@@ -41,7 +41,7 @@ public class CubeSystem : ComponentSystem
 		entityType 		= GetArchetypeChunkEntityType();
 
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
-		cubePosType 	= GetArchetypeChunkBufferType<MapCube>();
+		cubeType 	= GetArchetypeChunkBufferType<MapCube>();
 		heightmapType 	= GetArchetypeChunkBufferType<Height>();
 
 		NativeArray<ArchetypeChunk> chunks;
@@ -66,7 +66,7 @@ public class CubeSystem : ComponentSystem
 			NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
 
 			BufferAccessor<Block> blockAccessor 		= chunk.GetBufferAccessor(blocksType);
-			BufferAccessor<MapCube> cubePosAccessor 	= chunk.GetBufferAccessor(cubePosType);
+			BufferAccessor<MapCube> cubeAccessor 	= chunk.GetBufferAccessor(cubeType);
 			BufferAccessor<Height> heightmapAccessor 	= chunk.GetBufferAccessor(heightmapType);
 
 			for(int e = 0; e < entities.Length; e++)
@@ -75,7 +75,7 @@ public class CubeSystem : ComponentSystem
 
 				DynamicBuffer<Block> blockBuffer 	= blockAccessor[e];
 
-				DynamicBuffer<MapCube> cubes		= cubePosAccessor[e];
+				DynamicBuffer<MapCube> cubes		= cubeAccessor[e];
 				DynamicBuffer<Height> heightmap		= heightmapAccessor[e];
 				
 				//	Resize buffer to size of (blocks in a cube) * (number of cubes)
@@ -106,7 +106,7 @@ public class CubeSystem : ComponentSystem
 		}
 	}
 
-	public NativeArray<Block> GetBlocks(int batchSize, int blockArrayLength, NativeArray<Height> heightMap, NativeArray<MapCube> cubes)
+	NativeArray<Block> GetBlocks(int batchSize, int blockArrayLength, NativeArray<Height> heightMap, NativeArray<MapCube> cubes)
 	{
 		//	Block data for all cubes in the map square
 		var blocks = new NativeArray<Block>(blockArrayLength, Allocator.TempJob);
@@ -114,11 +114,18 @@ public class CubeSystem : ComponentSystem
 		//	Size of a single cube's flattened block array
 		int singleCubeArrayLength = (int)math.pow(cubeSize, 3);
 
+		
+
 		//	Iterate over one cube at a time, generating blocks for the map square
 		for(int i = 0; i < cubes.Length; i++)
 		{
+			int _hasAirBlocks = 0;
+			int _hasSolidBlocks = 0;
 			var job = new BlocksJob()
 			{
+				hasAirBlocks = _hasAirBlocks,
+				hasSolidBlocks = _hasSolidBlocks,
+
 				blocks = blocks,
 				cubeStart = i * singleCubeArrayLength,
 				cubePosY = cubes[i].yPos,
@@ -127,11 +134,35 @@ public class CubeSystem : ComponentSystem
 				cubeSize = cubeSize,
 				util = new JobUtil()
 			};
-		
+
         	job.Schedule(singleCubeArrayLength, batchSize).Complete();	
+
+			//	Store the composition of the cube
+			MapCube cube = SetComposition(job.hasAirBlocks, job.hasSolidBlocks, cubes[i]);
+			Debug.Log(job.hasAirBlocks+" "+job.hasSolidBlocks);
+			cubes[i] = cube;
 		}
 
 		return blocks;
+	}
+
+	//	TODO: support visible, see through blocks 
+	MapCube SetComposition(int hasAirBlocks, int hasSolidBlocks, MapCube cube)
+	{
+		CubeComposition composition = CubeComposition.AIR;
+		Debug.Log(hasAirBlocks+" "+hasSolidBlocks);
+
+		if(hasAirBlocks == 1 && hasSolidBlocks == 0)		//	All air blocks
+			composition = CubeComposition.AIR;	
+		else if(hasAirBlocks == 0 && hasSolidBlocks == 1)	//	Some solid blocks
+			composition = CubeComposition.SOLID;
+		else if(hasAirBlocks == 1 && hasSolidBlocks == 1)	//	All solid blocks
+			composition = CubeComposition.MIXED;
+
+		return new MapCube{
+			yPos = cube.yPos,
+			composition = composition
+		};
 	}
 
 

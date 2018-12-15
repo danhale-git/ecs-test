@@ -26,6 +26,8 @@ struct FacesJob : IJobParallelFor
 	[ReadOnly] public int cubeSize;
 	[ReadOnly] public JobUtil util;
 
+	//	TODO: use byte instead
+	//	Return 1 for exposed or 0 for hidden
 	int FaceExposed(float3 position, float3 direction)
 	{
 		//	Adjacent position

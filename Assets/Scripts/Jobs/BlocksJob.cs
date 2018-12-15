@@ -9,7 +9,9 @@ using MyComponents;
 struct BlocksJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<Block> blocks;
-	
+	public int hasAirBlocks;
+	public int hasSolidBlocks;
+
 	[ReadOnly] public int cubeStart;
 	[ReadOnly] public int cubePosY;
 
@@ -27,7 +29,14 @@ struct BlocksJob : IJobParallelFor
 		int type = 0;
 
 		if(position.y < heightMap[hMapIndex].height)
+		{
 			type = 1;
+			hasSolidBlocks = 1;
+		}
+		else
+		{
+			hasAirBlocks = 1;
+		}
 
 		blocks[i + cubeStart] = new Block
 		{
