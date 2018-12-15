@@ -7,7 +7,6 @@ using Unity.Burst;
 [BurstCompile]
 struct FastNoiseJob : IJobParallelFor
 {
-    //  Copied from FastNoise.cs
     #region Noise
     
     #endregion
@@ -15,7 +14,7 @@ struct FastNoiseJob : IJobParallelFor
     public NativeArray<float> noiseMap;
 
     [ReadOnly] public float3 offset;
-    [ReadOnly] public int chunkSize;
+    [ReadOnly] public int cubeSize;
     [ReadOnly] public int seed;
     [ReadOnly] public float frequency;
     [ReadOnly] public JobUtil util;
@@ -24,7 +23,7 @@ struct FastNoiseJob : IJobParallelFor
     //  Fill flattened 2D array with noise matrix
     public void Execute(int i)
     {
-        float3 position = util.Unflatten2D(i, chunkSize) + offset;
+        float3 position = util.Unflatten2D(i, cubeSize) + offset;
 
         noiseMap[i] = util.To01(noise.GetSimplex(position.x, position.z, seed, frequency));
     }

@@ -15,6 +15,7 @@ struct MeshJob : IJobParallelFor
 	[NativeDisableParallelForRestriction] public NativeArray<int> triangles;
 	[NativeDisableParallelForRestriction] public NativeArray<float4> colors;
 	
+	[ReadOnly] public int cubeStart;
 	[ReadOnly] public DynamicBuffer<Block> blocks;
 	[ReadOnly] public NativeArray<Faces> faces;
 
@@ -86,7 +87,7 @@ struct MeshJob : IJobParallelFor
 		if(faces[i].count == 0) return;
 
 		//	Get block position for vertex offset
-		float3 pos = util.Unflatten(i, chunkSize);
+		float3 positionInMesh = blocks[i].squareLocalPosition;
 
 		//	Current local indices
 		int vertIndex = 0;
@@ -101,42 +102,42 @@ struct MeshJob : IJobParallelFor
 		{
 			GetTris(triIndex+triOffset, vertIndex+vertOffset);
 			triIndex += 6;
-			GetVerts(0, pos, vertIndex+vertOffset);
+			GetVerts(0, positionInMesh, vertIndex+vertOffset);
 			vertIndex +=  4;
 		}
 		if(faces[i].left == 1)
 		{
 			GetTris(triIndex+triOffset, vertIndex+vertOffset);
 			triIndex += 6;
-			GetVerts(1, pos, vertIndex+vertOffset);
+			GetVerts(1, positionInMesh, vertIndex+vertOffset);
 			vertIndex +=  4;
 		}
 		if(faces[i].up == 1)
 		{
 			GetTris(triIndex+triOffset, vertIndex+vertOffset);
 			triIndex += 6;
-			GetVerts(2, pos, vertIndex+vertOffset);
+			GetVerts(2, positionInMesh, vertIndex+vertOffset);
 			vertIndex +=  4;
 		}
 		if(faces[i].down == 1)
 		{
 			GetTris(triIndex+triOffset, vertIndex+vertOffset);
 			triIndex += 6;
-			GetVerts(3, pos, vertIndex+vertOffset);
+			GetVerts(3, positionInMesh, vertIndex+vertOffset);
 			vertIndex +=  4;
 		}
 		if(faces[i].forward == 1)
 		{
 			GetTris(triIndex+triOffset, vertIndex+vertOffset);
 			triIndex += 6;
-			GetVerts(4, pos, vertIndex+vertOffset);
+			GetVerts(4, positionInMesh, vertIndex+vertOffset);
 			vertIndex +=  4;
 		}
 		if(faces[i].back == 1)
 		{
 			GetTris(triIndex+triOffset, vertIndex+vertOffset);
 			triIndex += 6;
-			GetVerts(5, pos, vertIndex+vertOffset);
+			GetVerts(5, positionInMesh, vertIndex+vertOffset);
 			vertIndex +=  4;
 		}
 
