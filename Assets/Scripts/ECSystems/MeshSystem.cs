@@ -25,6 +25,7 @@ public class MeshSystem : ComponentSystem
 
 	ArchetypeChunkEntityType 				entityType;
 	ArchetypeChunkComponentType<Position> 	positionType;
+	ArchetypeChunkComponentType<MapSquare>	squareType;
 	ArchetypeChunkBufferType<MapCube> 		cubeType;
 	ArchetypeChunkBufferType<Block> 		blocksType;
 
@@ -49,6 +50,7 @@ public class MeshSystem : ComponentSystem
 	{
 		entityType 		= GetArchetypeChunkEntityType();
 		positionType 	= GetArchetypeChunkComponentType<Position>();
+		squareType		= GetArchetypeChunkComponentType<MapSquare>();
 		cubeType 		= GetArchetypeChunkBufferType<MapCube>();
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
 
@@ -75,6 +77,7 @@ public class MeshSystem : ComponentSystem
 			//	Get chunk data
 			NativeArray<Entity> 	entities 		= chunk.GetNativeArray(entityType);
 			NativeArray<Position> 	positions		= chunk.GetNativeArray(positionType);
+			NativeArray<MapSquare>	squares			= chunk.GetNativeArray(squareType);
 			BufferAccessor<MapCube> cubeAccessor 	= chunk.GetBufferAccessor(cubeType);
 			BufferAccessor<Block> 	blockAccessor 	= chunk.GetBufferAccessor(blocksType);
 
@@ -99,6 +102,7 @@ public class MeshSystem : ComponentSystem
 				//	Check block face exposure
 				int faceCount;
 				NativeArray<Faces> faces = CheckBlockFaces(
+					squares[e],
 					adjacentBlocks,
 					blockAccessor[e],
 					cubeAccessor[e],
@@ -126,7 +130,7 @@ public class MeshSystem : ComponentSystem
 	}	
 
 	//	Generate structs with int values showing face exposure for each block
-	public NativeArray<Faces> CheckBlockFaces(DynamicBuffer<Block>[] adjacentBlocks, DynamicBuffer<Block> blocks, DynamicBuffer<MapCube> cubes, out int faceCount)
+	public NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, DynamicBuffer<Block>[] adjacentBlocks, DynamicBuffer<Block> blocks, DynamicBuffer<MapCube> cubes, out int faceCount)
 	{
 		var exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
 
@@ -141,7 +145,7 @@ public class MeshSystem : ComponentSystem
 			adjacent[i].CopyFrom(adjacentBlocks[i].ToNativeArray());
 
 		//	Leave a buffer of one to guarantee adjacent block data
-		for(int i = 1; i < cubes.Length-1; i++)
+		for(int i = 1; i < mapSquare.drawHeightInCubes; i++)
 		{
 			var job = new FacesJob(){
 				exposedFaces = exposedFaces,

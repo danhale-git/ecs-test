@@ -76,8 +76,6 @@ public class BlockSystem : ComponentSystem
 				DynamicBuffer<MapCube> cubes		= cubeAccessor[e];
 				DynamicBuffer<Height> heightmap		= heightmapAccessor[e];
 
-				Debug.Log("square has "+cubes.Length+" cubes");
-				
 				//	Resize buffer to size of (blocks in a cube) * (number of cubes)
 				int blockArrayLength = (int)math.pow(cubeSize, 3) * cubes.Length;
 				blockBuffer.ResizeUninitialized(blockArrayLength);
@@ -109,7 +107,6 @@ public class BlockSystem : ComponentSystem
 
 	NativeArray<Block> GetBlocks(int batchSize, int blockArrayLength, NativeArray<Height> heightMap, NativeArray<MapCube> cubes)
 	{
-		Debug.Log("generating block data for "+cubes.Length+" cubes");
 		//	Block data for all cubes in the map square
 		var blocks = new NativeArray<Block>(blockArrayLength, Allocator.TempJob);
 

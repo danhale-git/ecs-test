@@ -91,10 +91,10 @@ public class CubeSystem : ComponentSystem
 
                 commandBuffer.AddComponent(entity, adjacentSquares);
 
-                //	Create cubes
-				
+                //	Create cubes and set draw height
 				MapSquare square = mapSquares[e];
 				square.drawHeightInCubes = CreateCubes(entity, mapSquares[e], adjacentSquares);
+				mapSquares[e] = square;
 
                 //  Generate block data next
                 commandBuffer.RemoveComponent<Tags.CreateCubes>(entity);
@@ -175,22 +175,18 @@ public class CubeSystem : ComponentSystem
 			};
 
 		int highestVoxel = square.highestBlock;
-		int lowestVoxel = square.lowestBlock;
 
-		//	Set top and bottom chunks to draw
-		int drawHeight = (int)math.floor((highestVoxel + 1) / cubeSize);
+		//	Set height to draw
+		int drawHeight = (int)math.floor((highestVoxel + 1) / cubeSize) + 1;
 
-		//	Find highest and lowest in 3x3 columns around chunk
+		//	Find highest in 3x3 squares
 		for(int i = 0; i < 4; i++)
 		{
 			int adjacentHighestVoxel = adjacentSquares[i].highestBlock;
-			int adjacentLowestVoxel = adjacentSquares[i].lowestBlock;
-
 			if(adjacentHighestVoxel > highestVoxel) highestVoxel = adjacentHighestVoxel;
-			if(adjacentLowestVoxel < lowestVoxel) lowestVoxel = adjacentLowestVoxel;		
 		}
 
-		//	Set top and bottom chunks to generate
+		//	Set height in cubes
 		int generateHeight = (int)math.floor((highestVoxel + 1) / cubeSize) + 1;
 
 		for(int i = 0; i < generateHeight; i++)
@@ -199,6 +195,6 @@ public class CubeSystem : ComponentSystem
 			cubeBuffer.Add(cube);
 		}
 
-		return generateHeight;
+		return drawHeight;
 	}
 }
