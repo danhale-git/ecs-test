@@ -15,7 +15,7 @@ struct FacesJob : IJobParallelFor
 	[ReadOnly] public DynamicBuffer<Block> blocks;
 	[ReadOnly] public NativeArray<Block> right;
 	[ReadOnly] public NativeArray<Block> left;
-	[ReadOnly] public NativeArray<Block> forward;
+	[ReadOnly] public NativeArray<Block> front;
 	[ReadOnly] public NativeArray<Block> back;
 
 	//	Indices where cubes in this map square begin
@@ -43,7 +43,7 @@ struct FacesJob : IJobParallelFor
 		if(pos.y < 0)
 			return blocks[util.WrapAndFlatten(pos, cubeSize) + belowStart].type		== 0 ? 1 : 0;
 		if(pos.z == cubeSize)
-			return forward[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type 	== 0 ? 1 : 0;
+			return front[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type 	== 0 ? 1 : 0;
 		if(pos.z < 0)
 			return back[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type		== 0 ? 1 : 0;
 

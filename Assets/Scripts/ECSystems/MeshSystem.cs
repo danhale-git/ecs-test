@@ -29,7 +29,6 @@ public class MeshSystem : ComponentSystem
 	ArchetypeChunkBufferType<Block> 		blocksType;
 
 	EntityArchetypeQuery squareQuery;
-	EntityArchetypeQuery bufferQuery;
 
 	protected override void OnCreateManager()
 	{
@@ -42,12 +41,6 @@ public class MeshSystem : ComponentSystem
 			Any 	= Array.Empty<ComponentType>(),
 			None  	= new ComponentType[] { typeof(Tags.InnerBuffer), typeof(Tags.OuterBuffer), typeof(Tags.GenerateBlocks) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.DrawMesh) }
-			};
-
-		bufferQuery = new EntityArchetypeQuery{
-			Any 	= Array.Empty<ComponentType>(),
-			None  	= new ComponentType[] { typeof(Tags.GenerateBlocks) },
-			All  	= new ComponentType[] { typeof(MapSquare), }
 			};
 	}
 
@@ -85,33 +78,31 @@ public class MeshSystem : ComponentSystem
 			BufferAccessor<MapCube> cubeAccessor 	= chunk.GetBufferAccessor(cubeType);
 			BufferAccessor<Block> 	blockAccessor 	= chunk.GetBufferAccessor(blocksType);
 
-
 			//	Iterate over map square entities
 			for(int e = 0; e < entities.Length; e++)
 			{
-				//	Get all adjacent blocks and skip if any are missing
-				DynamicBuffer<Block>[] adjacentBlocks;
-				if(!GetAdjacentBuffers(positions[e].Value, out adjacentBlocks))
-				{
-					CustomDebugTools.SetWireCubeChunk(positions[e].Value, cubeSize -1, Color.red);
-					throw new System.IndexOutOfRangeException(
-						"GetAdjacentBuffers did not find adjacent squares at "+positions[e].Value
-						);
-				}
-
 				Entity entity = entities[e];
 				float2 position = new float2(
 					positions[e].Value.x,
 					positions[e].Value.z
 					);
 
+				//	Get blocks from adjacent map squares
+				AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(entity);
+				DynamicBuffer<Block>[] adjacentBlocks = new DynamicBuffer<Block>[4];
+				adjacentBlocks[0] = entityManager.GetBuffer<Block>(adjacentSquares.right);
+				adjacentBlocks[1] = entityManager.GetBuffer<Block>(adjacentSquares.left);
+				adjacentBlocks[2] = entityManager.GetBuffer<Block>(adjacentSquares.front);
+				adjacentBlocks[3] = entityManager.GetBuffer<Block>(adjacentSquares.back);
+
+
 				//	Check block face exposure
 				int faceCount;
 				NativeArray<Faces> faces = CheckBlockFaces(
 					adjacentBlocks,
 					blockAccessor[e],
-					out faceCount,
-					cubeAccessor[e]
+					cubeAccessor[e],
+					out faceCount
 					);
 
 
@@ -135,21 +126,19 @@ public class MeshSystem : ComponentSystem
 	}	
 
 	//	Generate structs with int values showing face exposure for each block
-	public NativeArray<Faces> CheckBlockFaces(DynamicBuffer<Block>[] adjacentBlocks, DynamicBuffer<Block> blocks, out int faceCount, DynamicBuffer<MapCube> cubes)
+	public NativeArray<Faces> CheckBlockFaces(DynamicBuffer<Block>[] adjacentBlocks, DynamicBuffer<Block> blocks, DynamicBuffer<MapCube> cubes, out int faceCount)
 	{
 		var exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
 
 		NativeArray<Block>[] adjacent = new NativeArray<Block>[] {
 			new NativeArray<Block>(adjacentBlocks[0].Length, Allocator.TempJob),
-			new NativeArray<Block>(adjacentBlocks[0].Length, Allocator.TempJob),
-			new NativeArray<Block>(adjacentBlocks[0].Length, Allocator.TempJob),
-			new NativeArray<Block>(adjacentBlocks[0].Length, Allocator.TempJob)
+			new NativeArray<Block>(adjacentBlocks[1].Length, Allocator.TempJob),
+			new NativeArray<Block>(adjacentBlocks[2].Length, Allocator.TempJob),
+			new NativeArray<Block>(adjacentBlocks[3].Length, Allocator.TempJob)
 			};
 
 		for(int i = 0; i < 4; i++)
-		{
 			adjacent[i].CopyFrom(adjacentBlocks[i].ToNativeArray());
-		}
 
 		//	Leave a buffer of one to guarantee adjacent block data
 		for(int i = 1; i < cubes.Length-1; i++)
@@ -160,7 +149,7 @@ public class MeshSystem : ComponentSystem
 				blocks 	= blocks,
 				right 	= adjacent[0],
 				left 	= adjacent[1],
-				forward = adjacent[2],
+				front 	= adjacent[2],
 				back 	= adjacent[3],
 
 				cubeStart 	= (i  ) * cubeArrayLength,
@@ -267,63 +256,5 @@ public class MeshSystem : ComponentSystem
 		renderer.material = material;
 
 		commandBuffer.AddSharedComponent(entity, renderer);
-	}
-
-	//	Get multiple map squares by positions
-	bool GetAdjacentBuffers(float3 centerPosition, out DynamicBuffer<Block>[] buffers)
-	{
-		float3[] adjacentPositions = new float3[4] {
-			centerPosition + (new float3( 1,  0,  0) * cubeSize),
-			centerPosition + (new float3(-1,  0,  0) * cubeSize),
-			centerPosition + (new float3( 0,  0,  1) * cubeSize),
-			centerPosition + (new float3( 0,  0, -1) * cubeSize)
-		};
-
-		buffers = new DynamicBuffer<Block>[4];
-
-		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-			bufferQuery,
-			Allocator.TempJob
-			);
-
-		if(chunks.Length == 0)
-		{
-			chunks.Dispose();
-			return false;
-		}
-
-		int count = 0;
-		for(int d = 0; d < chunks.Length; d++)
-		{
-			ArchetypeChunk chunk = chunks[d];
-
-			NativeArray<Entity> entities 	= chunk.GetNativeArray(entityType);
-			NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-			BufferAccessor<Block> blocks	= chunk.GetBufferAccessor(blocksType);
-
-			for(int e = 0; e < positions.Length; e++)
-			{
-
-				for(int p = 0; p < 4; p++)
-				{
-					float3 position = adjacentPositions[p];
-					if(	position.x == positions[e].Value.x &&
-						position.z == positions[e].Value.z)
-					{
-						buffers[p] = blocks[e];
-						count++;
-
-						if(count == 4)
-						{
-							chunks.Dispose();
-							return true;
-						}
-					}
-				}
-			}
-		}
-
-		chunks.Dispose();
-		return false;
 	}
 } 

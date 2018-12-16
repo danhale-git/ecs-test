@@ -16,7 +16,7 @@ namespace MyComponents
 		public int height;
 	}
 
-	public struct AdjacentEntities : IComponentData
+	public struct AdjacentSquares : IComponentData
 	{
 		public Entity right;
 		public Entity left;

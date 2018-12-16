@@ -69,6 +69,7 @@ public class CubeSystem : ComponentSystem
 			{
 				Entity entity = entities[e];
 
+                //  Get adjacent map square entities
                 Entity[] adjacent;
                 
                 if(!GetAdjacentEntities(positions[e].Value, out adjacent))
@@ -78,6 +79,14 @@ public class CubeSystem : ComponentSystem
 						"GetAdjacentBuffers did not find adjacent squares at "+positions[e].Value
 						);
 				}
+                AdjacentSquares adjacentEntityComponent = new AdjacentSquares{
+                    right   = adjacent[0],
+                    left    = adjacent[1],
+                    front   = adjacent[2],
+                    back    = adjacent[3],
+                    };
+
+                commandBuffer.AddComponent(entity, adjacentEntityComponent);
 
                 //	Create cubes
 	    		DynamicBuffer<MapCube> cubeBuffer = entityManager.GetBuffer<MapCube>(entity);
