@@ -10,7 +10,7 @@ using MyComponents;
 using UnityEngine;
 using UnityEditor;
 
-[UpdateAfter(typeof(CubeSystem))]
+[UpdateAfter(typeof(BlockSystem))]
 public class MeshSystem : ComponentSystem
 {
 	//	Parralel job batch size
@@ -35,18 +35,15 @@ public class MeshSystem : ComponentSystem
 	{
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
-		//	Get cube size dependant values
 		cubeSize = TerrainSettings.cubeSize;
 		cubeArrayLength = (int)math.pow(cubeSize, 3);
 
-		//	Construct query
 		squareQuery = new EntityArchetypeQuery{
 			Any 	= Array.Empty<ComponentType>(),
 			None  	= new ComponentType[] { typeof(Tags.InnerBuffer), typeof(Tags.OuterBuffer), typeof(Tags.GenerateBlocks) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.DrawMesh) }
 			};
 
-		//	Construct query
 		bufferQuery = new EntityArchetypeQuery{
 			Any 	= Array.Empty<ComponentType>(),
 			None  	= new ComponentType[] { typeof(Tags.GenerateBlocks) },
@@ -97,9 +94,9 @@ public class MeshSystem : ComponentSystem
 				if(!GetAdjacentBuffers(positions[e].Value, out adjacentBlocks))
 				{
 					CustomDebugTools.SetWireCubeChunk(positions[e].Value, cubeSize -1, Color.red);
-					//throw new System.IndexOutOfRangeException(
-					//	"GetAdjacentBuffers did not find adjacent squares at "+positions[e].Value
-					//	);
+					throw new System.IndexOutOfRangeException(
+						"GetAdjacentBuffers did not find adjacent squares at "+positions[e].Value
+						);
 				}
 
 				Entity entity = entities[e];
@@ -110,7 +107,6 @@ public class MeshSystem : ComponentSystem
 
 				//	Check block face exposure
 				int faceCount;
-
 				NativeArray<Faces> faces = CheckBlockFaces(
 					adjacentBlocks,
 					blockAccessor[e],
@@ -274,7 +270,6 @@ public class MeshSystem : ComponentSystem
 	}
 
 	//	Get multiple map squares by positions
-	//	TODO if we can't find 4 adjacent cause blocks aren't generated. just skip it
 	bool GetAdjacentBuffers(float3 centerPosition, out DynamicBuffer<Block>[] buffers)
 	{
 		float3[] adjacentPositions = new float3[4] {

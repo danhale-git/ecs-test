@@ -1,169 +1,164 @@
 ﻿using System;
-using Unity.Collections;
-using Unity.Entities;
+using UnityEngine;
 using Unity.Jobs;
+using Unity.Entities;
+using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEngine;
 using MyComponents;
 
 [UpdateAfter(typeof(MapSquareSystem))]
 public class CubeSystem : ComponentSystem
 {
-	EntityManager entityManager;
+    EntityManager entityManager;
 	int cubeSize;
 
+	EntityArchetypeQuery createCubesQuery;
+	EntityArchetypeQuery allSquaresQuery;
 
 	ArchetypeChunkEntityType entityType;
+    ArchetypeChunkComponentType<Position> positionType;
 
-	ArchetypeChunkBufferType<Block> 	blocksType;
-	ArchetypeChunkBufferType<MapCube> 	cubeType;
-	ArchetypeChunkBufferType<Height> 	heightmapType;
-
-	EntityArchetypeQuery mapSquareQuery;
-
-	protected override void OnCreateManager()
-	{
-		entityManager = World.Active.GetOrCreateManager<EntityManager>();
+    protected override void OnCreateManager()
+    {
+        entityManager = World.Active.GetOrCreateManager<EntityManager>();
 		cubeSize = TerrainSettings.cubeSize;
 
-		//	Chunks that need blocks generating
-		mapSquareQuery = new EntityArchetypeQuery
+		createCubesQuery = new EntityArchetypeQuery
+		{
+			Any 	= Array.Empty<ComponentType>(),
+            None  	= new ComponentType[] { typeof(Tags.OuterBuffer) },
+			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.CreateCubes) }
+		};
+
+        allSquaresQuery = new EntityArchetypeQuery
 		{
 			Any 	= Array.Empty<ComponentType>(),
 			None 	= Array.Empty<ComponentType>(),
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateBlocks) }
+			All  	= new ComponentType[] { typeof(MapSquare) }
 		};
-	}
+    }
 
-	protected override void OnUpdate()
-	{
-		entityType 		= GetArchetypeChunkEntityType();
+    protected override void OnUpdate()
+    {
+        entityType = GetArchetypeChunkEntityType();
+        positionType = GetArchetypeChunkComponentType<Position>();
 
-		blocksType 		= GetArchetypeChunkBufferType<Block>();
-		cubeType 		= GetArchetypeChunkBufferType<MapCube>();
-		heightmapType 	= GetArchetypeChunkBufferType<Height>();
+        NativeArray<ArchetypeChunk> chunks;
+        chunks = entityManager.CreateArchetypeChunkArray(
+            createCubesQuery,
+            Allocator.TempJob
+            );
 
-		NativeArray<ArchetypeChunk> chunks;
-		chunks	= entityManager.CreateArchetypeChunkArray(
-			mapSquareQuery,
-			Allocator.TempJob
-			);
+        if(chunks.Length == 0) chunks.Dispose();
+        else CreateCubes(chunks);
+    }
 
-		if(chunks.Length == 0) chunks.Dispose();
-		else GenerateCubes(chunks);
-	}
-
-	void GenerateCubes(NativeArray<ArchetypeChunk> chunks)
-	{
-		EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+    void CreateCubes(NativeArray<ArchetypeChunk> chunks)
+    {
+        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
 		for(int c = 0; c < chunks.Length; c++)
 		{
 			ArchetypeChunk chunk = chunks[c];
 
-			NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
-
-			BufferAccessor<Block> blockAccessor 		= chunk.GetBufferAccessor(blocksType);
-			BufferAccessor<MapCube> cubeAccessor 		= chunk.GetBufferAccessor(cubeType);
-			BufferAccessor<Height> heightmapAccessor 	= chunk.GetBufferAccessor(heightmapType);
+			NativeArray<Entity> entities    = chunk.GetNativeArray(entityType);
+            NativeArray<Position> positions = chunk.GetNativeArray(positionType);
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity = entities[e];
 
-				DynamicBuffer<Block> blockBuffer 	= blockAccessor[e];
+                Entity[] adjacent;
+                
+                if(!GetAdjacentEntities(positions[e].Value, out adjacent))
+                {
+					CustomDebugTools.SetWireCubeChunk(positions[e].Value, cubeSize -1, Color.red);
+					throw new System.IndexOutOfRangeException(
+						"GetAdjacentBuffers did not find adjacent squares at "+positions[e].Value
+						);
+				}
 
-				DynamicBuffer<MapCube> cubes		= cubeAccessor[e];
-				DynamicBuffer<Height> heightmap		= heightmapAccessor[e];
-				
-				//	Resize buffer to size of (blocks in a cube) * (number of cubes)
-				int blockArrayLength = (int)math.pow(cubeSize, 3) * cubes.Length;
-				blockBuffer.ResizeUninitialized(blockArrayLength);
-				Debug.Log(blockArrayLength);
+                //	Create cubes
+	    		DynamicBuffer<MapCube> cubeBuffer = entityManager.GetBuffer<MapCube>(entity);
 
-				//	Generate block data from height map
-				NativeArray<Block> blocks 	= GetBlocks(
-					1,
-					blockArrayLength,
-					heightmap.ToNativeArray(),
-					cubes.ToNativeArray()
-					);
+    			//	TODO:   Proper cube terrain height checks and cube culling
+                //          Get adjacent map squares here and store for later
+    			MapCube cubePos1 = new MapCube { yPos = 0};
+    			MapCube cubePos2 = new MapCube { yPos = cubeSize};
+    			MapCube cubePos3 = new MapCube { yPos = cubeSize*2};
+    			MapCube cubePos4 = new MapCube { yPos = cubeSize*3};
 
-				//	Fill buffer
-				for(int b = 0; b < blocks.Length; b++)
-					blockBuffer [b] = blocks[b];
+    			cubeBuffer.Add(cubePos1);
+    			cubeBuffer.Add(cubePos2);
+    			cubeBuffer.Add(cubePos3);
+    			cubeBuffer.Add(cubePos4);
 
-				commandBuffer.RemoveComponent(entity, typeof(Tags.GenerateBlocks));
+                //  Generate block data next
+                commandBuffer.RemoveComponent<Tags.CreateCubes>(entity);
+                commandBuffer.AddComponent(entity, new Tags.GenerateBlocks());
+            }
+        }
+    
+    commandBuffer.Playback(entityManager);
+	commandBuffer.Dispose();
 
-				blocks.Dispose();
+    chunks.Dispose();
+    }
+
+    bool GetAdjacentEntities(float3 centerPosition, out Entity[] adjacentSquares)
+	{
+        adjacentSquares = new Entity[4];
+
+		float3[] adjacentPositions = new float3[4] {
+			centerPosition + (new float3( 1,  0,  0) * cubeSize),   //  right
+			centerPosition + (new float3(-1,  0,  0) * cubeSize),   //  left
+			centerPosition + (new float3( 0,  0,  1) * cubeSize),   //  front
+			centerPosition + (new float3( 0,  0, -1) * cubeSize)    //  back
+		};
+
+		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
+			allSquaresQuery,
+			Allocator.TempJob
+			);
+
+		if(chunks.Length == 0)
+		{
+			chunks.Dispose();
+			return false;
+		}
+
+		int count = 0;
+		for(int d = 0; d < chunks.Length; d++)
+		{
+			ArchetypeChunk chunk = chunks[d];
+
+			NativeArray<Entity> entities 	= chunk.GetNativeArray(entityType);
+			NativeArray<Position> positions = chunk.GetNativeArray(positionType);
+
+			for(int e = 0; e < positions.Length; e++)
+			{
+                //  check if each entity matches each position
+				for(int p = 0; p < 4; p++)
+				{
+					float3 position = adjacentPositions[p];
+					if(	position.x == positions[e].Value.x &&
+						position.z == positions[e].Value.z)
+					{
+						adjacentSquares[p] = entities[e];
+						count++;
+
+						if(count == 4)
+						{
+							chunks.Dispose();
+							return true;
+						}
+					}
+				}
 			}
 		}
-		
-		commandBuffer.Playback(entityManager);
-		commandBuffer.Dispose();
 
 		chunks.Dispose();
+		return false;
 	}
-
-	NativeArray<Block> GetBlocks(int batchSize, int blockArrayLength, NativeArray<Height> heightMap, NativeArray<MapCube> cubes)
-	{
-		//	Block data for all cubes in the map square
-		var blocks = new NativeArray<Block>(blockArrayLength, Allocator.TempJob);
-
-		//	Size of a single cube's flattened block array
-		int singleCubeArrayLength = (int)math.pow(cubeSize, 3);
-
-		//	Iterate over one cube at a time, generating blocks for the map square
-		for(int i = 0; i < cubes.Length; i++)
-		{
-			NativeArray<int> hasAir_hasSolid = new NativeArray<int>(2, Allocator.TempJob);
-			var job = new BlocksJob()
-			{
-				hasAir_hasSolid = hasAir_hasSolid,
-
-				blocks = blocks,
-				cubeStart = i * singleCubeArrayLength,
-				cubePosY = cubes[i].yPos,
-
-				heightMap = heightMap,
-				cubeSize = cubeSize,
-				util = new JobUtil()
-			};
-
-        	job.Schedule(singleCubeArrayLength, batchSize).Complete();
-
-			//	Store the composition of the cube
-			MapCube cube = SetComposition(job.hasAir_hasSolid[0], job.hasAir_hasSolid[1], cubes[i]);
-			cubes[i] = cube;
-
-			hasAir_hasSolid.Dispose();
-		}
-
-
-		return blocks;
-	}
-
-	//	TODO: support visible, see through blocks 
-	MapCube SetComposition(int hasAirBlocks, int hasSolidBlocks, MapCube cube)
-	{
-		CubeComposition composition = CubeComposition.AIR;
-
-		if(hasAirBlocks == 1 && hasSolidBlocks == 0)		//	All air blocks
-			composition = CubeComposition.AIR;	
-		else if(hasAirBlocks == 0 && hasSolidBlocks == 1)	//	Some solid blocks
-			composition = CubeComposition.SOLID;
-		else if(hasAirBlocks == 1 && hasSolidBlocks == 1)	//	All solid blocks
-			composition = CubeComposition.MIXED;
-
-		return new MapCube{
-			yPos = cube.yPos,
-			composition = composition
-		};
-	}
-
-
-
-
-
 }

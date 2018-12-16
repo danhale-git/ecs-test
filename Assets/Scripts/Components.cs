@@ -16,6 +16,14 @@ namespace MyComponents
 		public int height;
 	}
 
+	public struct AdjacentEntities : IComponentData
+	{
+		public Entity right;
+		public Entity left;
+		public Entity front;
+		public Entity back;
+	}
+
 	[InternalBufferCapacity(100)]
 	public struct MapCube : IBufferElementData
 	{
@@ -36,6 +44,7 @@ namespace Tags
 	public struct CreateCubes : IComponentData { }
 	public struct GenerateBlocks : IComponentData { }
 	public struct DrawMesh : IComponentData { }
+
 	public struct InnerBuffer : IComponentData { }
 	public struct OuterBuffer : IComponentData { }
 }

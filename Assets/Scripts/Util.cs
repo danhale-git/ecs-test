@@ -65,11 +65,11 @@ public static class Util
 	                            new Vector3(1, 1, 1) };	//	right front top
     }
 
-    public static Vector3 VoxelOwner(Vector3 voxel, int chunkSize)
+    public static Vector3 VoxelOwner(Vector3 voxel, int cubeSize)
 	{
-		int x = Mathf.FloorToInt(voxel.x / chunkSize);
-		int y = Mathf.FloorToInt(voxel.y / chunkSize);
-		int z = Mathf.FloorToInt(voxel.z / chunkSize);
-		return new Vector3(x*chunkSize,y*chunkSize,z*chunkSize);
+		int x = Mathf.FloorToInt(voxel.x / cubeSize);
+		int y = Mathf.FloorToInt(voxel.y / cubeSize);
+		int z = Mathf.FloorToInt(voxel.z / cubeSize);
+		return new Vector3(x*cubeSize,y*cubeSize,z*cubeSize);
 	}
 }
