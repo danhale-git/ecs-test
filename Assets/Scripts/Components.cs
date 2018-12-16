@@ -36,5 +36,6 @@ namespace Tags
 	public struct CreateCubes : IComponentData { }
 	public struct GenerateBlocks : IComponentData { }
 	public struct DrawMesh : IComponentData { }
-	public struct MapEdge : IComponentData { }
+	public struct InnerBuffer : IComponentData { }
+	public struct OuterBuffer : IComponentData { }
 }

@@ -40,7 +40,7 @@ public static class CustomDebugTools
         for(int i = 0; i < cubeVectors.Length; i++)
         {
             Vector3 vector = ((cubeVectors[i] * size) + center) - (Vector3.one / 2);
-            if(_2D) vector = vector + (Vector3.up * 50);
+            if(_2D) vector = vector + (Vector3.up * TerrainSettings.terrainHeight);
             v[i] = vector;
         }
 

@@ -42,7 +42,7 @@ public class MeshSystem : ComponentSystem
 		//	Construct query
 		squareQuery = new EntityArchetypeQuery{
 			Any 	= Array.Empty<ComponentType>(),
-			None  	= new ComponentType[] { typeof(Tags.MapEdge), typeof(Tags.GenerateBlocks) },
+			None  	= new ComponentType[] { typeof(Tags.InnerBuffer), typeof(Tags.OuterBuffer), typeof(Tags.GenerateBlocks) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.DrawMesh) }
 			};
 
@@ -97,9 +97,9 @@ public class MeshSystem : ComponentSystem
 				if(!GetAdjacentBuffers(positions[e].Value, out adjacentBlocks))
 				{
 					CustomDebugTools.SetWireCubeChunk(positions[e].Value, cubeSize -1, Color.red);
-					throw new System.IndexOutOfRangeException(
-						"GetAdjacentBuffers returned "+adjacentBlocks.Length+" out of 4 adjacent squares."
-						);
+					//throw new System.IndexOutOfRangeException(
+					//	"GetAdjacentBuffers did not find adjacent squares at "+positions[e].Value
+					//	);
 				}
 
 				Entity entity = entities[e];

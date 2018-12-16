@@ -80,6 +80,7 @@ public class CubeSystem : ComponentSystem
 				//	Resize buffer to size of (blocks in a cube) * (number of cubes)
 				int blockArrayLength = (int)math.pow(cubeSize, 3) * cubes.Length;
 				blockBuffer.ResizeUninitialized(blockArrayLength);
+				Debug.Log(blockArrayLength);
 
 				//	Generate block data from height map
 				NativeArray<Block> blocks 	= GetBlocks(
