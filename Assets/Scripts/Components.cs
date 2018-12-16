@@ -9,6 +9,8 @@ namespace MyComponents
 	{
 		public int highestBlock;
 		public int lowestBlock;
+
+		public int drawHeightInCubes;
 	}
 	[InternalBufferCapacity(0)]
 	public struct Height : IBufferElementData

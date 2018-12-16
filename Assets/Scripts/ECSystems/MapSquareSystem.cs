@@ -22,6 +22,7 @@ public class MapSquareSystem : ComponentSystem
 	int cubeSize;
 	int viewDistance;
 	int terrainHeight;
+	int terrainStretch;
 
 	ArchetypeChunkEntityType 				entityType;
 	ArchetypeChunkComponentType<Position> 	positionType;
@@ -33,6 +34,7 @@ public class MapSquareSystem : ComponentSystem
 		cubeSize 		= TerrainSettings.cubeSize;
 		viewDistance 	= TerrainSettings.viewDistance;
 		terrainHeight 	= TerrainSettings.terrainHeight;
+		terrainStretch 	= TerrainSettings.terrainStretch;
 
 		player = GameObject.FindObjectOfType<PlayerController>();
 
@@ -214,7 +216,7 @@ public class MapSquareSystem : ComponentSystem
 		int lowestBlock = terrainHeight;
 		for(int i = 0; i < noiseMap.Length; i++)
 		{
-			int height = (int)(noiseMap[i] * terrainHeight);
+			int height = (int)((noiseMap[i] * terrainStretch) + terrainHeight);
 		    heightMap[i] = new Height { height = height };
 				
 			if(height > highestBlock)

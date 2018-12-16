@@ -18,6 +18,7 @@ public class CubeSystem : ComponentSystem
 
 	ArchetypeChunkEntityType entityType;
     ArchetypeChunkComponentType<Position> positionType;
+	ArchetypeChunkComponentType<MapSquare> mapSquareType;
 
     protected override void OnCreateManager()
     {
@@ -43,6 +44,7 @@ public class CubeSystem : ComponentSystem
     {
         entityType = GetArchetypeChunkEntityType();
         positionType = GetArchetypeChunkComponentType<Position>();
+		mapSquareType = GetArchetypeChunkComponentType<MapSquare>();
 
         NativeArray<ArchetypeChunk> chunks;
         chunks = entityManager.CreateArchetypeChunkArray(
@@ -64,6 +66,7 @@ public class CubeSystem : ComponentSystem
 
 			NativeArray<Entity> entities    = chunk.GetNativeArray(entityType);
             NativeArray<Position> positions = chunk.GetNativeArray(positionType);
+			NativeArray<MapSquare> mapSquares = chunk.GetNativeArray(mapSquareType);
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
@@ -79,29 +82,19 @@ public class CubeSystem : ComponentSystem
 						"GetAdjacentBuffers did not find adjacent squares at "+positions[e].Value
 						);
 				}
-                AdjacentSquares adjacentEntityComponent = new AdjacentSquares{
+                AdjacentSquares adjacentSquares = new AdjacentSquares{
                     right   = adjacent[0],
                     left    = adjacent[1],
                     front   = adjacent[2],
                     back    = adjacent[3],
                     };
 
-                commandBuffer.AddComponent(entity, adjacentEntityComponent);
+                commandBuffer.AddComponent(entity, adjacentSquares);
 
                 //	Create cubes
-	    		DynamicBuffer<MapCube> cubeBuffer = entityManager.GetBuffer<MapCube>(entity);
-
-    			//	TODO:   Proper cube terrain height checks and cube culling
-                //          Get adjacent map squares here and store for later
-    			MapCube cubePos1 = new MapCube { yPos = 0};
-    			MapCube cubePos2 = new MapCube { yPos = cubeSize};
-    			MapCube cubePos3 = new MapCube { yPos = cubeSize*2};
-    			MapCube cubePos4 = new MapCube { yPos = cubeSize*3};
-
-    			cubeBuffer.Add(cubePos1);
-    			cubeBuffer.Add(cubePos2);
-    			cubeBuffer.Add(cubePos3);
-    			cubeBuffer.Add(cubePos4);
+				
+				MapSquare square = mapSquares[e];
+				square.drawHeightInCubes = CreateCubes(entity, mapSquares[e], adjacentSquares);
 
                 //  Generate block data next
                 commandBuffer.RemoveComponent<Tags.CreateCubes>(entity);
@@ -169,5 +162,43 @@ public class CubeSystem : ComponentSystem
 
 		chunks.Dispose();
 		return false;
+	}
+
+	int CreateCubes(Entity entity, MapSquare square, AdjacentSquares adjacent)
+	{
+	    DynamicBuffer<MapCube> cubeBuffer = entityManager.GetBuffer<MapCube>(entity);
+		MapSquare[] adjacentSquares = new MapSquare[] {
+			entityManager.GetComponentData<MapSquare>(adjacent.right),
+			entityManager.GetComponentData<MapSquare>(adjacent.left),
+			entityManager.GetComponentData<MapSquare>(adjacent.front),
+			entityManager.GetComponentData<MapSquare>(adjacent.back)
+			};
+
+		int highestVoxel = square.highestBlock;
+		int lowestVoxel = square.lowestBlock;
+
+		//	Set top and bottom chunks to draw
+		int drawHeight = (int)math.floor((highestVoxel + 1) / cubeSize);
+
+		//	Find highest and lowest in 3x3 columns around chunk
+		for(int i = 0; i < 4; i++)
+		{
+			int adjacentHighestVoxel = adjacentSquares[i].highestBlock;
+			int adjacentLowestVoxel = adjacentSquares[i].lowestBlock;
+
+			if(adjacentHighestVoxel > highestVoxel) highestVoxel = adjacentHighestVoxel;
+			if(adjacentLowestVoxel < lowestVoxel) lowestVoxel = adjacentLowestVoxel;		
+		}
+
+		//	Set top and bottom chunks to generate
+		int generateHeight = (int)math.floor((highestVoxel + 1) / cubeSize) + 1;
+
+		for(int i = 0; i < generateHeight; i++)
+		{
+			MapCube cube = new MapCube { yPos = i*cubeSize};
+			cubeBuffer.Add(cube);
+		}
+
+		return generateHeight;
 	}
 }
