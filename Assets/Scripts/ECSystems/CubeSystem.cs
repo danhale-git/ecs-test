@@ -77,7 +77,7 @@ public class CubeSystem : ComponentSystem
                 
                 if(!GetAdjacentEntities(positions[e].Value, out adjacent))
                 {
-					CustomDebugTools.SetWireCubeChunk(positions[e].Value, cubeSize -1, Color.red);
+					CustomDebugTools.SetMapSquareHighlight(entity, cubeSize -1, Color.red);
 					throw new System.IndexOutOfRangeException(
 						"GetAdjacentBuffers did not find adjacent squares at "+positions[e].Value
 						);
@@ -189,10 +189,11 @@ public class CubeSystem : ComponentSystem
 		//	Set height in cubes
 		int generateHeight = (int)math.floor((highestVoxel + 1) / cubeSize) + 1;
 
-		for(int i = 0; i < generateHeight; i++)
+		for(int i = 0; i <= generateHeight; i++)
 		{
 			MapCube cube = new MapCube { yPos = i*cubeSize};
 			cubeBuffer.Add(cube);
+			CustomDebugTools.SetMapCubeHighlight(entity, cube.yPos, cubeSize-2, new Color(1, 1, 1, 0.1f));
 		}
 
 		return drawHeight;

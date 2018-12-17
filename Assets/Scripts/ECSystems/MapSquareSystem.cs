@@ -112,8 +112,6 @@ public class MapSquareSystem : ComponentSystem
 			//	Create square entity
 			entity = entityManager.CreateEntity(mapSquareArchetype);
 
-			SetBuffer(entity, edge, position);
-
 			//	Set position
 			entityManager.SetComponentData(
 				entity,
@@ -131,6 +129,8 @@ public class MapSquareSystem : ComponentSystem
 			//	Create cubes next
 			entityManager.AddComponent(entity, typeof(Tags.CreateCubes));
 
+			SetBuffer(entity, edge, position);
+
 			return 1;
 		}
 		
@@ -146,18 +146,18 @@ public class MapSquareSystem : ComponentSystem
 			//	Is inner buffer
 			case 1:
 				entityManager.AddComponent(entity, typeof(Tags.InnerBuffer));
-				CustomDebugTools.SetWireCubeChunk(position, cubeSize, new Color(1,0.5f,0.5f,0.2f));	
+				CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1,0.5f,0.5f,0.2f));	
 				break;
 
 			//	Is outer buffer
 			case 2:
 				entityManager.AddComponent(entity, typeof(Tags.OuterBuffer));
-				CustomDebugTools.SetWireCubeChunk(position, cubeSize, new Color(0.5f,1,0.5f,0.2f));
+				CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(0.5f,1,0.5f,0.2f));
 				break;
 			
 			//	Is not a buffer
 			default:
-				CustomDebugTools.SetWireCubeChunk(position, cubeSize, new Color(0.5f,0.5f,1,0.2f));				
+				CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(0.5f,1,1,0.2f));				
 				break;
 		}
 	}
@@ -173,7 +173,7 @@ public class MapSquareSystem : ComponentSystem
 					entityManager.RemoveComponent<Tags.OuterBuffer>(entity);
 
 					entityManager.AddComponent(entity, typeof(Tags.InnerBuffer));
-					CustomDebugTools.SetWireCubeChunk(position, cubeSize, new Color(1,0.5f,0.5f,0.2f));
+					CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1,0.5f,0.5f,0.2f));
 				}	
 				break;
 
@@ -188,7 +188,7 @@ public class MapSquareSystem : ComponentSystem
 				if(entityManager.HasComponent<Tags.InnerBuffer>(entity))
 					entityManager.RemoveComponent<Tags.InnerBuffer>(entity);
 
-				CustomDebugTools.SetWireCubeChunk(position, cubeSize, new Color(0.5f,0.5f,1,0.2f));				
+				CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(0.5f,1,1,0.2f));				
 				break;
 		}
 	}

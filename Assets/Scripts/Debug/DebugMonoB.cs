@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class DebugMonoB : MonoBehaviour
 {
+    public bool cubes = true;
     void Awake()
     {
         CustomDebugTools.lines.Clear();
@@ -18,7 +19,17 @@ public class DebugMonoB : MonoBehaviour
 			Gizmos.DrawLine(line.a, line.b);
 		}
 
-        foreach(KeyValuePair<Vector3, List<CustomDebugTools.DebugLine>> kvp in CustomDebugTools.linesDict)
+        foreach(KeyValuePair<Vector3, List<CustomDebugTools.DebugLine>> kvp in CustomDebugTools.cubeHighlights)
+        {
+            if(!cubes) break;
+            foreach(CustomDebugTools.DebugLine line in kvp.Value)
+            {
+                Gizmos.color = line.c;
+                Gizmos.DrawLine(line.a, line.b);
+            }
+        }
+
+        foreach(KeyValuePair<Vector3, List<CustomDebugTools.DebugLine>> kvp in CustomDebugTools.squareHighlights)
         {
             foreach(CustomDebugTools.DebugLine line in kvp.Value)
             {
