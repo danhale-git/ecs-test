@@ -116,6 +116,8 @@ public class BlockSystem : ComponentSystem
 		//	Iterate over one cube at a time, generating blocks for the map square
 		for(int i = 0; i < cubes.Length; i++)
 		{
+			if(cubes[i].blocks != 1) continue;
+
 			NativeArray<int> hasAir_hasSolid = new NativeArray<int>(2, Allocator.TempJob);
 			var job = new BlocksJob()
 			{
@@ -140,7 +142,6 @@ public class BlockSystem : ComponentSystem
 			hasAir_hasSolid.Dispose();
 		}
 
-
 		return blocks;
 	}
 
@@ -158,6 +159,7 @@ public class BlockSystem : ComponentSystem
 
 		return new MapCube{
 			yPos = cube.yPos,
+			blocks = cube.blocks,
 			composition = composition
 		};
 	}

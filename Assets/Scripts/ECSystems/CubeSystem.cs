@@ -93,7 +93,7 @@ public class CubeSystem : ComponentSystem
 
                 //	Create cubes and set draw height
 				MapSquare square = mapSquares[e];
-				square.drawHeightInCubes = CreateCubes(entity, mapSquares[e], adjacentSquares);
+				CreateCubes(entity, mapSquares[e], adjacentSquares);
 				mapSquares[e] = square;
 
                 //  Generate block data next
@@ -164,7 +164,7 @@ public class CubeSystem : ComponentSystem
 		return false;
 	}
 
-	int CreateCubes(Entity entity, MapSquare square, AdjacentSquares adjacent)
+	void CreateCubes(Entity entity, MapSquare square, AdjacentSquares adjacent)
 	{
 	    DynamicBuffer<MapCube> cubeBuffer = entityManager.GetBuffer<MapCube>(entity);
 		MapSquare[] adjacentSquares = new MapSquare[] {
@@ -174,28 +174,42 @@ public class CubeSystem : ComponentSystem
 			entityManager.GetComponentData<MapSquare>(adjacent.back)
 			};
 
-		int highestVoxel = square.highestBlock;
+		int highestVisible = square.highestVisibleBlock;
+		int lowestVisible = square.lowestVisibleBlock;
 
 		//	Set height to draw
-		int drawHeight = (int)math.floor((highestVoxel + 1) / cubeSize) + 1;
+		int topCubeDraw 	= (int)math.floor((highestVisible + 1) / cubeSize);
+		int bottomCubeDraw 	= (int)math.floor((lowestVisible - 1) / cubeSize);
 
 		//	Find highest in 3x3 squares
 		for(int i = 0; i < 4; i++)
 		{
-			int adjacentHighestVoxel = adjacentSquares[i].highestBlock;
-			if(adjacentHighestVoxel > highestVoxel) highestVoxel = adjacentHighestVoxel;
+			int adjacentHighestVisible = adjacentSquares[i].highestVisibleBlock;
+			int adjacentLowestVisible = adjacentSquares[i].lowestVisibleBlock;
+
+			if(adjacentHighestVisible > highestVisible) highestVisible = adjacentHighestVisible;
+			if(adjacentLowestVisible < lowestVisible) lowestVisible = adjacentLowestVisible;
 		}
 
 		//	Set height in cubes
-		int generateHeight = (int)math.floor((highestVoxel + 1) / cubeSize) + 1;
+		int topCubeBlocks 		= (int)math.floor((highestVisible + 1) / cubeSize) + 1;
+		int bottomCubeBlocks 	= (int)math.floor((lowestVisible + 1) / cubeSize) - 1;
 
-		for(int i = 0; i <= generateHeight; i++)
+		for(int i = 0; i <= topCubeBlocks; i++)
 		{
-			MapCube cube = new MapCube { yPos = i*cubeSize};
-			cubeBuffer.Add(cube);
-			CustomDebugTools.SetMapCubeHighlight(entity, cube.yPos, cubeSize-2, new Color(1, 1, 1, 0.1f));
-		}
+			int blocks = (i >= bottomCubeBlocks && i <= topCubeBlocks) ? 1 : 0;
 
-		return drawHeight;
+			MapCube cube = new MapCube{
+				yPos = i*cubeSize,
+				blocks = blocks
+				};
+
+			cubeBuffer.Add(cube);
+
+			if(i == bottomCubeDraw || i == topCubeDraw)
+				CustomDebugTools.SetMapCubeHighlight(entity, cube.yPos, cubeSize-1, new Color(1, 0, 0, 0.1f));
+			else if(i == bottomCubeBlocks || i == topCubeBlocks)
+				CustomDebugTools.SetMapCubeHighlight(entity, cube.yPos, cubeSize-1, new Color(0, 1, 1, 0.1f));
+		}
 	}
 }

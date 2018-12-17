@@ -44,7 +44,7 @@ public static class CustomDebugTools
         }
         else
         {
-            topOffset = new Vector3(0, (mapSquare.drawHeightInCubes * cubeSize) - cubeSize, 0);
+            topOffset = new Vector3(0, ((int)math.floor((mapSquare.highestVisibleBlock + 1) / cubeSize) * cubeSize) - cubeSize, 0);
         }
         
         Vector3[] v = new Vector3[cubeVectors.Length];

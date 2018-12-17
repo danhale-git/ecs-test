@@ -146,18 +146,18 @@ public class MapSquareSystem : ComponentSystem
 			//	Is inner buffer
 			case 1:
 				entityManager.AddComponent(entity, typeof(Tags.InnerBuffer));
-				CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1,0.5f,0.5f,0.2f));	
+				//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1,0.5f,0.5f,0.2f));	
 				break;
 
 			//	Is outer buffer
 			case 2:
 				entityManager.AddComponent(entity, typeof(Tags.OuterBuffer));
-				CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(0.5f,1,0.5f,0.2f));
+				//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(0.5f,1,0.5f,0.2f));
 				break;
 			
 			//	Is not a buffer
 			default:
-				CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(0.5f,1,1,0.2f));				
+				//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(0.5f,1,1,0.2f));				
 				break;
 		}
 	}
@@ -173,7 +173,7 @@ public class MapSquareSystem : ComponentSystem
 					entityManager.RemoveComponent<Tags.OuterBuffer>(entity);
 
 					entityManager.AddComponent(entity, typeof(Tags.InnerBuffer));
-					CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1,0.5f,0.5f,0.2f));
+					//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1,0.5f,0.5f,0.2f));
 				}	
 				break;
 
@@ -188,7 +188,7 @@ public class MapSquareSystem : ComponentSystem
 				if(entityManager.HasComponent<Tags.InnerBuffer>(entity))
 					entityManager.RemoveComponent<Tags.InnerBuffer>(entity);
 
-				CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(0.5f,1,1,0.2f));				
+				//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(0.5f,1,1,0.2f));				
 				break;
 		}
 	}
@@ -213,7 +213,7 @@ public class MapSquareSystem : ComponentSystem
 		//	Convert noise (0-1) into heights (0-maxHeight)
 		//	TODO: Jobify this
 		int highestBlock = 0;
-		int lowestBlock = terrainHeight;
+		int lowestBlock = terrainHeight + terrainStretch;
 		for(int i = 0; i < noiseMap.Length; i++)
 		{
 			int height = (int)((noiseMap[i] * terrainStretch) + terrainHeight);
@@ -230,8 +230,8 @@ public class MapSquareSystem : ComponentSystem
 		noiseMap.Dispose();
 
 		return new MapSquare{
-			highestBlock 	= highestBlock,
-			lowestBlock 	= lowestBlock
+			highestVisibleBlock 	= highestBlock,
+			lowestVisibleBlock 	= lowestBlock
 			};
     }
 

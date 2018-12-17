@@ -7,10 +7,8 @@ namespace MyComponents
 
 	public struct MapSquare : IComponentData
 	{
-		public int highestBlock;
-		public int lowestBlock;
-
-		public int drawHeightInCubes;
+		public int highestVisibleBlock;
+		public int lowestVisibleBlock;
 	}
 	[InternalBufferCapacity(0)]
 	public struct Height : IBufferElementData
@@ -30,6 +28,7 @@ namespace MyComponents
 	public struct MapCube : IBufferElementData
 	{
 		public int yPos;
+		public int blocks;
 		public CubeComposition composition;
 	}
 	[InternalBufferCapacity(0)]

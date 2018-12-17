@@ -144,9 +144,14 @@ public class MeshSystem : ComponentSystem
 		for(int i = 0; i < 4; i++)
 			adjacent[i].CopyFrom(adjacentBlocks[i].ToNativeArray());
 
+		int topCube 	= (int)math.floor((mapSquare.highestVisibleBlock + 1) / cubeSize);
+		int bottomCube 	= (int)math.floor((mapSquare.lowestVisibleBlock - 1) / cubeSize);
+
 		//	Leave a buffer of one to guarantee adjacent block data
-		for(int i = 1; i < mapSquare.drawHeightInCubes; i++)
+		for(int i = bottomCube; i <= topCube; i++)
 		{
+			if(((i-1) * cubeArrayLength) < 0) Debug.Log("negative index!");
+
 			var job = new FacesJob(){
 				exposedFaces = exposedFaces,
 
@@ -191,6 +196,10 @@ public class MeshSystem : ComponentSystem
 
 	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, int faceCount)
 	{
+		if(blocks.Length == 0)
+		{
+			Debug.Log("Tried to draw empty cube!");
+		}
 		//	Determine vertex and triangle arrays using face count
 		NativeArray<float3> vertices 	= new NativeArray<float3>(faceCount * 4, Allocator.TempJob);
 		NativeArray<int> triangles 		= new NativeArray<int>	 (faceCount * 6, Allocator.TempJob);
