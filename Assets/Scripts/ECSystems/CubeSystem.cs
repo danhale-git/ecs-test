@@ -7,7 +7,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using MyComponents;
 
-[UpdateAfter(typeof(MapSquareSystem))]
+[UpdateAfter(typeof(TerrainSystem))]
 public class CubeSystem : ComponentSystem
 {
     EntityManager entityManager;
@@ -98,7 +98,7 @@ public class CubeSystem : ComponentSystem
 
                 //  Generate block data next
                 commandBuffer.RemoveComponent<Tags.CreateCubes>(entity);
-                commandBuffer.AddComponent(entity, new Tags.GenerateBlocks());
+                commandBuffer.AddComponent(entity, new Tags.SetBlocks());
             }
         }
     
@@ -206,10 +206,10 @@ public class CubeSystem : ComponentSystem
 
 			cubeBuffer.Add(cube);
 
-			if(i == bottomCubeDraw || i == topCubeDraw)
-				CustomDebugTools.SetMapCubeHighlight(entity, cube.yPos, cubeSize-1, new Color(1, 0, 0, 0.1f));
-			else if(i == bottomCubeBlocks || i == topCubeBlocks)
-				CustomDebugTools.SetMapCubeHighlight(entity, cube.yPos, cubeSize-1, new Color(0, 1, 1, 0.1f));
+			//if(i == bottomCubeDraw || i == topCubeDraw)
+			//	CustomDebugTools.SetMapCubeHighlight(entity, cube.yPos, cubeSize-1, new Color(1, 0, 0, 0.1f));
+			//else if(i == bottomCubeBlocks || i == topCubeBlocks)
+			//	CustomDebugTools.SetMapCubeHighlight(entity, cube.yPos, cubeSize-1, new Color(0, 1, 1, 0.1f));
 		}
 	}
 }

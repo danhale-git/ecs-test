@@ -42,8 +42,9 @@ namespace MyComponents
 
 namespace Tags
 {
+	public struct GenerateTerrain : IComponentData { }
 	public struct CreateCubes : IComponentData { }
-	public struct GenerateBlocks : IComponentData { }
+	public struct SetBlocks : IComponentData { }
 	public struct DrawMesh : IComponentData { }
 
 	public struct InnerBuffer : IComponentData { }

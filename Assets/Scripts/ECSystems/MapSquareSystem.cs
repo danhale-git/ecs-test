@@ -1,8 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using UnityEngine;
+using Unity.Jobs;
 using Unity.Entities;
 using Unity.Mathematics;
-using UnityEngine;
-using Unity.Jobs;
 using Unity.Collections;
 using Unity.Transforms;
 using Unity.Rendering;
@@ -21,8 +20,7 @@ public class MapSquareSystem : ComponentSystem
 	//	Terrain settings
 	int cubeSize;
 	int viewDistance;
-	int terrainHeight;
-	int terrainStretch;
+
 
 	ArchetypeChunkEntityType 				entityType;
 	ArchetypeChunkComponentType<Position> 	positionType;
@@ -33,8 +31,7 @@ public class MapSquareSystem : ComponentSystem
 	{
 		cubeSize 		= TerrainSettings.cubeSize;
 		viewDistance 	= TerrainSettings.viewDistance;
-		terrainHeight 	= TerrainSettings.terrainHeight;
-		terrainStretch 	= TerrainSettings.terrainStretch;
+		
 
 		player = GameObject.FindObjectOfType<PlayerController>();
 
@@ -59,14 +56,12 @@ public class MapSquareSystem : ComponentSystem
 
 
 	//	Continually generate map squares
-	
-	bool debug = true;
 	protected override void OnUpdate()
 	{
 		//	Generate map in radius around player
-			GenerateRadius(
-				Util.VoxelOwner(player.transform.position, cubeSize),
-				viewDistance);			
+		GenerateRadius(
+			Util.VoxelOwner(player.transform.position, cubeSize),
+			viewDistance);			
 	}
 
 	//	Create squares
@@ -80,25 +75,26 @@ public class MapSquareSystem : ComponentSystem
 		for(int x = -radius; x <= radius; x++)
 			for(int z = -radius; z <= radius; z++)
 			{
-				int edge = 0;
-				//	Chunk is at the edge of the map
+				int buffer = 0;
+				//	Chunk is at the edge of the map 	- outer buffer
 				if (x == -radius || x ==  radius ||
 					z == -radius || z ==  radius )
-					edge = 2;
-				//	Chunk is 1 away from the edge of the map
+					buffer = 2;
+				//	Chunk is 1 from the edge of the map - inner buffer
 				else if(x == -radius +1 || x ==  radius -1 ||
 						z == -radius +1 || z ==  radius -1 )
-					edge = 1;
+					buffer = 1;
 
 				//	Create map square at position
 				Vector3 offset = new Vector3(x*cubeSize, 0, z*cubeSize);
-				squaresCreated += CreateSquare(center + offset, edge);
+				squaresCreated += CreateSquare(center + offset, buffer);
 			}
 	}
 
-	//	Create map square and generate height map
-	int CreateSquare(Vector3 position, int edge)
+	//	Create map squares.
+	int CreateSquare(Vector3 position, int buffer)
 	{
+		//	Map squares have a 2D position in a 3D space
 		if(position.y != 0)
 			throw new System.ArgumentException(
 				"Map Square Y position must be 0: "+position.y
@@ -116,29 +112,22 @@ public class MapSquareSystem : ComponentSystem
 			entityManager.SetComponentData(
 				entity,
 				new Position{ Value = position }
-				);
-
-			//	Resize to Dynamic Buffer
-			DynamicBuffer<Height> heightBuffer = entityManager.GetBuffer<Height>(entity);
-			heightBuffer.ResizeUninitialized((int)math.pow(cubeSize, 2));
-
-			//	Fill buffer with height map data
-			MapSquare mapSquareComponent = GetHeightMap(position, heightBuffer);
-			entityManager.SetComponentData<MapSquare>(entity, mapSquareComponent);
+				);		
 
 			//	Create cubes next
-			entityManager.AddComponent(entity, typeof(Tags.CreateCubes));
+			entityManager.AddComponent(entity, typeof(Tags.GenerateTerrain));
 
-			SetBuffer(entity, edge, position);
+			SetBuffer(entity, buffer, position);
 
 			return 1;
 		}
 		
-		CheckBuffer(entity, edge, position);
+		CheckBuffer(entity, buffer, position);
 		
 		return 0;
 	}
 
+	//	Set buffer type
 	void SetBuffer(Entity entity, int edge, float3 position)
 	{
 		switch(edge)
@@ -146,22 +135,20 @@ public class MapSquareSystem : ComponentSystem
 			//	Is inner buffer
 			case 1:
 				entityManager.AddComponent(entity, typeof(Tags.InnerBuffer));
-				//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1,0.5f,0.5f,0.2f));	
 				break;
 
 			//	Is outer buffer
 			case 2:
 				entityManager.AddComponent(entity, typeof(Tags.OuterBuffer));
-				//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(0.5f,1,0.5f,0.2f));
 				break;
 			
 			//	Is not a buffer
 			default:
-				//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(0.5f,1,1,0.2f));				
 				break;
 		}
 	}
 
+	//	Check if buffer type needs updating
 	void CheckBuffer(Entity entity, int edge, float3 position)
 	{
 		switch(edge)
@@ -173,7 +160,6 @@ public class MapSquareSystem : ComponentSystem
 					entityManager.RemoveComponent<Tags.OuterBuffer>(entity);
 
 					entityManager.AddComponent(entity, typeof(Tags.InnerBuffer));
-					//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1,0.5f,0.5f,0.2f));
 				}	
 				break;
 
@@ -187,60 +173,19 @@ public class MapSquareSystem : ComponentSystem
 
 				if(entityManager.HasComponent<Tags.InnerBuffer>(entity))
 					entityManager.RemoveComponent<Tags.InnerBuffer>(entity);
-
-				//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(0.5f,1,1,0.2f));				
 				break;
 		}
 	}
 
-	public MapSquare GetHeightMap(float3 position, DynamicBuffer<Height> heightMap)
-    {
-		//	Flattened 2D array noise data matrix
-        var noiseMap = new NativeArray<float>((int)math.pow(cubeSize, 2), Allocator.TempJob);
+	
 
-        var job = new FastNoiseJob(){
-            noiseMap 	= noiseMap,						//	Noise map matrix to be filled
-			offset 		= position,						//	Position of this map square
-			cubeSize	= cubeSize,						//	Length of one side of a square/cube	
-            seed 		= TerrainSettings.seed,			//	Perlin noise seed
-            frequency 	= TerrainSettings.frequency,	//	Perlin noise frequency
-			util 		= new JobUtil(),				//	Utilities
-            noise 		= new SimplexNoiseGenerator(0)	//	FastNoise.GetSimplex adapted for Jobs
-        };
-
-        job.Schedule(noiseMap.Length, 16).Complete();
-
-		//	Convert noise (0-1) into heights (0-maxHeight)
-		//	TODO: Jobify this
-		int highestBlock = 0;
-		int lowestBlock = terrainHeight + terrainStretch;
-		for(int i = 0; i < noiseMap.Length; i++)
-		{
-			int height = (int)((noiseMap[i] * terrainStretch) + terrainHeight);
-		    heightMap[i] = new Height { height = height };
-				
-			if(height > highestBlock)
-				highestBlock = height;
-			if(height < lowestBlock)
-				lowestBlock = height;
-		}
-
-		//	Dispose of NativeArrays in noise struct
-        job.noise.Dispose();
-		noiseMap.Dispose();
-
-		return new MapSquare{
-			highestVisibleBlock 	= highestBlock,
-			lowestVisibleBlock 	= lowestBlock
-			};
-    }
-
-	//	Get map square by position
+	//	Get map square by position using chunk iteration
 	bool GetMapSquare(float3 position, out Entity mapSquare)
 	{
 		entityType	 	= GetArchetypeChunkEntityType();
 		positionType	= GetArchetypeChunkComponentType<Position>();
 
+		//	All map squares
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			mapSquareQuery,
 			Allocator.TempJob
@@ -264,6 +209,7 @@ public class MapSquareSystem : ComponentSystem
 			{
 				Entity entity = entities[e];
 
+				//	If position matches return
 				if(	position.x == positions[e].Value.x &&
 					position.z == positions[e].Value.z)
 				{

@@ -31,7 +31,7 @@ public class BlockSystem : ComponentSystem
 		{
 			Any 	= Array.Empty<ComponentType>(),
 			None  	= new ComponentType[] { typeof(Tags.OuterBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateBlocks) }
+			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetBlocks) }
 		};
 	}
 
@@ -92,7 +92,7 @@ public class BlockSystem : ComponentSystem
 				for(int b = 0; b < blocks.Length; b++)
 					blockBuffer [b] = blocks[b];
 
-				commandBuffer.RemoveComponent(entity, typeof(Tags.GenerateBlocks));
+				commandBuffer.RemoveComponent(entity, typeof(Tags.SetBlocks));
                 commandBuffer.AddComponent(entity, new Tags.DrawMesh());
 
 				blocks.Dispose();
@@ -138,7 +138,6 @@ public class BlockSystem : ComponentSystem
 			MapCube cube = SetComposition(job.hasAir_hasSolid[0], job.hasAir_hasSolid[1], cubes[i]);
 			cubes[i] = cube;
 
-			Debug.Log(cube.composition);
 			hasAir_hasSolid.Dispose();
 		}
 
