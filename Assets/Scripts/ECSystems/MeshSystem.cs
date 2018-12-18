@@ -40,7 +40,7 @@ public class MeshSystem : ComponentSystem
 
 		squareQuery = new EntityArchetypeQuery{
 			Any 	= Array.Empty<ComponentType>(),
-			None  	= new ComponentType[] { typeof(Tags.InnerBuffer), typeof(Tags.OuterBuffer), typeof(Tags.GenerateBlocks) },
+			None  	= new ComponentType[] { typeof(Tags.InnerBuffer), typeof(Tags.OuterBuffer), typeof(Tags.SetBlocks) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.DrawMesh) }
 			};
 	}
@@ -155,7 +155,7 @@ public class MeshSystem : ComponentSystem
 			var job = new FacesJob(){
 				exposedFaces = exposedFaces,
 
-				blocks 	= blocks,
+				blocks 	= blocks.ToNativeArray(),
 				right 	= adjacent[0],
 				left 	= adjacent[1],
 				front 	= adjacent[2],

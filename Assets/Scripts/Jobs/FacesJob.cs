@@ -6,13 +6,13 @@ using Unity.Burst;
 using Unity.Entities;
 using MyComponents;
 
-//[BurstCompile]
+[BurstCompile]
 struct FacesJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<Faces> exposedFaces;
 
 	//	Block data for this and adjacent map squares
-	[ReadOnly] public DynamicBuffer<Block> blocks;
+	[ReadOnly] public NativeArray<Block> blocks;
 	[ReadOnly] public NativeArray<Block> right;
 	[ReadOnly] public NativeArray<Block> left;
 	[ReadOnly] public NativeArray<Block> front;

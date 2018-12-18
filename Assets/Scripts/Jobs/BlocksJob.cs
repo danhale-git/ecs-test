@@ -6,6 +6,7 @@ using Unity.Burst;
 using Unity.Entities;
 using MyComponents;
 
+[BurstCompile]
 struct BlocksJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<Block> blocks;
