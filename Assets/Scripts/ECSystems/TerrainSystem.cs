@@ -11,19 +11,20 @@ using MyComponents;
 public class TerrainSystem : ComponentSystem
 {
     EntityManager entityManager;
+
     int cubeSize;
 	int terrainHeight;
 	int terrainStretch;
-    
+
     EntityArchetypeQuery query;
 
-    ArchetypeChunkEntityType entityType;
-    ArchetypeChunkComponentType<Position> positionType;
+    ArchetypeChunkEntityType                entityType;
+    ArchetypeChunkComponentType<Position>   positionType;
 
     protected override void OnCreateManager()
     {
-        entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        cubeSize = TerrainSettings.cubeSize;
+        entityManager   = World.Active.GetOrCreateManager<EntityManager>();
+        cubeSize        = TerrainSettings.cubeSize;
         terrainHeight 	= TerrainSettings.terrainHeight;
 		terrainStretch 	= TerrainSettings.terrainStretch;
 
@@ -41,8 +42,7 @@ public class TerrainSystem : ComponentSystem
         entityType = GetArchetypeChunkEntityType();
         positionType = GetArchetypeChunkComponentType<Position>();
 
-        NativeArray<ArchetypeChunk> chunks;
-        chunks = entityManager.CreateArchetypeChunkArray(
+        NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
             query,
             Allocator.TempJob
             );
@@ -59,12 +59,12 @@ public class TerrainSystem : ComponentSystem
         {
             ArchetypeChunk chunk = chunks[c];
 
-            NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
-            NativeArray<Position> positions = chunk.GetNativeArray(positionType);
+            NativeArray<Entity>     entities    = chunk.GetNativeArray(entityType);
+            NativeArray<Position>   positions   = chunk.GetNativeArray(positionType);
             
             for(int e = 0; e < entities.Length; e++)
             {
-                Entity entity = entities[e];
+                Entity entity   = entities[e];
                 float3 position = positions[e].Value;
 
                 //	Resize to Dynamic Buffer
@@ -79,6 +79,7 @@ public class TerrainSystem : ComponentSystem
                 commandBuffer.AddComponent(entity, new Tags.CreateCubes());
             }
         }
+
     commandBuffer.Playback(entityManager);
     commandBuffer.Dispose();
 
@@ -88,17 +89,17 @@ public class TerrainSystem : ComponentSystem
     public MapSquare GetHeightMap(float3 position, DynamicBuffer<Height> heightMap)
     {
 		//	Flattened 2D array noise data matrix
-        var noiseMap = new NativeArray<float>((int)math.pow(cubeSize, 2), Allocator.TempJob);
+        NativeArray<float> noiseMap = new NativeArray<float>((int)math.pow(cubeSize, 2), Allocator.TempJob);
 
-        var job = new FastNoiseJob(){
-            noiseMap 	= noiseMap,						//	Noise map matrix to be filled
-			offset 		= position,						//	Position of this map square
+        FastNoiseJob job = new FastNoiseJob(){
+            noiseMap 	= noiseMap,						//	Flattened 2D array of noise
+			offset 		= position,						//	World position of this map square's local 0,0
 			cubeSize	= cubeSize,						//	Length of one side of a square/cube	
             seed 		= TerrainSettings.seed,			//	Perlin noise seed
             frequency 	= TerrainSettings.frequency,	//	Perlin noise frequency
 			util 		= new JobUtil(),				//	Utilities
             noise 		= new SimplexNoiseGenerator(0)	//	FastNoise.GetSimplex adapted for Jobs
-        };
+            };
 
         job.Schedule(noiseMap.Length, 16).Complete();
 
@@ -115,14 +116,14 @@ public class TerrainSystem : ComponentSystem
 				highestBlock = height;
 			if(height < lowestBlock)
 				lowestBlock = height;
-		}
+        }
 
 		//	Dispose of NativeArrays in noise struct
         job.noise.Dispose();
 		noiseMap.Dispose();
 
 		return new MapSquare{
-			highestVisibleBlock 	= highestBlock,
+			highestVisibleBlock = highestBlock,
 			lowestVisibleBlock 	= lowestBlock
 			};
     }
