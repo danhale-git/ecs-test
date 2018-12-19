@@ -16,7 +16,7 @@ public class MeshSystem : ComponentSystem
 	//	Parralel job batch size
 	int batchSize = 32;
 
-	EntityManager 	entityManager;
+	EntityManager entityManager;
 
 	int cubeSize;
 	int cubeArrayLength;
@@ -54,8 +54,7 @@ public class MeshSystem : ComponentSystem
 		cubeType 		= GetArchetypeChunkBufferType<MapCube>();
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
 
-		NativeArray<ArchetypeChunk> chunks;
-		chunks	= entityManager.CreateArchetypeChunkArray(
+		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			squareQuery,
 			Allocator.TempJob
 			);

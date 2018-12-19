@@ -16,7 +16,7 @@ public class TerrainSystem : ComponentSystem
 	int terrainHeight;
 	int terrainStretch;
 
-    EntityArchetypeQuery query;
+    EntityArchetypeQuery generateTerrainQuery;
 
     ArchetypeChunkEntityType                entityType;
     ArchetypeChunkComponentType<Position>   positionType;
@@ -28,8 +28,7 @@ public class TerrainSystem : ComponentSystem
         terrainHeight 	= TerrainSettings.terrainHeight;
 		terrainStretch 	= TerrainSettings.terrainStretch;
 
-        //  Chunks that need blocks generating
-        query = new EntityArchetypeQuery
+        generateTerrainQuery = new EntityArchetypeQuery
         {
             Any     = Array.Empty<ComponentType>(),
             None    = Array.Empty<ComponentType>(),
@@ -43,7 +42,7 @@ public class TerrainSystem : ComponentSystem
         positionType = GetArchetypeChunkComponentType<Position>();
 
         NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-            query,
+            generateTerrainQuery,
             Allocator.TempJob
             );
 
@@ -75,6 +74,7 @@ public class TerrainSystem : ComponentSystem
 			    MapSquare mapSquareComponent = GetHeightMap(position, heightBuffer);
 			    entityManager.SetComponentData<MapSquare>(entity, mapSquareComponent);
 
+                //  Create cubes next
                 commandBuffer.RemoveComponent<Tags.GenerateTerrain>(entity);
                 commandBuffer.AddComponent(entity, new Tags.CreateCubes());
             }
@@ -104,7 +104,6 @@ public class TerrainSystem : ComponentSystem
         job.Schedule(noiseMap.Length, 16).Complete();
 
 		//	Convert noise (0-1) into heights (0-maxHeight)
-		//	TODO: Jobify this
 		int highestBlock = 0;
 		int lowestBlock = terrainHeight + terrainStretch;
 		for(int i = 0; i < noiseMap.Length; i++)

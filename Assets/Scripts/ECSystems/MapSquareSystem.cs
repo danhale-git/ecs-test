@@ -114,7 +114,7 @@ public class MapSquareSystem : ComponentSystem
 				new Position{ Value = position }
 				);		
 
-			//	Create cubes next
+			//	Generate terrain next
 			entityManager.AddComponent(entity, typeof(Tags.GenerateTerrain));
 
 			SetBuffer(entity, buffer, position);

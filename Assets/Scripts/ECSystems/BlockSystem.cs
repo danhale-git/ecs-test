@@ -11,11 +11,10 @@ using MyComponents;
 public class BlockSystem : ComponentSystem
 {
 	EntityManager entityManager;
+
 	int cubeSize;
 
-
-	ArchetypeChunkEntityType entityType;
-
+	ArchetypeChunkEntityType 			entityType;
 	ArchetypeChunkBufferType<Block> 	blocksType;
 	ArchetypeChunkBufferType<MapCube> 	cubeType;
 	ArchetypeChunkBufferType<Height> 	heightmapType;
@@ -43,8 +42,7 @@ public class BlockSystem : ComponentSystem
 		cubeType 		= GetArchetypeChunkBufferType<MapCube>();
 		heightmapType 	= GetArchetypeChunkBufferType<Height>();
 
-		NativeArray<ArchetypeChunk> chunks;
-		chunks	= entityManager.CreateArchetypeChunkArray(
+		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			mapSquareQuery,
 			Allocator.TempJob
 			);
@@ -61,18 +59,15 @@ public class BlockSystem : ComponentSystem
 		{
 			ArchetypeChunk chunk = chunks[c];
 
-			NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
-
+			NativeArray<Entity> entities 				= chunk.GetNativeArray(entityType);
 			BufferAccessor<Block> blockAccessor 		= chunk.GetBufferAccessor(blocksType);
 			BufferAccessor<MapCube> cubeAccessor 		= chunk.GetBufferAccessor(cubeType);
 			BufferAccessor<Height> heightmapAccessor 	= chunk.GetBufferAccessor(heightmapType);
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
-				Entity entity = entities[e];
-
+				Entity entity 						= entities[e];
 				DynamicBuffer<Block> blockBuffer 	= blockAccessor[e];
-
 				DynamicBuffer<MapCube> cubes		= cubeAccessor[e];
 				DynamicBuffer<Height> heightmap		= heightmapAccessor[e];
 
@@ -81,7 +76,7 @@ public class BlockSystem : ComponentSystem
 				blockBuffer.ResizeUninitialized(blockArrayLength);
 
 				//	Generate block data from height map
-				NativeArray<Block> blocks 	= GetBlocks(
+				NativeArray<Block> blocks = GetBlocks(
 					1,
 					blockArrayLength,
 					heightmap.ToNativeArray(),
@@ -92,7 +87,8 @@ public class BlockSystem : ComponentSystem
 				for(int b = 0; b < blocks.Length; b++)
 					blockBuffer [b] = blocks[b];
 
-				commandBuffer.RemoveComponent(entity, typeof(Tags.SetBlocks));
+				//	Draw mesh next
+				commandBuffer.RemoveComponent<Tags.SetBlocks>(entity);
                 commandBuffer.AddComponent(entity, new Tags.DrawMesh());
 
 				blocks.Dispose();
@@ -145,6 +141,7 @@ public class BlockSystem : ComponentSystem
 	}
 
 	//	TODO: support visible, see through blocks 
+	//	Is all this even necessary? What is composition used for?
 	MapCube SetComposition(int hasAirBlocks, int hasSolidBlocks, MapCube cube)
 	{
 		CubeComposition composition = CubeComposition.AIR;
