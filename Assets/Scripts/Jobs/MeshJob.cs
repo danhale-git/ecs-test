@@ -18,35 +18,43 @@ struct MeshJob : IJobParallelFor
 	[ReadOnly] public int cubeStart;
 	[ReadOnly] public DynamicBuffer<Block> blocks;
 	[ReadOnly] public NativeArray<Faces> faces;
+	[ReadOnly] public NativeArray<float> heightDifferences;
 
 	//[ReadOnly] public MeshGenerator meshGenerator;
 	[ReadOnly] public JobUtil util;
-	[ReadOnly] public int chunkSize;
+	[ReadOnly] public int cubeSize;
 
 	[ReadOnly] public CubeVertices baseVerts;
 
 	//	Vertices for given side
 	void GetVerts(int side, float3 position, int index)
 	{
+		int differenceIndex = util.Flatten2D(position.x, position.z, cubeSize) * 4;
+
+		float3 frontRight 	= new float3(0, heightDifferences[differenceIndex + 0], 0);
+		float3 backRight 	= new float3(0, heightDifferences[differenceIndex + 1], 0);
+		float3 backLeft 	= new float3(0, heightDifferences[differenceIndex + 2], 0);
+		float3 frontLeft 	= new float3(0, heightDifferences[differenceIndex + 3], 0);
+
 		switch(side)
 		{
 			case 0:
-				vertices[index+0] = baseVerts[5]+position;
-				vertices[index+1] = baseVerts[6]+position;
+				vertices[index+0] = baseVerts[5]+frontRight+position;
+				vertices[index+1] = baseVerts[6]+backRight+position;
 				vertices[index+2] = baseVerts[2]+position;
 				vertices[index+3] = baseVerts[1]+position;
 				break;
 			case 1:
-				vertices[index+0] = baseVerts[7]+position;
-				vertices[index+1] = baseVerts[4]+position;
+				vertices[index+0] = baseVerts[7]+backLeft+position;
+				vertices[index+1] = baseVerts[4]+frontLeft+position;
 				vertices[index+2] = baseVerts[0]+position;
 				vertices[index+3] = baseVerts[3]+position;
 				break;
 			case 2:
-				vertices[index+0] = baseVerts[7]+position;
-				vertices[index+1] = baseVerts[6]+position;
-				vertices[index+2] = baseVerts[5]+position;
-				vertices[index+3] = baseVerts[4]+position;
+				vertices[index+0] = baseVerts[7]+backLeft+position;
+				vertices[index+1] = baseVerts[6]+backRight+position;
+				vertices[index+2] = baseVerts[5]+frontRight+position;
+				vertices[index+3] = baseVerts[4]+frontLeft+position;
 				break;
 			case 3:
 				vertices[index+0] = baseVerts[0]+position;
@@ -55,14 +63,14 @@ struct MeshJob : IJobParallelFor
 				vertices[index+3] = baseVerts[3]+position;
 				break;
 			case 4:
-				vertices[index+0] = baseVerts[4]+position;
-				vertices[index+1] = baseVerts[5]+position;
+				vertices[index+0] = baseVerts[4]+frontLeft+position;
+				vertices[index+1] = baseVerts[5]+frontRight+position;
 				vertices[index+2] = baseVerts[1]+position;
 				vertices[index+3] = baseVerts[0]+position;
 				break;
 			case 5:
-				vertices[index+0] = baseVerts[6]+position;
-				vertices[index+1] = baseVerts[7]+position;
+				vertices[index+0] = baseVerts[6]+backRight+position;
+				vertices[index+1] = baseVerts[7]+backLeft+position;
 				vertices[index+2] = baseVerts[3]+position;
 				vertices[index+3] = baseVerts[2]+position;
 				break;

@@ -36,6 +36,10 @@ public struct JobUtil
     {
         return (z * size) + x;
     }
+    public int Flatten2D(float x, float z, int size)
+    {
+        return ((int)z * size) + (int)x;
+    }
     public float To01(float value)
 	{
 		return (value * 0.5f) + 0.5f;
