@@ -28,6 +28,7 @@ public class MeshSystem : ComponentSystem
 	ArchetypeChunkComponentType<MapSquare>	squareType;
 	ArchetypeChunkBufferType<MapCube> 		cubeType;
 	ArchetypeChunkBufferType<Block> 		blocksType;
+	ArchetypeChunkBufferType<Height> 		heightType;
 
 	EntityArchetypeQuery squareQuery;
 
@@ -53,6 +54,7 @@ public class MeshSystem : ComponentSystem
 		squareType		= GetArchetypeChunkComponentType<MapSquare>();
 		cubeType 		= GetArchetypeChunkBufferType<MapCube>();
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
+		heightType		= GetArchetypeChunkBufferType<Height>();
 
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			squareQuery,
@@ -79,6 +81,7 @@ public class MeshSystem : ComponentSystem
 			NativeArray<MapSquare>	squares			= chunk.GetNativeArray(squareType);
 			BufferAccessor<MapCube> cubeAccessor 	= chunk.GetBufferAccessor(cubeType);
 			BufferAccessor<Block> 	blockAccessor 	= chunk.GetBufferAccessor(blocksType);
+			BufferAccessor<Height>	heightAccessor	= chunk.GetBufferAccessor(heightType);
 
 			//	Iterate over map square entities
 			for(int e = 0; e < entities.Length; e++)
@@ -97,6 +100,7 @@ public class MeshSystem : ComponentSystem
 				adjacentBlocks[2] = entityManager.GetBuffer<Block>(adjacentSquares.front);
 				adjacentBlocks[3] = entityManager.GetBuffer<Block>(adjacentSquares.back);
 
+				NativeArray<int> heightDifferences = GetHeightDifferences(heightAccessor[e].ToNativeArray());
 
 				//	Check block face exposure
 				int faceCount;
@@ -120,6 +124,7 @@ public class MeshSystem : ComponentSystem
 
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 				faces.Dispose();
+				heightDifferences.Dispose();
 			}
 		}
 		commandBuffer.Playback(entityManager);
@@ -191,6 +196,45 @@ public class MeshSystem : ComponentSystem
 		}
 
 		return exposedFaces;
+	}
+
+	public NativeArray<int> GetHeightDifferences(NativeArray<Height> heightMap)
+	{
+		NativeArray<int> heightDifferences = new NativeArray<int>(heightMap.Length * 4, Allocator.TempJob);
+
+		for(int h = 0; h < heightMap.Length; h++)
+		{
+			int height = heightMap[h].height;
+
+			float3 pos = Util.Unflatten2D(h, cubeSize);
+
+			//DEBUG
+			if(	pos.x == cubeSize-1 || pos.x == 0 ||
+				pos.z == cubeSize-1 || pos.z == 0)
+				continue;
+
+			int right 		= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x+1, 	pos.z,   cubeSize)].height);
+			int left		= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x-1, 	pos.z,   cubeSize)].height);
+			int top			= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x, 	pos.z+1, cubeSize)].height);
+			int bottom		= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x, 	pos.z-1, cubeSize)].height);
+			int rightTop	= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x+1, 	pos.z+1, cubeSize)].height);
+			int leftTop		= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x-1, 	pos.z+1, cubeSize)].height);
+			int rightBottom	= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x+1, 	pos.z-1, cubeSize)].height);
+			int leftBottom	= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x-1, 	pos.z-1, cubeSize)].height);
+
+			int startIndex = h*4;
+			
+			heightDifferences[startIndex + 0] = (top 	+ rightTop 		+ right) / 3;
+			heightDifferences[startIndex + 1] = (bottom + rightBottom 	+ right) / 3;
+			heightDifferences[startIndex + 2] = (bottom + leftBottom 	+ left) / 3;
+			heightDifferences[startIndex + 3] = (top 	+ leftTop 		+ left) / 3;
+		}
+
+		return heightDifferences;
+	}
+	int ClampHeightDifference(int height, int otherHeight)
+	{
+		return math.clamp(otherHeight - height, -1, 1);
 	}
 
 	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, int faceCount)
