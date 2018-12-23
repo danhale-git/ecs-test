@@ -18,6 +18,7 @@ struct MeshJob : IJobParallelFor
 	[ReadOnly] public int cubeStart;
 	[ReadOnly] public DynamicBuffer<Block> blocks;
 	[ReadOnly] public NativeArray<Faces> faces;
+	[ReadOnly] public NativeArray<Height> heightMap;
 	[ReadOnly] public NativeArray<float> heightDifferences;
 
 	//[ReadOnly] public MeshGenerator meshGenerator;
@@ -29,13 +30,29 @@ struct MeshJob : IJobParallelFor
 	//	Vertices for given side
 	void GetVerts(int side, float3 position, int index)
 	{
-		int differenceIndex = util.Flatten2D(position.x, position.z, cubeSize) * 4;
+		int heightMapIndex = util.Flatten2D(position.x, position.z, cubeSize);
+		int differenceIndex = heightMapIndex * 4;
 
-		float3 frontRight 	= new float3(0, heightDifferences[differenceIndex + 0], 0);
-		float3 backRight 	= new float3(0, heightDifferences[differenceIndex + 1], 0);
-		float3 backLeft 	= new float3(0, heightDifferences[differenceIndex + 2], 0);
-		float3 frontLeft 	= new float3(0, heightDifferences[differenceIndex + 3], 0);
+		float3 frontRight;
+		float3 backRight;
+		float3 backLeft;
+		float3 frontLeft;
 
+		if(position.y == heightMap[heightMapIndex].height)
+		{
+			frontRight 	= new float3(0, heightDifferences[differenceIndex + 0], 0);
+			backRight 	= new float3(0, heightDifferences[differenceIndex + 1], 0);
+			backLeft 	= new float3(0, heightDifferences[differenceIndex + 2], 0);
+			frontLeft 	= new float3(0, heightDifferences[differenceIndex + 3], 0);
+		}
+		else
+		{
+			frontRight = float3.zero;
+			backRight = float3.zero;
+			backLeft = float3.zero;
+			frontLeft = float3.zero;
+		}
+		
 		switch(side)
 		{
 			case 0:

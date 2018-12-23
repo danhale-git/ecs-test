@@ -102,7 +102,7 @@ public class MeshSystem : ComponentSystem
 				for(int i = 0; i < 8; i++)
 					adjacentHeightMaps[i] = entityManager.GetBuffer<Height>(adjacentSquares[i]);
 
-				NativeArray<float> heightDifferences = GetHeightDifferences(heightAccessor[e].ToNativeArray());
+				NativeArray<float> heightDifferences = GetHeightDifferences(heightAccessor[e].ToNativeArray(), adjacentHeightMaps);
 
 				//	Check block face exposure
 				int faceCount;
@@ -118,7 +118,7 @@ public class MeshSystem : ComponentSystem
 				//	Create mesh entity if any faces are exposed
 				if(faceCount != 0)
 					SetMeshComponent(
-						GetMesh(faces, blockAccessor[e], heightDifferences, faceCount),
+						GetMesh(faces, blockAccessor[e], heightAccessor[e].ToNativeArray(), heightDifferences, faceCount),
 						position,
 						entity,
 						commandBuffer
@@ -200,58 +200,62 @@ public class MeshSystem : ComponentSystem
 		return exposedFaces;
 	}
 
-	public NativeArray<float> GetHeightDifferences(NativeArray<Height> heightMap)//, NativeArray<DynamicBuffer<Height>> adjacentHeightMaps)
+	public NativeArray<float> GetHeightDifferences(NativeArray<Height> heightMap, DynamicBuffer<Height>[] adjacentHeightMaps)
 	{
 		NativeArray<float> heightDifferences = new NativeArray<float>(heightMap.Length * 4, Allocator.TempJob);
-
-		/*/NativeArray<Block>[] adjacent = new NativeArray<Block>[] {
-			new NativeArray<Block>(adjacentHeightMaps[0].Length, Allocator.TempJob),
-			new NativeArray<Block>(adjacentHeightMaps[1].Length, Allocator.TempJob),
-			new NativeArray<Block>(adjacentHeightMaps[2].Length, Allocator.TempJob),
-			new NativeArray<Block>(adjacentHeightMaps[3].Length, Allocator.TempJob)
-			};*/
 
 		for(int h = 0; h < heightMap.Length; h++)
 		{
 			int height = heightMap[h].height;
 
+			//	This position
 			float3 pos = Util.Unflatten2D(h, cubeSize);
 
-			//DEBUG
-			if(	pos.x == cubeSize-1 || pos.x == 0 ||
-				pos.z == cubeSize-1 || pos.z == 0)
-				continue;
+			//	Height differences for all adjacent positions
+			float[] differences = new float[] { 0, 0, 0, 0, 0, 0, 0, 0 };
 
-			float right 		= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x+1, 	pos.z,   cubeSize)].height);
-			float left			= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x-1, 	pos.z,   cubeSize)].height);
-			float top			= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x, 	pos.z+1, cubeSize)].height);
-			float bottom		= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x, 	pos.z-1, cubeSize)].height);
-			float rightTop		= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x+1, 	pos.z+1, cubeSize)].height);
-			float leftTop		= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x-1, 	pos.z+1, cubeSize)].height);
-			float rightBottom	= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x+1, 	pos.z-1, cubeSize)].height);
-			float leftBottom	= ClampHeightDifference(height, heightMap[Util.Flatten2D(pos.x-1, 	pos.z-1, cubeSize)].height);
+			float3[] directions = Util.CardinalDirections();
 
+			for(int i = 0; i < differences.Length; i++)
+			{
+				int xPos = (int)(directions[i].x + pos.x);
+				int zPos = (int)(directions[i].z + pos.z);
+
+				//	1 or -1 = beyond the edge of the square 
+				float3 edge = new float3(
+					xPos == cubeSize ? 1 : xPos < 0 ? -1 : 0,
+					0,
+					zPos == cubeSize ? 1 : zPos < 0 ? -1 : 0
+					);
+
+				int adjacentHeight;
+
+				if(	edge.x != 0 || edge.z != 0)
+				{
+					//	Get the adjacent square index
+					int index = Util.CardinalDirectionIndex(edge);
+					adjacentHeight = adjacentHeightMaps[index][Util.WrapAndFlatten2D(xPos, zPos, cubeSize)].height;
+				}
+				else
+				{
+					adjacentHeight = heightMap[Util.Flatten2D(xPos, zPos, cubeSize)].height;
+				}
+
+				differences[i] = math.clamp(adjacentHeight - height, -1, 1);			
+			}
+			
 			int startIndex = h*4;
 
-			heightDifferences[startIndex + 0] = math.clamp(top + rightTop + right, 		 -1, 0);
-			heightDifferences[startIndex + 1] = math.clamp(bottom + rightBottom + right, -1, 0);
-			heightDifferences[startIndex + 2] = math.clamp(bottom + leftBottom + left, 	 -1, 0);
-			heightDifferences[startIndex + 3] = math.clamp(top + leftTop + left, 		 -1, 0);
-
-			//Debug.Log(top+" " 	+ rightTop+" " 		+ right+" - "+(top 	+ rightTop 		+ right) / 3);
-			//Debug.Log(bottom+" " + rightBottom+" " 	+ right+" - "+(bottom + rightBottom 	+ right) / 3);
-			//Debug.Log(bottom+" " + leftBottom+" " 	+ left+" - "+(bottom + leftBottom 	+ left) / 3);
-			//Debug.Log(top+" " 	+ leftTop+" " 		+ left+" - "+(top 	+ leftTop 		+ left) / 3);
+			heightDifferences[startIndex + 0] = math.clamp(differences[2] + differences[4] + differences[0], -1, 0);
+			heightDifferences[startIndex + 1] = math.clamp(differences[3] + differences[6] + differences[0], -1, 0);
+			heightDifferences[startIndex + 2] = math.clamp(differences[3] + differences[7] + differences[1], -1, 0);
+			heightDifferences[startIndex + 3] = math.clamp(differences[2] + differences[5] + differences[1], -1, 0);
 		}
 
 		return heightDifferences;
 	}
-	int ClampHeightDifference(int height, int otherHeight)
-	{
-		return math.clamp(otherHeight - height, -1, 1);
-	}
 
-	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<float> heightDifferences, int faceCount)
+	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<Height> heightMap, NativeArray<float> heightDifferences, int faceCount)
 	{
 		if(blocks.Length == 0)
 		{
@@ -269,6 +273,7 @@ public class MeshSystem : ComponentSystem
 
 			faces 		= faces,
 			blocks 		= blocks,
+			heightMap	= heightMap,
 			heightDifferences = heightDifferences,
 
 			util 		= new JobUtil(),
@@ -313,8 +318,8 @@ public class MeshSystem : ComponentSystem
 		mesh.colors 	= colors;
 		mesh.SetTriangles(triangles, 0);
 
-		mesh.RecalculateNormals();
 		//UnityEditor.MeshUtility.Optimize(mesh);
+		mesh.RecalculateNormals();
 
 		return mesh;
 	}

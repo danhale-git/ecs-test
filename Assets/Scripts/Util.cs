@@ -90,4 +90,35 @@ public static class Util
 			new float3(-1,  0, -1)	//  back left
 		    };
     }
+    public static int CardinalDirectionIndex(float3 direction)
+    {
+        float x = direction.x;
+        float z = direction.z;
+
+        if(x > 0 && z == 0) return 0;
+        if(x < 0 && z == 0) return 1;
+        if(x == 0 && z > 0) return 2;
+        if(x == 0 && z < 0) return 3;
+        if(x > 0 && z > 0) return 4;
+        if(x < 0 && z > 0) return 5;
+        if(x > 0 && z < 0) return 6;
+        if(x < 0 && z < 0) return 7;
+        return 0;
+    }
+
+    
+    public static int WrapAndFlatten2D(int x, int z, int chunkSize)
+    {
+        if(x == -1) 
+			x = chunkSize-1; 
+		else if(x == chunkSize) 
+			x = 0;
+
+		if(z == -1) 
+			z = chunkSize-1; 
+		else if(z == chunkSize) 
+			z = 0;
+
+        return Flatten2D(x, z, chunkSize);
+    }
 }
