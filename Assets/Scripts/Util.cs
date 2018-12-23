@@ -76,4 +76,18 @@ public static class Util
 		int z = Mathf.FloorToInt(voxel.z / cubeSize);
 		return new Vector3(x*cubeSize,y*cubeSize,z*cubeSize);
 	}
+
+    public static float3[] CardinalDirections()
+    {
+        return new float3[8] {
+			new float3( 1,  0,  0), //  right
+			new float3(-1,  0,  0), //  left
+			new float3( 0,  0,  1), //  front
+			new float3( 0,  0, -1), //  back
+			new float3( 1,  0,  1), //  front right
+			new float3(-1,  0,  1), //  front left
+			new float3( 1,  0, -1), //  back right
+			new float3(-1,  0, -1)	//  back left
+		    };
+    }
 }

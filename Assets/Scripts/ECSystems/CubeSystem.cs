@@ -83,10 +83,14 @@ public class CubeSystem : ComponentSystem
 						);
 				}
                 AdjacentSquares adjacentSquares = new AdjacentSquares{
-                    right   = adjacent[0],
-                    left    = adjacent[1],
-                    front   = adjacent[2],
-                    back    = adjacent[3],
+                    right   	= adjacent[0],
+                    left    	= adjacent[1],
+                    front   	= adjacent[2],
+                    back    	= adjacent[3],
+					frontRight	= adjacent[4],
+					frontLeft	= adjacent[5],
+					backRight	= adjacent[6],
+					backLeft	= adjacent[7]
                     };
 
                 commandBuffer.AddComponent(entity, adjacentSquares);
@@ -159,14 +163,23 @@ public class CubeSystem : ComponentSystem
 
     bool GetAdjacentEntities(float3 centerPosition, out Entity[] adjacentSquares)
 	{
-        adjacentSquares = new Entity[4];
+        adjacentSquares = new Entity[8];
 
-		float3[] adjacentPositions = new float3[4] {
+		float3[] adjacentPositions = new float3[8];
+		float3[] directions = Util.CardinalDirections();
+		for(int i = 0; i < directions.Length; i++)
+			adjacentPositions[i] = centerPosition + (directions[i] * cubeSize);
+
+		/*float3[] adjacentPositions = new float3[8] {
 			centerPosition + (new float3( 1,  0,  0) * cubeSize),   //  right
 			centerPosition + (new float3(-1,  0,  0) * cubeSize),   //  left
 			centerPosition + (new float3( 0,  0,  1) * cubeSize),   //  front
-			centerPosition + (new float3( 0,  0, -1) * cubeSize)    //  back
-		};
+			centerPosition + (new float3( 0,  0, -1) * cubeSize),   //  back
+			centerPosition + (new float3( 1,  0,  1) * cubeSize),   //  front right
+			centerPosition + (new float3(-1,  0,  1) * cubeSize),   //  front left
+			centerPosition + (new float3( 1,  0, -1) * cubeSize),   //  back right
+			centerPosition + (new float3(-1,  0, -1) * cubeSize)	//  back left
+		};*/
 
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			getAdjacentEntitiesQuery,
@@ -190,7 +203,7 @@ public class CubeSystem : ComponentSystem
 			for(int e = 0; e < positions.Length; e++)
 			{
                 //  check if each entity matches each position
-				for(int p = 0; p < 4; p++)
+				for(int p = 0; p < adjacentPositions.Length; p++)
 				{
 					float3 position = adjacentPositions[p];
 					
@@ -200,7 +213,7 @@ public class CubeSystem : ComponentSystem
 						adjacentSquares[p] = entities[e];
 						count++;
 
-						if(count == 4)
+						if(count == adjacentPositions.Length)
 						{
 							chunks.Dispose();
 							return true;

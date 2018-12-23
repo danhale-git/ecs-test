@@ -95,10 +95,12 @@ public class MeshSystem : ComponentSystem
 				//	Get blocks from adjacent map squares
 				AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(entity);
 				DynamicBuffer<Block>[] adjacentBlocks = new DynamicBuffer<Block>[4];
-				adjacentBlocks[0] = entityManager.GetBuffer<Block>(adjacentSquares.right);
-				adjacentBlocks[1] = entityManager.GetBuffer<Block>(adjacentSquares.left);
-				adjacentBlocks[2] = entityManager.GetBuffer<Block>(adjacentSquares.front);
-				adjacentBlocks[3] = entityManager.GetBuffer<Block>(adjacentSquares.back);
+				for(int i = 0; i < 4; i++)
+					adjacentBlocks[i] = entityManager.GetBuffer<Block>(adjacentSquares[i]);
+
+				DynamicBuffer<Height>[] adjacentHeightMaps = new DynamicBuffer<Height>[8];
+				for(int i = 0; i < 8; i++)
+					adjacentHeightMaps[i] = entityManager.GetBuffer<Height>(adjacentSquares[i]);
 
 				NativeArray<float> heightDifferences = GetHeightDifferences(heightAccessor[e].ToNativeArray());
 
@@ -202,7 +204,7 @@ public class MeshSystem : ComponentSystem
 	{
 		NativeArray<float> heightDifferences = new NativeArray<float>(heightMap.Length * 4, Allocator.TempJob);
 
-		/*NativeArray<Block>[] adjacent = new NativeArray<Block>[] {
+		/*/NativeArray<Block>[] adjacent = new NativeArray<Block>[] {
 			new NativeArray<Block>(adjacentHeightMaps[0].Length, Allocator.TempJob),
 			new NativeArray<Block>(adjacentHeightMaps[1].Length, Allocator.TempJob),
 			new NativeArray<Block>(adjacentHeightMaps[2].Length, Allocator.TempJob),
