@@ -80,14 +80,14 @@ public static class Util
     public static float3[] CardinalDirections()
     {
         return new float3[8] {
-			new float3( 1,  0,  0), //  right
-			new float3(-1,  0,  0), //  left
-			new float3( 0,  0,  1), //  front
-			new float3( 0,  0, -1), //  back
-			new float3( 1,  0,  1), //  front right
-			new float3(-1,  0,  1), //  front left
-			new float3( 1,  0, -1), //  back right
-			new float3(-1,  0, -1)	//  back left
+			new float3( 1,  0,  0), //  0  right
+			new float3(-1,  0,  0), //  1  left    
+			new float3( 0,  0,  1), //  2  front
+			new float3( 0,  0, -1), //  3  back
+			new float3( 1,  0,  1), //  4  front right
+			new float3(-1,  0,  1), //  5  front left
+			new float3( 1,  0, -1), //  6  back right
+			new float3(-1,  0, -1)	//  7  back left
 		    };
     }
     public static int CardinalDirectionIndex(float3 direction)
