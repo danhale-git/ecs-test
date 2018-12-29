@@ -18,4 +18,12 @@ public static class BlockTypes
 		1,
 		0
 	};
+
+	public static readonly int[] visible = new int[]
+	{
+		0,
+		1,
+		1,
+		1
+	};
 }

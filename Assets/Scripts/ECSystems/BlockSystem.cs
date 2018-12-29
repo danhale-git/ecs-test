@@ -114,13 +114,12 @@ public class BlockSystem : ComponentSystem
 		{
 			if(cubes[i].blocks != 1) continue;
 
-			NativeArray<int> hasAir_hasSolid = new NativeArray<int>(2, Allocator.TempJob);
+			int cubeStart = i * singleCubeArrayLength;
+
 			var job = new BlocksJob()
 			{
-				hasAir_hasSolid = hasAir_hasSolid,
-
 				blocks = blocks,
-				cubeStart = i * singleCubeArrayLength,
+				cubeStart = cubeStart,
 				cubePosY = cubes[i].yPos,
 
 				heightMap = heightMap,
@@ -130,11 +129,21 @@ public class BlockSystem : ComponentSystem
 
         	job.Schedule(singleCubeArrayLength, batchSize).Complete();
 
-			//	Store the composition of the cube
-			MapCube cube = SetComposition(job.hasAir_hasSolid[0], job.hasAir_hasSolid[1], cubes[i]);
-			cubes[i] = cube;
+			bool hasAir = false;
+			bool hasSolid = false;
+			
+			for(int b = cubeStart; b > cubeStart + singleCubeArrayLength; b++)
+			{
+				if(BlockTypes.visible[blocks[i].type] > 0)
+					if(!hasSolid) hasSolid = true;
+				else if(!hasAir) hasAir = true;
 
-			hasAir_hasSolid.Dispose();
+				if(hasSolid && hasAir) break;
+			}
+
+			//	Store the composition of the cube
+			MapCube cube = SetComposition(hasAir, hasSolid, cubes[i]);
+			cubes[i] = cube;
 		}
 
 		return blocks;
@@ -142,15 +151,15 @@ public class BlockSystem : ComponentSystem
 
 	//	TODO: support visible, see through blocks 
 	//	Is all this even necessary? What is composition used for?
-	MapCube SetComposition(int hasAirBlocks, int hasSolidBlocks, MapCube cube)
+	MapCube SetComposition(bool hasAirBlocks, bool hasSolidBlocks, MapCube cube)
 	{
 		CubeComposition composition = CubeComposition.AIR;
 
-		if(hasAirBlocks == 1 && hasSolidBlocks == 0)		//	All air blocks
+		if(hasAirBlocks && hasSolidBlocks)		//	All air blocks
 			composition = CubeComposition.AIR;	
-		else if(hasAirBlocks == 0 && hasSolidBlocks == 1)	//	Some solid blocks
+		else if(hasAirBlocks && hasSolidBlocks)	//	Some solid blocks
 			composition = CubeComposition.SOLID;
-		else if(hasAirBlocks == 1 && hasSolidBlocks == 1)	//	All solid blocks
+		else if(hasAirBlocks && hasSolidBlocks)	//	All solid blocks
 			composition = CubeComposition.MIXED;
 
 		return new MapCube{
