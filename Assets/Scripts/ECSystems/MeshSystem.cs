@@ -28,6 +28,7 @@ public class MeshSystem : ComponentSystem
 	ArchetypeChunkComponentType<MapSquare>	squareType;
 	ArchetypeChunkBufferType<MapCube> 		cubeType;
 	ArchetypeChunkBufferType<Block> 		blocksType;
+	ArchetypeChunkBufferType<Height> 		heightType;
 
 	EntityArchetypeQuery squareQuery;
 
@@ -53,6 +54,7 @@ public class MeshSystem : ComponentSystem
 		squareType		= GetArchetypeChunkComponentType<MapSquare>();
 		cubeType 		= GetArchetypeChunkBufferType<MapCube>();
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
+		heightType		= GetArchetypeChunkBufferType<Height>();
 
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			squareQuery,
@@ -79,6 +81,7 @@ public class MeshSystem : ComponentSystem
 			NativeArray<MapSquare>	squares			= chunk.GetNativeArray(squareType);
 			BufferAccessor<MapCube> cubeAccessor 	= chunk.GetBufferAccessor(cubeType);
 			BufferAccessor<Block> 	blockAccessor 	= chunk.GetBufferAccessor(blocksType);
+			BufferAccessor<Height>	heightAccessor	= chunk.GetBufferAccessor(heightType);
 
 			//	Iterate over map square entities
 			for(int e = 0; e < entities.Length; e++)
@@ -92,11 +95,15 @@ public class MeshSystem : ComponentSystem
 				//	Get blocks from adjacent map squares
 				AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(entity);
 				DynamicBuffer<Block>[] adjacentBlocks = new DynamicBuffer<Block>[4];
-				adjacentBlocks[0] = entityManager.GetBuffer<Block>(adjacentSquares.right);
-				adjacentBlocks[1] = entityManager.GetBuffer<Block>(adjacentSquares.left);
-				adjacentBlocks[2] = entityManager.GetBuffer<Block>(adjacentSquares.front);
-				adjacentBlocks[3] = entityManager.GetBuffer<Block>(adjacentSquares.back);
+				for(int i = 0; i < 4; i++)
+					adjacentBlocks[i] = entityManager.GetBuffer<Block>(adjacentSquares[i]);
 
+				DynamicBuffer<Height>[] adjacentHeightMaps = new DynamicBuffer<Height>[8];
+				for(int i = 0; i < 8; i++)
+					adjacentHeightMaps[i] = entityManager.GetBuffer<Height>(adjacentSquares[i]);
+
+				//	Get vertex offsets for slopes
+				NativeArray<float> slopes = GetSlopes(heightAccessor[e].ToNativeArray(), adjacentHeightMaps);
 
 				//	Check block face exposure
 				int faceCount;
@@ -112,7 +119,7 @@ public class MeshSystem : ComponentSystem
 				//	Create mesh entity if any faces are exposed
 				if(faceCount != 0)
 					SetMeshComponent(
-						GetMesh(faces, blockAccessor[e], faceCount),
+						GetMesh(faces, blockAccessor[e], heightAccessor[e].ToNativeArray(), slopes, faceCount),
 						position,
 						entity,
 						commandBuffer
@@ -120,6 +127,7 @@ public class MeshSystem : ComponentSystem
 
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 				faces.Dispose();
+				slopes.Dispose();
 			}
 		}
 		commandBuffer.Playback(entityManager);
@@ -193,7 +201,70 @@ public class MeshSystem : ComponentSystem
 		return exposedFaces;
 	}
 
-	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, int faceCount)
+	//	Generate list of Y offsets for top 4 cube vertices
+	public NativeArray<float> GetSlopes(NativeArray<Height> heightMap, DynamicBuffer<Height>[] adjacentHeightMaps)
+	{
+		NativeArray<float> heightDifferences = new NativeArray<float>(heightMap.Length * 4, Allocator.TempJob);
+
+		for(int h = 0; h < heightMap.Length; h++)
+		{
+			int height = heightMap[h].height;
+
+			//	This position
+			float3 pos = Util.Unflatten2D(h, cubeSize);
+
+			float3[] directions = Util.CardinalDirections();
+
+			//	Height differences for all adjacent positions
+			float[] differences = new float[directions.Length];
+
+			for(int i = 0; i < differences.Length; i++)
+			{
+				int xPos = (int)(directions[i].x + pos.x);
+				int zPos = (int)(directions[i].z + pos.z);
+
+				//	1 or -1 = beyond the edge of the square 
+				float3 edge = new float3(
+					xPos == cubeSize ? 1 : xPos < 0 ? -1 : 0,
+					0,
+					zPos == cubeSize ? 1 : zPos < 0 ? -1 : 0
+					);
+
+				int adjacentHeight;
+
+				if(	edge.x != 0 || edge.z != 0)
+					adjacentHeight = adjacentHeightMaps[Util.CardinalDirectionIndex(edge)][Util.WrapAndFlatten2D(xPos, zPos, cubeSize)].height;
+				else
+					adjacentHeight = heightMap[Util.Flatten2D(xPos, zPos, cubeSize)].height;
+
+				differences[i] = adjacentHeight - height;
+			}
+			
+			int startIndex = h*4;
+
+			heightDifferences[startIndex + 0] = GetVertexOffset(differences[0], differences[2], differences[4]);	//	front right
+			heightDifferences[startIndex + 1] = GetVertexOffset(differences[0], differences[3], differences[6]);	//	back right
+			heightDifferences[startIndex + 2] = GetVertexOffset(differences[1], differences[3], differences[7]);	//	back left
+			heightDifferences[startIndex + 3] = GetVertexOffset(differences[1], differences[2], differences[5]);	//	front left
+		}
+		return heightDifferences;
+	}
+
+	float GetVertexOffset(float adjacent1, float adjacent2, float diagonal)
+	{
+		bool anyAboveOne = (adjacent1 > 1 || adjacent2 > 1 || diagonal > 1);
+		bool bothAdjacentAboveZero = (adjacent1 > 0 && adjacent2 > 0);
+		bool anyAdjacentAboveZero = (adjacent1 > 0 || adjacent2 > 0);
+
+		if(bothAdjacentAboveZero && anyAboveOne) return 1;
+		
+		if(anyAdjacentAboveZero) return 0;
+
+		return math.clamp(adjacent1 + adjacent2 + diagonal, -1, 0);
+		
+	}
+
+	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<Height> heightMap, NativeArray<float> heightDifferences, int faceCount)
 	{
 		if(blocks.Length == 0)
 		{
@@ -211,9 +282,11 @@ public class MeshSystem : ComponentSystem
 
 			faces 		= faces,
 			blocks 		= blocks,
+			heightMap	= heightMap,
+			heightDifferences = heightDifferences,
 
 			util 		= new JobUtil(),
-			chunkSize 	= cubeSize,
+			cubeSize 	= cubeSize,
 
 			baseVerts 	= new CubeVertices(true)
 		};
@@ -254,8 +327,8 @@ public class MeshSystem : ComponentSystem
 		mesh.colors 	= colors;
 		mesh.SetTriangles(triangles, 0);
 
+		UnityEditor.MeshUtility.Optimize(mesh);
 		mesh.RecalculateNormals();
-		//UnityEditor.MeshUtility.Optimize(mesh);
 
 		return mesh;
 	}

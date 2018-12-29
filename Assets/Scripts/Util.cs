@@ -35,6 +35,10 @@ public static class Util
     {
         return (z * size) + x;
     }
+    public static int Flatten2D(float x, float z, int size)
+    {
+        return ((int)z * size) + (int)x;
+    }
 
     public static float To01(float value)
 	{
@@ -72,4 +76,49 @@ public static class Util
 		int z = Mathf.FloorToInt(voxel.z / cubeSize);
 		return new Vector3(x*cubeSize,y*cubeSize,z*cubeSize);
 	}
+
+    public static float3[] CardinalDirections()
+    {
+        return new float3[8] {
+			new float3( 1,  0,  0), //  0  right
+			new float3(-1,  0,  0), //  1  left    
+			new float3( 0,  0,  1), //  2  front
+			new float3( 0,  0, -1), //  3  back
+			new float3( 1,  0,  1), //  4  front right
+			new float3(-1,  0,  1), //  5  front left
+			new float3( 1,  0, -1), //  6  back right
+			new float3(-1,  0, -1)	//  7  back left
+		    };
+    }
+    public static int CardinalDirectionIndex(float3 direction)
+    {
+        float x = direction.x;
+        float z = direction.z;
+
+        if(x > 0 && z == 0) return 0;
+        if(x < 0 && z == 0) return 1;
+        if(x == 0 && z > 0) return 2;
+        if(x == 0 && z < 0) return 3;
+        if(x > 0 && z > 0) return 4;
+        if(x < 0 && z > 0) return 5;
+        if(x > 0 && z < 0) return 6;
+        if(x < 0 && z < 0) return 7;
+        return 0;
+    }
+
+    
+    public static int WrapAndFlatten2D(int x, int z, int chunkSize)
+    {
+        if(x == -1) 
+			x = chunkSize-1; 
+		else if(x == chunkSize) 
+			x = 0;
+
+		if(z == -1) 
+			z = chunkSize-1; 
+		else if(z == chunkSize) 
+			z = 0;
+
+        return Flatten2D(x, z, chunkSize);
+    }
 }

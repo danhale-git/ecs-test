@@ -18,35 +18,60 @@ struct MeshJob : IJobParallelFor
 	[ReadOnly] public int cubeStart;
 	[ReadOnly] public DynamicBuffer<Block> blocks;
 	[ReadOnly] public NativeArray<Faces> faces;
+	[ReadOnly] public NativeArray<Height> heightMap;
+	[ReadOnly] public NativeArray<float> heightDifferences;
 
 	//[ReadOnly] public MeshGenerator meshGenerator;
 	[ReadOnly] public JobUtil util;
-	[ReadOnly] public int chunkSize;
+	[ReadOnly] public int cubeSize;
 
 	[ReadOnly] public CubeVertices baseVerts;
 
 	//	Vertices for given side
-	void GetVerts(int side, float3 position, int index)
+	void GetVerts(int side, float3 position, int index, int sloped)
 	{
+		int heightMapIndex = util.Flatten2D(position.x, position.z, cubeSize);
+		int differenceIndex = heightMapIndex * 4;
+
+		float3 frontRight;
+		float3 backRight;
+		float3 backLeft;
+		float3 frontLeft;
+
+		if(position.y == heightMap[heightMapIndex].height && sloped > 0)
+		{
+			frontRight 	= new float3(0, heightDifferences[differenceIndex + 0], 0);
+			backRight 	= new float3(0, heightDifferences[differenceIndex + 1], 0);
+			backLeft 	= new float3(0, heightDifferences[differenceIndex + 2], 0);
+			frontLeft 	= new float3(0, heightDifferences[differenceIndex + 3], 0);
+		}
+		else
+		{
+			frontRight = float3.zero;
+			backRight = float3.zero;
+			backLeft = float3.zero;
+			frontLeft = float3.zero;
+		}
+		
 		switch(side)
 		{
 			case 0:
-				vertices[index+0] = baseVerts[5]+position;
-				vertices[index+1] = baseVerts[6]+position;
+				vertices[index+0] = baseVerts[5]+frontRight+position;
+				vertices[index+1] = baseVerts[6]+backRight+position;
 				vertices[index+2] = baseVerts[2]+position;
 				vertices[index+3] = baseVerts[1]+position;
 				break;
 			case 1:
-				vertices[index+0] = baseVerts[7]+position;
-				vertices[index+1] = baseVerts[4]+position;
+				vertices[index+0] = baseVerts[7]+backLeft+position;
+				vertices[index+1] = baseVerts[4]+frontLeft+position;
 				vertices[index+2] = baseVerts[0]+position;
 				vertices[index+3] = baseVerts[3]+position;
 				break;
 			case 2:
-				vertices[index+0] = baseVerts[7]+position;
-				vertices[index+1] = baseVerts[6]+position;
-				vertices[index+2] = baseVerts[5]+position;
-				vertices[index+3] = baseVerts[4]+position;
+				vertices[index+0] = baseVerts[7]+backLeft+position;
+				vertices[index+1] = baseVerts[6]+backRight+position;
+				vertices[index+2] = baseVerts[5]+frontRight+position;
+				vertices[index+3] = baseVerts[4]+frontLeft+position;
 				break;
 			case 3:
 				vertices[index+0] = baseVerts[0]+position;
@@ -55,14 +80,14 @@ struct MeshJob : IJobParallelFor
 				vertices[index+3] = baseVerts[3]+position;
 				break;
 			case 4:
-				vertices[index+0] = baseVerts[4]+position;
-				vertices[index+1] = baseVerts[5]+position;
+				vertices[index+0] = baseVerts[4]+frontLeft+position;
+				vertices[index+1] = baseVerts[5]+frontRight+position;
 				vertices[index+2] = baseVerts[1]+position;
 				vertices[index+3] = baseVerts[0]+position;
 				break;
 			case 5:
-				vertices[index+0] = baseVerts[6]+position;
-				vertices[index+1] = baseVerts[7]+position;
+				vertices[index+0] = baseVerts[6]+backRight+position;
+				vertices[index+1] = baseVerts[7]+backLeft+position;
 				vertices[index+2] = baseVerts[3]+position;
 				vertices[index+3] = baseVerts[2]+position;
 				break;
@@ -86,6 +111,9 @@ struct MeshJob : IJobParallelFor
 		//	Skip blocks that aren't exposed
 		if(faces[i].count == 0) return;
 
+		//	Mesh will be smoothed if > 0
+		int sloped = BlockTypes.sloped[blocks[i].type];
+
 		//	Get block position for vertex offset
 		float3 positionInMesh = blocks[i].squareLocalPosition;
 
@@ -102,42 +130,42 @@ struct MeshJob : IJobParallelFor
 		{
 			GetTris(triIndex+triOffset, vertIndex+vertOffset);
 			triIndex += 6;
-			GetVerts(0, positionInMesh, vertIndex+vertOffset);
+			GetVerts(0, positionInMesh, vertIndex+vertOffset, sloped);
 			vertIndex +=  4;
 		}
 		if(faces[i].left == 1)
 		{
 			GetTris(triIndex+triOffset, vertIndex+vertOffset);
 			triIndex += 6;
-			GetVerts(1, positionInMesh, vertIndex+vertOffset);
+			GetVerts(1, positionInMesh, vertIndex+vertOffset, sloped);
 			vertIndex +=  4;
 		}
 		if(faces[i].up == 1)
 		{
 			GetTris(triIndex+triOffset, vertIndex+vertOffset);
 			triIndex += 6;
-			GetVerts(2, positionInMesh, vertIndex+vertOffset);
+			GetVerts(2, positionInMesh, vertIndex+vertOffset, sloped);
 			vertIndex +=  4;
 		}
 		if(faces[i].down == 1)
 		{
 			GetTris(triIndex+triOffset, vertIndex+vertOffset);
 			triIndex += 6;
-			GetVerts(3, positionInMesh, vertIndex+vertOffset);
+			GetVerts(3, positionInMesh, vertIndex+vertOffset, sloped);
 			vertIndex +=  4;
 		}
 		if(faces[i].forward == 1)
 		{
 			GetTris(triIndex+triOffset, vertIndex+vertOffset);
 			triIndex += 6;
-			GetVerts(4, positionInMesh, vertIndex+vertOffset);
+			GetVerts(4, positionInMesh, vertIndex+vertOffset, sloped);
 			vertIndex +=  4;
 		}
 		if(faces[i].back == 1)
 		{
 			GetTris(triIndex+triOffset, vertIndex+vertOffset);
 			triIndex += 6;
-			GetVerts(5, positionInMesh, vertIndex+vertOffset);
+			GetVerts(5, positionInMesh, vertIndex+vertOffset, sloped);
 			vertIndex +=  4;
 		}
 
