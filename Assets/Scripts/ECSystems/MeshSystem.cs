@@ -102,7 +102,8 @@ public class MeshSystem : ComponentSystem
 				for(int i = 0; i < 8; i++)
 					adjacentHeightMaps[i] = entityManager.GetBuffer<Height>(adjacentSquares[i]);
 
-				NativeArray<float> heightDifferences = GetHeightDifferences(heightAccessor[e].ToNativeArray(), adjacentHeightMaps);
+				//	Get vertex offsets for slopes
+				NativeArray<float> slopes = GetSlopes(heightAccessor[e].ToNativeArray(), adjacentHeightMaps);
 
 				//	Check block face exposure
 				int faceCount;
@@ -118,7 +119,7 @@ public class MeshSystem : ComponentSystem
 				//	Create mesh entity if any faces are exposed
 				if(faceCount != 0)
 					SetMeshComponent(
-						GetMesh(faces, blockAccessor[e], heightAccessor[e].ToNativeArray(), heightDifferences, faceCount),
+						GetMesh(faces, blockAccessor[e], heightAccessor[e].ToNativeArray(), slopes, faceCount),
 						position,
 						entity,
 						commandBuffer
@@ -126,7 +127,7 @@ public class MeshSystem : ComponentSystem
 
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 				faces.Dispose();
-				heightDifferences.Dispose();
+				slopes.Dispose();
 			}
 		}
 		commandBuffer.Playback(entityManager);
@@ -200,7 +201,8 @@ public class MeshSystem : ComponentSystem
 		return exposedFaces;
 	}
 
-	public NativeArray<float> GetHeightDifferences(NativeArray<Height> heightMap, DynamicBuffer<Height>[] adjacentHeightMaps)
+	//	Generate list of Y offsets for top 4 cube vertices
+	public NativeArray<float> GetSlopes(NativeArray<Height> heightMap, DynamicBuffer<Height>[] adjacentHeightMaps)
 	{
 		NativeArray<float> heightDifferences = new NativeArray<float>(heightMap.Length * 4, Allocator.TempJob);
 
@@ -231,70 +233,36 @@ public class MeshSystem : ComponentSystem
 				int adjacentHeight;
 
 				if(	edge.x != 0 || edge.z != 0)
-				{
-					int index = Util.CardinalDirectionIndex(edge);
-					adjacentHeight = adjacentHeightMaps[index][Util.WrapAndFlatten2D(xPos, zPos, cubeSize)].height;
-				}
+					adjacentHeight = adjacentHeightMaps[Util.CardinalDirectionIndex(edge)][Util.WrapAndFlatten2D(xPos, zPos, cubeSize)].height;
 				else
-				{
 					adjacentHeight = heightMap[Util.Flatten2D(xPos, zPos, cubeSize)].height;
-				}
 
 				differences[i] = adjacentHeight - height;
 			}
 			
 			int startIndex = h*4;
 
-			heightDifferences[startIndex + 0] = GetDiff(differences[0], differences[2], differences[4]);	//	front right
-
-			heightDifferences[startIndex + 1] = GetDiff(differences[0], differences[3], differences[6]);	//	back right
-
-			heightDifferences[startIndex + 2] = GetDiff(differences[1], differences[3], differences[7]);	//	back left
-
-			heightDifferences[startIndex + 3] = GetDiff(differences[1], differences[2], differences[5]);	//	front left
-
-			//ProcessDiffs(differences, heightDifferences, startIndex);
+			heightDifferences[startIndex + 0] = GetVertexOffset(differences[0], differences[2], differences[4]);	//	front right
+			heightDifferences[startIndex + 1] = GetVertexOffset(differences[0], differences[3], differences[6]);	//	back right
+			heightDifferences[startIndex + 2] = GetVertexOffset(differences[1], differences[3], differences[7]);	//	back left
+			heightDifferences[startIndex + 3] = GetVertexOffset(differences[1], differences[2], differences[5]);	//	front left
 		}
 		return heightDifferences;
 	}
 
-	float GetDiff(float adjacent1, float adjacent2, float diagonal)
+	float GetVertexOffset(float adjacent1, float adjacent2, float diagonal)
 	{
 		bool anyAboveOne = (adjacent1 > 1 || adjacent2 > 1 || diagonal > 1);
 		bool bothAdjacentAboveZero = (adjacent1 > 0 && adjacent2 > 0);
 		bool anyAdjacentAboveZero = (adjacent1 > 0 || adjacent2 > 0);
+
 		if(bothAdjacentAboveZero && anyAboveOne) return 1;
+		
 		if(anyAdjacentAboveZero) return 0;
 
-	
-		
 		return math.clamp(adjacent1 + adjacent2 + diagonal, -1, 0);
 		
 	}
-
-	/* void ProcessDiffs(float[] differences, NativeArray<float> heightDifferences, int startIndex)
-	{
-		if(differences[0] == 1)
-		{
-			heightDifferences[startIndex + 0] = 0;
-			heightDifferences[startIndex + 1] = 0;
- 		}
-		if(differences[1] == 1)
-		{
-			heightDifferences[startIndex + 2] = 0;
-			heightDifferences[startIndex + 3] = 0;
- 		}
-		if(differences[2] == 1)
-		{
-			heightDifferences[startIndex + 3] = 0;
-			heightDifferences[startIndex + 0] = 0;
- 		}
-		if(differences[3] == 1)
-		{
-			heightDifferences[startIndex + 1] = 0;
-			heightDifferences[startIndex + 2] = 0;
- 		}
-	}*/
 
 	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<Height> heightMap, NativeArray<float> heightDifferences, int faceCount)
 	{
@@ -359,7 +327,7 @@ public class MeshSystem : ComponentSystem
 		mesh.colors 	= colors;
 		mesh.SetTriangles(triangles, 0);
 
-		//UnityEditor.MeshUtility.Optimize(mesh);
+		UnityEditor.MeshUtility.Optimize(mesh);
 		mesh.RecalculateNormals();
 
 		return mesh;

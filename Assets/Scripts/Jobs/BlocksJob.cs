@@ -30,7 +30,7 @@ struct BlocksJob : IJobParallelFor
 
 		if(position.y <= heightMap[hMapIndex].height)
 		{
-			type = 1;
+			type = heightMap[hMapIndex].height > 60 ? 3 : 2;
 			hasAir_hasSolid[1] = 1;
 		}
 		else
