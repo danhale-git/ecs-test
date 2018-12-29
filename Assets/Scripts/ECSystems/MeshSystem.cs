@@ -253,49 +253,48 @@ public class MeshSystem : ComponentSystem
 
 			heightDifferences[startIndex + 3] = GetDiff(differences[1], differences[2], differences[5]);	//	front left
 
-			ProcessDiffs(differences, heightDifferences, startIndex);
-			/* if(differences[0] > 1)
-			{
-				heightDifferences[startIndex + 0] = 1;
-				heightDifferences[startIndex + 1] = 1;
-			}*/
+			//ProcessDiffs(differences, heightDifferences, startIndex);
 		}
 		return heightDifferences;
 	}
 
 	float GetDiff(float adjacent1, float adjacent2, float diagonal)
 	{
-		//if(adjacent1 > 1 || adjacent2 > 1) return 0;
-		if(adjacent1 > 0 && adjacent2 > 0 && diagonal > 0) return 1;
-		//if(adjacent1 < 0 && adjacent2 < 0 && diagonal < 0) return -1;
+		bool anyAboveOne = (adjacent1 > 1 || adjacent2 > 1 || diagonal > 1);
+		bool bothAdjacentAboveZero = (adjacent1 > 0 && adjacent2 > 0);
+		bool anyAdjacentAboveZero = (adjacent1 > 0 || adjacent2 > 0);
+		if(bothAdjacentAboveZero && anyAboveOne) return 1;
+		if(anyAdjacentAboveZero) return 0;
+
+	
 		
 		return math.clamp(adjacent1 + adjacent2 + diagonal, -1, 0);
 		
 	}
 
-	void ProcessDiffs(float[] differences, NativeArray<float> heightDifferences, int startIndex)
+	/* void ProcessDiffs(float[] differences, NativeArray<float> heightDifferences, int startIndex)
 	{
 		if(differences[0] == 1)
 		{
-			heightDifferences[startIndex + 0] =  0;
-			heightDifferences[startIndex + 1] =  0;
+			heightDifferences[startIndex + 0] = 0;
+			heightDifferences[startIndex + 1] = 0;
  		}
 		if(differences[1] == 1)
 		{
-			heightDifferences[startIndex + 2] =  0;
-			heightDifferences[startIndex + 3] =  0;
+			heightDifferences[startIndex + 2] = 0;
+			heightDifferences[startIndex + 3] = 0;
  		}
 		if(differences[2] == 1)
 		{
-			heightDifferences[startIndex + 3] =  0;
-			heightDifferences[startIndex + 0] =  0;
+			heightDifferences[startIndex + 3] = 0;
+			heightDifferences[startIndex + 0] = 0;
  		}
 		if(differences[3] == 1)
 		{
-			heightDifferences[startIndex + 1] =  0;
-			heightDifferences[startIndex + 2] =  0;
+			heightDifferences[startIndex + 1] = 0;
+			heightDifferences[startIndex + 2] = 0;
  		}
-	}
+	}*/
 
 	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<Height> heightMap, NativeArray<float> heightDifferences, int faceCount)
 	{
