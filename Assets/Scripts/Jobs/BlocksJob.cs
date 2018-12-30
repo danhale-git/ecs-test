@@ -28,7 +28,15 @@ struct BlocksJob : IJobParallelFor
 		int type = 0;
 
 		if(position.y <= heightMap[hMapIndex].height)
-			type = heightMap[hMapIndex].height > 60 ? 3 : 2;
+		{
+			switch(heightMap[hMapIndex].type)
+			{
+				case TerrainTypes.GRASS:
+					type = 2; break;
+				case TerrainTypes.CLIFF:
+					type = 3; break;
+			}
+		}
 
 		blocks[i + cubeStart] = new Block
 		{

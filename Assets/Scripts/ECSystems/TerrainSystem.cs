@@ -123,8 +123,10 @@ public class TerrainSystem : ComponentSystem
 		int highestBlock = 0;
 		int lowestBlock = terrainHeight + terrainStretch;
 
-        float cliffStart = 0.45f;
+        float cliffStart = 0.4f;
         float cliffEnd = 0.5f;
+        float cliffMargin = 0.025f;
+        int cliffHeight = 10;
 		for(int i = 0; i < noiseMap.Length; i++)
 		{
             int height = 0;
@@ -132,27 +134,40 @@ public class TerrainSystem : ComponentSystem
 			//height = (int)((noiseMap[i] * terrainStretch) + terrainHeight);
 			//height = (int)((cellMap[i].distance2Edge * 10) + terrainHeight);
 
-            if(noiseMap[i] > cliffStart)
+            float noise = noiseMap[i];
+
+            if(noise > cliffStart && noise < cliffEnd)
             {
-                if(noiseMap[i] < cliffEnd)
+                if(noise > cliffStart+cliffMargin && noise < cliffEnd-cliffMargin)
                 {
-                    float interp = Mathf.InverseLerp(cliffStart, cliffEnd, noiseMap[i]);
-                    height = (int)math.lerp(0, 10*interp, interp);
-                    type = TerrainTypes.CLIFF;
+                    float interp = Mathf.InverseLerp(cliffStart+cliffMargin, cliffEnd-cliffMargin, noise);
+                    height = (int)math.lerp(0, cliffHeight, interp);
                 }
+                else if(noise >= cliffEnd-cliffMargin)
+                    height = cliffHeight;
                 else
-                {
-                    height = 10;
-                    type = TerrainTypes.GRASS;
-                }
+                    height = 0;
+                
+                
+                
+                
+                type = TerrainTypes.CLIFF;
+            }
+            else if(noise >= cliffEnd)
+            {
+                height = cliffHeight;
+                type = TerrainTypes.GRASS;
             }
             else
             {
-                //height = 0;    
+                height = 0;
                 type = TerrainTypes.GRASS;
             }
 
             height += terrainHeight;
+            if(type == TerrainTypes.GRASS) height++;
+
+            height += (int)math.lerp(0, 5, noise);
 
 		    heightMap[i] = new MyComponents.Terrain{
                 height = height,
