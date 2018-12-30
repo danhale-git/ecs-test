@@ -21,6 +21,8 @@ public class TerrainSystem : ComponentSystem
     ArchetypeChunkEntityType                entityType;
     ArchetypeChunkComponentType<Position>   positionType;
 
+    CliffTerrainGenerator cliffTerrain;
+
     protected override void OnCreateManager()
     {
         entityManager   = World.Active.GetOrCreateManager<EntityManager>();
@@ -34,6 +36,8 @@ public class TerrainSystem : ComponentSystem
             None    = Array.Empty<ComponentType>(),
             All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateTerrain) }
         };
+
+        cliffTerrain = new CliffTerrainGenerator(3, 10);
     }
 
     protected override void OnUpdate()
@@ -88,107 +92,6 @@ public class TerrainSystem : ComponentSystem
 
     public MapSquare GetHeightMap(float3 position, DynamicBuffer<MyComponents.Terrain> heightMap)
     {
-		//	Flattened 2D array simplex data matrix
-        NativeArray<float> noiseMap = new NativeArray<float>((int)math.pow(cubeSize, 2), Allocator.TempJob);
-
-        SimplexNoiseJob simplexJob = new SimplexNoiseJob(){
-            noiseMap 	= noiseMap,						//	Flattened 2D array of noise
-			offset 		= position,						//	World position of this map square's local 0,0
-			cubeSize	= cubeSize,						//	Length of one side of a square/cube	
-            seed 		= TerrainSettings.seed,			//	Perlin noise seed
-            frequency 	= TerrainSettings.frequency,	//	Perlin noise frequency
-			util 		= new JobUtil(),				//	Utilities
-            noise 		= new SimplexNoiseGenerator(0)	//	FastNoise.GetSimplex adapted for Jobs
-            };
-
-        simplexJob.Schedule(noiseMap.Length, 16).Complete();
-
-        //	Flattened 2D array call data matrix
-        NativeArray<CellData> cellMap = new NativeArray<CellData>((int)math.pow(cubeSize, 2), Allocator.TempJob);
-
-        WorleyNoiseJob worleyJob = new WorleyNoiseJob(){
-            cellMap 	= cellMap,						//	Flattened 2D array of noise
-			offset 		= position,						//	World position of this map square's local 0,0
-			cubeSize	= cubeSize,						//	Length of one side of a square/cube	
-            seed 		= TerrainSettings.seed,			//	Perlin noise seed
-            frequency 	= TerrainSettings.frequency,	//	Perlin noise frequency
-            perterbAmp  = 5f,
-			util 		= new JobUtil(),				//	Utilities
-            noise 		= new WorleyNoiseGenerator(0)	//	FastNoise.GetSimplex adapted for Jobs
-            };
-
-        worleyJob.Schedule(noiseMap.Length, 16).Complete();
-
-		//	Convert noise (0-1) into heights (0-maxHeight)
-		int highestBlock = 0;
-		int lowestBlock = terrainHeight + terrainStretch;
-
-        float cliffStart = 0.4f;
-        float cliffEnd = 0.5f;
-        float cliffMargin = 0.025f;
-        int cliffHeight = 10;
-		for(int i = 0; i < noiseMap.Length; i++)
-		{
-            int height = 0;
-            TerrainTypes type = 0;
-			//height = (int)((noiseMap[i] * terrainStretch) + terrainHeight);
-			//height = (int)((cellMap[i].distance2Edge * 10) + terrainHeight);
-
-            float noise = noiseMap[i];
-
-            if(noise > cliffStart && noise < cliffEnd)
-            {
-                if(noise > cliffStart+cliffMargin && noise < cliffEnd-cliffMargin)
-                {
-                    float interp = Mathf.InverseLerp(cliffStart+cliffMargin, cliffEnd-cliffMargin, noise);
-                    height = (int)math.lerp(0, cliffHeight, interp);
-                }
-                else if(noise >= cliffEnd-cliffMargin)
-                    height = cliffHeight;
-                else
-                    height = 0;
-                
-                
-                
-                
-                type = TerrainTypes.CLIFF;
-            }
-            else if(noise >= cliffEnd)
-            {
-                height = cliffHeight;
-                type = TerrainTypes.GRASS;
-            }
-            else
-            {
-                height = 0;
-                type = TerrainTypes.GRASS;
-            }
-
-            height += terrainHeight;
-            if(type == TerrainTypes.GRASS) height++;
-
-            height += (int)math.lerp(0, 5, noise);
-
-		    heightMap[i] = new MyComponents.Terrain{
-                height = height,
-                type = type
-            };
-				
-			if(height > highestBlock)
-				highestBlock = height;
-			if(height < lowestBlock)
-				lowestBlock = height;
-        }
-
-		//	Dispose of NativeArrays in noise struct
-        simplexJob.noise.Dispose();
-        worleyJob.noise.Dispose();
-		noiseMap.Dispose();
-        cellMap.Dispose();
-
-		return new MapSquare{
-			highestVisibleBlock = highestBlock,
-			lowestVisibleBlock 	= lowestBlock
-			};
+        return cliffTerrain.Generate(position, heightMap);
     }
 }
