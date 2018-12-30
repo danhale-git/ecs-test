@@ -37,7 +37,7 @@ public class TerrainSystem : ComponentSystem
             All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateTerrain) }
         };
 
-        cliffTerrain = new CliffTerrainGenerator(3, 10);
+        cliffTerrain = new CliffTerrainGenerator(5, 10, 0.005f);
     }
 
     protected override void OnUpdate()

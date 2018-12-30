@@ -12,7 +12,7 @@ public class JobifiedNoise
         cubeSize = TerrainSettings.cubeSize;
     }
 
-    public NativeArray<float> Simplex(float3 offset)
+    public NativeArray<float> Simplex(float3 offset, float frequency = 0.01f)
     {
         NativeArray<float> noiseMap = new NativeArray<float>((int)math.pow(cubeSize, 2), Allocator.TempJob);
 
@@ -21,7 +21,7 @@ public class JobifiedNoise
 			offset 		= offset,						//	World position of this map square's local 0,0
 			cubeSize	= cubeSize,						//	Length of one side of a square/cube	
             seed 		= TerrainSettings.seed,			//	Perlin noise seed
-            frequency 	= TerrainSettings.frequency,	//	Perlin noise frequency
+            frequency 	= frequency,	                //	Perlin noise frequency
 			util 		= new JobUtil(),				//	Utilities
             noise 		= new SimplexNoiseGenerator(0)	//	FastNoise.GetSimplex adapted for Jobs
             };
