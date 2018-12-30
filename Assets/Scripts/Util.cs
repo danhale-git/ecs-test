@@ -121,4 +121,9 @@ public static class Util
 
         return Flatten2D(x, z, chunkSize);
     }
+
+    public static double RoundToDP(float value, int decimalPlaces)
+	{
+		return System.Math.Round(value, decimalPlaces);
+	}
 }

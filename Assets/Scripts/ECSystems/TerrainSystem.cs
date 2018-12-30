@@ -37,7 +37,7 @@ public class TerrainSystem : ComponentSystem
             All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateTerrain) }
         };
 
-        cliffTerrain = new CliffTerrainGenerator(5, 10, 0.005f);
+        cliffTerrain = new CliffTerrainGenerator(5, 10);
     }
 
     protected override void OnUpdate()
@@ -56,6 +56,7 @@ public class TerrainSystem : ComponentSystem
 
     void GenerateTerrain(NativeArray<ArchetypeChunk> chunks)
     {
+        Debug.Log("- generate terrain");
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
         for(int c = 0; c < chunks.Length; c++)

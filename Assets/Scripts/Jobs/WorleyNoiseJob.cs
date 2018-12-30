@@ -180,6 +180,7 @@ struct WorleyNoiseGenerator
 				}
 			}
 		}
+		if(adjacentEdgeDistance == 999999) adjacentEdgeDistance = 0;
 		
 		//	Data for use in terrain generation
 		return new CellData(	currentCellValue,
