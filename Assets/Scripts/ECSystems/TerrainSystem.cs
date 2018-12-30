@@ -91,7 +91,7 @@ public class TerrainSystem : ComponentSystem
 		//	Flattened 2D array noise data matrix
         NativeArray<float> noiseMap = new NativeArray<float>((int)math.pow(cubeSize, 2), Allocator.TempJob);
 
-        FastNoiseJob job = new FastNoiseJob(){
+        SimplexNoiseJob job = new SimplexNoiseJob(){
             noiseMap 	= noiseMap,						//	Flattened 2D array of noise
 			offset 		= position,						//	World position of this map square's local 0,0
 			cubeSize	= cubeSize,						//	Length of one side of a square/cube	

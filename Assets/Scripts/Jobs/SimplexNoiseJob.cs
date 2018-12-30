@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using Unity.Burst;
 
 [BurstCompile]
-struct FastNoiseJob : IJobParallelFor
+struct SimplexNoiseJob : IJobParallelFor
 {
     #region Noise
     
