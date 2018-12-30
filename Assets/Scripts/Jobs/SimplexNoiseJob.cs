@@ -25,7 +25,7 @@ struct SimplexNoiseJob : IJobParallelFor
     {
         float3 position = util.Unflatten2D(i, cubeSize) + offset;
 
-        noiseMap[i] = util.To01(noise.GetSimplex(position.x, position.z, seed, frequency));
+        noiseMap[i] = noise.GetSimplex(position.x, position.z, seed, frequency);
     }
 }
 
@@ -134,6 +134,11 @@ struct SimplexNoiseGenerator
             n2 = t * t * GradCoord2D(seed, i + 1, j + 1, x2, y2);
         }
 
-        return 50 * (n0 + n1 + n2);
+        return To01(50 * (n0 + n1 + n2));
     }
+
+    float To01(float value)
+	{
+		return (value * 0.5f) + 0.5f;
+	}
 }

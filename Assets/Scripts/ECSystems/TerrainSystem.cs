@@ -88,10 +88,10 @@ public class TerrainSystem : ComponentSystem
 
     public MapSquare GetHeightMap(float3 position, DynamicBuffer<Height> heightMap)
     {
-		//	Flattened 2D array noise data matrix
+		//	Flattened 2D array simplex data matrix
         NativeArray<float> noiseMap = new NativeArray<float>((int)math.pow(cubeSize, 2), Allocator.TempJob);
 
-        SimplexNoiseJob job = new SimplexNoiseJob(){
+        SimplexNoiseJob simplexJob = new SimplexNoiseJob(){
             noiseMap 	= noiseMap,						//	Flattened 2D array of noise
 			offset 		= position,						//	World position of this map square's local 0,0
 			cubeSize	= cubeSize,						//	Length of one side of a square/cube	
@@ -101,7 +101,22 @@ public class TerrainSystem : ComponentSystem
             noise 		= new SimplexNoiseGenerator(0)	//	FastNoise.GetSimplex adapted for Jobs
             };
 
-        job.Schedule(noiseMap.Length, 16).Complete();
+        simplexJob.Schedule(noiseMap.Length, 16).Complete();
+
+        //	Flattened 2D array call data matrix
+        NativeArray<CellData> cellMap = new NativeArray<CellData>((int)math.pow(cubeSize, 2), Allocator.TempJob);
+
+        WorleyNoiseJob worleyJob = new WorleyNoiseJob(){
+            cellMap 	= cellMap,						//	Flattened 2D array of noise
+			offset 		= position,						//	World position of this map square's local 0,0
+			cubeSize	= cubeSize,						//	Length of one side of a square/cube	
+            seed 		= TerrainSettings.seed,			//	Perlin noise seed
+            frequency 	= TerrainSettings.frequency,	//	Perlin noise frequency
+			util 		= new JobUtil(),				//	Utilities
+            noise 		= new WorleyNoiseGenerator(0)	//	FastNoise.GetSimplex adapted for Jobs
+            };
+
+        worleyJob.Schedule(noiseMap.Length, 16).Complete();
 
 		//	Convert noise (0-1) into heights (0-maxHeight)
 		int highestBlock = 0;
@@ -109,6 +124,7 @@ public class TerrainSystem : ComponentSystem
 		for(int i = 0; i < noiseMap.Length; i++)
 		{
 			int height = (int)((noiseMap[i] * terrainStretch) + terrainHeight);
+			//int height = (int)((cellMap[i].distance2Edge * terrainStretch) + terrainHeight);
 		    heightMap[i] = new Height { height = height };
 				
 			if(height > highestBlock)
@@ -118,8 +134,10 @@ public class TerrainSystem : ComponentSystem
         }
 
 		//	Dispose of NativeArrays in noise struct
-        job.noise.Dispose();
+        simplexJob.noise.Dispose();
+        worleyJob.noise.Dispose();
 		noiseMap.Dispose();
+        cellMap.Dispose();
 
 		return new MapSquare{
 			highestVisibleBlock = highestBlock,
