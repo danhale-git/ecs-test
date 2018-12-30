@@ -11,9 +11,10 @@ namespace MyComponents
 		public int lowestVisibleBlock;
 	}
 	[InternalBufferCapacity(0)]
-	public struct Height : IBufferElementData
+	public struct Terrain : IBufferElementData
 	{
 		public int height;
+		public TerrainTypes type;
 	}
 
 	public struct AdjacentSquares : IComponentData

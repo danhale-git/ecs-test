@@ -128,6 +128,7 @@ public class TerrainSystem : ComponentSystem
 		for(int i = 0; i < noiseMap.Length; i++)
 		{
             int height = 0;
+            TerrainTypes type = 0;
 			//height = (int)((noiseMap[i] * terrainStretch) + terrainHeight);
 			//height = (int)((cellMap[i].distance2Edge * 10) + terrainHeight);
 
@@ -137,13 +138,26 @@ public class TerrainSystem : ComponentSystem
                 {
                     float interp = Mathf.InverseLerp(cliffStart, cliffEnd, noiseMap[i]);
                     height = (int)math.lerp(0, 10*interp, interp);
+                    type = TerrainTypes.CLIFF;
                 }
-                else height = 10 ;
+                else
+                {
+                    height = 10;
+                    type = TerrainTypes.GRASS;
+                }
+            }
+            else
+            {
+                //height = 0;    
+                type = TerrainTypes.GRASS;
             }
 
             height += terrainHeight;
 
-		    heightMap[i] = new MyComponents.Terrain { height = height };
+		    heightMap[i] = new MyComponents.Terrain{
+                height = height,
+                type = type
+            };
 				
 			if(height > highestBlock)
 				highestBlock = height;
