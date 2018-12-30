@@ -17,6 +17,7 @@ struct WorleyNoiseJob : IJobParallelFor
     [ReadOnly] public int cubeSize;
     [ReadOnly] public int seed;
     [ReadOnly] public float frequency;
+	[ReadOnly] public float perterbAmp;
     [ReadOnly] public JobUtil util;
     [ReadOnly] public WorleyNoiseGenerator noise;
 
@@ -25,7 +26,7 @@ struct WorleyNoiseJob : IJobParallelFor
     {
         float3 position = util.Unflatten2D(i, cubeSize) + offset;
 
-        cellMap[i] = noise.GetEdgeData(position.x, position.z, seed, frequency);
+        cellMap[i] = noise.GetEdgeData(position.x, position.z, seed, frequency, perterbAmp);
     }
 }
 
@@ -87,8 +88,10 @@ struct WorleyNoiseGenerator
 		CELL_2D.Dispose();
 	}
 
-    public CellData GetEdgeData(float x, float y, int m_seed, float m_frequency)
+    public CellData GetEdgeData(float x, float y, int m_seed, float m_frequency, float perterbAmp)
 	{
+		if(perterbAmp > 0)SingleGradientPerturb(m_seed, perterbAmp, m_frequency, ref x, ref y);
+
 		x *= m_frequency;
 		y *= m_frequency;
 
@@ -206,11 +209,51 @@ struct WorleyNoiseGenerator
 	}
 
     int FastRound(float f) { return (f >= 0) ? (int)(f + (float)0.5) : (int)(f - (float)0.5); }
+	int FastFloor(float f) { return (f >= 0 ? (int)f : (int)f - 1); }
 
     float To01(float value)
 	{
 		return (value * 0.5f) + 0.5f;
 	}
+
+	void SingleGradientPerturb(int seed, float perturbAmp, float frequency, ref float x, ref float y)
+	{
+		float xf = x * frequency;
+		float yf = y * frequency;
+
+		int x0 = FastFloor(xf);
+		int y0 = FastFloor(yf);
+		int x1 = x0 + 1;
+		int y1 = y0 + 1;
+
+		float xs, ys;
+		
+		//Interp.Linear:
+		xs = xf - x0;
+		ys = yf - y0;
+		//Interp.Hermite:
+		//xs = InterpHermiteFunc(xf - x0);
+		//ys = InterpHermiteFunc(yf - y0);
+		//Interp.Quintic:
+		//xs = InterpQuinticFunc(xf - x0);
+		//ys = InterpQuinticFunc(yf - y0);
+
+		float2 vec0 = CELL_2D[Hash2D(seed, x0, y0) & 255];
+		float2 vec1 = CELL_2D[Hash2D(seed, x1, y0) & 255];
+
+		float lx0x = math.lerp(vec0.x, vec1.x, xs);
+		float ly0x = math.lerp(vec0.y, vec1.y, xs);
+
+		vec0 = CELL_2D[Hash2D(seed, x0, y1) & 255];
+		vec1 = CELL_2D[Hash2D(seed, x1, y1) & 255];
+
+		float lx1x = math.lerp(vec0.x, vec1.x, xs);
+		float ly1x = math.lerp(vec0.y, vec1.y, xs);
+
+		x += math.lerp(lx0x, lx1x, ys) * perturbAmp;
+		y += math.lerp(ly0x, ly1x, ys) * perturbAmp;
+	}
+	float InterpHermiteFunc(float t) { return t * t * (3 - 2 * t); }
 }
 
 public struct CellData
