@@ -37,13 +37,13 @@ public class MapSquareSystem : ComponentSystem
 
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
-		mapSquareArchetype = entityManager.CreateArchetype(
-			ComponentType.Create<Position>(), 
-			ComponentType.Create<MeshInstanceRendererComponent>(),
-			ComponentType.Create<MapSquare>(),
-			ComponentType.Create<Height>(),
-			ComponentType.Create<MapCube>(),
-			ComponentType.Create<Block>()	
+        mapSquareArchetype = entityManager.CreateArchetype(
+            ComponentType.Create<Position>(),
+            ComponentType.Create<MeshInstanceRendererComponent>(),
+            ComponentType.Create<MapSquare>(),
+            ComponentType.Create<MyComponents.Terrain>(),
+            ComponentType.Create<MapCube>(),
+            ComponentType.Create<Block>()	
 			);
 
 		//	All map squares

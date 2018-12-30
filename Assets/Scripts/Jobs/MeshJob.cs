@@ -18,7 +18,7 @@ struct MeshJob : IJobParallelFor
 	[ReadOnly] public int cubeStart;
 	[ReadOnly] public DynamicBuffer<Block> blocks;
 	[ReadOnly] public NativeArray<Faces> faces;
-	[ReadOnly] public NativeArray<Height> heightMap;
+	[ReadOnly] public NativeArray<MyComponents.Terrain> heightMap;
 	[ReadOnly] public NativeArray<float> heightDifferences;
 
 	//[ReadOnly] public MeshGenerator meshGenerator;

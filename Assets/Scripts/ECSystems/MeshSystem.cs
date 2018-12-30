@@ -28,7 +28,7 @@ public class MeshSystem : ComponentSystem
 	ArchetypeChunkComponentType<MapSquare>	squareType;
 	ArchetypeChunkBufferType<MapCube> 		cubeType;
 	ArchetypeChunkBufferType<Block> 		blocksType;
-	ArchetypeChunkBufferType<Height> 		heightType;
+	ArchetypeChunkBufferType<MyComponents.Terrain> 		heightType;
 
 	EntityArchetypeQuery squareQuery;
 
@@ -54,7 +54,7 @@ public class MeshSystem : ComponentSystem
 		squareType		= GetArchetypeChunkComponentType<MapSquare>();
 		cubeType 		= GetArchetypeChunkBufferType<MapCube>();
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
-		heightType		= GetArchetypeChunkBufferType<Height>();
+        heightType = GetArchetypeChunkBufferType<MyComponents.Terrain>();
 
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			squareQuery,
@@ -81,7 +81,7 @@ public class MeshSystem : ComponentSystem
 			NativeArray<MapSquare>	squares			= chunk.GetNativeArray(squareType);
 			BufferAccessor<MapCube> cubeAccessor 	= chunk.GetBufferAccessor(cubeType);
 			BufferAccessor<Block> 	blockAccessor 	= chunk.GetBufferAccessor(blocksType);
-			BufferAccessor<Height>	heightAccessor	= chunk.GetBufferAccessor(heightType);
+            BufferAccessor<MyComponents.Terrain> heightAccessor	= chunk.GetBufferAccessor(heightType);
 
 			//	Iterate over map square entities
 			for(int e = 0; e < entities.Length; e++)
@@ -98,9 +98,9 @@ public class MeshSystem : ComponentSystem
 				for(int i = 0; i < 4; i++)
 					adjacentBlocks[i] = entityManager.GetBuffer<Block>(adjacentSquares[i]);
 
-				DynamicBuffer<Height>[] adjacentHeightMaps = new DynamicBuffer<Height>[8];
+                DynamicBuffer<MyComponents.Terrain>[] adjacentHeightMaps = new DynamicBuffer<MyComponents.Terrain>[8];
 				for(int i = 0; i < 8; i++)
-					adjacentHeightMaps[i] = entityManager.GetBuffer<Height>(adjacentSquares[i]);
+					adjacentHeightMaps[i] = entityManager.GetBuffer<MyComponents.Terrain>(adjacentSquares[i]);
 
 				//	Get vertex offsets for slopes
 				NativeArray<float> slopes = GetSlopes(heightAccessor[e].ToNativeArray(), adjacentHeightMaps);
@@ -202,7 +202,7 @@ public class MeshSystem : ComponentSystem
 	}
 
 	//	Generate list of Y offsets for top 4 cube vertices
-	public NativeArray<float> GetSlopes(NativeArray<Height> heightMap, DynamicBuffer<Height>[] adjacentHeightMaps)
+	public NativeArray<float> GetSlopes(NativeArray<MyComponents.Terrain> heightMap, DynamicBuffer<MyComponents.Terrain>[] adjacentHeightMaps)
 	{
 		NativeArray<float> heightDifferences = new NativeArray<float>(heightMap.Length * 4, Allocator.TempJob);
 
@@ -264,7 +264,7 @@ public class MeshSystem : ComponentSystem
 		
 	}
 
-	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<Height> heightMap, NativeArray<float> heightDifferences, int faceCount)
+	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<MyComponents.Terrain> heightMap, NativeArray<float> heightDifferences, int faceCount)
 	{
 		if(blocks.Length == 0)
 		{

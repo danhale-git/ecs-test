@@ -67,7 +67,7 @@ public class TerrainSystem : ComponentSystem
                 float3 position = positions[e].Value;
 
                 //	Resize to Dynamic Buffer
-			    DynamicBuffer<Height> heightBuffer = entityManager.GetBuffer<Height>(entity);
+                DynamicBuffer<MyComponents.Terrain> heightBuffer = entityManager.GetBuffer<MyComponents.Terrain>(entity);
 			    heightBuffer.ResizeUninitialized((int)math.pow(cubeSize, 2));
 
 			    //	Fill buffer with height map data
@@ -86,7 +86,7 @@ public class TerrainSystem : ComponentSystem
     chunks.Dispose();
     }
 
-    public MapSquare GetHeightMap(float3 position, DynamicBuffer<Height> heightMap)
+    public MapSquare GetHeightMap(float3 position, DynamicBuffer<MyComponents.Terrain> heightMap)
     {
 		//	Flattened 2D array simplex data matrix
         NativeArray<float> noiseMap = new NativeArray<float>((int)math.pow(cubeSize, 2), Allocator.TempJob);
@@ -112,6 +112,7 @@ public class TerrainSystem : ComponentSystem
 			cubeSize	= cubeSize,						//	Length of one side of a square/cube	
             seed 		= TerrainSettings.seed,			//	Perlin noise seed
             frequency 	= TerrainSettings.frequency,	//	Perlin noise frequency
+            perterbAmp  = 5f,
 			util 		= new JobUtil(),				//	Utilities
             noise 		= new WorleyNoiseGenerator(0)	//	FastNoise.GetSimplex adapted for Jobs
             };
@@ -121,11 +122,28 @@ public class TerrainSystem : ComponentSystem
 		//	Convert noise (0-1) into heights (0-maxHeight)
 		int highestBlock = 0;
 		int lowestBlock = terrainHeight + terrainStretch;
+
+        float cliffStart = 0.45f;
+        float cliffEnd = 0.5f;
 		for(int i = 0; i < noiseMap.Length; i++)
 		{
-			int height = (int)((noiseMap[i] * terrainStretch) + terrainHeight);
-			//int height = (int)((cellMap[i].distance2Edge * terrainStretch) + terrainHeight);
-		    heightMap[i] = new Height { height = height };
+            int height = 0;
+			//height = (int)((noiseMap[i] * terrainStretch) + terrainHeight);
+			//height = (int)((cellMap[i].distance2Edge * 10) + terrainHeight);
+
+            if(noiseMap[i] > cliffStart)
+            {
+                if(noiseMap[i] < cliffEnd)
+                {
+                    float interp = Mathf.InverseLerp(cliffStart, cliffEnd, noiseMap[i]);
+                    height = (int)math.lerp(0, 10*interp, interp);
+                }
+                else height = 10 ;
+            }
+
+            height += terrainHeight;
+
+		    heightMap[i] = new MyComponents.Terrain { height = height };
 				
 			if(height > highestBlock)
 				highestBlock = height;
