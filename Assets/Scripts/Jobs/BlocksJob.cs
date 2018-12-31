@@ -31,6 +31,8 @@ struct BlocksJob : IJobParallelFor
 		{
 			switch(heightMap[hMapIndex].type)
 			{
+				case TerrainTypes.DIRT:
+					type = 1; break;
 				case TerrainTypes.GRASS:
 					type = 2; break;
 				case TerrainTypes.CLIFF:
