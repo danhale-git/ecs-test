@@ -244,8 +244,8 @@ public class MeshSystem : ComponentSystem
 
 			heightDifferences[startIndex + 0] = GetVertexOffset(differences[0], differences[2], differences[4]);	//	front right
 			heightDifferences[startIndex + 1] = GetVertexOffset(differences[0], differences[3], differences[6]);	//	back right
-			heightDifferences[startIndex + 2] = GetVertexOffset(differences[1], differences[3], differences[7]);	//	back left
-			heightDifferences[startIndex + 3] = GetVertexOffset(differences[1], differences[2], differences[5]);	//	front left
+			heightDifferences[startIndex + 2] = GetVertexOffset(differences[1], differences[2], differences[5]);	//	front left
+			heightDifferences[startIndex + 3] = GetVertexOffset(differences[1], differences[3], differences[7]);	//	back left
 		}
 		return heightDifferences;
 	}

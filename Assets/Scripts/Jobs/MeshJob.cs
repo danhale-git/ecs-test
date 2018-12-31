@@ -42,8 +42,8 @@ struct MeshJob : IJobParallelFor
 		{
 			frontRight 	= new float3(0, heightDifferences[differenceIndex + 0], 0);
 			backRight 	= new float3(0, heightDifferences[differenceIndex + 1], 0);
-			backLeft 	= new float3(0, heightDifferences[differenceIndex + 2], 0);
-			frontLeft 	= new float3(0, heightDifferences[differenceIndex + 3], 0);
+			frontLeft 	= new float3(0, heightDifferences[differenceIndex + 2], 0);
+			backLeft 	= new float3(0, heightDifferences[differenceIndex + 3], 0);
 		}
 		else
 		{
@@ -55,37 +55,41 @@ struct MeshJob : IJobParallelFor
 		
 		switch(side)
 		{
-			case 0:
+			case 0:	//	Right
+				if(frontRight.y < 0 && backRight.y < 0) break;
 				vertices[index+0] = baseVerts[5]+frontRight+position;
 				vertices[index+1] = baseVerts[6]+backRight+position;
 				vertices[index+2] = baseVerts[2]+position;
 				vertices[index+3] = baseVerts[1]+position;
 				break;
-			case 1:
+			case 1:	//	Left
+				if(frontLeft.y < 0 && backLeft.y < 0) break;
 				vertices[index+0] = baseVerts[7]+backLeft+position;
 				vertices[index+1] = baseVerts[4]+frontLeft+position;
 				vertices[index+2] = baseVerts[0]+position;
 				vertices[index+3] = baseVerts[3]+position;
 				break;
-			case 2:
+			case 2:	//	Top
 				vertices[index+0] = baseVerts[7]+backLeft+position;
 				vertices[index+1] = baseVerts[6]+backRight+position;
 				vertices[index+2] = baseVerts[5]+frontRight+position;
 				vertices[index+3] = baseVerts[4]+frontLeft+position;
 				break;
-			case 3:
+			case 3:	//	Bottom
 				vertices[index+0] = baseVerts[0]+position;
 				vertices[index+1] = baseVerts[1]+position;
 				vertices[index+2] = baseVerts[2]+position;
 				vertices[index+3] = baseVerts[3]+position;
 				break;
-			case 4:
+			case 4:	//	Front
+				if(frontRight.y < 0 && frontLeft.y < 0) break;
 				vertices[index+0] = baseVerts[4]+frontLeft+position;
 				vertices[index+1] = baseVerts[5]+frontRight+position;
 				vertices[index+2] = baseVerts[1]+position;
 				vertices[index+3] = baseVerts[0]+position;
 				break;
-			case 5:
+			case 5:	//	Back
+				if(backRight.y < 0 && backLeft.y < 0) break;
 				vertices[index+0] = baseVerts[6]+backRight+position;
 				vertices[index+1] = baseVerts[7]+backLeft+position;
 				vertices[index+2] = baseVerts[3]+position;
