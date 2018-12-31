@@ -121,8 +121,12 @@ struct WorleyNoiseGenerator
 						float vecX = xi - x + vec.x * m_cellularJitter;
 						float vecY = yi - y + vec.y * m_cellularJitter;
 
-						float newDistance = (math.abs(vecX) + math.abs(vecY)) + (vecX * vecX + vecY * vecY);
+						//	Natural distance function
+						//float newDistance = (math.abs(vecX) + math.abs(vecY)) + (vecX * vecX + vecY * vecY);
 						
+						//	Euclidean distance function
+						float newDistance = newDistance = vecX * vecX + vecY * vecY;
+
 						if(newDistance <= distance[1])	//	Math.Min(distance[i], newDistance)
 						{
 							if(newDistance >= distance[0])	//	Math.Max((newDistance)), distance[i - 1])
