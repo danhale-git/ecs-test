@@ -23,30 +23,9 @@ public class CliffTerrainGenerator
         this.levelCount = levelCount;
         this.levelHeight = levelHeight;
 
-        this.levelFrequency = 0.02f;
+        this.levelFrequency = 0.01f;
         cliffDepth = 0.05f;
         cliffBleed = 0.025f;
-
-
-        //  DEBUG
-        float increment = 1.0f / levelCount;
-
-        float depth = cliffDepth;// * increment;
-        float bleed = cliffBleed;// * increment;
-
-        for(int l = 1; l < levelCount; l++)
-        {
-            int topHeight = levelHeight * l;
-            int bottomHeight = topHeight - levelHeight;
-
-            float start = (increment * l) - (depth / 2);
-            float end = (increment * l) + (depth / 2);
-
-            float nextStart = (increment * (l+1)) - (depth / 2);
-            float prevEnd = (increment * (l-1)) + (depth / 2);
-
-            Debug.Log(l+": "+(start - bleed)+" "+end+bleed);
-        }
     }
 
     MyComponents.Terrain GetHeight(float noise)
@@ -56,8 +35,8 @@ public class CliffTerrainGenerator
 
         float increment = 1.0f / levelCount;
 
-        float depth = cliffDepth;// * increment;
-        float bleed = cliffBleed;// * increment;
+        float depth = cliffDepth;
+        float bleed = cliffBleed;
 
         for(int l = 1; l < levelCount; l++)
         {
@@ -107,7 +86,7 @@ public class CliffTerrainGenerator
 
     MyComponents.Terrain GetCellHeight(CellData cell)
     {
-        int height = 0;
+        int height = terrainHeight;
         TerrainTypes type = 0;
 
         float edge = Mathf.InverseLerp(0, 4, cell.distance2Edge);
@@ -116,19 +95,14 @@ public class CliffTerrainGenerator
 
         float increment = 1.0f / levelCount;
 
-        float depth = cliffDepth;// * increment;
-        float bleed = cliffBleed;// * increment;
 
-        int cellHeight = 0;
-        int adjacentHeight = 0;
+        float cellHeight = 0;
+        float adjacentHeight = 0;
 
         for(int l = 1; l < levelCount; l++)
         {
-            float start = (increment * l) - (depth / 2);
-            float end = (increment * l) + (depth / 2);
-
-            float nextStart = (increment * (l+1)) - (depth / 2);
-            float prevEnd = (increment * (l-1)) + (depth / 2);
+            float nextStart = (increment * (l+1));
+            float prevEnd = (increment * (l-1));
 
             if((adjacentValue >= prevEnd || l == 0) && (adjacentValue <= nextStart || l == levelCount-1))
             {
@@ -140,7 +114,27 @@ public class CliffTerrainGenerator
             }
         }
         
-        height += cellHeight + terrainHeight;
+        float depth = cliffDepth *2;
+
+        if(cell.distance2Edge < depth*2 && cellHeight != adjacentHeight)
+        {
+            type = TerrainTypes.CLIFF;            
+        
+            if(cell.distance2Edge < depth) 
+            {
+                float halfway = (cellHeight + adjacentHeight) / 2;
+                float interpolator = Mathf.InverseLerp(0, depth, cell.distance2Edge);
+
+                height += (int)math.lerp(halfway, cellHeight, interpolator);
+            }
+            else
+                height += (int)cellHeight;
+        }
+        else
+        {
+            type = TerrainTypes.GRASS;
+            height += (int)cellHeight;
+        }
 
         return new MyComponents.Terrain{
             height = height,
