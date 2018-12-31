@@ -35,8 +35,8 @@ struct MeshJob : IJobParallelFor
 
 		float3 frontRight;
 		float3 backRight;
-		float3 backLeft;
 		float3 frontLeft;
+		float3 backLeft;
 
 		if(position.y == heightMap[heightMapIndex].height && sloped > 0)
 		{
@@ -100,7 +100,44 @@ struct MeshJob : IJobParallelFor
 	}
 
 	//	Triangles are always the same set, offset to vertex index
-	void GetTris(int index, int vertIndex)
+	void GetTris(int index, int vertIndex, float3 position, int sloped)
+	{
+		if(sloped == 0)
+		{
+			TrisA(index, vertIndex);
+			return;
+		}
+
+		int heightMapIndex = util.Flatten2D(position.x, position.z, cubeSize);
+		int differenceIndex = heightMapIndex * 4;
+
+		float frontRight = heightDifferences[differenceIndex + 0];
+		float backRight = heightDifferences[differenceIndex + 1];
+		float frontLeft = heightDifferences[differenceIndex + 2];
+		float backLeft = heightDifferences[differenceIndex + 3];
+
+		int downVectorCount = 0;
+		downVectorCount += frontRight 	< 0 ? 1 : 0;
+		downVectorCount += backRight 	< 0 ? 1 : 0;
+		downVectorCount += frontLeft 	< 0 ? 1 : 0;
+		downVectorCount += backLeft 	< 0 ? 1 : 0;
+		
+		bool outerCorner = (frontRight < 0 && backLeft < 0);
+		bool innerCorner = (downVectorCount == 1 && (frontLeft < 0 || backRight < 0));
+
+		//	NW or SE facing
+		if(outerCorner || innerCorner)
+		{
+			TrisB(index, vertIndex);
+		}
+		//	SW or NW facing
+		else
+		{
+			TrisA(index, vertIndex);
+		}
+		
+	}
+	void TrisA(int index, int vertIndex)
 	{
 		triangles[index+0] = 3 + vertIndex; 
 		triangles[index+1] = 1 + vertIndex; 
@@ -108,6 +145,15 @@ struct MeshJob : IJobParallelFor
 		triangles[index+3] = 3 + vertIndex; 
 		triangles[index+4] = 2 + vertIndex; 
 		triangles[index+5] = 1 + vertIndex;
+	}
+	void TrisB(int index, int vertIndex)
+	{
+		triangles[index+0] = 2 + vertIndex; 
+		triangles[index+1] = 0 + vertIndex; 
+		triangles[index+2] = 3 + vertIndex; 
+		triangles[index+3] = 2 + vertIndex; 
+		triangles[index+4] = 1 + vertIndex; 
+		triangles[index+5] = 0 + vertIndex;
 	}
 
 	public void Execute(int i)
@@ -132,42 +178,42 @@ struct MeshJob : IJobParallelFor
 		//	Vertices and Triangles for exposed sides
 		if(faces[i].right == 1)
 		{
-			GetTris(triIndex+triOffset, vertIndex+vertOffset);
+			GetTris(triIndex+triOffset, vertIndex+vertOffset, positionInMesh, sloped);
 			triIndex += 6;
 			GetVerts(0, positionInMesh, vertIndex+vertOffset, sloped);
 			vertIndex +=  4;
 		}
 		if(faces[i].left == 1)
 		{
-			GetTris(triIndex+triOffset, vertIndex+vertOffset);
+			GetTris(triIndex+triOffset, vertIndex+vertOffset, positionInMesh, sloped);
 			triIndex += 6;
 			GetVerts(1, positionInMesh, vertIndex+vertOffset, sloped);
 			vertIndex +=  4;
 		}
 		if(faces[i].up == 1)
 		{
-			GetTris(triIndex+triOffset, vertIndex+vertOffset);
+			GetTris(triIndex+triOffset, vertIndex+vertOffset, positionInMesh, sloped);
 			triIndex += 6;
 			GetVerts(2, positionInMesh, vertIndex+vertOffset, sloped);
 			vertIndex +=  4;
 		}
 		if(faces[i].down == 1)
 		{
-			GetTris(triIndex+triOffset, vertIndex+vertOffset);
+			GetTris(triIndex+triOffset, vertIndex+vertOffset, positionInMesh, sloped);
 			triIndex += 6;
 			GetVerts(3, positionInMesh, vertIndex+vertOffset, sloped);
 			vertIndex +=  4;
 		}
 		if(faces[i].forward == 1)
 		{
-			GetTris(triIndex+triOffset, vertIndex+vertOffset);
+			GetTris(triIndex+triOffset, vertIndex+vertOffset, positionInMesh, sloped);
 			triIndex += 6;
 			GetVerts(4, positionInMesh, vertIndex+vertOffset, sloped);
 			vertIndex +=  4;
 		}
 		if(faces[i].back == 1)
 		{
-			GetTris(triIndex+triOffset, vertIndex+vertOffset);
+			GetTris(triIndex+triOffset, vertIndex+vertOffset, positionInMesh, sloped);
 			triIndex += 6;
 			GetVerts(5, positionInMesh, vertIndex+vertOffset, sloped);
 			vertIndex +=  4;
