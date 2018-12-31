@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum TerrainTypes { GRASS, CLIFF }
+public enum TerrainTypes { DIRT, GRASS, CLIFF }
 
 public static class TerrainSettings
 {
