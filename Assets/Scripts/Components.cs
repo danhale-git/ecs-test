@@ -4,6 +4,8 @@ using Unity.Mathematics;
 namespace MyComponents
 {
 	public enum CubeComposition { MIXED, SOLID, AIR};
+	public enum SlopeType { FLAT, INNERCORNER, OUTERCORNER }
+	public enum SlopeFacing { NWSE, NESW }
 
 	public struct MapSquare : IComponentData
 	{
@@ -63,6 +65,14 @@ namespace MyComponents
 		public int index; 
 		public int type;
 		public float3 squareLocalPosition;
+
+		public float frontRightSlope;
+		public float backRightSlope;
+		public float frontLeftSlope;
+		public float backLeftSlope;
+
+		public SlopeType slopeType;
+		public SlopeFacing slopeFacing;
 	}
 }
 

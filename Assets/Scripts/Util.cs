@@ -105,7 +105,6 @@ public static class Util
         if(x < 0 && z < 0) return 7;
         return 0;
     }
-
     
     public static int WrapAndFlatten2D(int x, int z, int chunkSize)
     {
@@ -126,4 +125,12 @@ public static class Util
 	{
 		return System.Math.Round(value, decimalPlaces);
 	}
+
+    public static int BlockIndex(float3 pos, int cubeSize)
+    {
+        int cubesUp = (int)math.floor(pos.y / cubeSize);
+        int startIndex = (cubesUp * (int)math.pow(cubeSize, 3));
+
+        return startIndex + Flatten(pos.x, pos.y - (cubesUp * cubeSize), pos.z, cubeSize);
+    }
 }

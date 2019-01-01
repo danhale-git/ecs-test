@@ -103,7 +103,7 @@ public class MeshSystem : ComponentSystem
 					adjacentHeightMaps[i] = entityManager.GetBuffer<MyComponents.Terrain>(adjacentSquares[i]);
 
 				//	Get vertex offsets for slopes
-				NativeArray<float> slopes = GetSlopes(heightAccessor[e].ToNativeArray(), adjacentHeightMaps);
+				NativeArray<float> slopes = GetSlopes(heightAccessor[e].ToNativeArray(), adjacentHeightMaps, blockAccessor[e]);
 
 				//	Check block face exposure
 				int faceCount;
@@ -202,7 +202,7 @@ public class MeshSystem : ComponentSystem
 	}
 
 	//	Generate list of Y offsets for top 4 cube vertices
-	public NativeArray<float> GetSlopes(NativeArray<MyComponents.Terrain> heightMap, DynamicBuffer<MyComponents.Terrain>[] adjacentHeightMaps)
+	public NativeArray<float> GetSlopes(NativeArray<MyComponents.Terrain> heightMap, DynamicBuffer<MyComponents.Terrain>[] adjacentHeightMaps, DynamicBuffer<Block> blocks)
 	{
 		NativeArray<float> heightDifferences = new NativeArray<float>(heightMap.Length * 4, Allocator.TempJob);
 
@@ -217,6 +217,8 @@ public class MeshSystem : ComponentSystem
 
 			//	Height differences for all adjacent positions
 			float[] differences = new float[directions.Length];
+
+			int changedVertexCount = 0;
 
 			for(int i = 0; i < differences.Length; i++)
 			{
@@ -237,15 +239,39 @@ public class MeshSystem : ComponentSystem
 				else
 					adjacentHeight = heightMap[Util.Flatten2D(xPos, zPos, cubeSize)].height;
 
-				differences[i] = adjacentHeight - height;
+				int difference = adjacentHeight - height;
+
+				if(difference != 0) changedVertexCount++;
+
+				differences[i] = difference;
 			}
 			
 			int startIndex = h*4;
 
-			heightDifferences[startIndex + 0] = GetVertexOffset(differences[0], differences[2], differences[4]);	//	front right
-			heightDifferences[startIndex + 1] = GetVertexOffset(differences[0], differences[3], differences[6]);	//	back right
-			heightDifferences[startIndex + 2] = GetVertexOffset(differences[1], differences[2], differences[5]);	//	front left
-			heightDifferences[startIndex + 3] = GetVertexOffset(differences[1], differences[3], differences[7]);	//	back left
+			float frontRight = GetVertexOffset(differences[0], differences[2], differences[4]);	//	front right
+			float backRight = GetVertexOffset(differences[0], differences[3], differences[6]);	//	back right
+			float frontLeft = GetVertexOffset(differences[1], differences[2], differences[5]);	//	front left
+			float backLeft = GetVertexOffset(differences[1], differences[3], differences[7]);	//	back left
+
+
+			int blockIndex = Util.BlockIndex(new float3(pos.x, height, pos.z), cubeSize);
+			Block block = blocks[blockIndex];
+
+			SlopeType slopeType;
+			SlopeFacing slopeFacing;
+
+			//if(changedVertexCount == 1 && (frontLeft != 0 || backRight != 0))
+
+			blocks[blockIndex] = new Block{
+				index = block.index,
+				type = block.type,
+				squareLocalPosition = block.squareLocalPosition,
+
+				frontRightSlope = frontRight,
+				backRightSlope = backRight,
+				frontLeftSlope = frontLeft,
+				backLeftSlope = backLeft
+			};
 		}
 		return heightDifferences;
 	}
@@ -283,7 +309,7 @@ public class MeshSystem : ComponentSystem
 			faces 		= faces,
 			blocks 		= blocks,
 			heightMap	= heightMap,
-			heightDifferences = heightDifferences,
+			//heightDifferences = heightDifferences,
 
 			util 		= new JobUtil(),
 			cubeSize 	= cubeSize,
