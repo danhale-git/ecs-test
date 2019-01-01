@@ -12,6 +12,7 @@ using MyComponents;
 struct MeshJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<float3> vertices;
+	[NativeDisableParallelForRestriction] public NativeArray<float3> normals;
 	[NativeDisableParallelForRestriction] public NativeArray<int> triangles;
 	[NativeDisableParallelForRestriction] public NativeArray<float4> colors;
 	

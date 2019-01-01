@@ -340,11 +340,13 @@ public class MeshSystem : ComponentSystem
 		}
 		//	Determine vertex and triangle arrays using face count
 		NativeArray<float3> vertices 	= new NativeArray<float3>(faceCount * 4, Allocator.TempJob);
+		NativeArray<float3> normals 	= new NativeArray<float3>(faceCount * 4, Allocator.TempJob);
 		NativeArray<int> triangles 		= new NativeArray<int>	 (faceCount * 6, Allocator.TempJob);
 		NativeArray<float4> colors 		= new NativeArray<float4>(faceCount * 4, Allocator.TempJob);
 
 		MeshJob job = new MeshJob(){
 			vertices 	= vertices,
+			normals 	= normals,
 			triangles 	= triangles,
 			colors 		= colors,
 
@@ -363,10 +365,13 @@ public class MeshSystem : ComponentSystem
 
 		//	Convert vertices and colors from float3/float4 to Vector3/Color
 		Vector3[] verticesArray = new Vector3[vertices.Length];
+		Vector3[] normalsArray = new Vector3[vertices.Length];
 		Color[] colorsArray = new Color[colors.Length];
 		for(int i = 0; i < vertices.Length; i++)
 		{
 			verticesArray[i] = vertices[i];
+			normalsArray[i] = normals[i];
+
 			colorsArray[i] = new Color
 				(
 					colors[i].x,
@@ -381,16 +386,18 @@ public class MeshSystem : ComponentSystem
 		triangles.CopyTo(trianglesArray);
 		
 		vertices.Dispose();
+		normals.Dispose();
 		triangles.Dispose();
 		colors.Dispose();
 
-		return MakeMesh(verticesArray, trianglesArray, colorsArray);
+		return MakeMesh(verticesArray, normalsArray, trianglesArray, colorsArray);
 	}
 
-	Mesh MakeMesh(Vector3[] vertices, int[] triangles, Color[] colors)
+	Mesh MakeMesh(Vector3[] vertices, Vector3[] normals, int[] triangles, Color[] colors)
 	{
 		Mesh mesh 		= new Mesh();
 		mesh.vertices 	= vertices;
+		mesh.normals 	= normals;
 		mesh.colors 	= colors;
 		mesh.SetTriangles(triangles, 0);
 
