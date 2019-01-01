@@ -103,7 +103,7 @@ public class MeshSystem : ComponentSystem
 					adjacentHeightMaps[i] = entityManager.GetBuffer<MyComponents.Terrain>(adjacentSquares[i]);
 
 				//	Get vertex offsets for slopes
-				NativeArray<float> slopes = GetSlopes(heightAccessor[e].ToNativeArray(), adjacentHeightMaps, blockAccessor[e]);
+				GetSlopes(heightAccessor[e].ToNativeArray(), adjacentHeightMaps, blockAccessor[e], positions[e]);
 
 				//	Check block face exposure
 				int faceCount;
@@ -119,7 +119,7 @@ public class MeshSystem : ComponentSystem
 				//	Create mesh entity if any faces are exposed
 				if(faceCount != 0)
 					SetMeshComponent(
-						GetMesh(faces, blockAccessor[e], heightAccessor[e].ToNativeArray(), slopes, faceCount),
+						GetMesh(faces, blockAccessor[e], heightAccessor[e].ToNativeArray(), faceCount),
 						position,
 						entity,
 						commandBuffer
@@ -127,7 +127,6 @@ public class MeshSystem : ComponentSystem
 
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 				faces.Dispose();
-				slopes.Dispose();
 			}
 		}
 		commandBuffer.Playback(entityManager);
@@ -202,10 +201,8 @@ public class MeshSystem : ComponentSystem
 	}
 
 	//	Generate list of Y offsets for top 4 cube vertices
-	public NativeArray<float> GetSlopes(NativeArray<MyComponents.Terrain> heightMap, DynamicBuffer<MyComponents.Terrain>[] adjacentHeightMaps, DynamicBuffer<Block> blocks)
+	void GetSlopes(NativeArray<MyComponents.Terrain> heightMap, DynamicBuffer<MyComponents.Terrain>[] adjacentHeightMaps, DynamicBuffer<Block> blocks, Position squarePosition)
 	{
-		NativeArray<float> heightDifferences = new NativeArray<float>(heightMap.Length * 4, Allocator.TempJob);
-
 		for(int h = 0; h < heightMap.Length; h++)
 		{
 			int height = heightMap[h].height;
@@ -218,14 +215,17 @@ public class MeshSystem : ComponentSystem
 			//	Height differences for all adjacent positions
 			float[] differences = new float[directions.Length];
 
-			int changedVertexCount = 0;
+			int heightDifferenceCount = 0;
+			int raisedVertexCount = 0;
+			int loweredVertexCount = 0;
 
 			for(int i = 0; i < differences.Length; i++)
 			{
 				int xPos = (int)(directions[i].x + pos.x);
 				int zPos = (int)(directions[i].z + pos.z);
 
-				//	1 or -1 = beyond the edge of the square 
+				//	Direction of the adjacent map square that owns the required block
+				//	Zero if required block is in this map square 
 				float3 edge = new float3(
 					xPos == cubeSize ? 1 : xPos < 0 ? -1 : 0,
 					0,
@@ -241,26 +241,66 @@ public class MeshSystem : ComponentSystem
 
 				int difference = adjacentHeight - height;
 
-				if(difference != 0) changedVertexCount++;
+				if(difference != 0) heightDifferenceCount++;
 
 				differences[i] = difference;
 			}
-			
-			int startIndex = h*4;
 
+			//	Not sloped
+			if(heightDifferenceCount == 0) continue;
+			
+			//	Get vertex offsets (-1 to 1) for top vertices of cube required for slope.
 			float frontRight = GetVertexOffset(differences[0], differences[2], differences[4]);	//	front right
 			float backRight = GetVertexOffset(differences[0], differences[3], differences[6]);	//	back right
 			float frontLeft = GetVertexOffset(differences[1], differences[2], differences[5]);	//	front left
 			float backLeft = GetVertexOffset(differences[1], differences[3], differences[7]);	//	back left
 
+			int changedVertexCount = 0;
+
+			if(frontRight != 0) changedVertexCount++;
+			if(backRight != 0) changedVertexCount++;
+			if(frontLeft != 0) changedVertexCount++;
+			if(backLeft != 0) changedVertexCount++;
 
 			int blockIndex = Util.BlockIndex(new float3(pos.x, height, pos.z), cubeSize);
 			Block block = blocks[blockIndex];
 
-			SlopeType slopeType;
-			SlopeFacing slopeFacing;
+			SlopeType slopeType = 0;
+			SlopeFacing slopeFacing = 0;
 
-			//if(changedVertexCount == 1 && (frontLeft != 0 || backRight != 0))
+			if(pos.x + squarePosition.Value.x == -129 && pos.z + squarePosition.Value.z == 628)
+			{
+				Debug.Log("changed "+changedVertexCount);
+				Debug.Log("raised "+raisedVertexCount);
+				Debug.Log("lowered "+loweredVertexCount);
+			}
+
+			//	Check slope type and facing axis
+			if(changedVertexCount == 1 && (frontLeft != 0 || backRight != 0))
+			{
+				slopeType = SlopeType.INNERCORNER;	//	NWSE
+				slopeFacing = SlopeFacing.NWSE;
+			}
+			else if(changedVertexCount == 1 && (frontRight != 0 || backLeft != 0))
+			{
+				slopeType = SlopeType.INNERCORNER;	//	SWNE
+				slopeFacing = SlopeFacing.SWNE;
+			}
+			else if(frontRight < 0 && backLeft < 0)
+			{
+				slopeType = SlopeType.OUTERCORNER;
+				slopeFacing = SlopeFacing.NWSE;
+			}
+			else if(frontLeft < 0 && backRight < 0)
+			{
+				slopeType = SlopeType.OUTERCORNER;
+				slopeFacing = SlopeFacing.SWNE;
+			}
+			else
+			{
+				//	Don't need slope facing for flat slopes, only for corners
+				slopeType = SlopeType.FLAT;
+			}
 
 			blocks[blockIndex] = new Block{
 				index = block.index,
@@ -270,10 +310,12 @@ public class MeshSystem : ComponentSystem
 				frontRightSlope = frontRight,
 				backRightSlope = backRight,
 				frontLeftSlope = frontLeft,
-				backLeftSlope = backLeft
+				backLeftSlope = backLeft,
+
+				slopeType = slopeType,
+				slopeFacing = slopeFacing
 			};
 		}
-		return heightDifferences;
 	}
 
 	float GetVertexOffset(float adjacent1, float adjacent2, float diagonal)
@@ -290,7 +332,7 @@ public class MeshSystem : ComponentSystem
 		
 	}
 
-	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<MyComponents.Terrain> heightMap, NativeArray<float> heightDifferences, int faceCount)
+	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<MyComponents.Terrain> heightMap, int faceCount)
 	{
 		if(blocks.Length == 0)
 		{
@@ -301,7 +343,7 @@ public class MeshSystem : ComponentSystem
 		NativeArray<int> triangles 		= new NativeArray<int>	 (faceCount * 6, Allocator.TempJob);
 		NativeArray<float4> colors 		= new NativeArray<float4>(faceCount * 4, Allocator.TempJob);
 
-		var job = new MeshJob(){
+		MeshJob job = new MeshJob(){
 			vertices 	= vertices,
 			triangles 	= triangles,
 			colors 		= colors,
@@ -309,7 +351,6 @@ public class MeshSystem : ComponentSystem
 			faces 		= faces,
 			blocks 		= blocks,
 			heightMap	= heightMap,
-			//heightDifferences = heightDifferences,
 
 			util 		= new JobUtil(),
 			cubeSize 	= cubeSize,
@@ -353,7 +394,7 @@ public class MeshSystem : ComponentSystem
 		mesh.colors 	= colors;
 		mesh.SetTriangles(triangles, 0);
 
-		UnityEditor.MeshUtility.Optimize(mesh);
+		//UnityEditor.MeshUtility.Optimize(mesh);
 		mesh.RecalculateNormals();
 
 		return mesh;
