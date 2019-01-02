@@ -171,6 +171,7 @@ public class MeshSystem : ComponentSystem
 				front 	= adjacent[2],
 				back 	= adjacent[3],
 
+				cubeHeight	= i * cubeSize,
 				cubeStart 	= (i  ) * cubeArrayLength,
 				aboveStart 	= (i+1) * cubeArrayLength,
 				belowStart 	= (i-1) * cubeArrayLength,
@@ -241,8 +242,6 @@ public class MeshSystem : ComponentSystem
 			float[] differences = new float[directions.Length];
 
 			int heightDifferenceCount = 0;
-			int raisedVertexCount = 0;
-			int loweredVertexCount = 0;
 
 			for(int i = 0; i < differences.Length; i++)
 			{
@@ -290,13 +289,6 @@ public class MeshSystem : ComponentSystem
 			SlopeType slopeType = 0;
 			SlopeFacing slopeFacing = 0;
 
-			if(pos.x + squarePosition.Value.x == -129 && pos.z + squarePosition.Value.z == 628)
-			{
-				Debug.Log("changed "+changedVertexCount);
-				Debug.Log("raised "+raisedVertexCount);
-				Debug.Log("lowered "+loweredVertexCount);
-			}
-
 			//	Check slope type and facing axis
 			if(changedVertexCount == 1 && (frontLeft != 0 || backRight != 0))
 			{
@@ -324,8 +316,13 @@ public class MeshSystem : ComponentSystem
 				slopeType = SlopeType.FLAT;
 			}
 
+			int debug = 0;
+			/*if(squarePosition.Value.x + block.localPosition.x == -31 && squarePosition.Value.z + block.localPosition.z == 679)
+			{
+			} */
+
 			blocks[blockIndex] = new Block{
-				index = block.index,
+				debug = debug,
 				type = block.type,
 				localPosition = block.localPosition,
 

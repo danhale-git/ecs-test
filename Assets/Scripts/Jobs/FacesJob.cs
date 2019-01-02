@@ -19,6 +19,7 @@ struct FacesJob : IJobParallelFor
 	[ReadOnly] public NativeArray<Block> back;
 
 	//	Indices where cubes in this map square begin
+	[ReadOnly] public int cubeHeight;
 	[ReadOnly] public int cubeStart;
 	[ReadOnly] public int aboveStart;
 	[ReadOnly] public int belowStart;
@@ -53,9 +54,11 @@ struct FacesJob : IJobParallelFor
 
 	public void Execute(int i)
 	{
-		//	Get local position in cube
+		//	Local position in cube
 		float3 positionInCube = util.Unflatten(i, cubeSize);
-		
+
+		//	Block index in map square
+		int blockIndex = util.BlockIndex(positionInCube + new float3(0, cubeHeight, 0), cubeSize);
 
 		//	Skip air blocks
 		if(blocks[i + cubeStart].type == 0) return;
@@ -65,20 +68,16 @@ struct FacesJob : IJobParallelFor
 		int forward = 0;
 		int back = 0;
 
-		//if(blocks[i].backRightSlope >= 0 || blocks[i].frontRightSlope >= 0)
-		if(blocks[i].slopeType == SlopeType.NOTSLOPED)
+		if(blocks[blockIndex].backRightSlope >= 0 || blocks[blockIndex].frontRightSlope >= 0)
 			right  	= FaceExposed(positionInCube, new float3( 1,	0, 0));
 
-		//if(blocks[i].backLeftSlope >= 0 || blocks[i].frontLeftSlope >= 0)
-		if(blocks[i].slopeType == SlopeType.NOTSLOPED)
+		if(blocks[blockIndex].backLeftSlope >= 0 || blocks[blockIndex].frontLeftSlope >= 0)
 			left  	= FaceExposed(positionInCube, new float3(-1,	0, 0));	
 
-		//if(blocks[i].frontRightSlope >= 0 || blocks[i].frontLeftSlope >= 0)		
-		if(blocks[i].slopeType == SlopeType.NOTSLOPED)
+		if(blocks[blockIndex].frontRightSlope >= 0 || blocks[blockIndex].frontLeftSlope >= 0)		
 			forward = FaceExposed(positionInCube, new float3( 0,	0, 1));	
 
-		//if(blocks[i].backRightSlope >= 0 || blocks[i].backLeftSlope >= 0)
-		if(blocks[i].slopeType == SlopeType.NOTSLOPED)
+		if(blocks[blockIndex].backRightSlope >= 0 || blocks[blockIndex].backLeftSlope >= 0)
 			back  	= FaceExposed(positionInCube, new float3( 0,	0,-1));		
 
 		int up  	= FaceExposed(positionInCube, new float3( 0,	1, 0));		//	up

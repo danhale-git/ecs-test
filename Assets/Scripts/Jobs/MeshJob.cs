@@ -101,23 +101,6 @@ struct MeshJob : IJobParallelFor
 			vertIndex +=  4;
 		}
 
-		/*switch(block.slopeType)
-		{
-			case SlopeType.NOTSLOPED:
-				for(int v = 0; v < vertIndex; v++)
-				{
-					colors[v+vertOffset] = new float4(1, 0, 0, 0);
-				}
-				break;
-			
-			default:
-				for(int v = 0; v < vertIndex; v++)
-				{
-					colors[v+vertOffset] = new float4(0, 1, 0, 0);
-				}
-				break;
-		} */
-
 		//	Vertex colours
 		for(int v = 0; v < vertIndex; v++)
 		{
@@ -149,21 +132,15 @@ struct MeshJob : IJobParallelFor
 			frontLeft = float3.zero;
 		}
 		
-		//	Get vertices for this side, adjust for slopes and skip
-		//	where the front, left, right or back is not visible due
-		//	to the slope on that side
 		switch(side)
 		{
-			//	TODO the check in FacesJob should mean I don't need the if statements
 			case 0:	//	Right
-				if(frontRight.y < 0 && backRight.y < 0) break;
 				vertices[index+0] = baseVerts[5]+position;//+frontRight+position;
 				vertices[index+1] = baseVerts[6]+position;//+backRight+position;
 				vertices[index+2] = baseVerts[2]+position;
 				vertices[index+3] = baseVerts[1]+position;
 				break;
 			case 1:	//	Left
-				if(frontLeft.y < 0 && backLeft.y < 0) break;
 				vertices[index+0] = baseVerts[7]+position;//+backLeft+position;
 				vertices[index+1] = baseVerts[4]+position;//+frontLeft+position;
 				vertices[index+2] = baseVerts[0]+position;
@@ -182,14 +159,12 @@ struct MeshJob : IJobParallelFor
 				vertices[index+3] = baseVerts[3]+position;
 				break;
 			case 4:	//	Front
-				if(frontRight.y < 0 && frontLeft.y < 0) break;
 				vertices[index+0] = baseVerts[4]+position;//+frontLeft+position;
 				vertices[index+1] = baseVerts[5]+position;//+frontRight+position;
 				vertices[index+2] = baseVerts[1]+position;
 				vertices[index+3] = baseVerts[0]+position;
 				break;
 			case 5:	//	Back
-				if(backRight.y < 0 && backLeft.y < 0) break;
 				vertices[index+0] = baseVerts[6]+position;//+backRight+position;
 				vertices[index+1] = baseVerts[7]+position;//+backLeft+position;
 				vertices[index+2] = baseVerts[3]+position;

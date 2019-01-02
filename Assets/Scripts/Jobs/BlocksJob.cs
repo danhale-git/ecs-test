@@ -42,7 +42,6 @@ struct BlocksJob : IJobParallelFor
 
 		blocks[i + cubeStart] = new Block
 		{
-			index = i, 
 			type = type,
 			localPosition = position,
 		};

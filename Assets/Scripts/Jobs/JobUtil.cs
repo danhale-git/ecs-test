@@ -71,4 +71,12 @@ public struct JobUtil
     {
         return Flatten(WrapBlockIndex(position, chunkSize), chunkSize);
     }
+
+    public int BlockIndex(float3 pos, int cubeSize)
+    {
+        int cubesUp = (int)math.floor(pos.y / cubeSize);
+        int startIndex = (cubesUp * (int)math.pow(cubeSize, 3));
+
+        return startIndex + Flatten(pos.x, pos.y - (cubesUp * cubeSize), pos.z, cubeSize);
+    }
 }

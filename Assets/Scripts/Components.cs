@@ -62,7 +62,8 @@ namespace MyComponents
 	[InternalBufferCapacity(0)]
 	public struct Block : IBufferElementData
 	{
-		public int index; 
+		public int debug;
+		
 		public int type;
 		public float3 localPosition;
 
