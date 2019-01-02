@@ -43,7 +43,7 @@ struct FacesJob : IJobParallelFor
 		if(pos.y < 0)
 			return blocks[util.WrapAndFlatten(pos, cubeSize) + belowStart].type		== 0 ? 1 : 0;
 		if(pos.z == cubeSize)
-			return front[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type 	== 0 ? 1 : 0;
+			return front[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type 		== 0 ? 1 : 0;
 		if(pos.z < 0)
 			return back[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type		== 0 ? 1 : 0;
 
@@ -55,19 +55,47 @@ struct FacesJob : IJobParallelFor
 	{
 		//	Get local position in cube
 		float3 positionInCube = util.Unflatten(i, cubeSize);
+		
 
-		//	Skip invisible blocks
+		//	Skip air blocks
 		if(blocks[i + cubeStart].type == 0) return;
+
+		int right = 0;
+		int left = 0;
+		int forward = 0;
+		int back = 0;
+
+		//if(blocks[i].backRightSlope >= 0 || blocks[i].frontRightSlope >= 0)
+		if(blocks[i].slopeType == SlopeType.NOTSLOPED)
+			right  	= FaceExposed(positionInCube, new float3( 1,	0, 0));
+
+		//if(blocks[i].backLeftSlope >= 0 || blocks[i].frontLeftSlope >= 0)
+		if(blocks[i].slopeType == SlopeType.NOTSLOPED)
+			left  	= FaceExposed(positionInCube, new float3(-1,	0, 0));	
+
+		//if(blocks[i].frontRightSlope >= 0 || blocks[i].frontLeftSlope >= 0)		
+		if(blocks[i].slopeType == SlopeType.NOTSLOPED)
+			forward = FaceExposed(positionInCube, new float3( 0,	0, 1));	
+
+		//if(blocks[i].backRightSlope >= 0 || blocks[i].backLeftSlope >= 0)
+		if(blocks[i].slopeType == SlopeType.NOTSLOPED)
+			back  	= FaceExposed(positionInCube, new float3( 0,	0,-1));		
+
+		int up  	= FaceExposed(positionInCube, new float3( 0,	1, 0));		//	up
+		int down  	= FaceExposed(positionInCube, new float3( 0,   -1, 0));		//	down	
+
 
 		//	Get get exposed block faces
 		exposedFaces[i+cubeStart] = new Faces(
-			FaceExposed(positionInCube, new float3( 1,	0, 0)),		//	right
-			FaceExposed(positionInCube, new float3(-1,	0, 0)),		//	left
-			FaceExposed(positionInCube, new float3( 0,	1, 0)),		//	up
-			FaceExposed(positionInCube, new float3( 0,   -1, 0)),	//	down	
-			FaceExposed(positionInCube, new float3( 0,	0, 1)),		//	forward
-			FaceExposed(positionInCube, new float3( 0,	0,-1)),		//	back
-			0														//	Face index is set later
+			right,
+			left,
+			up,
+			down	,
+			forward,
+			back,
+			0,														
+			0,
+			0
 			);
 
 

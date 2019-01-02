@@ -107,19 +107,23 @@ public class MeshSystem : ComponentSystem
 
 				//	Check block face exposure
 				int faceCount;
+				int vertCount;
+				int triCount;
 				NativeArray<Faces> faces = CheckBlockFaces(
 					squares[e],
 					adjacentBlocks,
 					blockAccessor[e],
 					cubeAccessor[e],
-					out faceCount
+					out faceCount,
+					out vertCount,
+					out triCount
 					);
 
 
 				//	Create mesh entity if any faces are exposed
 				if(faceCount != 0)
 					SetMeshComponent(
-						GetMesh(faces, blockAccessor[e], heightAccessor[e].ToNativeArray(), faceCount),
+						GetMesh(faces, blockAccessor[e], heightAccessor[e].ToNativeArray(), faceCount, vertCount, triCount),
 						position,
 						entity,
 						commandBuffer
@@ -136,7 +140,7 @@ public class MeshSystem : ComponentSystem
 	}	
 
 	//	Generate structs with int values showing face exposure for each block
-	public NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, DynamicBuffer<Block>[] adjacentBlocks, DynamicBuffer<Block> blocks, DynamicBuffer<MapCube> cubes, out int faceCount)
+	public NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, DynamicBuffer<Block>[] adjacentBlocks, DynamicBuffer<Block> blocks, DynamicBuffer<MapCube> cubes, out int faceCount, out int vertCount, out int triCount)
 	{
 		var exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
 
@@ -185,14 +189,29 @@ public class MeshSystem : ComponentSystem
 
 		//	Count total exposed faces and set face indices	
 		faceCount = 0;
+		vertCount = 0;
+		triCount = 0;
 		for(int i = 0; i < exposedFaces.Length; i++)
 		{
 			int count = exposedFaces[i].count;
 			if(count > 0)
 			{
 				Faces blockFaces = exposedFaces[i];
+
 				blockFaces.faceIndex = faceCount;
+				blockFaces.vertIndex = vertCount;
+				blockFaces.triIndex = triCount;
+
 				exposedFaces[i] = blockFaces;
+
+				//	Count verts
+				vertCount += count * 4;
+				//	Slopes have two extra verts
+				if(blocks[i].slopeType != SlopeType.NOTSLOPED) vertCount += 2;
+
+				//	Count tris because they have an arbitrary ratio to verts
+				triCount += count * 6;
+
 				faceCount += count;
 			}
 		}
@@ -203,6 +222,8 @@ public class MeshSystem : ComponentSystem
 	//	Generate list of Y offsets for top 4 cube vertices
 	void GetSlopes(NativeArray<MyComponents.Terrain> heightMap, DynamicBuffer<MyComponents.Terrain>[] adjacentHeightMaps, DynamicBuffer<Block> blocks, Position squarePosition)
 	{
+		//int slopeCount = 0;
+		float3[] directions = Util.CardinalDirections();
 		for(int h = 0; h < heightMap.Length; h++)
 		{
 			int height = heightMap[h].height;
@@ -210,7 +231,11 @@ public class MeshSystem : ComponentSystem
 			//	This position
 			float3 pos = Util.Unflatten2D(h, cubeSize);
 
-			float3[] directions = Util.CardinalDirections();
+			int blockIndex = Util.BlockIndex(new float3(pos.x, height, pos.z), cubeSize);
+			Block block = blocks[blockIndex];
+
+			//	Block type is not sloped
+			if(BlockTypes.sloped[block.type] == 0) continue;
 
 			//	Height differences for all adjacent positions
 			float[] differences = new float[directions.Length];
@@ -246,7 +271,7 @@ public class MeshSystem : ComponentSystem
 				differences[i] = difference;
 			}
 
-			//	Not sloped
+			//	Terrain is not sloped
 			if(heightDifferenceCount == 0) continue;
 			
 			//	Get vertex offsets (-1 to 1) for top vertices of cube required for slope.
@@ -261,9 +286,6 @@ public class MeshSystem : ComponentSystem
 			if(backRight != 0) changedVertexCount++;
 			if(frontLeft != 0) changedVertexCount++;
 			if(backLeft != 0) changedVertexCount++;
-
-			int blockIndex = Util.BlockIndex(new float3(pos.x, height, pos.z), cubeSize);
-			Block block = blocks[blockIndex];
 
 			SlopeType slopeType = 0;
 			SlopeFacing slopeFacing = 0;
@@ -305,7 +327,7 @@ public class MeshSystem : ComponentSystem
 			blocks[blockIndex] = new Block{
 				index = block.index,
 				type = block.type,
-				squareLocalPosition = block.squareLocalPosition,
+				localPosition = block.localPosition,
 
 				frontRightSlope = frontRight,
 				backRightSlope = backRight,
@@ -332,17 +354,17 @@ public class MeshSystem : ComponentSystem
 		
 	}
 
-	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<MyComponents.Terrain> heightMap, int faceCount)
+	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<MyComponents.Terrain> heightMap, int faceCount, int vertCount, int triCount)
 	{
 		if(blocks.Length == 0)
 		{
 			Debug.Log("Tried to draw empty cube!");
 		}
 		//	Determine vertex and triangle arrays using face count
-		NativeArray<float3> vertices 	= new NativeArray<float3>(faceCount * 4, Allocator.TempJob);
-		NativeArray<float3> normals 	= new NativeArray<float3>(faceCount * 4, Allocator.TempJob);
-		NativeArray<int> triangles 		= new NativeArray<int>	 (faceCount * 6, Allocator.TempJob);
-		NativeArray<float4> colors 		= new NativeArray<float4>(faceCount * 4, Allocator.TempJob);
+		NativeArray<float3> vertices 	= new NativeArray<float3>(vertCount, Allocator.TempJob);
+		NativeArray<float3> normals 	= new NativeArray<float3>(vertCount, Allocator.TempJob);
+		NativeArray<int> triangles 		= new NativeArray<int>	 (triCount, Allocator.TempJob);
+		NativeArray<float4> colors 		= new NativeArray<float4>(vertCount, Allocator.TempJob);
 
 		MeshJob job = new MeshJob(){
 			vertices 	= vertices,
