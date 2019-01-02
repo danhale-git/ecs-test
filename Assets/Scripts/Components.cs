@@ -64,7 +64,7 @@ namespace MyComponents
 	{
 		public int index; 
 		public int type;
-		public float3 squareLocalPosition;
+		public float3 localPosition;
 
 		public float frontRightSlope;
 		public float backRightSlope;
