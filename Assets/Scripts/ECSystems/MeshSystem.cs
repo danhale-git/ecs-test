@@ -92,17 +92,20 @@ public class MeshSystem : ComponentSystem
 					positions[e].Value.z
 					);
 
-				//	Get blocks from adjacent map squares
+				//	List of adjacent square entities
 				AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(entity);
+
+				//	Adjacent blocks in 4 directions
 				DynamicBuffer<Block>[] adjacentBlocks = new DynamicBuffer<Block>[4];
 				for(int i = 0; i < 4; i++)
 					adjacentBlocks[i] = entityManager.GetBuffer<Block>(adjacentSquares[i]);
 
+				//	Adjacent height maps in 8 directions
                 DynamicBuffer<Topology>[] adjacentHeightMaps = new DynamicBuffer<Topology>[8];
 				for(int i = 0; i < 8; i++)
 					adjacentHeightMaps[i] = entityManager.GetBuffer<Topology>(adjacentSquares[i]);
 
-				//	Get vertex offsets for slopes
+				//	Vertex offsets for 4 top vertices of each block (slopes)
 				GetSlopes(heightAccessor[e].ToNativeArray(), adjacentHeightMaps, blockAccessor[e], positions[e]);
 
 				//	Check block face exposure
@@ -111,6 +114,7 @@ public class MeshSystem : ComponentSystem
 				int triCount;
 				NativeArray<Faces> faces = CheckBlockFaces(
 					squares[e],
+					adjacentSquares,
 					adjacentBlocks,
 					blockAccessor[e],
 					cubeAccessor[e],
@@ -140,16 +144,17 @@ public class MeshSystem : ComponentSystem
 	}	
 
 	//	Generate structs with int values showing face exposure for each block
-	public NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, DynamicBuffer<Block>[] adjacentBlocks, DynamicBuffer<Block> blocks, DynamicBuffer<MapCube> cubes, out int faceCount, out int vertCount, out int triCount)
+	public NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, AdjacentSquares adjacentSquares, DynamicBuffer<Block>[] adjacentBlocks, DynamicBuffer<Block> blocks, DynamicBuffer<MapCube> cubes, out int faceCount, out int vertCount, out int triCount)
 	{
 		var exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
 
+		//	TODO get arrays from entities here using GetBuffer().ToNativeArray()
 		NativeArray<Block>[] adjacent = new NativeArray<Block>[] {
 			new NativeArray<Block>(adjacentBlocks[0].Length, Allocator.TempJob),
 			new NativeArray<Block>(adjacentBlocks[1].Length, Allocator.TempJob),
 			new NativeArray<Block>(adjacentBlocks[2].Length, Allocator.TempJob),
 			new NativeArray<Block>(adjacentBlocks[3].Length, Allocator.TempJob)
-			};
+		};
 
 		for(int i = 0; i < 4; i++)
 			adjacent[i].CopyFrom(adjacentBlocks[i].ToNativeArray());
@@ -184,9 +189,7 @@ public class MeshSystem : ComponentSystem
 		}
 
 		for(int i = 0; i < 4; i++)
-		{
 			adjacent[i].Dispose();
-		}
 
 		//	Count total exposed faces and set face indices	
 		faceCount = 0;
@@ -207,7 +210,7 @@ public class MeshSystem : ComponentSystem
 
 				//	Count verts
 				vertCount += count * 4;
-				//	Slopes have two extra verts
+				//	Slopes always need two extra verts
 				if(blocks[i].slopeType != SlopeType.NOTSLOPED) vertCount += 2;
 
 				//	Count tris because they have an arbitrary ratio to verts
@@ -223,6 +226,7 @@ public class MeshSystem : ComponentSystem
 	//	Generate list of Y offsets for top 4 cube vertices
 	void GetSlopes(NativeArray<Topology> heightMap, DynamicBuffer<Topology>[] adjacentHeightMaps, DynamicBuffer<Block> blocks, Position squarePosition)
 	{
+
 		//int slopeCount = 0;
 		float3[] directions = Util.CardinalDirections();
 		for(int h = 0; h < heightMap.Length; h++)
@@ -243,48 +247,51 @@ public class MeshSystem : ComponentSystem
 
 			int heightDifferenceCount = 0;
 
-			for(int i = 0; i < differences.Length; i++)
+			for(int d = 0; d < directions.Length; d++)
 			{
-				int xPos = (int)(directions[i].x + pos.x);
-				int zPos = (int)(directions[i].z + pos.z);
+				int xPos = (int)(directions[d].x + pos.x);
+				int zPos = (int)(directions[d].z + pos.z);
 
 				//	Direction of the adjacent map square that owns the required block
-				//	Zero if required block is in this map square 
+				//	(0,0,0) if required block is in this map square 
 				float3 edge = new float3(
 					xPos == cubeSize ? 1 : xPos < 0 ? -1 : 0,
 					0,
 					zPos == cubeSize ? 1 : zPos < 0 ? -1 : 0
-					);
+					); 
 
 				int adjacentHeight;
 
+				//	Block is outside map square
 				if(	edge.x != 0 || edge.z != 0)
-					adjacentHeight = adjacentHeightMaps[Util.CardinalDirectionIndex(edge)][Util.WrapAndFlatten2D(xPos, zPos, cubeSize)].height;
+					adjacentHeight = adjacentHeightMaps[Util.DirectionToIndex(edge)][Util.WrapAndFlatten2D(xPos, zPos, cubeSize)].height;
+				//	Block is inside map square
 				else
 					adjacentHeight = heightMap[Util.Flatten2D(xPos, zPos, cubeSize)].height;
 
+				//	Height difference in blocks
 				int difference = adjacentHeight - height;
 
 				if(difference != 0) heightDifferenceCount++;
 
-				differences[i] = difference;
+				differences[d] = difference;
 			}
 
 			//	Terrain is not sloped
 			if(heightDifferenceCount == 0) continue;
 			
 			//	Get vertex offsets (-1 to 1) for top vertices of cube required for slope.
-			float frontRight = GetVertexOffset(differences[0], differences[2], differences[4]);	//	front right
-			float backRight = GetVertexOffset(differences[0], differences[3], differences[6]);	//	back right
-			float frontLeft = GetVertexOffset(differences[1], differences[2], differences[5]);	//	front left
-			float backLeft = GetVertexOffset(differences[1], differences[3], differences[7]);	//	back left
+			float frontRight	= GetVertexOffset(differences[0], differences[2], differences[4]);	//	front right
+			float backRight		= GetVertexOffset(differences[0], differences[3], differences[6]);	//	back right
+			float frontLeft		= GetVertexOffset(differences[1], differences[2], differences[5]);	//	front left
+			float backLeft 		= GetVertexOffset(differences[1], differences[3], differences[7]);	//	back left
 
 			int changedVertexCount = 0;
 
-			if(frontRight != 0) changedVertexCount++;
-			if(backRight != 0) changedVertexCount++;
-			if(frontLeft != 0) changedVertexCount++;
-			if(backLeft != 0) changedVertexCount++;
+			if(frontRight != 0)	changedVertexCount++;
+			if(backRight != 0)	changedVertexCount++;
+			if(frontLeft != 0)	changedVertexCount++;
+			if(backLeft != 0)	changedVertexCount++;
 
 			SlopeType slopeType = 0;
 			SlopeFacing slopeFacing = 0;

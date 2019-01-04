@@ -90,7 +90,7 @@ public static class Util
 			new float3(-1,  0, -1)	//  7  back left
 		    };
     }
-    public static int CardinalDirectionIndex(float3 direction)
+    public static int DirectionToIndex(float3 direction)
     {
         float x = direction.x;
         float z = direction.z;

@@ -68,16 +68,21 @@ struct FacesJob : IJobParallelFor
 		int forward = 0;
 		int back = 0;
 
-		if(blocks[blockIndex].backRightSlope >= 0 || blocks[blockIndex].frontRightSlope >= 0)
+		//	The other if statement results in unnecessary faces. Needs code for handling slope edge faces
+		//if(blocks[blockIndex].backRightSlope >= 0 || blocks[blockIndex].frontRightSlope >= 0)
+		if(blocks[blockIndex].slopeType == 0)
 			right  	= FaceExposed(positionInCube, new float3( 1,	0, 0));
 
-		if(blocks[blockIndex].backLeftSlope >= 0 || blocks[blockIndex].frontLeftSlope >= 0)
+		//if(blocks[blockIndex].backLeftSlope >= 0 || blocks[blockIndex].frontLeftSlope >= 0)
+		if(blocks[blockIndex].slopeType == 0)
 			left  	= FaceExposed(positionInCube, new float3(-1,	0, 0));	
 
-		if(blocks[blockIndex].frontRightSlope >= 0 || blocks[blockIndex].frontLeftSlope >= 0)		
+		//if(blocks[blockIndex].frontRightSlope >= 0 || blocks[blockIndex].frontLeftSlope >= 0)		
+		if(blocks[blockIndex].slopeType == 0)
 			forward = FaceExposed(positionInCube, new float3( 0,	0, 1));	
 
-		if(blocks[blockIndex].backRightSlope >= 0 || blocks[blockIndex].backLeftSlope >= 0)
+		//if(blocks[blockIndex].backRightSlope >= 0 || blocks[blockIndex].backLeftSlope >= 0)
+		if(blocks[blockIndex].slopeType == 0)
 			back  	= FaceExposed(positionInCube, new float3( 0,	0,-1));		
 
 		int up  	= FaceExposed(positionInCube, new float3( 0,	1, 0));		//	up
