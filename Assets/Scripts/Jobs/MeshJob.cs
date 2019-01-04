@@ -19,7 +19,7 @@ struct MeshJob : IJobParallelFor
 	[ReadOnly] public int cubeStart;
 	[ReadOnly] public DynamicBuffer<Block> blocks;
 	[ReadOnly] public NativeArray<Faces> faces;
-	[ReadOnly] public NativeArray<MyComponents.Topology> heightMap;
+	[ReadOnly] public NativeArray<Topology> heightMap;
 
 	[ReadOnly] public JobUtil util;
 	[ReadOnly] public int cubeSize;

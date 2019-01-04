@@ -72,7 +72,7 @@ public class TerrainSystem : ComponentSystem
                 float3 position = positions[e].Value;
 
                 //	Resize to Dynamic Buffer
-                DynamicBuffer<MyComponents.Topology> heightBuffer = entityManager.GetBuffer<MyComponents.Topology>(entity);
+                DynamicBuffer<Topology> heightBuffer = entityManager.GetBuffer<Topology>(entity);
 			    heightBuffer.ResizeUninitialized((int)math.pow(cubeSize, 2));
 
 			    //	Fill buffer with height map data
@@ -91,7 +91,7 @@ public class TerrainSystem : ComponentSystem
     chunks.Dispose();
     }
 
-    public MapSquare GetHeightMap(float3 position, DynamicBuffer<MyComponents.Topology> heightMap)
+    public MapSquare GetHeightMap(float3 position, DynamicBuffer<Topology> heightMap)
     {
         return cliffTerrain.Generate(position, heightMap);
     }
