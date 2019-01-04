@@ -17,7 +17,7 @@ public class BlockSystem : ComponentSystem
 	ArchetypeChunkEntityType 			entityType;
 	ArchetypeChunkBufferType<Block> 	blocksType;
 	ArchetypeChunkBufferType<MapCube> 	cubeType;
-	ArchetypeChunkBufferType<MyComponents.Terrain> 	heightmapType;
+	ArchetypeChunkBufferType<MyComponents.Topology> 	heightmapType;
 
 	EntityArchetypeQuery mapSquareQuery;
 
@@ -40,7 +40,7 @@ public class BlockSystem : ComponentSystem
 
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
 		cubeType 		= GetArchetypeChunkBufferType<MapCube>();
-        heightmapType = GetArchetypeChunkBufferType<MyComponents.Terrain>();
+        heightmapType = GetArchetypeChunkBufferType<MyComponents.Topology>();
 
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			mapSquareQuery,
@@ -62,14 +62,14 @@ public class BlockSystem : ComponentSystem
 			NativeArray<Entity> entities 				= chunk.GetNativeArray(entityType);
 			BufferAccessor<Block> blockAccessor 		= chunk.GetBufferAccessor(blocksType);
 			BufferAccessor<MapCube> cubeAccessor 		= chunk.GetBufferAccessor(cubeType);
-            BufferAccessor<MyComponents.Terrain> heightmapAccessor 	= chunk.GetBufferAccessor(heightmapType);
+            BufferAccessor<MyComponents.Topology> heightmapAccessor 	= chunk.GetBufferAccessor(heightmapType);
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity 						= entities[e];
 				DynamicBuffer<Block> blockBuffer 	= blockAccessor[e];
 				DynamicBuffer<MapCube> cubes		= cubeAccessor[e];
-                DynamicBuffer<MyComponents.Terrain> heightmap		= heightmapAccessor[e];
+                DynamicBuffer<MyComponents.Topology> heightmap		= heightmapAccessor[e];
 
 				//	Resize buffer to size of (blocks in a cube) * (number of cubes)
 				int blockArrayLength = (int)math.pow(cubeSize, 3) * cubes.Length;
@@ -101,7 +101,7 @@ public class BlockSystem : ComponentSystem
 		chunks.Dispose();
 	}
 
-	NativeArray<Block> GetBlocks(int batchSize, int blockArrayLength, NativeArray<MyComponents.Terrain> heightMap, NativeArray<MapCube> cubes)
+	NativeArray<Block> GetBlocks(int batchSize, int blockArrayLength, NativeArray<MyComponents.Topology> heightMap, NativeArray<MapCube> cubes)
 	{
 		//	Block data for all cubes in the map square
 		var blocks = new NativeArray<Block>(blockArrayLength, Allocator.TempJob);

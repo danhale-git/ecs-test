@@ -28,7 +28,7 @@ public class CliffTerrainGenerator
         cliffBleed = 0.025f;
     }
 
-    MyComponents.Terrain GetHeight(float noise)
+    MyComponents.Topology GetHeight(float noise)
     {
         int height = 0;
         TerrainTypes type = 0;
@@ -78,13 +78,13 @@ public class CliffTerrainGenerator
         height += terrainHeight;
         height += (int)math.lerp(0, 6, noise);
 
-        return new MyComponents.Terrain{
+        return new MyComponents.Topology{
             height = height,
             type = type
         };
     }
 
-    MyComponents.Terrain GetCellHeight(CellData cell)
+    MyComponents.Topology GetCellHeight(CellData cell)
     {
         int height = terrainHeight;
         TerrainTypes type = 0;
@@ -136,13 +136,13 @@ public class CliffTerrainGenerator
             height += (int)cellHeight;
         }
 
-        return new MyComponents.Terrain{
+        return new MyComponents.Topology{
             height = height,
             type = type
         };
     }
 
-    public MapSquare Generate(float3 position, DynamicBuffer<MyComponents.Terrain> heightMap)
+    public MapSquare Generate(float3 position, DynamicBuffer<MyComponents.Topology> heightMap)
     {
         NativeArray<float> noiseMap = noiseGenerator.Simplex(position, levelFrequency);
         NativeArray<CellData> cellMap = noiseGenerator.CellularDistanceToEdge(position, levelFrequency);        
@@ -152,7 +152,7 @@ public class CliffTerrainGenerator
 
         for(int i = 0; i < noiseMap.Length; i++)
         {
-            MyComponents.Terrain heightComponent = GetCellHeight(cellMap[i]);            
+            MyComponents.Topology heightComponent = GetCellHeight(cellMap[i]);            
             //MyComponents.Terrain heightComponent = GetHeight(noiseMap[i]);
 		    
             heightMap[i] = heightComponent;

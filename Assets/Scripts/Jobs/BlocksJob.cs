@@ -14,7 +14,7 @@ struct BlocksJob : IJobParallelFor
 	[ReadOnly] public int cubeStart;
 	[ReadOnly] public int cubePosY;
 
-	[ReadOnly] public NativeArray<MyComponents.Terrain> heightMap;
+	[ReadOnly] public NativeArray<MyComponents.Topology> heightMap;
 	[ReadOnly] public int cubeSize;
 	[ReadOnly] public JobUtil util;
 

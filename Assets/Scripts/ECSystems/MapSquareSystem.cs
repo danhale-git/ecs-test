@@ -41,7 +41,7 @@ public class MapSquareSystem : ComponentSystem
             ComponentType.Create<Position>(),
             ComponentType.Create<MeshInstanceRendererComponent>(),
             ComponentType.Create<MapSquare>(),
-            ComponentType.Create<MyComponents.Terrain>(),
+            ComponentType.Create<MyComponents.Topology>(),
             ComponentType.Create<MapCube>(),
             ComponentType.Create<Block>()	
 			);
