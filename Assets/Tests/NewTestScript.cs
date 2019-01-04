@@ -13,9 +13,6 @@ namespace Tests
         public void NewTestScriptSimplePasses()
         {
             // Use the Assert class to test conditions
-            bool fail = false;
-            bool succeed = true;
-            Assert.False(fail);
         }
 
         // A UnityTest behaves like a coroutine in Play Mode. In Edit Mode you can use
