@@ -99,7 +99,7 @@ public class MeshSystem : ComponentSystem
 					adjacentBlocks[i] = entityManager.GetBuffer<Block>(adjacentSquares[i]);
 
 				for(int i = 0; i < 8; i++)
-					adjacentLowestBlocks[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).lowestVisibleBuffer;
+					adjacentLowestBlocks[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).bottomBuffer;
 
 
 				//	Adjacent height maps in 8 directions

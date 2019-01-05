@@ -121,31 +121,31 @@ public class CubeSystem : ComponentSystem
 			entityManager.GetComponentData<MapSquare>(adjacent.back)
 			};
 
-		int highestVisible 	= square.highestVisibleBlock;
-		int lowestVisible 	= square.lowestVisibleBlock;
+		int topBuffer 		= square.topBlock;
+		int bottomBuffer 	= square.bottomBlock;
 
 		//	Set height to draw
-		int topCubeDraw 	= (int)math.floor((highestVisible + 1) / cubeSize);
-		int bottomCubeDraw 	= (int)math.floor((lowestVisible - 1) / cubeSize);
+		int topCubeDraw 	= (int)math.floor((topBuffer + 1) / cubeSize);
+		int bottomCubeDraw 	= (int)math.floor((bottomBuffer - 1) / cubeSize);
 
 		//	Find highest in 3x3 squares
 		for(int i = 0; i < 4; i++)
 		{
-			int adjacentHighestVisible 	= adjacentSquares[i].highestVisibleBlock;
-			int adjacentLowestVisible 	= adjacentSquares[i].lowestVisibleBlock;
+			int adjacentTop 	= adjacentSquares[i].topBlock;
+			int adjacentBottom 	= adjacentSquares[i].bottomBlock;
 
-			if(adjacentHighestVisible > square.highestVisibleBlock) highestVisible = adjacentHighestVisible;
-			if(adjacentLowestVisible < square.lowestVisibleBlock) 	lowestVisible = adjacentLowestVisible;
+			if(adjacentTop > square.topBlock) topBuffer = adjacentTop;
+			if(adjacentBottom < square.bottomBlock) bottomBuffer = adjacentBottom;
 		}
 
 		MapSquare adjustMapSquare = square;
 		//adjustMapSquare.highestVisibleBlock = highestVisible;
 		//adjustMapSquare.lowestVisibleBlock = lowestVisible;
 
-		adjustMapSquare.highestVisibleBuffer = highestVisible + 2;
-		adjustMapSquare.lowestVisibleBuffer = lowestVisible - 2;
+		adjustMapSquare.topBuffer 		= topBuffer 	+ 2;
+		adjustMapSquare.bottomBuffer 	= bottomBuffer 	- 2;
 
-		adjustMapSquare.height = adjustMapSquare.highestVisibleBuffer - adjustMapSquare.lowestVisibleBuffer;
+		adjustMapSquare.height = adjustMapSquare.topBuffer - adjustMapSquare.bottomBuffer;
 		adjustMapSquare.arrayLength = adjustMapSquare.height * (cubeSize*cubeSize);
 
 
@@ -154,7 +154,7 @@ public class CubeSystem : ComponentSystem
 
 		Position pos = new Position
 		{
-			Value = new float3(position.Value.x, adjustMapSquare.lowestVisibleBuffer, position.Value.z)
+			Value = new float3(position.Value.x, adjustMapSquare.bottomBuffer, position.Value.z)
 		};
 
 		commandBuffer.SetComponent<Position>(entity, pos);

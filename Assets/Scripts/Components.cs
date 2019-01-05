@@ -9,11 +9,11 @@ namespace MyComponents
 
 	public struct MapSquare : IComponentData
 	{
-		public int highestVisibleBlock;
-		public int lowestVisibleBlock;
+		public int topBlock;
+		public int bottomBlock;
 
-		public int highestVisibleBuffer;
-		public int lowestVisibleBuffer;
+		public int topBuffer;
+		public int bottomBuffer;
 
 		public int height;
 		public int arrayLength;
