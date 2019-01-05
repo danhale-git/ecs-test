@@ -15,8 +15,9 @@ struct MeshJob : IJobParallelFor
 	[NativeDisableParallelForRestriction] public NativeArray<float3> normals;
 	[NativeDisableParallelForRestriction] public NativeArray<int> triangles;
 	[NativeDisableParallelForRestriction] public NativeArray<float4> colors;
+
+	[ReadOnly] public MapSquare square;
 	
-	[ReadOnly] public int cubeStart;
 	[ReadOnly] public DynamicBuffer<Block> blocks;
 	[ReadOnly] public NativeArray<Faces> faces;
 	[ReadOnly] public NativeArray<Topology> heightMap;
@@ -37,7 +38,7 @@ struct MeshJob : IJobParallelFor
 		int sloped = BlockTypes.sloped[blocks[i].type];
 
 		//	Get block position for vertex offset
-		float3 positionInMesh = blocks[i].localPosition;
+		float3 positionInMesh = util.Unflatten2(i, cubeSize, square.height);
 
 		//	Current local indices
 		int vertIndex = 0;

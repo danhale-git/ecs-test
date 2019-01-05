@@ -114,7 +114,6 @@ public class CubeSystem : ComponentSystem
 
 	void CreateCubes(Entity entity, MapSquare square, AdjacentSquares adjacent)
 	{
-	    DynamicBuffer<MapCube> cubeBuffer = entityManager.GetBuffer<MapCube>(entity);
 		MapSquare[] adjacentSquares = new MapSquare[] {
 			entityManager.GetComponentData<MapSquare>(adjacent.right),
 			entityManager.GetComponentData<MapSquare>(adjacent.left),
@@ -143,22 +142,7 @@ public class CubeSystem : ComponentSystem
 		int topCubeBlocks 		= (int)math.floor((highestVisible + 1) / cubeSize) + 1;
 		int bottomCubeBlocks 	= (int)math.floor((lowestVisible + 1) / cubeSize) - 1;
 
-		for(int i = 0; i <= topCubeBlocks; i++)
-		{
-			int blocks = (i >= bottomCubeBlocks && i <= topCubeBlocks) ? 1 : 0;
 
-			MapCube cube = new MapCube{
-				yPos 	= i*cubeSize,
-				blocks 	= blocks
-				};
-
-			cubeBuffer.Add(cube);
-
-			//if(i == bottomCubeDraw || i == topCubeDraw)
-			//	CustomDebugTools.SetMapCubeHighlight(entity, cube.yPos, cubeSize-1, new Color(1, 0, 0, 0.1f));
-			//else if(i == bottomCubeBlocks || i == topCubeBlocks)
-			//	CustomDebugTools.SetMapCubeHighlight(entity, cube.yPos, cubeSize-1, new Color(0, 1, 1, 0.1f));
-		}
 	}
 
     bool GetAdjacentEntities(float3 centerPosition, out Entity[] adjacentSquares)

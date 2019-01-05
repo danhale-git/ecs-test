@@ -2,6 +2,20 @@
 
 public struct JobUtil
 {
+    public int Flatten2(int x, int y, int z, int width, int height)
+    {
+        return (z * width * height) + (y * width) + x;
+    }
+
+    public float3 Unflatten2(int index, int width, int height)
+    {
+        int z = index / (width * height);
+        index -= (z * width * height);
+        int y = index / width;
+        int x = index % width;
+        return new float3 ( x, y, z );
+    }
+
     public float3 Unflatten(int index, int xLength, int yLength=0, int zLength=0)
     {
         if(yLength == 0) yLength = xLength;

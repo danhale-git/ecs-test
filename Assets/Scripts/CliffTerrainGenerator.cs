@@ -152,8 +152,8 @@ public class CliffTerrainGenerator
 
         for(int i = 0; i < noiseMap.Length; i++)
         {
-            Topology heightComponent = GetCellHeight(cellMap[i]);            
-            //MyComponents.Terrain heightComponent = GetHeight(noiseMap[i]);
+            //Topology heightComponent = GetCellHeight(cellMap[i]);            
+            Topology heightComponent = GetHeight(noiseMap[i]);
 		    
             heightMap[i] = heightComponent;
 

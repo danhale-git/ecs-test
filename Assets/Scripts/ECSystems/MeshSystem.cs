@@ -26,7 +26,6 @@ public class MeshSystem : ComponentSystem
 	ArchetypeChunkEntityType 				entityType;
 	ArchetypeChunkComponentType<Position> 	positionType;
 	ArchetypeChunkComponentType<MapSquare>	squareType;
-	ArchetypeChunkBufferType<MapCube> 		cubeType;
 	ArchetypeChunkBufferType<Block> 		blocksType;
 	ArchetypeChunkBufferType<Topology> 		heightType;
 
@@ -52,7 +51,6 @@ public class MeshSystem : ComponentSystem
 		entityType 		= GetArchetypeChunkEntityType();
 		positionType 	= GetArchetypeChunkComponentType<Position>();
 		squareType		= GetArchetypeChunkComponentType<MapSquare>();
-		cubeType 		= GetArchetypeChunkBufferType<MapCube>();
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
         heightType = GetArchetypeChunkBufferType<Topology>();
 
@@ -79,7 +77,6 @@ public class MeshSystem : ComponentSystem
 			NativeArray<Entity> 	entities 		= chunk.GetNativeArray(entityType);
 			NativeArray<Position> 	positions		= chunk.GetNativeArray(positionType);
 			NativeArray<MapSquare>	squares			= chunk.GetNativeArray(squareType);
-			BufferAccessor<MapCube> cubeAccessor 	= chunk.GetBufferAccessor(cubeType);
 			BufferAccessor<Block> 	blockAccessor 	= chunk.GetBufferAccessor(blocksType);
             BufferAccessor<Topology> heightAccessor	= chunk.GetBufferAccessor(heightType);
 
@@ -106,7 +103,7 @@ public class MeshSystem : ComponentSystem
 					adjacentHeightMaps[i] = entityManager.GetBuffer<Topology>(adjacentSquares[i]);
 
 				//	Vertex offsets for 4 top vertices of each block (slopes)
-				GetSlopes(heightAccessor[e].ToNativeArray(), adjacentHeightMaps, blockAccessor[e], positions[e]);
+				//GetSlopes(heightAccessor[e].ToNativeArray(), adjacentHeightMaps, blockAccessor[e], positions[e]);
 
 				//	Check block face exposure
 				int faceCount;
@@ -117,7 +114,6 @@ public class MeshSystem : ComponentSystem
 					adjacentSquares,
 					adjacentBlocks,
 					blockAccessor[e],
-					cubeAccessor[e],
 					out faceCount,
 					out vertCount,
 					out triCount
@@ -127,7 +123,7 @@ public class MeshSystem : ComponentSystem
 				//	Create mesh entity if any faces are exposed
 				if(faceCount != 0)
 					SetMeshComponent(
-						GetMesh(faces, blockAccessor[e], heightAccessor[e].ToNativeArray(), faceCount, vertCount, triCount),
+						GetMesh(squares[e], faces, blockAccessor[e], heightAccessor[e].ToNativeArray(), faceCount, vertCount, triCount),
 						position,
 						entity,
 						commandBuffer
@@ -144,7 +140,7 @@ public class MeshSystem : ComponentSystem
 	}	
 
 	//	Generate structs with int values showing face exposure for each block
-	public NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, AdjacentSquares adjacentSquares, DynamicBuffer<Block>[] adjacentBlocks, DynamicBuffer<Block> blocks, DynamicBuffer<MapCube> cubes, out int faceCount, out int vertCount, out int triCount)
+	public NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, AdjacentSquares adjacentSquares, DynamicBuffer<Block>[] adjacentBlocks, DynamicBuffer<Block> blocks, out int faceCount, out int vertCount, out int triCount)
 	{
 		var exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
 
@@ -159,34 +155,23 @@ public class MeshSystem : ComponentSystem
 		for(int i = 0; i < 4; i++)
 			adjacent[i].CopyFrom(adjacentBlocks[i].ToNativeArray());
 
-		int topCube 	= (int)math.floor((mapSquare.highestVisibleBlock + 1) / cubeSize);
-		int bottomCube 	= (int)math.floor((mapSquare.lowestVisibleBlock - 1) / cubeSize);
+		
+		var job = new FacesJob(){
+			exposedFaces = exposedFaces,
+			square = mapSquare,
 
-		//	Leave a buffer of one to guarantee adjacent block data
-		for(int i = bottomCube; i <= topCube; i++)
-		{
-			if(((i-1) * cubeArrayLength) < 0) Debug.Log("negative index!");
-
-			var job = new FacesJob(){
-				exposedFaces = exposedFaces,
-
-				blocks 	= blocks.ToNativeArray(),
-				right 	= adjacent[0],
-				left 	= adjacent[1],
-				front 	= adjacent[2],
-				back 	= adjacent[3],
-
-				cubeHeight	= i * cubeSize,
-				cubeStart 	= (i  ) * cubeArrayLength,
-				aboveStart 	= (i+1) * cubeArrayLength,
-				belowStart 	= (i-1) * cubeArrayLength,
-				
-				cubeSize 	= cubeSize,
-				util 		= new JobUtil()
-				};
+			blocks 	= blocks.ToNativeArray(),
+			right 	= adjacent[0],
+			left 	= adjacent[1],
+			front 	= adjacent[2],
+			back 	= adjacent[3],
 			
-			job.Schedule(cubeArrayLength, batchSize).Complete();
-		}
+			cubeSize 	= cubeSize,
+			util 		= new JobUtil()
+			};
+		
+		job.Schedule(blocks.Length, batchSize).Complete();
+		
 
 		for(int i = 0; i < 4; i++)
 			adjacent[i].Dispose();
@@ -358,7 +343,7 @@ public class MeshSystem : ComponentSystem
 		
 	}
 
-	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<Topology> heightMap, int faceCount, int vertCount, int triCount)
+	public Mesh GetMesh(MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<Topology> heightMap, int faceCount, int vertCount, int triCount)
 	{
 		if(blocks.Length == 0)
 		{
@@ -376,8 +361,10 @@ public class MeshSystem : ComponentSystem
 			triangles 	= triangles,
 			colors 		= colors,
 
-			faces 		= faces,
+			square = mapSquare,
+
 			blocks 		= blocks,
+			faces 		= faces,
 			heightMap	= heightMap,
 
 			util 		= new JobUtil(),

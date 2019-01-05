@@ -16,6 +16,21 @@ public static class Util
         return new float3(x, y, z);
         //return new float3(z, y, x);
     }
+
+    public static int FLatten2(int x, int y, int z, int width, int height)
+    {
+        return (z * width * height) + (y * width) + x;
+    }
+
+    public static float3 Unflatten2(int index, int width, int height)
+    {
+        int z = index / (width * height);
+        index -= (z * width * height);
+        int y = index / width;
+        int x = index % width;
+        return new float3 ( x, y, z );
+    }
+
     public static int Flatten(int x, int y, int z, int size)
     {
         return z + size * (y + size * x);

@@ -11,6 +11,8 @@ namespace MyComponents
 	{
 		public int highestVisibleBlock;
 		public int lowestVisibleBlock;
+		public int height;
+		public int arrayLength;
 	}
 	[InternalBufferCapacity(0)]
 	public struct Topology : IBufferElementData
@@ -52,13 +54,6 @@ namespace MyComponents
 		
 	}
 
-	[InternalBufferCapacity(100)]
-	public struct MapCube : IBufferElementData
-	{
-		public int yPos;
-		public int blocks;
-		public CubeComposition composition;
-	}
 	[InternalBufferCapacity(0)]
 	public struct Block : IBufferElementData
 	{
