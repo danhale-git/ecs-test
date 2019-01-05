@@ -69,9 +69,6 @@ public class BlockSystem : ComponentSystem
 
 				MapSquare mapSquare = entityManager.GetComponentData<MapSquare>(entity);
 
-				mapSquare.height = mapSquare.highestVisibleBuffer - mapSquare.lowestVisibleBuffer;
-				mapSquare.arrayLength = mapSquare.height * (cubeSize*cubeSize);
-
 				commandBuffer.SetComponent<MapSquare>(entity, mapSquare);
 
 				//	Resize buffer to size of (blocks in a cube) * (number of cubes)

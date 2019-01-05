@@ -37,15 +37,8 @@ public static class CustomDebugTools
         MyComponents.MapSquare mapSquare = manager.GetComponentData<MyComponents.MapSquare>(mapSquareEntity);
         
         //  Adjust height for generated/non generated squares
-        if( manager.HasComponent(mapSquareEntity, typeof(Tags.InnerBuffer)) ||
-            manager.HasComponent(mapSquareEntity, typeof(Tags.OuterBuffer)))
-        {
-            topOffset = new Vector3(0, TerrainSettings.terrainHeight - cubeSize, 0);
-        }
-        else
-        {
-            topOffset = new Vector3(0, ((int)math.floor((mapSquare.highestVisibleBuffer) / cubeSize) * cubeSize) - cubeSize, 0);
-        }
+        topOffset = new Vector3(0, mapSquare.highestVisibleBuffer - mapSquare.lowestVisibleBuffer - cubeSize, 0);
+        
         
         Vector3[] v = new Vector3[cubeVectors.Length];
         //  Offset to center cubes smaller than cubeSize

@@ -134,8 +134,8 @@ public class CubeSystem : ComponentSystem
 			int adjacentHighestVisible 	= adjacentSquares[i].highestVisibleBlock;
 			int adjacentLowestVisible 	= adjacentSquares[i].lowestVisibleBlock;
 
-			if(adjacentHighestVisible > highestVisible) highestVisible = adjacentHighestVisible;
-			if(adjacentLowestVisible < lowestVisible) lowestVisible = adjacentLowestVisible;
+			if(adjacentHighestVisible > square.highestVisibleBlock) highestVisible = adjacentHighestVisible;
+			if(adjacentLowestVisible < square.lowestVisibleBlock) 	lowestVisible = adjacentLowestVisible;
 		}
 
 		MapSquare adjustMapSquare = square;
@@ -144,6 +144,10 @@ public class CubeSystem : ComponentSystem
 
 		adjustMapSquare.highestVisibleBuffer = highestVisible + 2;
 		adjustMapSquare.lowestVisibleBuffer = lowestVisible - 2;
+
+		adjustMapSquare.height = adjustMapSquare.highestVisibleBuffer - adjustMapSquare.lowestVisibleBuffer;
+		adjustMapSquare.arrayLength = adjustMapSquare.height * (cubeSize*cubeSize);
+
 
 		commandBuffer.SetComponent<MapSquare>(entity, adjustMapSquare);
 
