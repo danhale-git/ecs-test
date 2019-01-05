@@ -43,7 +43,7 @@ public struct JobUtil
     public int3 WrapBlockIndex(int3 index, int chunkSize)
 	{
 		int x = index.x;
-		int y = index.y;
+		//int y = index.y;
 		int z = index.z;
 
 		if(x == -1) 
@@ -51,17 +51,17 @@ public struct JobUtil
 		else if(x == chunkSize) 
 			x = 0;
 
-		if(y == -1) 
+		/*if(y == -1) 
 			y = chunkSize-1; 
 		else if(y == chunkSize) 
-			y = 0;
+			y = 0; */
 
 		if(z == -1) 
 			z = chunkSize-1; 
 		else if(z == chunkSize) 
 			z = 0;
 
-		return new int3(x, y, z);
+		return new int3(x, index.y, z);
 	}
 
     public int WrapAndFlatten(int3 position, int chunkSize)

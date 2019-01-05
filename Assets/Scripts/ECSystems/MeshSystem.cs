@@ -91,11 +91,16 @@ public class MeshSystem : ComponentSystem
 
 				//	List of adjacent square entities
 				AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(entity);
+				NativeArray<int> adjacentLowestBlocks = new NativeArray<int>(8, Allocator.TempJob);
 
 				//	Adjacent blocks in 4 directions
 				DynamicBuffer<Block>[] adjacentBlocks = new DynamicBuffer<Block>[4];
 				for(int i = 0; i < 4; i++)
 					adjacentBlocks[i] = entityManager.GetBuffer<Block>(adjacentSquares[i]);
+
+				for(int i = 0; i < 8; i++)
+					adjacentLowestBlocks[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).lowestVisibleBuffer;
+
 
 				//	Adjacent height maps in 8 directions
                 DynamicBuffer<Topology>[] adjacentHeightMaps = new DynamicBuffer<Topology>[8];
@@ -112,6 +117,7 @@ public class MeshSystem : ComponentSystem
 				NativeArray<Faces> faces = CheckBlockFaces(
 					squares[e],
 					adjacentSquares,
+					adjacentLowestBlocks,
 					adjacentBlocks,
 					blockAccessor[e],
 					out faceCount,
@@ -123,7 +129,7 @@ public class MeshSystem : ComponentSystem
 				//	Create mesh entity if any faces are exposed
 				if(faceCount != 0)
 					SetMeshComponent(
-						GetMesh(squares[e], faces, blockAccessor[e], heightAccessor[e].ToNativeArray(), faceCount, vertCount, triCount),
+						GetMesh(squares[e], faces, blockAccessor[e], heightAccessor[e].ToNativeArray(), adjacentLowestBlocks, faceCount, vertCount, triCount),
 						position,
 						entity,
 						commandBuffer
@@ -131,6 +137,7 @@ public class MeshSystem : ComponentSystem
 
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 				faces.Dispose();
+				adjacentLowestBlocks.Dispose();
 			}
 		}
 		commandBuffer.Playback(entityManager);
@@ -140,8 +147,9 @@ public class MeshSystem : ComponentSystem
 	}	
 
 	//	Generate structs with int values showing face exposure for each block
-	public NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, AdjacentSquares adjacentSquares, DynamicBuffer<Block>[] adjacentBlocks, DynamicBuffer<Block> blocks, out int faceCount, out int vertCount, out int triCount)
+	public NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, AdjacentSquares adjacentSquares, NativeArray<int> adjacentLowestBlocks, DynamicBuffer<Block>[] adjacentBlocks, DynamicBuffer<Block> blocks, out int faceCount, out int vertCount, out int triCount)
 	{
+		int cubeSlice = cubeSize * cubeSize;
 		var exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
 
 		//	TODO get arrays from entities here using GetBuffer().ToNativeArray()
@@ -165,12 +173,15 @@ public class MeshSystem : ComponentSystem
 			left 	= adjacent[1],
 			front 	= adjacent[2],
 			back 	= adjacent[3],
+
+			adjacentLowestBlocks = adjacentLowestBlocks,
 			
 			cubeSize 	= cubeSize,
+			cubeSlice	= cubeSlice,
 			util 		= new JobUtil()
 			};
 		
-		job.Schedule(blocks.Length, batchSize).Complete();
+		job.Schedule(mapSquare.arrayLength - (cubeSlice * 2), batchSize).Complete();
 		
 
 		for(int i = 0; i < 4; i++)
@@ -344,8 +355,9 @@ public class MeshSystem : ComponentSystem
 		
 	}
 
-	public Mesh GetMesh(MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<Topology> heightMap, int faceCount, int vertCount, int triCount)
+	public Mesh GetMesh(MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<Topology> heightMap, NativeArray<int> adjacentLowestBlocks, int faceCount, int vertCount, int triCount)
 	{
+		int cubeSlice = (cubeSize * cubeSize);
 		if(blocks.Length == 0)
 		{
 			Debug.Log("Tried to draw empty cube!");
@@ -370,12 +382,13 @@ public class MeshSystem : ComponentSystem
 
 			util 		= new JobUtil(),
 			cubeSize 	= cubeSize,
+			cubeSlice	= cubeSlice,
 
 			baseVerts 	= new CubeVertices(true)
 		};
 
 		//	Run job
-		job.Schedule(faces.Length, batchSize).Complete();
+		job.Schedule(mapSquare.arrayLength - (cubeSlice * 2), batchSize).Complete();
 
 		//	Convert vertices and colors from float3/float4 to Vector3/Color
 		Vector3[] verticesArray = new Vector3[vertices.Length];

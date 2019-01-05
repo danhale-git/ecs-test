@@ -20,7 +20,10 @@ struct FacesJob : IJobParallelFor
 	[ReadOnly] public NativeArray<Block> front;
 	[ReadOnly] public NativeArray<Block> back;
 
+	[ReadOnly] public NativeArray<int> adjacentLowestBlocks;
+
 	[ReadOnly] public int cubeSize;
+	[ReadOnly] public int cubeSlice;	
 	[ReadOnly] public JobUtil util;
 
 	//	TODO: use byte instead
@@ -32,24 +35,38 @@ struct FacesJob : IJobParallelFor
 
 		//	Outside this cube
 		if(pos.x == cubeSize)
-			return 1;// right[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type 		== 0 ? 1 : 0;
+			return 1;//right[AdjacentIndex(pos, square.lowestVisibleBlock, adjacentLowestBlocks[0])].type == 0 ? 1 : 0;			
 		if(pos.x < 0)
-			return 1;// left[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type 		== 0 ? 1 : 0;
-		if(pos.y == cubeSize)
-			return 1;// blocks[util.WrapAndFlatten(pos, cubeSize) + aboveStart].type 	== 0 ? 1 : 0;
-		if(pos.y < 0)
-			return 1;// blocks[util.WrapAndFlatten(pos, cubeSize) + belowStart].type		== 0 ? 1 : 0;
+			return 1;//left[AdjacentIndex(pos, square.lowestVisibleBlock, adjacentLowestBlocks[1])].type == 0 ? 1 : 0;	
 		if(pos.z == cubeSize)
-			return 1;// front[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type 		== 0 ? 1 : 0;
+			return 1;//front[AdjacentIndex(pos, square.lowestVisibleBlock, adjacentLowestBlocks[2])].type == 0 ? 1 : 0;	
 		if(pos.z < 0)
-			return 1;// back[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type		== 0 ? 1 : 0;
+			return 1;//back[AdjacentIndex(pos, square.lowestVisibleBlock, adjacentLowestBlocks[3])].type == 0 ? 1 : 0;
 
 		//	Inside this cube
 		return blocks[util.Flatten(pos.x, pos.y, pos.z, cubeSize)].type == 0 ? 1 : 0;
 	}
 
+	int AdjacentIndex(float3 pos, int lowest, int adjacentLowest)
+	{
+		int yDifference = lowest - adjacentLowest;
+
+		float3 wrapped = util.WrapBlockIndex((int3)pos, cubeSize);
+
+		int adjusted = util.Flatten(new float3(
+				wrapped.x,
+				wrapped.y + yDifference,
+				wrapped.z
+			),
+			cubeSize
+		);
+
+		return adjusted;
+	}
+
 	public void Execute(int i)
 	{
+		i += cubeSlice;
 		//	Local position in cube
 		float3 positionInMesh = util.Unflatten(i, cubeSize);
 
@@ -81,16 +98,16 @@ struct FacesJob : IJobParallelFor
 		//if(blocks[blockIndex].slopeType == 0)
 			back  	= FaceExposed(positionInMesh, new float3( 0,	0,-1));		
 
-		//int up  	= FaceExposed(positionInCube, new float3( 0,	1, 0));		//	up
-		//int down  	= FaceExposed(positionInCube, new float3( 0,   -1, 0));		//	down	
+		int up  	= FaceExposed(positionInMesh, new float3( 0,	1, 0));		//	up
+		int down  	= FaceExposed(positionInMesh, new float3( 0,   -1, 0));		//	down	
 
 
 		//	Get get exposed block faces
 		exposedFaces[i] = new Faces(
 			right,
 			left,
-			1,//up,
-			1,//down	,
+			up,
+			down,
 			forward,
 			back,
 			0,														

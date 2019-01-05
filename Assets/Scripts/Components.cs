@@ -11,6 +11,10 @@ namespace MyComponents
 	{
 		public int highestVisibleBlock;
 		public int lowestVisibleBlock;
+
+		public int highestVisibleBuffer;
+		public int lowestVisibleBuffer;
+
 		public int height;
 		public int arrayLength;
 	}

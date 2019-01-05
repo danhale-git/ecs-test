@@ -69,7 +69,7 @@ public class BlockSystem : ComponentSystem
 
 				MapSquare mapSquare = entityManager.GetComponentData<MapSquare>(entity);
 
-				mapSquare.height = (mapSquare.highestVisibleBlock + 1) - (mapSquare.lowestVisibleBlock - 1);
+				mapSquare.height = mapSquare.highestVisibleBuffer - mapSquare.lowestVisibleBuffer;
 				mapSquare.arrayLength = mapSquare.height * (cubeSize*cubeSize);
 
 				commandBuffer.SetComponent<MapSquare>(entity, mapSquare);
@@ -135,7 +135,7 @@ public class BlockSystem : ComponentSystem
 			util = new JobUtil()
 		};
 		
-		job.Schedule(blocks.Length, batchSize).Complete(); 
+		job.Schedule(mapSquare.arrayLength, batchSize).Complete(); 
 
 		return blocks;
 	}

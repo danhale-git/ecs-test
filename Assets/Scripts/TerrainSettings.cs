@@ -7,7 +7,7 @@ public enum TerrainTypes { DIRT, GRASS, CLIFF }
 public static class TerrainSettings
 {
 	public static int cubeSize = 6;
-	public static int viewDistance = 4;
+	public static int viewDistance = 3;
 	//	Must always be at >= cubeSize
 	public static int terrainHeight = 32;
 	public static int terrainStretch = 64;

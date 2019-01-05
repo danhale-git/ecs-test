@@ -24,11 +24,13 @@ struct MeshJob : IJobParallelFor
 
 	[ReadOnly] public JobUtil util;
 	[ReadOnly] public int cubeSize;
+	[ReadOnly] public int cubeSlice;
 
 	[ReadOnly] public CubeVertices baseVerts;
 
 	public void Execute(int i)
 	{
+		i += cubeSlice;
 		Block block = blocks[i];
 
 		//	Skip blocks that aren't exposed

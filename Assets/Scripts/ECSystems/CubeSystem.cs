@@ -139,14 +139,18 @@ public class CubeSystem : ComponentSystem
 		}
 
 		MapSquare adjustMapSquare = square;
-		adjustMapSquare.highestVisibleBlock = highestVisible;
-		adjustMapSquare.lowestVisibleBlock = lowestVisible;
+		//adjustMapSquare.highestVisibleBlock = highestVisible;
+		//adjustMapSquare.lowestVisibleBlock = lowestVisible;
+
+		adjustMapSquare.highestVisibleBuffer = highestVisible + 2;
+		adjustMapSquare.lowestVisibleBuffer = lowestVisible - 2;
+
 		commandBuffer.SetComponent<MapSquare>(entity, adjustMapSquare);
 
 
 		Position pos = new Position
 		{
-			Value = new float3(position.Value.x, adjustMapSquare.lowestVisibleBlock, position.Value.z)
+			Value = new float3(position.Value.x, adjustMapSquare.lowestVisibleBuffer, position.Value.z)
 		};
 
 		commandBuffer.SetComponent<Position>(entity, pos);
