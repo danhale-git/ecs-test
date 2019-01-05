@@ -97,7 +97,7 @@ public class CubeSystem : ComponentSystem
 
                 //	Create cubes
 				MapSquare square 	= mapSquares[e];
-				CreateCubes(entity, mapSquares[e], adjacentSquares);
+				CreateCubes(entity, positions[e], mapSquares[e], adjacentSquares, commandBuffer);
 				mapSquares[e] 		= square;
 
                 //  Set block data next
@@ -112,7 +112,7 @@ public class CubeSystem : ComponentSystem
     chunks.Dispose();
     }
 
-	void CreateCubes(Entity entity, MapSquare square, AdjacentSquares adjacent)
+	void CreateCubes(Entity entity, Position position, MapSquare square, AdjacentSquares adjacent, EntityCommandBuffer commandBuffer)
 	{
 		MapSquare[] adjacentSquares = new MapSquare[] {
 			entityManager.GetComponentData<MapSquare>(adjacent.right),
@@ -138,11 +138,18 @@ public class CubeSystem : ComponentSystem
 			if(adjacentLowestVisible < lowestVisible) lowestVisible = adjacentLowestVisible;
 		}
 
-		//	Set height in cubes
-		int topCubeBlocks 		= (int)math.floor((highestVisible + 1) / cubeSize) + 1;
-		int bottomCubeBlocks 	= (int)math.floor((lowestVisible + 1) / cubeSize) - 1;
+		MapSquare adjustMapSquare = square;
+		adjustMapSquare.highestVisibleBlock = highestVisible;
+		adjustMapSquare.lowestVisibleBlock = lowestVisible;
+		commandBuffer.SetComponent<MapSquare>(entity, adjustMapSquare);
 
 
+		Position pos = new Position
+		{
+			Value = new float3(position.Value.x, adjustMapSquare.lowestVisibleBlock, position.Value.z)
+		};
+
+		commandBuffer.SetComponent<Position>(entity, pos);
 	}
 
     bool GetAdjacentEntities(float3 centerPosition, out Entity[] adjacentSquares)

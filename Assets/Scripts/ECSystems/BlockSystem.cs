@@ -69,7 +69,7 @@ public class BlockSystem : ComponentSystem
 
 				MapSquare mapSquare = entityManager.GetComponentData<MapSquare>(entity);
 
-				mapSquare.height = (mapSquare.highestVisibleBlock) - (mapSquare.lowestVisibleBlock);
+				mapSquare.height = (mapSquare.highestVisibleBlock + 1) - (mapSquare.lowestVisibleBlock - 1);
 				mapSquare.arrayLength = mapSquare.height * (cubeSize*cubeSize);
 
 				commandBuffer.SetComponent<MapSquare>(entity, mapSquare);
@@ -116,7 +116,7 @@ public class BlockSystem : ComponentSystem
 			blocks[i] = new Block{
 				type = 1,
 				localPosition = float3.zero//Util.Unflatten2(i, cubeSize)
-			}; */
+			};  */
 
 		BlocksJob job = new BlocksJob{
 			blocks = blocks,
@@ -125,8 +125,8 @@ public class BlockSystem : ComponentSystem
 			cubeSize = cubeSize,
 			util = new JobUtil()
 		};
-
-		job.Schedule(blocks.Length, batchSize).Complete();
+		
+		job.Schedule(blocks.Length, batchSize).Complete(); 
 
 				
 

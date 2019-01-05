@@ -51,7 +51,7 @@ struct FacesJob : IJobParallelFor
 	public void Execute(int i)
 	{
 		//	Local position in cube
-		float3 positionInCube = util.Unflatten2(i, cubeSize, square.height);
+		float3 positionInMesh = util.Unflatten2(i, cubeSize, square.height);
 
 		//	Block index in map square
 		int blockIndex = i;//util.BlockIndex(positionInCube + new float3(0, cubeHeight, 0), cubeSize);
@@ -67,19 +67,19 @@ struct FacesJob : IJobParallelFor
 		//	The other if statement results in unnecessary faces. Needs code for handling slope edge faces
 		//if(blocks[blockIndex].backRightSlope >= 0 || blocks[blockIndex].frontRightSlope >= 0)
 		//if(blocks[blockIndex].slopeType == 0)
-			right  	= FaceExposed(positionInCube, new float3( 1,	0, 0));
+			right  	= FaceExposed(positionInMesh, new float3( 1,	0, 0));
 
 		//if(blocks[blockIndex].backLeftSlope >= 0 || blocks[blockIndex].frontLeftSlope >= 0)
 		//if(blocks[blockIndex].slopeType == 0)
-			left  	= FaceExposed(positionInCube, new float3(-1,	0, 0));	
+			left  	= FaceExposed(positionInMesh, new float3(-1,	0, 0));	
 
 		//if(blocks[blockIndex].frontRightSlope >= 0 || blocks[blockIndex].frontLeftSlope >= 0)		
 		//if(blocks[blockIndex].slopeType == 0)
-			forward = FaceExposed(positionInCube, new float3( 0,	0, 1));	
+			forward = FaceExposed(positionInMesh, new float3( 0,	0, 1));	
 
 		//if(blocks[blockIndex].backRightSlope >= 0 || blocks[blockIndex].backLeftSlope >= 0)
 		//if(blocks[blockIndex].slopeType == 0)
-			back  	= FaceExposed(positionInCube, new float3( 0,	0,-1));		
+			back  	= FaceExposed(positionInMesh, new float3( 0,	0,-1));		
 
 		//int up  	= FaceExposed(positionInCube, new float3( 0,	1, 0));		//	up
 		//int down  	= FaceExposed(positionInCube, new float3( 0,   -1, 0));		//	down	

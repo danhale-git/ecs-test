@@ -221,7 +221,8 @@ public class MeshSystem : ComponentSystem
 			//	This position
 			float3 pos = Util.Unflatten2D(h, cubeSize);
 
-			int blockIndex = Util.BlockIndex(new float3(pos.x, height, pos.z), cubeSize);
+			//	DEBUGDEBUGDEBUGE
+			int blockIndex = 0;// Util.BlockIndex(new float3(pos.x, height, pos.z), cubeSize);
 			Block block = blocks[blockIndex];
 
 			//	Block type is not sloped

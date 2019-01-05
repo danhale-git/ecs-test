@@ -4,7 +4,23 @@ using Unity.Mathematics;
 
 public static class Util
 {
-    public static float3 Unflatten(int index, int xLength, int yLength=0, int zLength=0)
+    
+
+    public static int Flatten2(int x, int y, int z, int width, int height)
+    {
+        return (y * width * height) + (z * width) + x;
+    }
+
+    public static float3 Unflatten2(int index, int width, int height)
+    {
+        int y = index / (width * height);
+        index -= (y * width * height);
+        int z = index / width;
+        int x = index % width;
+        return new float3 ( x, z, y );
+    }
+
+    /*public static float3 Unflatten(int index, int xLength, int yLength=0, int zLength=0)
     {
         if(yLength == 0) yLength = xLength;
         if(zLength == 0) zLength = xLength;
@@ -17,28 +33,14 @@ public static class Util
         //return new float3(z, y, x);
     }
 
-    public static int FLatten2(int x, int y, int z, int width, int height)
-    {
-        return (z * width * height) + (y * width) + x;
-    }
-
-    public static float3 Unflatten2(int index, int width, int height)
-    {
-        int z = index / (width * height);
-        index -= (z * width * height);
-        int y = index / width;
-        int x = index % width;
-        return new float3 ( x, y, z );
-    }
-
     public static int Flatten(int x, int y, int z, int size)
     {
         return z + size * (y + size * x);
     }
-    public static int Flatten(float x, float y, float z, int size)
+     */public static int Flatten(float x, float y, float z, int size)
     {
         return (int)(z + size * (y + size * x));
-    }
+    } 
     public static float3 Unflatten2D(int index, int size)
     {
         int x = index % size;
@@ -141,11 +143,11 @@ public static class Util
 		return System.Math.Round(value, decimalPlaces);
 	}
 
-    public static int BlockIndex(float3 pos, int cubeSize)
+    /*public static int BlockIndex(float3 pos, int cubeSize)
     {
         int cubesUp = (int)math.floor(pos.y / cubeSize);
         int startIndex = (cubesUp * (int)math.pow(cubeSize, 3));
 
         return startIndex + Flatten(pos.x, pos.y - (cubesUp * cubeSize), pos.z, cubeSize);
-    }
+    } */
 }

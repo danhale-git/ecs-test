@@ -39,8 +39,6 @@ struct BlocksJob : IJobParallelFor
 			}
 		}
 
-		if(type == 0) Debug.Log("air");
-
 		blocks[i] = new Block
 		{
 			type = type,

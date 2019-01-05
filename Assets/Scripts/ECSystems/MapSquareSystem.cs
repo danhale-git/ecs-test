@@ -51,6 +51,25 @@ public class MapSquareSystem : ComponentSystem
 			None 	= System.Array.Empty<ComponentType>(),
 			All 	= new ComponentType [] { typeof(MapSquare) }
 			};
+
+		int tWidth = 4;
+		int tHeight = 80;
+
+		float3 testFl = new float3(2, 75, 3);
+		int testInt = 0;
+
+		testInt = Util.Flatten2((int)testFl.x, (int)testFl.y, (int)testFl.z, tWidth, tHeight);
+		Debug.Log(testInt);
+		testFl = Util.Unflatten2(testInt, tWidth, tHeight);
+		Debug.Log(testFl);
+		testInt = Util.Flatten2((int)testFl.x, (int)testFl.y, (int)testFl.z, tWidth, tHeight);
+		Debug.Log(testInt);
+		testFl = Util.Unflatten2(testInt, tWidth, tHeight);
+		Debug.Log(testFl);
+		testInt = Util.Flatten2((int)testFl.x, (int)testFl.y, (int)testFl.z, tWidth, tHeight);
+		Debug.Log(testInt);
+		testFl = Util.Unflatten2(testInt, tWidth, tHeight);
+		Debug.Log(testFl);
 	}
 
 
