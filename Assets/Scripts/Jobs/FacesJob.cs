@@ -45,13 +45,13 @@ struct FacesJob : IJobParallelFor
 			return 1;// back[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type		== 0 ? 1 : 0;
 
 		//	Inside this cube
-		return blocks[util.Flatten2(pos.x, pos.y, pos.z, cubeSize)].type == 0 ? 1 : 0;
+		return blocks[util.Flatten(pos.x, pos.y, pos.z, cubeSize)].type == 0 ? 1 : 0;
 	}
 
 	public void Execute(int i)
 	{
 		//	Local position in cube
-		float3 positionInMesh = util.Unflatten2(i, cubeSize);
+		float3 positionInMesh = util.Unflatten(i, cubeSize);
 
 		//	Block index in map square
 		//int blockIndex = i;//util.BlockIndex(positionInCube + new float3(0, cubeHeight, 0), cubeSize);

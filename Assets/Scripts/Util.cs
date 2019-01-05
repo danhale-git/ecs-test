@@ -4,33 +4,12 @@ using Unity.Mathematics;
 
 public static class Util
 {
-    
-
-    public static int Flatten2(int x, int y, int z, int width)
-    {
-        //return (z * width * height) + (y * width) + x;
-        return ((z * width) + x) + (y * (width * width));
-    }
-
-    public static float3 Unflatten2(int index, int width)
-    {
-        /*int z = index / (width * height);
-        index -= (z * width * height);
-        int y = index / width;
-        int x = index % width;
-        return new float3 ( x, y, z ); */
-        int y = (int)math.floor(index / (width * width));
-        index -= y * (width * width);
-        int z = (int)math.floor(index / width);
-        int x = index - (width * z);
-        return new float3(x, y, z);
-    }
-
-    public static int MyFlatten(int x, int y, int z, int width)
+    public static int Flatten(int x, int y, int z, int width)
     {
         return ((z * width) + x) + (y * (width * width));
     }
-    public static float3 MyUnFlatten(int index, int width)
+
+    public static float3 Unflatten(int index, int width)
     {
         int y = (int)math.floor(index / (width * width));
         index -= y * (width * width);
@@ -39,27 +18,6 @@ public static class Util
         return new float3(x, y, z);
     }
 
-    /*public static float3 Unflatten(int index, int xLength, int yLength=0, int zLength=0)
-    {
-        if(yLength == 0) yLength = xLength;
-        if(zLength == 0) zLength = xLength;
-        
-        int x = index / (xLength * zLength);
-        int y = (index - x * yLength * zLength) / zLength;
-        int z = index - x * xLength * zLength - y * zLength;
-
-        return new float3(x, y, z);
-        //return new float3(z, y, x);
-    }
-
-    public static int Flatten(int x, int y, int z, int size)
-    {
-        return z + size * (y + size * x);
-    }
-     */public static int Flatten(float x, float y, float z, int size)
-    {
-        return (int)(z + size * (y + size * x));
-    } 
     public static float3 Unflatten2D(int index, int size)
     {
         int x = index % size;
@@ -70,10 +28,6 @@ public static class Util
     public static int Flatten2D(int x, int z, int size)
     {
         return (z * size) + x;
-    }
-    public static int Flatten2D(float x, float z, int size)
-    {
-        return ((int)z * size) + (int)x;
     }
 
     public static float To01(float value)
@@ -161,12 +115,4 @@ public static class Util
 	{
 		return System.Math.Round(value, decimalPlaces);
 	}
-
-    /*public static int BlockIndex(float3 pos, int cubeSize)
-    {
-        int cubesUp = (int)math.floor(pos.y / cubeSize);
-        int startIndex = (cubesUp * (int)math.pow(cubeSize, 3));
-
-        return startIndex + Flatten(pos.x, pos.y - (cubesUp * cubeSize), pos.z, cubeSize);
-    } */
 }

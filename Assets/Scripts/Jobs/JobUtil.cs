@@ -2,19 +2,13 @@
 
 public struct JobUtil
 {
-    public int Flatten2(int x, int y, int z, int width)
+    public int Flatten(int x, int y, int z, int width)
     {
-        //return (z * width * height) + (y * width) + x;
         return ((z * width) + x) + (y * (width * width));
     }
 
-    public float3 Unflatten2(int index, int width)
+    public float3 Unflatten(int index, int width)
     {
-        /*int z = index / (width * height);
-        index -= (z * width * height);
-        int y = index / width;
-        int x = index % width;
-        return new float3 ( x, y, z ); */
         int y = (int)math.floor(index / (width * width));
         index -= y * (width * width);
         int z = (int)math.floor(index / width);
@@ -22,29 +16,12 @@ public struct JobUtil
         return new float3(x, y, z);
     }
 
-    /*public float3 Unflatten(int index, int xLength, int yLength=0, int zLength=0)
+    public int Flatten(float3 xyz, int width)
     {
-        if(yLength == 0) yLength = xLength;
-        if(zLength == 0) zLength = xLength;
-
-        int x = index / (xLength * zLength);
-        int y = (index - x * yLength * zLength) / zLength;
-        int z = index - x * xLength * zLength - y * zLength;
-
-        return new float3(x, y, z);
-    }
-    public int Flatten(int x, int y, int z, int size)
-    {
-        return z + size * (y + size * x);
-    }  */
-    public int Flatten(float x, float y, float z, int size)
-    {
-        return (int)(z + size * (y + size * x));
-    }
-    public int Flatten(float3 xyz, int size)
-    {
-        return (int)(xyz.z + size * (xyz.y + size * xyz.x));
+        return (((int)xyz.z * width) + (int)xyz.x) + ((int)xyz.y * (width * width));
+        //return (int)(xyz.z + size * (xyz.y + size * xyz.x));
     } 
+
     public float3 Unflatten2D(int index, int size)
     {
         int x = index % size;
@@ -52,18 +29,17 @@ public struct JobUtil
 
         return new float3(x, 0, z);
     }
+
     public int Flatten2D(int x, int z, int size)
     {
         return (z * size) + x;
     }
-    public int Flatten2D(float x, float z, int size)
-    {
-        return ((int)z * size) + (int)x;
-    }
+
     public float To01(float value)
 	{
 		return (value * 0.5f) + 0.5f;
 	}
+
     public int3 WrapBlockIndex(int3 index, int chunkSize)
 	{
 		int x = index.x;
@@ -87,16 +63,9 @@ public struct JobUtil
 
 		return new int3(x, y, z);
 	}
+
     public int WrapAndFlatten(int3 position, int chunkSize)
     {
         return Flatten(WrapBlockIndex(position, chunkSize), chunkSize);
-    }
-
-    public int BlockIndex(float3 pos, int cubeSize)
-    {
-        int cubesUp = (int)math.floor(pos.y / cubeSize);
-        int startIndex = (cubesUp * (int)math.pow(cubeSize, 3));
-
-        return startIndex + Flatten(pos.x, pos.y - (cubesUp * cubeSize), pos.z, cubeSize);
     }
 }

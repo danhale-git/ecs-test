@@ -19,7 +19,7 @@ struct BlocksJob : IJobParallelFor
 
 	public void Execute(int i)
 	{
-		float3 pos = util.Unflatten2(i, cubeSize);
+		float3 pos = util.Unflatten(i, cubeSize);
 
 		float3 position = pos + new float3(0, mapSquare.lowestVisibleBlock, 0);
 
