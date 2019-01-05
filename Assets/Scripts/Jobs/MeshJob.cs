@@ -38,7 +38,7 @@ struct MeshJob : IJobParallelFor
 		int sloped = BlockTypes.sloped[blocks[i].type];
 
 		//	Get block position for vertex offset
-		float3 positionInMesh = util.Unflatten2(i, cubeSize, square.height);
+		float3 positionInMesh = util.Unflatten2(i, cubeSize);
 
 		//	Current local indices
 		int vertIndex = 0;

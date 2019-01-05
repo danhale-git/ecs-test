@@ -58,17 +58,17 @@ public class MapSquareSystem : ComponentSystem
 		float3 testFl = new float3(2, 75, 3);
 		int testInt = 0;
 
-		testInt = Util.Flatten2((int)testFl.x, (int)testFl.y, (int)testFl.z, tWidth, tHeight);
+		testInt = Util.MyFlatten((int)testFl.x, (int)testFl.y, (int)testFl.z, tWidth/*, tHeight*/);
 		Debug.Log(testInt);
-		testFl = Util.Unflatten2(testInt, tWidth, tHeight);
+		testFl = Util.MyUnFlatten(testInt, tWidth);
 		Debug.Log(testFl);
-		testInt = Util.Flatten2((int)testFl.x, (int)testFl.y, (int)testFl.z, tWidth, tHeight);
+		testInt = Util.MyFlatten((int)testFl.x, (int)testFl.y, (int)testFl.z, tWidth/*, tHeight*/);
 		Debug.Log(testInt);
-		testFl = Util.Unflatten2(testInt, tWidth, tHeight);
+		testFl = Util.MyUnFlatten(testInt, tWidth);
 		Debug.Log(testFl);
-		testInt = Util.Flatten2((int)testFl.x, (int)testFl.y, (int)testFl.z, tWidth, tHeight);
+		testInt = Util.MyFlatten((int)testFl.x, (int)testFl.y, (int)testFl.z, tWidth/*, tHeight*/);
 		Debug.Log(testInt);
-		testFl = Util.Unflatten2(testInt, tWidth, tHeight);
+		testFl = Util.MyUnFlatten(testInt, tWidth);
 		Debug.Log(testFl);
 	}
 

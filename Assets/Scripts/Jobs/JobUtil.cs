@@ -2,18 +2,24 @@
 
 public struct JobUtil
 {
-    public int Flatten2(int x, int y, int z, int width, int height)
+    public int Flatten2(int x, int y, int z, int width)
     {
-        return (z * width * height) + (y * width) + x;
+        //return (z * width * height) + (y * width) + x;
+        return ((z * width) + x) + (y * (width * width));
     }
 
-    public float3 Unflatten2(int index, int width, int height)
+    public float3 Unflatten2(int index, int width)
     {
-        int z = index / (width * height);
+        /*int z = index / (width * height);
         index -= (z * width * height);
         int y = index / width;
         int x = index % width;
-        return new float3 ( x, y, z );
+        return new float3 ( x, y, z ); */
+        int y = (int)math.floor(index / (width * width));
+        index -= y * (width * width);
+        int z = (int)math.floor(index / width);
+        int x = index - (width * z);
+        return new float3(x, y, z);
     }
 
     /*public float3 Unflatten(int index, int xLength, int yLength=0, int zLength=0)

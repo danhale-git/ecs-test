@@ -111,8 +111,17 @@ public class BlockSystem : ComponentSystem
 
 		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, Color.white);
 
+		/*for(int y = 0; y < mapSquare.height; y++)
+			for(int z = 0; z < cubeSize; z++)
+				for(int x = 0; x < cubeSize; x++)
+				{
+					blocks[Util.Flatten2(x, y, z, cubeSize)] = new Block{
+					type = 1,
+					localPosition = float3.zero//Util.Unflatten2(i, cubeSize)
+					};
+				} */
 
-		/*for(int i = 0; i < blocks.Length/3; i++)
+		/*for(int i = 0; i < blocks.Length; i++)
 			blocks[i] = new Block{
 				type = 1,
 				localPosition = float3.zero//Util.Unflatten2(i, cubeSize)
@@ -127,8 +136,6 @@ public class BlockSystem : ComponentSystem
 		};
 		
 		job.Schedule(blocks.Length, batchSize).Complete(); 
-
-				
 
 		return blocks;
 	}

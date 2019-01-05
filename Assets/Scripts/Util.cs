@@ -6,18 +6,37 @@ public static class Util
 {
     
 
-    public static int Flatten2(int x, int y, int z, int width, int height)
+    public static int Flatten2(int x, int y, int z, int width)
     {
-        return (y * width * height) + (z * width) + x;
+        //return (z * width * height) + (y * width) + x;
+        return ((z * width) + x) + (y * (width * width));
     }
 
-    public static float3 Unflatten2(int index, int width, int height)
+    public static float3 Unflatten2(int index, int width)
     {
-        int y = index / (width * height);
-        index -= (y * width * height);
-        int z = index / width;
+        /*int z = index / (width * height);
+        index -= (z * width * height);
+        int y = index / width;
         int x = index % width;
-        return new float3 ( x, z, y );
+        return new float3 ( x, y, z ); */
+        int y = (int)math.floor(index / (width * width));
+        index -= y * (width * width);
+        int z = (int)math.floor(index / width);
+        int x = index - (width * z);
+        return new float3(x, y, z);
+    }
+
+    public static int MyFlatten(int x, int y, int z, int width)
+    {
+        return ((z * width) + x) + (y * (width * width));
+    }
+    public static float3 MyUnFlatten(int index, int width)
+    {
+        int y = (int)math.floor(index / (width * width));
+        index -= y * (width * width);
+        int z = (int)math.floor(index / width);
+        int x = index - (width * z);
+        return new float3(x, y, z);
     }
 
     /*public static float3 Unflatten(int index, int xLength, int yLength=0, int zLength=0)
