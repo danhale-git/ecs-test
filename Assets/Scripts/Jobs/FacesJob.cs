@@ -66,7 +66,7 @@ struct FacesJob : IJobParallelFor
 
 	public void Execute(int i)
 	{
-		i += cubeSlice;//mapSquare.drawIndexOffset + cubeSlice*3;
+		i += mapSquare.drawIndexOffset;
 		//	Local position in cube
 		float3 positionInMesh = util.Unflatten(i, cubeSize);
 

@@ -106,7 +106,8 @@ public class BlockSystem : ComponentSystem
 		//	Block data for all cubes in the map square
 		var blocks = new NativeArray<Block>(mapSquare.blockGenerationArrayLength, Allocator.TempJob);
 
-		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f));
+		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.1f), mapSquare.topBlock, mapSquare.bottomBlock);
+		//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f), mapSquare.topBuffer, mapSquare.bottomBuffer);
 
 		/*for(int y = 0; y < mapSquare.height; y++)
 			for(int z = 0; z < cubeSize; z++)

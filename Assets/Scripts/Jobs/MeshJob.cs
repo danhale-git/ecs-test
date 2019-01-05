@@ -30,7 +30,7 @@ struct MeshJob : IJobParallelFor
 
 	public void Execute(int i)
 	{
-		i += cubeSlice;//mapSquare.drawIndexOffset + cubeSlice*3;
+		i += mapSquare.drawIndexOffset;
 		Block block = blocks[i];
 
 		//	Skip blocks that aren't exposed

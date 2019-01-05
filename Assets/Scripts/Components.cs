@@ -15,10 +15,8 @@ namespace MyComponents
 		public int topBuffer;
 		public int bottomBuffer;
 
-		public int blockGenerationHeight;
 		public int blockGenerationArrayLength;
 
-		public int drawHeight;
 		public int drawArrayLength;
 		public int drawIndexOffset;
 	}

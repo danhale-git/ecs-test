@@ -25,7 +25,7 @@ public static class CustomDebugTools
         }
     }
 
-    public static void SetMapSquareHighlight(Entity mapSquareEntity, int size, Color color)
+    public static void SetMapSquareHighlight(Entity mapSquareEntity, int size, Color color, int top, int bottom)
     {
 
         EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
@@ -38,8 +38,8 @@ public static class CustomDebugTools
         MyComponents.MapSquare mapSquare = manager.GetComponentData<MyComponents.MapSquare>(mapSquareEntity);
         
         //  Adjust height for generated/non generated squares
-        Vector3 topOffset = new Vector3(0, mapSquare.topBlock, 0);
-        Vector3 bottomOffset = new Vector3(0, mapSquare.bottomBlock, 0);
+        Vector3 topOffset = new Vector3(0, top, 0);
+        Vector3 bottomOffset = new Vector3(0, bottom, 0);
 
         
         

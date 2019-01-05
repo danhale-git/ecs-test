@@ -181,7 +181,7 @@ public class MeshSystem : ComponentSystem
 			util 		= new JobUtil()
 			};
 		
-		job.Schedule(mapSquare.blockGenerationArrayLength - (cubeSlice * 2), batchSize).Complete();
+		job.Schedule(mapSquare.drawArrayLength, batchSize).Complete();
 		
 
 		for(int i = 0; i < 4; i++)
@@ -388,7 +388,7 @@ public class MeshSystem : ComponentSystem
 		};
 
 		//	Run job
-		job.Schedule(mapSquare.blockGenerationArrayLength - (cubeSlice * 2), batchSize).Complete();
+		job.Schedule(mapSquare.drawArrayLength, batchSize).Complete();
 
 		//	Convert vertices and colors from float3/float4 to Vector3/Color
 		Vector3[] verticesArray = new Vector3[vertices.Length];

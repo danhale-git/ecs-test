@@ -77,7 +77,7 @@ public class CubeSystem : ComponentSystem
                 
                 if(!GetAdjacentEntities(positions[e].Value, out adjacent))
                 {
-					CustomDebugTools.SetMapSquareHighlight(entity, cubeSize -1, Color.red);
+					//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize -1, Color.red);
 					throw new System.IndexOutOfRangeException(
 						"GetAdjacentBuffers did not find adjacent squares at "+positions[e].Value
 						);
@@ -139,20 +139,18 @@ public class CubeSystem : ComponentSystem
 		}
 
 		MapSquare mapSquare = square;
-		//adjustMapSquare.highestVisibleBlock = highestVisible;
-		//adjustMapSquare.lowestVisibleBlock = lowestVisible;
 
 		mapSquare.topBuffer 	= topBuffer 	+ 2;
 		mapSquare.bottomBuffer 	= bottomBuffer 	- 2;
 
-		mapSquare.topBlock	= mapSquare.topBlock +1;
-		mapSquare.bottomBlock	= mapSquare.bottomBlock -1;
+		mapSquare.topBlock		= mapSquare.topBlock + 1;
+		mapSquare.bottomBlock	= mapSquare.bottomBlock - 1;
 
-		mapSquare.blockGenerationHeight = mapSquare.topBuffer - mapSquare.bottomBuffer;
-		mapSquare.blockGenerationArrayLength = mapSquare.blockGenerationHeight * (cubeSize*cubeSize);
+		int blockGenerationHeight = mapSquare.topBuffer - mapSquare.bottomBuffer;
+		mapSquare.blockGenerationArrayLength = blockGenerationHeight * (cubeSize*cubeSize);
 
-		mapSquare.drawHeight = mapSquare.topBlock - mapSquare.bottomBlock;
-		mapSquare.drawArrayLength = mapSquare.drawHeight * (cubeSize * cubeSize);
+		int drawHeight = mapSquare.topBlock - mapSquare.bottomBlock;
+		mapSquare.drawArrayLength = drawHeight * (cubeSize * cubeSize);
 		mapSquare.drawIndexOffset = Util.Flatten(0, mapSquare.bottomBlock - mapSquare.bottomBuffer, 0, cubeSize);
 
 		commandBuffer.SetComponent<MapSquare>(entity, mapSquare);
