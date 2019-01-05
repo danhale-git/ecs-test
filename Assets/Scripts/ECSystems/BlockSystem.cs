@@ -72,7 +72,7 @@ public class BlockSystem : ComponentSystem
 				commandBuffer.SetComponent<MapSquare>(entity, mapSquare);
 
 				//	Resize buffer to size of (blocks in a cube) * (number of cubes)
-				blockBuffer.ResizeUninitialized(mapSquare.arrayLength);
+				blockBuffer.ResizeUninitialized(mapSquare.blockGenerationArrayLength);
 
 				//	Generate block data from height map
 				NativeArray<Block> blocks = GetBlocks(
@@ -104,7 +104,7 @@ public class BlockSystem : ComponentSystem
 	NativeArray<Block> GetBlocks(EntityCommandBuffer commandBuffer, Entity entity, int batchSize, MapSquare mapSquare, NativeArray<Topology> heightMap)
 	{
 		//	Block data for all cubes in the map square
-		var blocks = new NativeArray<Block>(mapSquare.arrayLength, Allocator.TempJob);
+		var blocks = new NativeArray<Block>(mapSquare.blockGenerationArrayLength, Allocator.TempJob);
 
 		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f));
 
@@ -132,7 +132,7 @@ public class BlockSystem : ComponentSystem
 			util = new JobUtil()
 		};
 		
-		job.Schedule(mapSquare.arrayLength, batchSize).Complete(); 
+		job.Schedule(mapSquare.blockGenerationArrayLength, batchSize).Complete(); 
 
 		return blocks;
 	}

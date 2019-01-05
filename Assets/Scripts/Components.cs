@@ -15,8 +15,12 @@ namespace MyComponents
 		public int topBuffer;
 		public int bottomBuffer;
 
-		public int height;
-		public int arrayLength;
+		public int blockGenerationHeight;
+		public int blockGenerationArrayLength;
+
+		public int drawHeight;
+		public int drawArrayLength;
+		public int drawIndexOffset;
 	}
 	[InternalBufferCapacity(0)]
 	public struct Topology : IBufferElementData

@@ -16,7 +16,7 @@ struct MeshJob : IJobParallelFor
 	[NativeDisableParallelForRestriction] public NativeArray<int> triangles;
 	[NativeDisableParallelForRestriction] public NativeArray<float4> colors;
 
-	[ReadOnly] public MapSquare square;
+	[ReadOnly] public MapSquare mapSquare;
 	
 	[ReadOnly] public DynamicBuffer<Block> blocks;
 	[ReadOnly] public NativeArray<Faces> faces;
@@ -30,7 +30,7 @@ struct MeshJob : IJobParallelFor
 
 	public void Execute(int i)
 	{
-		i += cubeSlice;
+		i += cubeSlice;//mapSquare.drawIndexOffset + cubeSlice*3;
 		Block block = blocks[i];
 
 		//	Skip blocks that aren't exposed

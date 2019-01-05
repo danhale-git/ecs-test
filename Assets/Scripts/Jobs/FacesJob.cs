@@ -11,7 +11,7 @@ struct FacesJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<Faces> exposedFaces;
 
-	[ReadOnly] public MapSquare square;
+	[ReadOnly] public MapSquare mapSquare;
 
 	//	Block data for this and adjacent map squares
 	[ReadOnly] public NativeArray<Block> blocks;
@@ -66,7 +66,7 @@ struct FacesJob : IJobParallelFor
 
 	public void Execute(int i)
 	{
-		i += cubeSlice;
+		i += cubeSlice;//mapSquare.drawIndexOffset + cubeSlice*3;
 		//	Local position in cube
 		float3 positionInMesh = util.Unflatten(i, cubeSize);
 

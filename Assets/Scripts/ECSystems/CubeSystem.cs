@@ -125,8 +125,8 @@ public class CubeSystem : ComponentSystem
 		int bottomBuffer 	= square.bottomBlock;
 
 		//	Set height to draw
-		int topCubeDraw 	= (int)math.floor((topBuffer + 1) / cubeSize);
-		int bottomCubeDraw 	= (int)math.floor((bottomBuffer - 1) / cubeSize);
+		//int topCubeDraw 	= (int)math.floor((topBuffer + 1) / cubeSize);
+		//int bottomCubeDraw 	= (int)math.floor((bottomBuffer - 1) / cubeSize);
 
 		//	Find highest in 3x3 squares
 		for(int i = 0; i < 4; i++)
@@ -138,23 +138,29 @@ public class CubeSystem : ComponentSystem
 			if(adjacentBottom < square.bottomBlock) bottomBuffer = adjacentBottom;
 		}
 
-		MapSquare adjustMapSquare = square;
+		MapSquare mapSquare = square;
 		//adjustMapSquare.highestVisibleBlock = highestVisible;
 		//adjustMapSquare.lowestVisibleBlock = lowestVisible;
 
-		adjustMapSquare.topBuffer 		= topBuffer 	+ 2;
-		adjustMapSquare.bottomBuffer 	= bottomBuffer 	- 2;
+		mapSquare.topBuffer 	= topBuffer 	+ 2;
+		mapSquare.bottomBuffer 	= bottomBuffer 	- 2;
 
-		adjustMapSquare.height = adjustMapSquare.topBuffer - adjustMapSquare.bottomBuffer;
-		adjustMapSquare.arrayLength = adjustMapSquare.height * (cubeSize*cubeSize);
+		mapSquare.topBlock	= mapSquare.topBlock +1;
+		mapSquare.bottomBlock	= mapSquare.bottomBlock -1;
 
+		mapSquare.blockGenerationHeight = mapSquare.topBuffer - mapSquare.bottomBuffer;
+		mapSquare.blockGenerationArrayLength = mapSquare.blockGenerationHeight * (cubeSize*cubeSize);
 
-		commandBuffer.SetComponent<MapSquare>(entity, adjustMapSquare);
+		mapSquare.drawHeight = mapSquare.topBlock - mapSquare.bottomBlock;
+		mapSquare.drawArrayLength = mapSquare.drawHeight * (cubeSize * cubeSize);
+		mapSquare.drawIndexOffset = Util.Flatten(0, mapSquare.bottomBlock - mapSquare.bottomBuffer, 0, cubeSize);
+
+		commandBuffer.SetComponent<MapSquare>(entity, mapSquare);
 
 
 		Position pos = new Position
 		{
-			Value = new float3(position.Value.x, adjustMapSquare.bottomBuffer, position.Value.z)
+			Value = new float3(position.Value.x, mapSquare.bottomBuffer, position.Value.z)
 		};
 
 		commandBuffer.SetComponent<Position>(entity, pos);
