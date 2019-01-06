@@ -26,6 +26,27 @@ public static class CustomDebugTools
         }
     }
 
+    public static void MapBufferDebug(Entity mapSquareEntity)
+    {
+        EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
+
+        //  Get position and offset to square corner
+        Vector3 pos = (Vector3)manager.GetComponentData<Position>(mapSquareEntity).Value - (Vector3.one / 2);
+        Vector3 position = new Vector3(pos.x, -0.5f, pos.z);
+
+        MapSquare mapSquare = manager.GetComponentData<MapSquare>(mapSquareEntity);
+
+        if(manager.HasComponent<Tags.InnerBuffer>(mapSquareEntity))
+            squareHighlights[position]  = CreateBox(position, cubeSize - 0.5f, new Color(1, 0, 0, 0.2f), mapSquare.topBlockBuffer, mapSquare.bottomBlockBuffer, noSides: true);
+        else if(manager.HasComponent<Tags.OuterBuffer>(mapSquareEntity))
+            squareHighlights[position]  = CreateBox(position, cubeSize - 0.5f, new Color(0, 1, 0, 0.2f), mapSquare.topBlockBuffer, mapSquare.bottomBlockBuffer, noSides: true);
+        else if(manager.HasComponent<Tags.EdgeBuffer>(mapSquareEntity))
+            squareHighlights[position]  = CreateBox(position, cubeSize - 0.5f, new Color(0, 0, 1, 0.2f), mapSquare.topBlockBuffer, mapSquare.bottomBlockBuffer, noSides: true);
+        else
+            if(squareHighlights.ContainsKey(position)) squareHighlights.Remove(position);
+        
+    }
+
     public static void MapSquareBufferDebug(Entity mapSquareEntity)
     {
 
