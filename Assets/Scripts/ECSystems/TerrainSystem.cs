@@ -79,7 +79,7 @@ public class TerrainSystem : ComponentSystem
 			    MapSquare mapSquareComponent = GetHeightMap(position, heightBuffer);
 			    entityManager.SetComponentData<MapSquare>(entity, mapSquareComponent);
 
-                //  Create cubes next
+                //  Set draw buffer next
                 commandBuffer.RemoveComponent<Tags.GenerateTerrain>(entity);
                 commandBuffer.AddComponent(entity, new Tags.SetDrawBuffer());
             }
