@@ -5,6 +5,7 @@ using UnityEditor;
 using Unity.Entities;
 using Unity.Transforms;
 using Unity.Mathematics;
+using MyComponents;
 
 public static class CustomDebugTools
 {
@@ -25,6 +26,21 @@ public static class CustomDebugTools
         }
     }
 
+    public static void MapSquareBufferDebug(Entity mapSquareEntity)
+    {
+
+        EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
+
+        //  Get position and offset to square corner
+        Vector3 pos = (Vector3)manager.GetComponentData<Position>(mapSquareEntity).Value - (Vector3.one / 2);
+        Vector3 position = new Vector3(pos.x, -0.5f, pos.z);
+
+        MapSquare mapSquare = manager.GetComponentData<MapSquare>(mapSquareEntity);
+
+        squareHighlights[position+Vector3.one]      = CreateBox(position, cubeSize - 0.5f, new Color(1, 0, 0.5f, 0.2f), mapSquare.topDrawBuffer, mapSquare.bottomDrawBuffer, noSides: false);
+        squareHighlights[position+(Vector3.one*2)]  = CreateBox(position, cubeSize - 0.5f, new Color(0, 1, 0.5f, 0.2f), mapSquare.topBlockBuffer, mapSquare.bottomBlockBuffer, noSides: true);
+    }
+
     public static void SetMapSquareHighlight(Entity mapSquareEntity, int size, Color color, int top, int bottom)
     {
 
@@ -43,7 +59,7 @@ public static class CustomDebugTools
         
     }
 
-    static List<DebugLine> CreateBox(Vector3 position, float size, Color color, float top, float bottom)
+    static List<DebugLine> CreateBox(Vector3 position, float size, Color color, float top, float bottom, bool noSides = false)
     {
         //  Adjust height for generated/non generated squares
         Vector3 topOffset = new Vector3(0, top, 0);
@@ -72,6 +88,8 @@ public static class CustomDebugTools
         lines.Add(new DebugLine(v[1] + bottomOffset, v[3] + bottomOffset, color));
         lines.Add(new DebugLine(v[0] + bottomOffset, v[3] + bottomOffset, color));
         lines.Add(new DebugLine(v[1] + bottomOffset, v[2] + bottomOffset, color));
+
+        if(noSides) return lines;
 
         //  Connecting lines at corners
         lines.Add(new DebugLine(v[0] + bottomOffset, v[4] + topOffset, color));
