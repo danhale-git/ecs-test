@@ -70,42 +70,19 @@ public class MapSquareSystem : ComponentSystem
 
 		int squaresCreated = 0;
 
-		/*//	Generate grid of map squares in radius
-		for(int x = -radius; x <= radius; x++)
-			for(int z = -radius; z <= radius; z++)
-			{
-				int buffer = 0;
-				//	Chunk is at the edge of the map 	- outer buffer
-				if (x == -radius || x ==  radius ||
-					z == -radius || z ==  radius )
-					buffer = 2;
-				//	Chunk is 1 from the edge of the map - inner buffer
-				else if(x == -radius +1 || x ==  radius -1 ||
-						z == -radius +1 || z ==  radius -1 )
-					buffer = 1;
-
-				//	Create map square at position
-				Vector3 offset = new Vector3(x*cubeSize, 0, z*cubeSize);
-				squaresCreated += CreateSquare(center + offset, buffer);
-			} */
-
-
 		//	Generate grid of map squares in radius
 		for(int x = -radius-1; x <= radius+1; x++)
 			for(int z = -radius-1; z <= radius+1; z++)
 			{
 				int buffer = 0;
-				//	Chunk is at the edge of the map 	- edge buffer
-				if (x < -radius || x >  radius ||
-					z < -radius || z >  radius )
+				//	Chunk is at the edge of the map 		- edge buffer
+				if 		(x < -radius || x >  radius 		|| z < -radius 		|| z >  radius )
 					buffer = 3;
 				//	Chunk is next to the edge of the map 	- outer buffer
-				else if (x == -radius || x ==  radius ||
-						 z == -radius || z ==  radius )
+				else if	(x == -radius || x ==  radius 		|| z == -radius 	|| z ==  radius )
 					buffer = 2;
-				//	Chunk is 1 from the edge of the map - inner buffer
-				else if(x == -radius +1 || x ==  radius -1 ||
-						z == -radius +1 || z ==  radius -1 )
+				//	Chunk is 1 from the edge of the map 	- inner buffer
+				else if	(x == -radius+1 || x ==  radius-1 	|| z == -radius +1 	|| z ==  radius -1 )
 					buffer = 1;
 
 				//	Create map square at position
