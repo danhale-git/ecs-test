@@ -68,4 +68,18 @@ public struct JobUtil
     {
         return Flatten(WrapBlockIndex(position, chunkSize), chunkSize);
     }
+
+    public static float3[] CardinalDirections()
+    {
+        return new float3[8] {
+			new float3( 1,  0,  0), //  0  right
+			new float3(-1,  0,  0), //  1  left    
+			new float3( 0,  0,  1), //  2  front
+			new float3( 0,  0, -1), //  3  back
+			new float3( 1,  0,  1), //  4  front right
+			new float3(-1,  0,  1), //  5  front left
+			new float3( 1,  0, -1), //  6  back right
+			new float3(-1,  0, -1)	//  7  back left
+		    };
+    }
 }

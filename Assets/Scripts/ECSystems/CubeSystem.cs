@@ -134,14 +134,29 @@ public class CubeSystem : ComponentSystem
 			int adjacentTop 	= adjacentSquares[i].topBlock;
 			int adjacentBottom 	= adjacentSquares[i].bottomBlock;
 
-			if(adjacentTop > square.topBlock) topBuffer = adjacentTop;
-			if(adjacentBottom < square.bottomBlock) bottomBuffer = adjacentBottom;
+			if(adjacentTop > topBuffer) topBuffer = adjacentTop;
+			if(adjacentBottom < bottomBuffer) bottomBuffer = adjacentBottom;
+
+			/*if(square.position.x == -42 && square.position.z == 672 && i == 2)
+			{
+				Debug.Log(adjacentBottom+" < "+square.bottomBlock);
+				Debug.Log(bottomBuffer);
+				CustomDebugTools.SetMapSquareHighlight(
+					adjacent[i],
+					cubeSize,
+					Color.red,
+					adjacentSquares[i].topBlock,
+					adjacentSquares[i].bottomBlock);
+			} */
 		}
+
+		
 
 		MapSquare mapSquare = square;
 
 		mapSquare.topBuffer 	= topBuffer 	+ 2;
 		mapSquare.bottomBuffer 	= bottomBuffer 	- 2;
+
 
 		mapSquare.topBlock		= mapSquare.topBlock + 1;
 		mapSquare.bottomBlock	= mapSquare.bottomBlock - 1;
@@ -160,6 +175,14 @@ public class CubeSystem : ComponentSystem
 		{
 			Value = new float3(position.Value.x, mapSquare.bottomBuffer, position.Value.z)
 		};
+
+		/*if(square.position.x == -42 && square.position.z == 672)
+		{
+			Debug.Log("arrayLength: "+mapSquare.blockGenerationArrayLength);
+			Debug.Log(bottomBuffer);
+			Debug.Log("height: "+(mapSquare.topBlock - mapSquare.bottomBlock));
+			CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, Color.green, mapSquare.topBuffer, mapSquare.bottomBuffer);
+		} */
 
 		commandBuffer.SetComponent<Position>(entity, pos);
 	}
