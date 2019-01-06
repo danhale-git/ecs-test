@@ -7,6 +7,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using MyComponents;
 
+//  Generate 2D terrain data from coherent noise
 [UpdateAfter(typeof(MapSquareSystem))]
 public class TerrainSystem : ComponentSystem
 {
@@ -56,7 +57,6 @@ public class TerrainSystem : ComponentSystem
 
     void GenerateTerrain(NativeArray<ArchetypeChunk> chunks)
     {
-        Debug.Log("- generate terrain");
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
         for(int c = 0; c < chunks.Length; c++)
@@ -79,9 +79,9 @@ public class TerrainSystem : ComponentSystem
 			    MapSquare mapSquareComponent = GetHeightMap(position, heightBuffer);
 			    entityManager.SetComponentData<MapSquare>(entity, mapSquareComponent);
 
-                //  Create cubes next
+                //  Set draw buffer next
                 commandBuffer.RemoveComponent<Tags.GenerateTerrain>(entity);
-                commandBuffer.AddComponent(entity, new Tags.CreateCubes());
+                commandBuffer.AddComponent(entity, new Tags.SetDrawBuffer());
             }
         }
 

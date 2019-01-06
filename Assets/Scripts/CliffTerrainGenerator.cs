@@ -153,7 +153,7 @@ public class CliffTerrainGenerator
         for(int i = 0; i < noiseMap.Length; i++)
         {
             Topology heightComponent = GetCellHeight(cellMap[i]);            
-            //MyComponents.Terrain heightComponent = GetHeight(noiseMap[i]);
+            //Topology heightComponent = GetHeight(noiseMap[i]);
 		    
             heightMap[i] = heightComponent;
 
@@ -170,8 +170,8 @@ public class CliffTerrainGenerator
         cellMap.Dispose();
 
 		return new MapSquare{
-			highestVisibleBlock = highestBlock,
-			lowestVisibleBlock 	= lowestBlock
+			topBlock    = highestBlock,
+			bottomBlock	= lowestBlock
 			};
     }
 

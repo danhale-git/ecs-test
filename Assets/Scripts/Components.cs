@@ -9,8 +9,19 @@ namespace MyComponents
 
 	public struct MapSquare : IComponentData
 	{
-		public int highestVisibleBlock;
-		public int lowestVisibleBlock;
+		public int topBlock;
+		public int bottomBlock;
+
+		public int topDrawBuffer;
+		public int bottomDrawBuffer;
+
+		public int topBlockBuffer;
+		public int bottomBlockBuffer;
+
+		public int blockGenerationArrayLength;
+
+		public int drawArrayLength;
+		public int drawIndexOffset;
 	}
 	[InternalBufferCapacity(0)]
 	public struct Topology : IBufferElementData
@@ -52,13 +63,6 @@ namespace MyComponents
 		
 	}
 
-	[InternalBufferCapacity(100)]
-	public struct MapCube : IBufferElementData
-	{
-		public int yPos;
-		public int blocks;
-		public CubeComposition composition;
-	}
 	[InternalBufferCapacity(0)]
 	public struct Block : IBufferElementData
 	{
@@ -80,10 +84,12 @@ namespace MyComponents
 namespace Tags
 {
 	public struct GenerateTerrain : IComponentData { }
-	public struct CreateCubes : IComponentData { }
-	public struct SetBlocks : IComponentData { }
+	public struct SetDrawBuffer : IComponentData { }
+	public struct SetBlockBuffer : IComponentData { }
+	public struct GenerateBlocks : IComponentData { }
 	public struct DrawMesh : IComponentData { }
 
 	public struct InnerBuffer : IComponentData { }
-	public struct OuterBuffer : IComponentData { }
+	public struct OuterBuffer : IComponentData { }	
+	public struct EdgeBuffer : IComponentData { }
 }

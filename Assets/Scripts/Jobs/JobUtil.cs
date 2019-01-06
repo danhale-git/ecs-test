@@ -2,29 +2,26 @@
 
 public struct JobUtil
 {
-    public float3 Unflatten(int index, int xLength, int yLength=0, int zLength=0)
+    public int Flatten(int x, int y, int z, int width)
     {
-        if(yLength == 0) yLength = xLength;
-        if(zLength == 0) zLength = xLength;
+        return ((z * width) + x) + (y * (width * width));
+    }
 
-        int x = index / (xLength * zLength);
-        int y = (index - x * yLength * zLength) / zLength;
-        int z = index - x * xLength * zLength - y * zLength;
-
+    public float3 Unflatten(int index, int width)
+    {
+        int y = (int)math.floor(index / (width * width));
+        index -= y * (width * width);
+        int z = (int)math.floor(index / width);
+        int x = index - (width * z);
         return new float3(x, y, z);
     }
-    public int Flatten(int x, int y, int z, int size)
+
+    public int Flatten(float3 xyz, int width)
     {
-        return z + size * (y + size * x);
-    }
-    public int Flatten(float x, float y, float z, int size)
-    {
-        return (int)(z + size * (y + size * x));
-    }
-    public int Flatten(float3 xyz, int size)
-    {
-        return (int)(xyz.z + size * (xyz.y + size * xyz.x));
-    }
+        return (((int)xyz.z * width) + (int)xyz.x) + ((int)xyz.y * (width * width));
+        //return (int)(xyz.z + size * (xyz.y + size * xyz.x));
+    } 
+
     public float3 Unflatten2D(int index, int size)
     {
         int x = index % size;
@@ -32,22 +29,21 @@ public struct JobUtil
 
         return new float3(x, 0, z);
     }
+
     public int Flatten2D(int x, int z, int size)
     {
         return (z * size) + x;
     }
-    public int Flatten2D(float x, float z, int size)
-    {
-        return ((int)z * size) + (int)x;
-    }
+
     public float To01(float value)
 	{
 		return (value * 0.5f) + 0.5f;
 	}
+
     public int3 WrapBlockIndex(int3 index, int chunkSize)
 	{
 		int x = index.x;
-		int y = index.y;
+		//int y = index.y;
 		int z = index.z;
 
 		if(x == -1) 
@@ -55,28 +51,35 @@ public struct JobUtil
 		else if(x == chunkSize) 
 			x = 0;
 
-		if(y == -1) 
+		/*if(y == -1) 
 			y = chunkSize-1; 
 		else if(y == chunkSize) 
-			y = 0;
+			y = 0; */
 
 		if(z == -1) 
 			z = chunkSize-1; 
 		else if(z == chunkSize) 
 			z = 0;
 
-		return new int3(x, y, z);
+		return new int3(x, index.y, z);
 	}
+
     public int WrapAndFlatten(int3 position, int chunkSize)
     {
         return Flatten(WrapBlockIndex(position, chunkSize), chunkSize);
     }
 
-    public int BlockIndex(float3 pos, int cubeSize)
+    public static float3[] CardinalDirections()
     {
-        int cubesUp = (int)math.floor(pos.y / cubeSize);
-        int startIndex = (cubesUp * (int)math.pow(cubeSize, 3));
-
-        return startIndex + Flatten(pos.x, pos.y - (cubesUp * cubeSize), pos.z, cubeSize);
+        return new float3[8] {
+			new float3( 1,  0,  0), //  0  right
+			new float3(-1,  0,  0), //  1  left    
+			new float3( 0,  0,  1), //  2  front
+			new float3( 0,  0, -1), //  3  back
+			new float3( 1,  0,  1), //  4  front right
+			new float3(-1,  0,  1), //  5  front left
+			new float3( 1,  0, -1), //  6  back right
+			new float3(-1,  0, -1)	//  7  back left
+		    };
     }
 }

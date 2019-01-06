@@ -7,17 +7,19 @@ using Unity.Transforms;
 using UnityEngine;
 using MyComponents;
 
-[UpdateAfter(typeof(CubeSystem))]
+//	Generate 3D block data from 2D terrain data
+[UpdateAfter(typeof(BlockBufferSystem))]
 public class BlockSystem : ComponentSystem
 {
 	EntityManager entityManager;
 
 	int cubeSize;
 
-	ArchetypeChunkEntityType 			entityType;
-	ArchetypeChunkBufferType<Block> 	blocksType;
-	ArchetypeChunkBufferType<MapCube> 	cubeType;
-	ArchetypeChunkBufferType<Topology> 	heightmapType;
+	ArchetypeChunkEntityType 				entityType;
+	ArchetypeChunkComponentType<MapSquare>	mapSquareType;
+	ArchetypeChunkBufferType<Block> 		blocksType;
+	ArchetypeChunkBufferType<Topology> 		heightmapType;
+	
 
 	EntityArchetypeQuery mapSquareQuery;
 
@@ -29,17 +31,17 @@ public class BlockSystem : ComponentSystem
 		mapSquareQuery = new EntityArchetypeQuery
 		{
 			Any 	= Array.Empty<ComponentType>(),
-			None  	= new ComponentType[] { typeof(Tags.OuterBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetBlocks) }
+			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
+			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateBlocks) }
 		};
 	}
 
 	protected override void OnUpdate()
 	{
 		entityType 		= GetArchetypeChunkEntityType();
+		mapSquareType	= GetArchetypeChunkComponentType<MapSquare>();
 
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
-		cubeType 		= GetArchetypeChunkBufferType<MapCube>();
         heightmapType = GetArchetypeChunkBufferType<Topology>();
 
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
@@ -60,27 +62,26 @@ public class BlockSystem : ComponentSystem
 			ArchetypeChunk chunk = chunks[c];
 
 			NativeArray<Entity> entities 				= chunk.GetNativeArray(entityType);
+			NativeArray<MapSquare> mapSquares			= chunk.GetNativeArray(mapSquareType);
 			BufferAccessor<Block> blockAccessor 		= chunk.GetBufferAccessor(blocksType);
-			BufferAccessor<MapCube> cubeAccessor 		= chunk.GetBufferAccessor(cubeType);
             BufferAccessor<Topology> heightmapAccessor 	= chunk.GetBufferAccessor(heightmapType);
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity 						= entities[e];
 				DynamicBuffer<Block> blockBuffer 	= blockAccessor[e];
-				DynamicBuffer<MapCube> cubes		= cubeAccessor[e];
                 DynamicBuffer<Topology> heightmap		= heightmapAccessor[e];
 
+				MapSquare mapSquare = entityManager.GetComponentData<MapSquare>(entity);
+
 				//	Resize buffer to size of (blocks in a cube) * (number of cubes)
-				int blockArrayLength = (int)math.pow(cubeSize, 3) * cubes.Length;
-				blockBuffer.ResizeUninitialized(blockArrayLength);
+				blockBuffer.ResizeUninitialized(mapSquare.blockGenerationArrayLength);
 
 				//	Generate block data from height map
 				NativeArray<Block> blocks = GetBlocks(
-					1,
-					blockArrayLength,
-					heightmap.ToNativeArray(),
-					cubes.ToNativeArray()
+					entities[e],
+					mapSquares[e],
+					heightmap.ToNativeArray()
 					);
 
 				//	Fill buffer
@@ -88,7 +89,7 @@ public class BlockSystem : ComponentSystem
 					blockBuffer [b] = blocks[b];
 
 				//	Draw mesh next
-				commandBuffer.RemoveComponent<Tags.SetBlocks>(entity);
+				commandBuffer.RemoveComponent<Tags.GenerateBlocks>(entity);
                 commandBuffer.AddComponent(entity, new Tags.DrawMesh());
 
 				blocks.Dispose();
@@ -101,76 +102,21 @@ public class BlockSystem : ComponentSystem
 		chunks.Dispose();
 	}
 
-	NativeArray<Block> GetBlocks(int batchSize, int blockArrayLength, NativeArray<Topology> heightMap, NativeArray<MapCube> cubes)
+	NativeArray<Block> GetBlocks(Entity entity, MapSquare mapSquare, NativeArray<Topology> heightMap)
 	{
 		//	Block data for all cubes in the map square
-		var blocks = new NativeArray<Block>(blockArrayLength, Allocator.TempJob);
+		var blocks = new NativeArray<Block>(mapSquare.blockGenerationArrayLength, Allocator.TempJob);
 
-		//	Size of a single cube's flattened block array
-		int singleCubeArrayLength = (int)math.pow(cubeSize, 3);
-
-		//	Iterate over one cube at a time, generating blocks for the map square
-		for(int i = 0; i < cubes.Length; i++)
-		{
-			if(cubes[i].blocks != 1) continue;
-
-			int cubeStart = i * singleCubeArrayLength;
-
-			var job = new BlocksJob()
-			{
-				blocks = blocks,
-				cubeStart = cubeStart,
-				cubePosY = cubes[i].yPos,
-
-				heightMap = heightMap,
-				cubeSize = cubeSize,
-				util = new JobUtil()
-			};
-
-        	job.Schedule(singleCubeArrayLength, batchSize).Complete();
-
-			bool hasAir = false;
-			bool hasSolid = false;
-			
-			for(int b = cubeStart; b > cubeStart + singleCubeArrayLength; b++)
-			{
-				if(BlockTypes.visible[blocks[i].type] > 0)
-					if(!hasSolid) hasSolid = true;
-				else if(!hasAir) hasAir = true;
-
-				if(hasSolid && hasAir) break;
-			}
-
-			//	Store the composition of the cube
-			MapCube cube = SetComposition(hasAir, hasSolid, cubes[i]);
-			cubes[i] = cube;
-		}
+		BlocksJob job = new BlocksJob{
+			blocks = blocks,
+			mapSquare = mapSquare,
+			heightMap = heightMap,
+			cubeSize = cubeSize,
+			util = new JobUtil()
+		};
+		
+		job.Schedule(mapSquare.blockGenerationArrayLength, 1).Complete(); 
 
 		return blocks;
 	}
-
-	//	TODO: support visible, see through blocks 
-	//	Is all this even necessary? What is composition used for?
-	MapCube SetComposition(bool hasAirBlocks, bool hasSolidBlocks, MapCube cube)
-	{
-		CubeComposition composition = CubeComposition.AIR;
-
-		if(hasAirBlocks && hasSolidBlocks)		//	All air blocks
-			composition = CubeComposition.AIR;	
-		else if(hasAirBlocks && hasSolidBlocks)	//	Some solid blocks
-			composition = CubeComposition.SOLID;
-		else if(hasAirBlocks && hasSolidBlocks)	//	All solid blocks
-			composition = CubeComposition.MIXED;
-
-		return new MapCube{
-			yPos = cube.yPos,
-			blocks = cube.blocks,
-			composition = composition
-		};
-	}
-
-
-
-
-
 }

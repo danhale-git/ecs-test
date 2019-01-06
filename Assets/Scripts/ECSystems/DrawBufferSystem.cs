@@ -7,14 +7,15 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using MyComponents;
 
+//	Get y buffer for mesh drawing based on adjacent top/bottom blocks
 [UpdateAfter(typeof(TerrainSystem))]
-public class CubeSystem : ComponentSystem
+public class DrawBufferSystem : ComponentSystem
 {
     EntityManager entityManager;
 
 	int cubeSize;
 
-	EntityArchetypeQuery createCubesQuery;
+	EntityArchetypeQuery drawBufferQuery;
 	EntityArchetypeQuery getAdjacentEntitiesQuery;
 
 	ArchetypeChunkEntityType 				entityType;
@@ -26,11 +27,11 @@ public class CubeSystem : ComponentSystem
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
 		cubeSize = TerrainSettings.cubeSize;
 
-		createCubesQuery = new EntityArchetypeQuery
+		drawBufferQuery = new EntityArchetypeQuery
 		{
 			Any 	= Array.Empty<ComponentType>(),
-            None  	= new ComponentType[] { typeof(Tags.OuterBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.CreateCubes) }
+            None  	= new ComponentType[] { typeof(Tags.EdgeBuffer) },
+			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetDrawBuffer) }
 		};
 
         getAdjacentEntitiesQuery = new EntityArchetypeQuery
@@ -48,15 +49,16 @@ public class CubeSystem : ComponentSystem
 		mapSquareType 	= GetArchetypeChunkComponentType<MapSquare>();
 
         NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-            createCubesQuery,
+            drawBufferQuery,
             Allocator.TempJob
             );
 
         if(chunks.Length == 0) chunks.Dispose();
-        else CreateCubes(chunks);
+        else
+			BufferMeshDrawing(chunks);
     }
 
-    void CreateCubes(NativeArray<ArchetypeChunk> chunks)
+    void BufferMeshDrawing(NativeArray<ArchetypeChunk> chunks)
     {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
@@ -72,16 +74,17 @@ public class CubeSystem : ComponentSystem
 			{
 				Entity entity = entities[e];
 
-                //  Get adjacent map square entities
                 Entity[] adjacent;
                 
+				//	Get 8 adjacent map squares
                 if(!GetAdjacentEntities(positions[e].Value, out adjacent))
                 {
-					CustomDebugTools.SetMapSquareHighlight(entity, cubeSize -1, Color.red);
+					//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize -1, Color.red);
 					throw new System.IndexOutOfRangeException(
 						"GetAdjacentBuffers did not find adjacent squares at "+positions[e].Value
 						);
 				}
+
                 AdjacentSquares adjacentSquares = new AdjacentSquares{
                     right   	= adjacent[0],
                     left    	= adjacent[1],
@@ -95,70 +98,45 @@ public class CubeSystem : ComponentSystem
 
                 commandBuffer.AddComponent(entity, adjacentSquares);
 
-                //	Create cubes
-				MapSquare square 	= mapSquares[e];
-				CreateCubes(entity, mapSquares[e], adjacentSquares);
-				mapSquares[e] 		= square;
+                //	Check top and bottom limits for drawing map square
+				DrawBuffer(entity, mapSquares[e], adjacentSquares, commandBuffer);
 
-                //  Set block data next
-                commandBuffer.RemoveComponent<Tags.CreateCubes>(entity);
-                commandBuffer.AddComponent(entity, new Tags.SetBlocks());
+				//  Set block buffer next
+                commandBuffer.RemoveComponent<Tags.SetDrawBuffer>(entity);
+                commandBuffer.AddComponent(entity, new Tags.SetBlockBuffer());
             }
         }
     
-    commandBuffer.Playback(entityManager);
-	commandBuffer.Dispose();
+    	commandBuffer.Playback(entityManager);
+		commandBuffer.Dispose();
 
-    chunks.Dispose();
+    	chunks.Dispose();
     }
 
-	void CreateCubes(Entity entity, MapSquare square, AdjacentSquares adjacent)
+	void DrawBuffer(Entity entity, MapSquare mapSquare, AdjacentSquares adjacent, EntityCommandBuffer commandBuffer)
 	{
-	    DynamicBuffer<MapCube> cubeBuffer = entityManager.GetBuffer<MapCube>(entity);
-		MapSquare[] adjacentSquares = new MapSquare[] {
-			entityManager.GetComponentData<MapSquare>(adjacent.right),
-			entityManager.GetComponentData<MapSquare>(adjacent.left),
-			entityManager.GetComponentData<MapSquare>(adjacent.front),
-			entityManager.GetComponentData<MapSquare>(adjacent.back)
-			};
+		int topBuffer 		= mapSquare.topBlock;
+		int bottomBuffer 	= mapSquare.bottomBlock;
 
-		int highestVisible 	= square.highestVisibleBlock;
-		int lowestVisible 	= square.lowestVisibleBlock;
-
-		//	Set height to draw
-		int topCubeDraw 	= (int)math.floor((highestVisible + 1) / cubeSize);
-		int bottomCubeDraw 	= (int)math.floor((lowestVisible - 1) / cubeSize);
-
-		//	Find highest in 3x3 squares
+		//	Find highest/lowest in 3x3 squares
 		for(int i = 0; i < 4; i++)
 		{
-			int adjacentHighestVisible 	= adjacentSquares[i].highestVisibleBlock;
-			int adjacentLowestVisible 	= adjacentSquares[i].lowestVisibleBlock;
+			MapSquare adjacentSquare = entityManager.GetComponentData<MapSquare>(adjacent[i]);
 
-			if(adjacentHighestVisible > highestVisible) highestVisible = adjacentHighestVisible;
-			if(adjacentLowestVisible < lowestVisible) lowestVisible = adjacentLowestVisible;
+			int adjacentTop 	= adjacentSquare.topBlock;
+			int adjacentBottom 	= adjacentSquare.bottomBlock;
+
+			if(adjacentTop > topBuffer) topBuffer = adjacentTop;
+			if(adjacentBottom < bottomBuffer) bottomBuffer = adjacentBottom;
 		}
 
-		//	Set height in cubes
-		int topCubeBlocks 		= (int)math.floor((highestVisible + 1) / cubeSize) + 1;
-		int bottomCubeBlocks 	= (int)math.floor((lowestVisible + 1) / cubeSize) - 1;
+		MapSquare updateSquare = mapSquare;
 
-		for(int i = 0; i <= topCubeBlocks; i++)
-		{
-			int blocks = (i >= bottomCubeBlocks && i <= topCubeBlocks) ? 1 : 0;
+		//	Top and bottom block levels to draw mesh
+		updateSquare.topDrawBuffer		= topBuffer + 1;
+		updateSquare.bottomDrawBuffer	= bottomBuffer - 1;
 
-			MapCube cube = new MapCube{
-				yPos 	= i*cubeSize,
-				blocks 	= blocks
-				};
-
-			cubeBuffer.Add(cube);
-
-			//if(i == bottomCubeDraw || i == topCubeDraw)
-			//	CustomDebugTools.SetMapCubeHighlight(entity, cube.yPos, cubeSize-1, new Color(1, 0, 0, 0.1f));
-			//else if(i == bottomCubeBlocks || i == topCubeBlocks)
-			//	CustomDebugTools.SetMapCubeHighlight(entity, cube.yPos, cubeSize-1, new Color(0, 1, 1, 0.1f));
-		}
+		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
 	}
 
     bool GetAdjacentEntities(float3 centerPosition, out Entity[] adjacentSquares)
@@ -170,21 +148,10 @@ public class CubeSystem : ComponentSystem
 		for(int i = 0; i < directions.Length; i++)
 			adjacentPositions[i] = centerPosition + (directions[i] * cubeSize);
 
-		/*float3[] adjacentPositions = new float3[8] {
-			centerPosition + (new float3( 1,  0,  0) * cubeSize),   //  right
-			centerPosition + (new float3(-1,  0,  0) * cubeSize),   //  left
-			centerPosition + (new float3( 0,  0,  1) * cubeSize),   //  front
-			centerPosition + (new float3( 0,  0, -1) * cubeSize),   //  back
-			centerPosition + (new float3( 1,  0,  1) * cubeSize),   //  front right
-			centerPosition + (new float3(-1,  0,  1) * cubeSize),   //  front left
-			centerPosition + (new float3( 1,  0, -1) * cubeSize),   //  back right
-			centerPosition + (new float3(-1,  0, -1) * cubeSize)	//  back left
-		};*/
-
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			getAdjacentEntitiesQuery,
 			Allocator.TempJob
-			);
+		);
 
 		if(chunks.Length == 0)
 		{

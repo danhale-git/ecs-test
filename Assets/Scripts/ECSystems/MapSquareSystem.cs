@@ -7,6 +7,7 @@ using Unity.Transforms;
 using Unity.Rendering;
 using MyComponents;
 
+//	Create map squares based on player position
 public class MapSquareSystem : ComponentSystem
 {
 	EntityManager entityManager;
@@ -42,7 +43,6 @@ public class MapSquareSystem : ComponentSystem
             ComponentType.Create<MeshInstanceRendererComponent>(),
             ComponentType.Create<MapSquare>(),
             ComponentType.Create<Topology>(),
-            ComponentType.Create<MapCube>(),
             ComponentType.Create<Block>()	
 			);
 
@@ -54,14 +54,18 @@ public class MapSquareSystem : ComponentSystem
 			};
 	}
 
+	Vector3 previousSquare;
 
 	//	Continually generate map squares
 	protected override void OnUpdate()
 	{
 		//	Generate map in radius around player
-		GenerateRadius(
-			Util.VoxelOwner(player.transform.position, cubeSize),
-			viewDistance);			
+		Vector3 currentSquare = Util.VoxelOwner(player.transform.position, cubeSize);
+		if(currentSquare != previousSquare)
+		{
+			previousSquare = currentSquare;
+			GenerateRadius(currentSquare, viewDistance);
+		}		
 	}
 
 	//	Create squares
@@ -72,23 +76,24 @@ public class MapSquareSystem : ComponentSystem
 		int squaresCreated = 0;
 
 		//	Generate grid of map squares in radius
-		for(int x = -radius; x <= radius; x++)
-			for(int z = -radius; z <= radius; z++)
+		for(int x = -radius-1; x <= radius+1; x++)
+			for(int z = -radius-1; z <= radius+1; z++)
 			{
 				int buffer = 0;
-				//	Chunk is at the edge of the map 	- outer buffer
-				if (x == -radius || x ==  radius ||
-					z == -radius || z ==  radius )
+				//	Chunk is at the edge of the map 		- edge buffer
+				if 		(x < -radius || x >  radius 		|| z < -radius 		|| z >  radius )
+					buffer = 3;
+				//	Chunk is next to the edge of the map 	- outer buffer
+				else if	(x == -radius || x ==  radius 		|| z == -radius 	|| z ==  radius )
 					buffer = 2;
-				//	Chunk is 1 from the edge of the map - inner buffer
-				else if(x == -radius +1 || x ==  radius -1 ||
-						z == -radius +1 || z ==  radius -1 )
+				//	Chunk is 1 from the edge of the map 	- inner buffer
+				else if	(x == -radius+1 || x ==  radius-1 	|| z == -radius +1 	|| z ==  radius -1 )
 					buffer = 1;
 
 				//	Create map square at position
 				Vector3 offset = new Vector3(x*cubeSize, 0, z*cubeSize);
 				squaresCreated += CreateSquare(center + offset, buffer);
-			}
+			} 
 	}
 
 	//	Create map squares.
@@ -123,7 +128,7 @@ public class MapSquareSystem : ComponentSystem
 		}
 		
 		CheckBuffer(entity, buffer, position);
-		
+		CustomDebugTools.MapBufferDebug(entity);
 		return 0;
 	}
 
@@ -141,6 +146,11 @@ public class MapSquareSystem : ComponentSystem
 			case 2:
 				entityManager.AddComponent(entity, typeof(Tags.OuterBuffer));
 				break;
+
+			//	Is edge buffer
+			case 3:
+				entityManager.AddComponent(entity, typeof(Tags.EdgeBuffer));
+				break;
 			
 			//	Is not a buffer
 			default:
@@ -153,7 +163,7 @@ public class MapSquareSystem : ComponentSystem
 	{
 		switch(edge)
 		{
-			//	Outer buffer changed to innter buffer
+			//	Outer buffer changed to inner buffer
 			case 1:
 				if(entityManager.HasComponent<Tags.OuterBuffer>(entity))
 				{
@@ -163,13 +173,23 @@ public class MapSquareSystem : ComponentSystem
 				}	
 				break;
 
-			//	Still outer buffer, do nothing
-			case 2: break;
+			//	Edge buffer changed to outer buffer
+			case 2:
+				if(entityManager.HasComponent<Tags.EdgeBuffer>(entity))
+				{
+					entityManager.RemoveComponent<Tags.EdgeBuffer>(entity);
+
+					entityManager.AddComponent(entity, typeof(Tags.OuterBuffer));
+				}
+				break;
+
+			//	Still edge buffer
+			case 3: break;
 			
 			//	Not a buffer
 			default:
-				if(entityManager.HasComponent<Tags.OuterBuffer>(entity))
-					entityManager.RemoveComponent<Tags.OuterBuffer>(entity);
+				if(entityManager.HasComponent<Tags.EdgeBuffer>(entity))
+					entityManager.RemoveComponent<Tags.EdgeBuffer>(entity);
 
 				if(entityManager.HasComponent<Tags.InnerBuffer>(entity))
 					entityManager.RemoveComponent<Tags.InnerBuffer>(entity);

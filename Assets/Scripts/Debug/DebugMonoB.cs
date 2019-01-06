@@ -19,7 +19,7 @@ public class DebugMonoB : MonoBehaviour
 			Gizmos.DrawLine(line.a, line.b);
 		}
 
-        foreach(KeyValuePair<Vector3, List<CustomDebugTools.DebugLine>> kvp in CustomDebugTools.cubeHighlights)
+        foreach(KeyValuePair<Vector3, List<CustomDebugTools.DebugLine>> kvp in CustomDebugTools.blockHighlights)
         {
             if(!cubes) break;
             foreach(CustomDebugTools.DebugLine line in kvp.Value)

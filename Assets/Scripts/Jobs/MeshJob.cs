@@ -15,19 +15,22 @@ struct MeshJob : IJobParallelFor
 	[NativeDisableParallelForRestriction] public NativeArray<float3> normals;
 	[NativeDisableParallelForRestriction] public NativeArray<int> triangles;
 	[NativeDisableParallelForRestriction] public NativeArray<float4> colors;
+
+	[ReadOnly] public MapSquare mapSquare;
 	
-	[ReadOnly] public int cubeStart;
 	[ReadOnly] public DynamicBuffer<Block> blocks;
 	[ReadOnly] public NativeArray<Faces> faces;
 	[ReadOnly] public NativeArray<Topology> heightMap;
 
 	[ReadOnly] public JobUtil util;
 	[ReadOnly] public int cubeSize;
+	[ReadOnly] public int cubeSlice;
 
 	[ReadOnly] public CubeVertices baseVerts;
 
 	public void Execute(int i)
 	{
+		i += mapSquare.drawIndexOffset;
 		Block block = blocks[i];
 
 		//	Skip blocks that aren't exposed
@@ -37,7 +40,7 @@ struct MeshJob : IJobParallelFor
 		int sloped = BlockTypes.sloped[blocks[i].type];
 
 		//	Get block position for vertex offset
-		float3 positionInMesh = blocks[i].localPosition;
+		float3 positionInMesh = util.Unflatten(i, cubeSize);
 
 		//	Current local indices
 		int vertIndex = 0;
@@ -101,6 +104,14 @@ struct MeshJob : IJobParallelFor
 			vertIndex +=  4;
 		}
 
+		if(faces[i].debug > 0)
+		{
+			for(int v = 0; v < vertIndex; v++)
+			{
+				colors[v+vertOffset] = new float4(1, 0, 0, 1);
+			}
+			return;
+		}
 		//	Vertex colours
 		for(int v = 0; v < vertIndex; v++)
 		{
