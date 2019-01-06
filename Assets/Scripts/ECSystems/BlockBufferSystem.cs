@@ -7,7 +7,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using MyComponents;
 
-[UpdateAfter(typeof(CubeSystem))]
+[UpdateAfter(typeof(DrawBufferSystem))]
 public class BlockBufferSystem : ComponentSystem
 {
     EntityManager entityManager;

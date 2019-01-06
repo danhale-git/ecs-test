@@ -8,7 +8,7 @@ using Unity.Transforms;
 using MyComponents;
 
 [UpdateAfter(typeof(TerrainSystem))]
-public class CubeSystem : ComponentSystem
+public class DrawBufferSystem : ComponentSystem
 {
     EntityManager entityManager;
 
@@ -73,7 +73,6 @@ public class CubeSystem : ComponentSystem
 			{
 				Entity entity = entities[e];
 
-                //  Get adjacent map square entities
                 Entity[] adjacent;
                 
                 if(!GetAdjacentEntities(positions[e].Value, out adjacent))
@@ -83,6 +82,7 @@ public class CubeSystem : ComponentSystem
 						"GetAdjacentBuffers did not find adjacent squares at "+positions[e].Value
 						);
 				}
+
                 AdjacentSquares adjacentSquares = new AdjacentSquares{
                     right   	= adjacent[0],
                     left    	= adjacent[1],
@@ -96,10 +96,8 @@ public class CubeSystem : ComponentSystem
 
                 commandBuffer.AddComponent(entity, adjacentSquares);
 
-                //	Create cubes
-				MapSquare square 	= mapSquares[e];
-				DrawBuffer(entity, positions[e], mapSquares[e], adjacentSquares, commandBuffer);
-				mapSquares[e] 		= square;
+                //	Check top and bottom limits for drawing map square
+				DrawBuffer(entity, mapSquares[e], adjacentSquares, commandBuffer);
 
 				//  Set block buffer next
                 commandBuffer.RemoveComponent<Tags.SetDrawBuffer>(entity);
@@ -113,50 +111,28 @@ public class CubeSystem : ComponentSystem
     	chunks.Dispose();
     }
 
-	void DrawBuffer(Entity entity, Position position, MapSquare square, AdjacentSquares adjacent, EntityCommandBuffer commandBuffer)
+	void DrawBuffer(Entity entity, MapSquare mapSquare, AdjacentSquares adjacent, EntityCommandBuffer commandBuffer)
 	{
-		MapSquare[] adjacentSquares = new MapSquare[] {
-			entityManager.GetComponentData<MapSquare>(adjacent.right),
-			entityManager.GetComponentData<MapSquare>(adjacent.left),
-			entityManager.GetComponentData<MapSquare>(adjacent.front),
-			entityManager.GetComponentData<MapSquare>(adjacent.back)
-			};
-
-		int topBuffer 		= square.topBlock;
-		int bottomBuffer 	= square.bottomBlock;
-
-		//	Set height to draw
-		//int topCubeDraw 	= (int)math.floor((topBuffer + 1) / cubeSize);
-		//int bottomCubeDraw 	= (int)math.floor((bottomBuffer - 1) / cubeSize);
+		int topBuffer 		= mapSquare.topBlock;
+		int bottomBuffer 	= mapSquare.bottomBlock;
 
 		//	Find highest in 3x3 squares
 		for(int i = 0; i < 4; i++)
 		{
-			int adjacentTop 	= adjacentSquares[i].topBlock;
-			int adjacentBottom 	= adjacentSquares[i].bottomBlock;
+			MapSquare adjacentSquare = entityManager.GetComponentData<MapSquare>(adjacent[i]);
+			int adjacentTop 	= adjacentSquare.topBlock;
+			int adjacentBottom 	= adjacentSquare.bottomBlock;
 
 			if(adjacentTop > topBuffer) topBuffer = adjacentTop;
 			if(adjacentBottom < bottomBuffer) bottomBuffer = adjacentBottom;
-
-			/*if(square.position.x == -42 && square.position.z == 672 && i == 2)
-			{
-				Debug.Log(adjacentBottom+" < "+square.bottomBlock);
-				Debug.Log(bottomBuffer);
-				CustomDebugTools.SetMapSquareHighlight(
-					adjacent[i],
-					cubeSize,
-					Color.red,
-					adjacentSquares[i].topBlock,
-					adjacentSquares[i].bottomBlock);
-			} */
 		}
 
-		MapSquare mapSquare = square;
+		MapSquare updateSquare = mapSquare;
 
-		mapSquare.topDrawBuffer		= topBuffer + 1;
-		mapSquare.bottomDrawBuffer	= bottomBuffer - 1;
+		updateSquare.topDrawBuffer		= topBuffer + 1;
+		updateSquare.bottomDrawBuffer	= bottomBuffer - 1;
 
-		commandBuffer.SetComponent<MapSquare>(entity, mapSquare);
+		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
 	}
 
     bool GetAdjacentEntities(float3 centerPosition, out Entity[] adjacentSquares)
@@ -167,17 +143,6 @@ public class CubeSystem : ComponentSystem
 		float3[] directions = Util.CardinalDirections();
 		for(int i = 0; i < directions.Length; i++)
 			adjacentPositions[i] = centerPosition + (directions[i] * cubeSize);
-
-		/*float3[] adjacentPositions = new float3[8] {
-			centerPosition + (new float3( 1,  0,  0) * cubeSize),   //  right
-			centerPosition + (new float3(-1,  0,  0) * cubeSize),   //  left
-			centerPosition + (new float3( 0,  0,  1) * cubeSize),   //  front
-			centerPosition + (new float3( 0,  0, -1) * cubeSize),   //  back
-			centerPosition + (new float3( 1,  0,  1) * cubeSize),   //  front right
-			centerPosition + (new float3(-1,  0,  1) * cubeSize),   //  front left
-			centerPosition + (new float3( 1,  0, -1) * cubeSize),   //  back right
-			centerPosition + (new float3(-1,  0, -1) * cubeSize)	//  back left
-		};*/
 
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			getAdjacentEntitiesQuery,
