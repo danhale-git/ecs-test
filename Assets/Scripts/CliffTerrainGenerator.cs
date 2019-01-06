@@ -170,8 +170,8 @@ public class CliffTerrainGenerator
         cellMap.Dispose();
 
 		return new MapSquare{
-			topBlock = highestBlock,
-			bottomBlock 	= lowestBlock
+			topBlock    = highestBlock,
+			bottomBlock	= lowestBlock
 			};
     }
 

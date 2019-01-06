@@ -36,22 +36,26 @@ struct FacesJob : IJobParallelFor
 		//	Outside this cube
 		if(pos.x == cubeSize)
 		{
-			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBuffer, 0, blocks[blockIndex]);
+			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBlockBuffer, 0, blocks[blockIndex]);
+			if(adjacentIndex < 0) return -1;
 			return right[adjacentIndex].type == 0 ? 1 : 0;			
 		}
 		if(pos.x < 0)
 		{
-			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBuffer, 1, blocks[blockIndex]);
+			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBlockBuffer, 1, blocks[blockIndex]);
+			if(adjacentIndex < 0) return -1;
 			return left[adjacentIndex].type == 0 ? 1 : 0;	
 		}
 		if(pos.z == cubeSize)
 		{
-			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBuffer, 2, blocks[blockIndex]);
+			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBlockBuffer, 2, blocks[blockIndex]);
+			if(adjacentIndex < 0) return -1;
 			return front[adjacentIndex].type == 0 ? 1 : 0;	
 		}
 		if(pos.z < 0)
 		{
-			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBuffer, 3, blocks[blockIndex]);
+			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBlockBuffer, 3, blocks[blockIndex]);
+			if(adjacentIndex < 0) return -1;
 			return back[adjacentIndex].type == 0 ? 1 : 0;
 		}
 
@@ -78,12 +82,18 @@ struct FacesJob : IJobParallelFor
 
 	public void Execute(int i)
 	{
+		int debug = 0;
+
 		i += mapSquare.drawIndexOffset;
 		//	Local position in cube
 		float3 positionInMesh = util.Unflatten(i, cubeSize);
 
 		//	Skip air blocks
-		if(blocks[i].type == 0) return;
+		if(i >= blocks.Length){
+			debug = 1;
+			Debug.Log("BAD INDEX");
+		}
+		else if(blocks[i].type == 0) return;
 
 		int right = 0;
 		int left = 0;
@@ -110,9 +120,8 @@ struct FacesJob : IJobParallelFor
 		int up  	= FaceExposed(positionInMesh, new float3( 0,	1, 0), i);		//	up
 		int down  	= FaceExposed(positionInMesh, new float3( 0,   -1, 0), i);		//	down	
 
-		//int debug = 0;
 
-		/*if(right < 0 ||
+		if(right < 0 ||
 			left < 0 ||
 			forward < 0 ||
 			back < 0 ||
@@ -120,18 +129,18 @@ struct FacesJob : IJobParallelFor
 			down < 0)
 			{
 				debug = 1;
-			} */
+			} 
 
 		//	Get get exposed block faces
 		exposedFaces[i] = new Faces(
-			//debug,
+			debug,
 
-			right,
-			left,
-			up,
-			down,
-			forward,
-			back,
+			debug > 0 ? 1 : right,
+			debug > 0 ? 1 : left,
+			debug > 0 ? 1 : up,
+			debug > 0 ? 1 : down,
+			debug > 0 ? 1 : forward,
+			debug > 0 ? 1 : back,
 			0,														
 			0,
 			0

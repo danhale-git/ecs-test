@@ -11,9 +11,12 @@ namespace MyComponents
 	{
 		public int topBlock;
 		public int bottomBlock;
+		
+		public int topDrawBuffer;
+		public int bottomDrawBuffer;
 
-		public int topBuffer;
-		public int bottomBuffer;
+		public int topBlockBuffer;
+		public int bottomBlockBuffer;
 
 		public int blockGenerationArrayLength;
 
@@ -81,8 +84,9 @@ namespace MyComponents
 namespace Tags
 {
 	public struct GenerateTerrain : IComponentData { }
-	public struct CreateCubes : IComponentData { }
-	public struct SetBlocks : IComponentData { }
+	public struct SetDrawBuffer : IComponentData { }
+	public struct SetBlockBuffer : IComponentData { }
+	public struct GenerateBlocks : IComponentData { }
 	public struct DrawMesh : IComponentData { }
 
 	public struct InnerBuffer : IComponentData { }

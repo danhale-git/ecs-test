@@ -14,7 +14,7 @@ public class CubeSystem : ComponentSystem
 
 	int cubeSize;
 
-	EntityArchetypeQuery createCubesQuery;
+	EntityArchetypeQuery drawBufferQuery;
 	EntityArchetypeQuery getAdjacentEntitiesQuery;
 
 	ArchetypeChunkEntityType 				entityType;
@@ -26,11 +26,11 @@ public class CubeSystem : ComponentSystem
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
 		cubeSize = TerrainSettings.cubeSize;
 
-		createCubesQuery = new EntityArchetypeQuery
+		drawBufferQuery = new EntityArchetypeQuery
 		{
 			Any 	= Array.Empty<ComponentType>(),
             None  	= new ComponentType[] { typeof(Tags.OuterBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.CreateCubes) }
+			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetDrawBuffer) }
 		};
 
         getAdjacentEntitiesQuery = new EntityArchetypeQuery
@@ -48,15 +48,16 @@ public class CubeSystem : ComponentSystem
 		mapSquareType 	= GetArchetypeChunkComponentType<MapSquare>();
 
         NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-            createCubesQuery,
+            drawBufferQuery,
             Allocator.TempJob
             );
 
         if(chunks.Length == 0) chunks.Dispose();
-        else CreateCubes(chunks);
+        else
+			BufferMeshDrawing(chunks);
     }
 
-    void CreateCubes(NativeArray<ArchetypeChunk> chunks)
+    void BufferMeshDrawing(NativeArray<ArchetypeChunk> chunks)
     {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
@@ -97,22 +98,22 @@ public class CubeSystem : ComponentSystem
 
                 //	Create cubes
 				MapSquare square 	= mapSquares[e];
-				CreateCubes(entity, positions[e], mapSquares[e], adjacentSquares, commandBuffer);
+				DrawBuffer(entity, positions[e], mapSquares[e], adjacentSquares, commandBuffer);
 				mapSquares[e] 		= square;
 
-                //  Set block data next
-                commandBuffer.RemoveComponent<Tags.CreateCubes>(entity);
-                commandBuffer.AddComponent(entity, new Tags.SetBlocks());
+				//  Set block buffer next
+                commandBuffer.RemoveComponent<Tags.SetDrawBuffer>(entity);
+                commandBuffer.AddComponent(entity, new Tags.SetBlockBuffer());
             }
         }
     
-    commandBuffer.Playback(entityManager);
-	commandBuffer.Dispose();
+    	commandBuffer.Playback(entityManager);
+		commandBuffer.Dispose();
 
-    chunks.Dispose();
+    	chunks.Dispose();
     }
 
-	void CreateCubes(Entity entity, Position position, MapSquare square, AdjacentSquares adjacent, EntityCommandBuffer commandBuffer)
+	void DrawBuffer(Entity entity, Position position, MapSquare square, AdjacentSquares adjacent, EntityCommandBuffer commandBuffer)
 	{
 		MapSquare[] adjacentSquares = new MapSquare[] {
 			entityManager.GetComponentData<MapSquare>(adjacent.right),
@@ -150,41 +151,12 @@ public class CubeSystem : ComponentSystem
 			} */
 		}
 
-		
-
 		MapSquare mapSquare = square;
 
-		mapSquare.topBuffer 	= topBuffer 	+ 2;
-		mapSquare.bottomBuffer 	= bottomBuffer 	- 2;
-
-
-		mapSquare.topBlock		= mapSquare.topBlock + 1;
-		mapSquare.bottomBlock	= mapSquare.bottomBlock - 1;
-
-		int blockGenerationHeight = mapSquare.topBuffer - mapSquare.bottomBuffer;
-		mapSquare.blockGenerationArrayLength = blockGenerationHeight * (cubeSize*cubeSize);
-
-		int drawHeight = mapSquare.topBlock - mapSquare.bottomBlock;
-		mapSquare.drawArrayLength = drawHeight * (cubeSize * cubeSize);
-		mapSquare.drawIndexOffset = Util.Flatten(0, mapSquare.bottomBlock - mapSquare.bottomBuffer, 0, cubeSize);
+		mapSquare.topDrawBuffer		= topBuffer + 1;
+		mapSquare.bottomDrawBuffer	= bottomBuffer - 1;
 
 		commandBuffer.SetComponent<MapSquare>(entity, mapSquare);
-
-
-		Position pos = new Position
-		{
-			Value = new float3(position.Value.x, mapSquare.bottomBuffer, position.Value.z)
-		};
-
-		/*if(square.position.x == -42 && square.position.z == 672)
-		{
-			Debug.Log("arrayLength: "+mapSquare.blockGenerationArrayLength);
-			Debug.Log(bottomBuffer);
-			Debug.Log("height: "+(mapSquare.topBlock - mapSquare.bottomBlock));
-			CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, Color.green, mapSquare.topBuffer, mapSquare.bottomBuffer);
-		} */
-
-		commandBuffer.SetComponent<Position>(entity, pos);
 	}
 
     bool GetAdjacentEntities(float3 centerPosition, out Entity[] adjacentSquares)
