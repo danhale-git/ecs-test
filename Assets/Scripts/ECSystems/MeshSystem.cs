@@ -40,7 +40,7 @@ public class MeshSystem : ComponentSystem
 
 		squareQuery = new EntityArchetypeQuery{
 			Any 	= Array.Empty<ComponentType>(),
-			None  	= new ComponentType[] { typeof(Tags.InnerBuffer), typeof(Tags.OuterBuffer), typeof(Tags.GenerateBlocks) },
+			None  	= new ComponentType[] { typeof(Tags.InnerBuffer), typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer), typeof(Tags.GenerateBlocks) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.DrawMesh) }
 			};
 	}

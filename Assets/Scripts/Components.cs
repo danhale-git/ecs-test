@@ -11,7 +11,7 @@ namespace MyComponents
 	{
 		public int topBlock;
 		public int bottomBlock;
-		
+
 		public int topDrawBuffer;
 		public int bottomDrawBuffer;
 
@@ -90,5 +90,6 @@ namespace Tags
 	public struct DrawMesh : IComponentData { }
 
 	public struct InnerBuffer : IComponentData { }
-	public struct OuterBuffer : IComponentData { }
+	public struct OuterBuffer : IComponentData { }	
+	public struct EdgeBuffer : IComponentData { }
 }

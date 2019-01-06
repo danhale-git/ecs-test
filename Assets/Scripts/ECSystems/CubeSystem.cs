@@ -29,7 +29,7 @@ public class CubeSystem : ComponentSystem
 		drawBufferQuery = new EntityArchetypeQuery
 		{
 			Any 	= Array.Empty<ComponentType>(),
-            None  	= new ComponentType[] { typeof(Tags.OuterBuffer) },
+            None  	= new ComponentType[] { typeof(Tags.EdgeBuffer) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetDrawBuffer) }
 		};
 

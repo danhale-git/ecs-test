@@ -37,25 +37,25 @@ struct FacesJob : IJobParallelFor
 		if(pos.x == cubeSize)
 		{
 			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBlockBuffer, 0, blocks[blockIndex]);
-			if(adjacentIndex < 0) return -1;
+			//if(adjacentIndex < 0) return -1;
 			return right[adjacentIndex].type == 0 ? 1 : 0;			
 		}
 		if(pos.x < 0)
 		{
 			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBlockBuffer, 1, blocks[blockIndex]);
-			if(adjacentIndex < 0) return -1;
+			//if(adjacentIndex < 0) return -1;
 			return left[adjacentIndex].type == 0 ? 1 : 0;	
 		}
 		if(pos.z == cubeSize)
 		{
 			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBlockBuffer, 2, blocks[blockIndex]);
-			if(adjacentIndex < 0) return -1;
+			//if(adjacentIndex < 0) return -1;
 			return front[adjacentIndex].type == 0 ? 1 : 0;	
 		}
 		if(pos.z < 0)
 		{
 			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBlockBuffer, 3, blocks[blockIndex]);
-			if(adjacentIndex < 0) return -1;
+			//if(adjacentIndex < 0) return -1;
 			return back[adjacentIndex].type == 0 ? 1 : 0;
 		}
 

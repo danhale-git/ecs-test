@@ -28,7 +28,7 @@ public class BlockSystem : ComponentSystem
 		mapSquareQuery = new EntityArchetypeQuery
 		{
 			Any 	= Array.Empty<ComponentType>(),
-			None  	= new ComponentType[] { typeof(Tags.OuterBuffer) },
+			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateBlocks) }
 		};
 	}
@@ -107,8 +107,7 @@ public class BlockSystem : ComponentSystem
 		var blocks = new NativeArray<Block>(mapSquare.blockGenerationArrayLength, Allocator.TempJob);
 
 		//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.1f), mapSquare.topBlock, mapSquare.bottomBlock);
-		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize-1, new Color(1, 1, 1, 0.2f), mapSquare.topBlockBuffer, mapSquare.bottomBlockBuffer);
-
+		//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize-1, new Color(1, 1, 1, 0.2f), mapSquare.topBlockBuffer, mapSquare.bottomBlockBuffer);
 		//CustomDebugTools.MapSquareBufferDebug(entity);
 
 		/*for(int y = 0; y < mapSquare.height; y++)

@@ -28,7 +28,7 @@ public class BlockBufferSystem : ComponentSystem
 		blockBufferQuery = new EntityArchetypeQuery
 		{
 			Any 	= Array.Empty<ComponentType>(),
-            None  	= new ComponentType[] { typeof(Tags.OuterBuffer) },
+            None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetBlockBuffer) }
 		};
     }
@@ -103,8 +103,8 @@ public class BlockBufferSystem : ComponentSystem
 		{
 			int adjacentTop 	= adjacentSquares[i].topDrawBuffer;
 			int adjacentBottom 	= adjacentSquares[i].bottomDrawBuffer;
-			bool outerBuffer = entityManager.HasComponent<Tags.OuterBuffer>(adjacent[i]);
-			if(outerBuffer) continue;
+			//bool outerBuffer = entityManager.HasComponent<Tags.EdgeBuffer>(adjacent[i]);
+			//if(outerBuffer) continue;
 
 			if(adjacentTop > topBuffer) topBuffer = adjacentTop;
 			if(adjacentBottom < bottomBuffer) bottomBuffer = adjacentBottom;
