@@ -53,14 +53,18 @@ public class MapSquareSystem : ComponentSystem
 			};
 	}
 
+	Vector3 previousSquare;
 
 	//	Continually generate map squares
 	protected override void OnUpdate()
 	{
 		//	Generate map in radius around player
-		GenerateRadius(
-			Util.VoxelOwner(player.transform.position, cubeSize),
-			viewDistance);			
+		Vector3 currentSquare = Util.VoxelOwner(player.transform.position, cubeSize);
+		if(currentSquare != previousSquare)
+		{
+			previousSquare = currentSquare;
+			GenerateRadius(currentSquare, viewDistance);
+		}		
 	}
 
 	//	Create squares
@@ -123,7 +127,7 @@ public class MapSquareSystem : ComponentSystem
 		}
 		
 		CheckBuffer(entity, buffer, position);
-		//CustomDebugTools.MapBufferDebug(entity);
+		CustomDebugTools.MapBufferDebug(entity);
 		return 0;
 	}
 
