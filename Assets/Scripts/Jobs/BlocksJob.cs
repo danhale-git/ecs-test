@@ -21,7 +21,7 @@ struct BlocksJob : IJobParallelFor
 	{
 		float3 pos = util.Unflatten(i, cubeSize);
 
-		float3 position = pos + new float3(0, mapSquare.bottomBuffer, 0);
+		float3 position = pos + new float3(0, mapSquare.bottomBlockBuffer, 0);
 
 		int hMapIndex = util.Flatten2D((int)position.x, (int)position.z, cubeSize);
 		int type = 0;

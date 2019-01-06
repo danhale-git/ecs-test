@@ -7,7 +7,7 @@ using Unity.Transforms;
 using UnityEngine;
 using MyComponents;
 
-[UpdateAfter(typeof(CubeSystem))]
+[UpdateAfter(typeof(BlockBufferSystem))]
 public class BlockSystem : ComponentSystem
 {
 	EntityManager entityManager;
@@ -29,7 +29,7 @@ public class BlockSystem : ComponentSystem
 		{
 			Any 	= Array.Empty<ComponentType>(),
 			None  	= new ComponentType[] { typeof(Tags.OuterBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetBlocks) }
+			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateBlocks) }
 		};
 	}
 
@@ -88,7 +88,7 @@ public class BlockSystem : ComponentSystem
 					blockBuffer [b] = blocks[b];
 
 				//	Draw mesh next
-				commandBuffer.RemoveComponent<Tags.SetBlocks>(entity);
+				commandBuffer.RemoveComponent<Tags.GenerateBlocks>(entity);
                 commandBuffer.AddComponent(entity, new Tags.DrawMesh());
 
 				blocks.Dispose();
@@ -106,8 +106,10 @@ public class BlockSystem : ComponentSystem
 		//	Block data for all cubes in the map square
 		var blocks = new NativeArray<Block>(mapSquare.blockGenerationArrayLength, Allocator.TempJob);
 
-		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.1f), mapSquare.topBlock, mapSquare.bottomBlock);
-		//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f), mapSquare.topBuffer, mapSquare.bottomBuffer);
+		//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.1f), mapSquare.topBlock, mapSquare.bottomBlock);
+		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize-1, new Color(1, 1, 1, 0.2f), mapSquare.topBlockBuffer, mapSquare.bottomBlockBuffer);
+
+		//CustomDebugTools.MapSquareBufferDebug(entity);
 
 		/*for(int y = 0; y < mapSquare.height; y++)
 			for(int z = 0; z < cubeSize; z++)

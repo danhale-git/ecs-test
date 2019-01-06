@@ -81,7 +81,7 @@ public class TerrainSystem : ComponentSystem
 
                 //  Create cubes next
                 commandBuffer.RemoveComponent<Tags.GenerateTerrain>(entity);
-                commandBuffer.AddComponent(entity, new Tags.CreateCubes());
+                commandBuffer.AddComponent(entity, new Tags.SetDrawBuffer());
             }
         }
 

@@ -40,7 +40,7 @@ public class MeshSystem : ComponentSystem
 
 		squareQuery = new EntityArchetypeQuery{
 			Any 	= Array.Empty<ComponentType>(),
-			None  	= new ComponentType[] { typeof(Tags.InnerBuffer), typeof(Tags.OuterBuffer), typeof(Tags.SetBlocks) },
+			None  	= new ComponentType[] { typeof(Tags.InnerBuffer), typeof(Tags.OuterBuffer), typeof(Tags.GenerateBlocks) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.DrawMesh) }
 			};
 	}
@@ -99,7 +99,7 @@ public class MeshSystem : ComponentSystem
 					adjacentBlocks[i] = entityManager.GetBuffer<Block>(adjacentSquares[i]);
 
 				for(int i = 0; i < 8; i++)
-					adjacentLowestBlocks[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).bottomBuffer;
+					adjacentLowestBlocks[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).bottomBlockBuffer;
 
 
 				//	Adjacent height maps in 8 directions
