@@ -23,10 +23,9 @@ struct FacesJob : IJobParallelFor
 	[ReadOnly] public NativeArray<int> adjacentLowestBlocks;
 
 	[ReadOnly] public int cubeSize;
-	[ReadOnly] public int cubeSlice;	
+	[ReadOnly] public NativeArray<float3> directions;	
 	[ReadOnly] public JobUtil util;
 
-	//	TODO: use byte instead
 	//	Return 1 for exposed or 0 for hidden
 	int FaceExposed(float3 position, float3 direction, int blockIndex)
 	{
@@ -70,60 +69,33 @@ struct FacesJob : IJobParallelFor
 		);
 	}
 
-	void ProcessFace(float3 position, int blockIndex)
-	{
-
-	}
-
 	public void Execute(int i)
 	{
 		//	Offset to allow buffer of blocks
 		i += mapSquare.drawIndexOffset;
+		if(blocks[i].type == 0) return;
 
 		//	Local position in cube
 		float3 positionInMesh = util.Unflatten(i, cubeSize);
 
-		if(blocks[i].type == 0) return;
+		Faces faces = new Faces();
+		faces.up 	= FaceExposed(positionInMesh, new float3( 0,	1, 0), i);
+		faces.down 	= FaceExposed(positionInMesh, new float3( 0,   -1, 0), i);
 
-		int right = 0;
-		int left = 0;
-		int forward = 0;
-		int back = 0;
+		//	Right, left, front, back
+		for(int d = 0; d < 4; d++)
+		{
+			float2 slopeVerts = blocks[i].GetSlopeVerts(d);
+			if(slopeVerts.x >= 0 || slopeVerts.y >= 0)
+			{
+				faces[d] = FaceExposed(positionInMesh, directions[d], i);
+			}
+			else
+				faces[d] = 0;
+		}
+	
+		faces.SetCount();
 
-		//	The other if statement results in unnecessary faces. Needs code for handling slope edge faces
-		if(blocks[i].backRightSlope >= 0 || blocks[i].frontRightSlope >= 0)
-		//if(blocks[i].slopeType == 0)
-			right  	= FaceExposed(positionInMesh, new float3( 1,	0, 0), i);
-
-		if(blocks[i].backLeftSlope >= 0 || blocks[i].frontLeftSlope >= 0)
-		//if(blocks[i].slopeType == 0)
-			left  	= FaceExposed(positionInMesh, new float3(-1,	0, 0), i);	
-
-		if(blocks[i].frontRightSlope >= 0 || blocks[i].frontLeftSlope >= 0)		
-		//if(blocks[i].slopeType == 0)
-			forward = FaceExposed(positionInMesh, new float3( 0,	0, 1), i);	
-
-		if(blocks[i].backRightSlope >= 0 || blocks[i].backLeftSlope >= 0)
-		//if(blocks[i].slopeType == 0)
-			back  	= FaceExposed(positionInMesh, new float3( 0,	0,-1), i);		
-
-		int up  	= FaceExposed(positionInMesh, new float3( 0,	1, 0), i);		//	up
-		int down  	= FaceExposed(positionInMesh, new float3( 0,   -1, 0), i);		//	down	
-
-
-		//	Get get exposed block faces
-		exposedFaces[i] = new Faces(
-			right,
-			left,
-			up,
-			down,
-			forward,
-			back,
-			0,0,0
-			);
-
-
-
-
+		exposedFaces[i] = faces;
 	}
 }

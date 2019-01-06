@@ -1,21 +1,42 @@
 ﻿public struct Faces
 {
-	public readonly int right, left, up, down, forward, back;
-	public readonly int count;
+	public int right, left, up, down, front, back;
+	public int count;
 	public int faceIndex, triIndex, vertIndex;
-	public Faces(int right, int left, int up, int down, int forward, int back, int faceIndex, int triIndex, int vertIndex)
+	
+	public void SetCount()
 	{
-		this.right 		= right;
-		this.left 		= left;
-		this.up 		= up;
-		this.down 		= down;
-		this.forward 	= forward;
-		this.back 		= back;
+		count = right + left + up + down + front + back;
+	}
 
-		count = right + left + up + down + forward + back;
+	public int this[int side]
+	{
+		get
+		{
+			switch(side)
+			{
+				case 0: return right;
+				case 1: return left;
+				case 2: return front;
+				case 3: return back;
+				case 4: return up;
+				case 5: return down;
+				default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + side);
+			}
+		}
 
-		this.faceIndex 	= faceIndex;
-		this.triIndex 	= triIndex;
-		this.vertIndex 	= vertIndex;
+		set
+		{
+			switch(side)
+			{
+				case 0: right = value; break;
+				case 1: left = value; break;
+				case 2: front = value; break;
+				case 3: back = value; break;
+				case 4: up = value; break;
+				case 5: down = value; break;
+				default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + side);
+			}
+		}
 	}
 }

@@ -78,8 +78,6 @@ namespace MyComponents
 	[InternalBufferCapacity(0)]
 	public struct Block : IBufferElementData
 	{
-		public int debug;
-		
 		public int type;
 		public float3 localPosition;
 
@@ -90,6 +88,18 @@ namespace MyComponents
 
 		public SlopeType slopeType;
 		public SlopeFacing slopeFacing;
+
+		public float2 GetSlopeVerts(int side)
+		{
+			switch(side)
+			{
+				case 0: return new float2(frontRightSlope, backRightSlope);
+				case 1:	return new float2(frontLeftSlope, backLeftSlope);
+				case 2: return new float2(frontRightSlope, frontLeftSlope);
+				case 3: return new float2(backRightSlope, backLeftSlope);
+				default: throw new System.ArgumentOutOfRangeException("Index out of range 3: " + side);
+			}
+		}
 	}
 }
 

@@ -1,4 +1,6 @@
 ﻿using Unity.Mathematics;
+using Unity.Jobs;
+using Unity.Collections;
 
 public struct JobUtil
 {

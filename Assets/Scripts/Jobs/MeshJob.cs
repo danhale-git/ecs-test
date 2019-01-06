@@ -36,9 +36,6 @@ struct MeshJob : IJobParallelFor
 		//	Skip blocks that aren't exposed
 		if(faces[i].count == 0) return;
 
-		//	Mesh will have slopes if > 0
-		int sloped = BlockTypes.sloped[blocks[i].type];
-
 		//	Get block position for vertex offset
 		float3 positionInMesh = util.Unflatten(i, cubeSize);
 
@@ -52,127 +49,84 @@ struct MeshJob : IJobParallelFor
 
 		//	Vertices and Triangles for exposed sides
 		if(faces[i].right == 1)
-		{
-			Triangles(triIndex+triOffset, vertIndex+vertOffset);
-			triIndex += 6;
-			Vertices(0, positionInMesh, block, vertIndex+vertOffset, sloped);
-			vertIndex +=  4;
-		}
+			DrawFace(0, triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, ref triIndex, ref vertIndex);
 		if(faces[i].left == 1)
-		{
-			Triangles(triIndex+triOffset, vertIndex+vertOffset);
-			triIndex += 6;
-			Vertices(1, positionInMesh, block, vertIndex+vertOffset, sloped);
-			vertIndex +=  4;
-		}
-		if(faces[i].up == 1)
-		{
-			if(block.slopeType != SlopeType.NOTSLOPED)
-			{
-				SlopedTriangles(triIndex+triOffset, vertIndex+vertOffset, block);
-				triIndex += 6;
-				SlopedVertices(vertIndex+vertOffset, positionInMesh, block);
-				vertIndex += 6;
-			}
-			else
-			{
-				Triangles(triIndex+triOffset, vertIndex+vertOffset);
-				triIndex += 6;
-				Vertices(2, positionInMesh, block, vertIndex+vertOffset, sloped);
-				vertIndex +=  4;
-			}
-		}
-		if(faces[i].down == 1)
-		{
-			Triangles(triIndex+triOffset, vertIndex+vertOffset);
-			triIndex += 6;
-			Vertices(3, positionInMesh, block, vertIndex+vertOffset, sloped);
-			vertIndex +=  4;
-		}
-		if(faces[i].forward == 1)
-		{
-			Triangles(triIndex+triOffset, vertIndex+vertOffset);
-			triIndex += 6;
-			Vertices(4, positionInMesh, block, vertIndex+vertOffset, sloped);
-			vertIndex +=  4;
-		}
+			DrawFace(1, triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, ref triIndex, ref vertIndex);
+		if(faces[i].front == 1)
+			DrawFace(2, triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, ref triIndex, ref vertIndex);
 		if(faces[i].back == 1)
-		{
-			Triangles(triIndex+triOffset, vertIndex+vertOffset);
-			triIndex += 6;
-			Vertices(5, positionInMesh, block, vertIndex+vertOffset, sloped);
-			vertIndex +=  4;
-		}
+			DrawFace(3, triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, ref triIndex, ref vertIndex);
+		if(faces[i].up == 1)
+			if(block.slopeType != SlopeType.NOTSLOPED)	//	Sloped block
+				DrawSlope(triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, ref triIndex, ref vertIndex);
+			else
+				DrawFace(4, triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, ref triIndex, ref vertIndex);
+		if(faces[i].down == 1)
+			DrawFace(5, triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, ref triIndex, ref vertIndex);
 
 		//	Vertex colours
 		for(int v = 0; v < vertIndex; v++)
-		{
 			colors[v+vertOffset] = BlockTypes.color[blocks[i].type];
-		}	 
+	}
+
+	void DrawFace(int face, int triOffset, int vertOffset, Block block, float3 position, ref int triIndex, ref int vertIndex)
+	{
+		Triangles(triOffset, vertOffset);
+		triIndex += 6;
+		Vertices(face, position, block, vertOffset);
+		vertIndex +=  4;
+	}
+
+	void DrawSlope(int triOffset, int vertOffset, Block block, float3 position, ref int triIndex, ref int vertIndex)
+	{
+		SlopedTriangles(triOffset, vertOffset, block);
+		triIndex += 6;
+		SlopedVertices(vertOffset, position, block);
+		vertIndex += 6;
 	}
 
 	//	Vertices for given side
-	void Vertices(int side, float3 position, Block block, int index, int sloped)
-	{
-		float3 frontRight;
-		float3 backRight;
-		float3 frontLeft;
-		float3 backLeft;
-
-		//	Terrain is a slope and block type is sloped
-		if(block.slopeType != SlopeType.NOTSLOPED && sloped > 0)
-		{
-			frontRight 	= new float3(0, block.frontRightSlope, 0);
-			backRight 	= new float3(0, block.backRightSlope, 0);
-			frontLeft 	= new float3(0, block.frontLeftSlope, 0);
-			backLeft 	= new float3(0, block.backLeftSlope, 0);
-		}
-		else
-		{
-			frontRight = float3.zero;
-			backRight = float3.zero;
-			backLeft = float3.zero;
-			frontLeft = float3.zero;
-		}
-		
+	void Vertices(int side, float3 position, Block block, int index)
+	{	
 		switch(side)
 		{
 			case 0:	//	Right
-				vertices[index+0] = baseVerts[5]+position;//+frontRight+position;
-				vertices[index+1] = baseVerts[6]+position;//+backRight+position;
+				vertices[index+0] = baseVerts[5]+position;
+				vertices[index+1] = baseVerts[6]+position;
 				vertices[index+2] = baseVerts[2]+position;
 				vertices[index+3] = baseVerts[1]+position;
 				break;
 			case 1:	//	Left
-				vertices[index+0] = baseVerts[7]+position;//+backLeft+position;
-				vertices[index+1] = baseVerts[4]+position;//+frontLeft+position;
+				vertices[index+0] = baseVerts[7]+position;
+				vertices[index+1] = baseVerts[4]+position;
 				vertices[index+2] = baseVerts[0]+position;
 				vertices[index+3] = baseVerts[3]+position;
 				break;
-			case 2:	//	Top
-				vertices[index+0] = baseVerts[7]+position;//+backLeft+position;
-				vertices[index+1] = baseVerts[6]+position;//+backRight+position;
-				vertices[index+2] = baseVerts[5]+position;//+frontRight+position;
-				vertices[index+3] = baseVerts[4]+position;//+frontLeft+position;
+			case 2:	//	Front
+				vertices[index+0] = baseVerts[4]+position;
+				vertices[index+1] = baseVerts[5]+position;
+				vertices[index+2] = baseVerts[1]+position;
+				vertices[index+3] = baseVerts[0]+position;
 				break;
-			case 3:	//	Bottom
+			case 3:	//	Back
+				vertices[index+0] = baseVerts[6]+position;
+				vertices[index+1] = baseVerts[7]+position;
+				vertices[index+2] = baseVerts[3]+position;
+				vertices[index+3] = baseVerts[2]+position;
+				break;
+			case 4:	//	Top
+				vertices[index+0] = baseVerts[7]+position;
+				vertices[index+1] = baseVerts[6]+position;
+				vertices[index+2] = baseVerts[5]+position;
+				vertices[index+3] = baseVerts[4]+position;
+				break;
+			case 5:	//	Bottom
 				vertices[index+0] = baseVerts[0]+position;
 				vertices[index+1] = baseVerts[1]+position;
 				vertices[index+2] = baseVerts[2]+position;
 				vertices[index+3] = baseVerts[3]+position;
 				break;
-			case 4:	//	Front
-				vertices[index+0] = baseVerts[4]+position;//+frontLeft+position;
-				vertices[index+1] = baseVerts[5]+position;//+frontRight+position;
-				vertices[index+2] = baseVerts[1]+position;
-				vertices[index+3] = baseVerts[0]+position;
-				break;
-			case 5:	//	Back
-				vertices[index+0] = baseVerts[6]+position;//+backRight+position;
-				vertices[index+1] = baseVerts[7]+position;//+backLeft+position;
-				vertices[index+2] = baseVerts[3]+position;
-				vertices[index+3] = baseVerts[2]+position;
-				break;
+			
 			default: throw new System.ArgumentOutOfRangeException("Index out of range 5: " + side);
 		}
 	}
@@ -185,17 +139,6 @@ struct MeshJob : IJobParallelFor
 		triangles[index+3] = 3 + vertIndex; 
 		triangles[index+4] = 2 + vertIndex; 
 		triangles[index+5] = 1 + vertIndex;
-	}
-
-	void GetSlopeVerts(int index, float3 position, Block block)
-	{
-		vertices[index+0] = baseVerts[7]+new float3(0, block.backLeftSlope, 0)+position;
-		vertices[index+1] = baseVerts[6]+new float3(0, block.backRightSlope, 0)+position;
-		vertices[index+2] = baseVerts[5]+new float3(0, block.frontRightSlope, 0)+position;
-		vertices[index+3] = baseVerts[4]+new float3(0, block.frontLeftSlope, 0)+position;
-		vertices[index+4] = baseVerts[4]+new float3(0, block.frontLeftSlope, 0)+position;
-		vertices[index+5] = baseVerts[4]+new float3(0, block.frontLeftSlope, 0)+position;
-
 	}
 
 	//	Triangles are always the same set offset to vertex index
