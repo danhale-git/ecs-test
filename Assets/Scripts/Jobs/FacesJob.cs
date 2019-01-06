@@ -70,6 +70,11 @@ struct FacesJob : IJobParallelFor
 		);
 	}
 
+	void ProcessFace(float3 position, int blockIndex)
+	{
+
+	}
+
 	public void Execute(int i)
 	{
 		//	Offset to allow buffer of blocks
@@ -86,20 +91,20 @@ struct FacesJob : IJobParallelFor
 		int back = 0;
 
 		//	The other if statement results in unnecessary faces. Needs code for handling slope edge faces
-		//if(blocks[blockIndex].backRightSlope >= 0 || blocks[blockIndex].frontRightSlope >= 0)
-		//if(blocks[blockIndex].slopeType == 0)
+		if(blocks[i].backRightSlope >= 0 || blocks[i].frontRightSlope >= 0)
+		//if(blocks[i].slopeType == 0)
 			right  	= FaceExposed(positionInMesh, new float3( 1,	0, 0), i);
 
-		//if(blocks[blockIndex].backLeftSlope >= 0 || blocks[blockIndex].frontLeftSlope >= 0)
-		//if(blocks[blockIndex].slopeType == 0)
+		if(blocks[i].backLeftSlope >= 0 || blocks[i].frontLeftSlope >= 0)
+		//if(blocks[i].slopeType == 0)
 			left  	= FaceExposed(positionInMesh, new float3(-1,	0, 0), i);	
 
-		//if(blocks[blockIndex].frontRightSlope >= 0 || blocks[blockIndex].frontLeftSlope >= 0)		
-		//if(blocks[blockIndex].slopeType == 0)
+		if(blocks[i].frontRightSlope >= 0 || blocks[i].frontLeftSlope >= 0)		
+		//if(blocks[i].slopeType == 0)
 			forward = FaceExposed(positionInMesh, new float3( 0,	0, 1), i);	
 
-		//if(blocks[blockIndex].backRightSlope >= 0 || blocks[blockIndex].backLeftSlope >= 0)
-		//if(blocks[blockIndex].slopeType == 0)
+		if(blocks[i].backRightSlope >= 0 || blocks[i].backLeftSlope >= 0)
+		//if(blocks[i].slopeType == 0)
 			back  	= FaceExposed(positionInMesh, new float3( 0,	0,-1), i);		
 
 		int up  	= FaceExposed(positionInMesh, new float3( 0,	1, 0), i);		//	up
@@ -114,9 +119,7 @@ struct FacesJob : IJobParallelFor
 			down,
 			forward,
 			back,
-			0,														
-			0,
-			0
+			0,0,0
 			);
 
 

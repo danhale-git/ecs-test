@@ -109,7 +109,7 @@ public class MeshSystem : ComponentSystem
 					adjacentHeightMaps[i] = entityManager.GetBuffer<Topology>(adjacentSquares[i]);
 
 				//	Vertex offsets for 4 top vertices of each block (slopes)
-				//GetSlopes(heightAccessor[e].ToNativeArray(), adjacentHeightMaps, blockAccessor[e], positions[e]);
+				GetSlopes(squares[e], heightAccessor[e].ToNativeArray(), adjacentHeightMaps, blockAccessor[e], positions[e]);
 
 				//	Check block face exposure
 				int faceCount;
@@ -221,7 +221,7 @@ public class MeshSystem : ComponentSystem
 	}
 
 	//	Generate list of Y offsets for top 4 cube vertices
-	void GetSlopes(NativeArray<Topology> heightMap, DynamicBuffer<Topology>[] adjacentHeightMaps, DynamicBuffer<Block> blocks, Position squarePosition)
+	void GetSlopes(MapSquare mapSquare, NativeArray<Topology> heightMap, DynamicBuffer<Topology>[] adjacentHeightMaps, DynamicBuffer<Block> blocks, Position squarePosition)
 	{
 
 		//int slopeCount = 0;
@@ -234,7 +234,7 @@ public class MeshSystem : ComponentSystem
 			float3 pos = Util.Unflatten2D(h, cubeSize);
 
 			//	DEBUGDEBUGDEBUGE
-			int blockIndex = 0;// Util.BlockIndex(new float3(pos.x, height, pos.z), cubeSize);
+			int blockIndex = Util.Flatten(pos.x, height - mapSquare.bottomBlockBuffer, pos.z, cubeSize);
 			Block block = blocks[blockIndex];
 
 			//	Block type is not sloped

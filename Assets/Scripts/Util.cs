@@ -8,6 +8,10 @@ public static class Util
     {
         return ((z * width) + x) + (y * (width * width));
     }
+    public static int Flatten(float x, float y, float z, int width)
+    {
+        return (((int)z * width) + (int)x) + ((int)y * (width * width));
+    }
 
     public static float3 Unflatten(int index, int width)
     {
