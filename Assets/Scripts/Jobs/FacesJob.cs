@@ -32,30 +32,7 @@ struct FacesJob : IJobParallelFor
 		//	Adjacent position
 		int3 pos = (int3)(position + direction);
 
-		//	Outside this cube
-		if(pos.x == cubeSize)
-		{
-			int adjacentIndex = AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 0);
-			return BlockTypes.visible[right[adjacentIndex].type] == 0 ? 1 : 0;			
-		}
-		if(pos.x < 0)
-		{
-			int adjacentIndex = AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 1);
-			return BlockTypes.visible[left[adjacentIndex].type] == 0 ? 1 : 0;	
-		}
-		if(pos.z == cubeSize)
-		{
-			int adjacentIndex = AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 2);
-			return BlockTypes.visible[front[adjacentIndex].type] == 0 ? 1 : 0;	
-		}
-		if(pos.z < 0)
-		{
-			int adjacentIndex = AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 3);
-			return BlockTypes.visible[back[adjacentIndex].type] == 0 ? 1 : 0;
-		}
-
-		//	Inside this cube
-		return blocks[util.Flatten(pos.x, pos.y, pos.z, cubeSize)].type == 0 ? 1 : 0;
+		return BlockTypes.translucent[GetBlock(pos).type];
 	}
 
 	int AdjacentBlockIndex(float3 pos, int lowest, int adjacentSquareIndex)
@@ -69,10 +46,23 @@ struct FacesJob : IJobParallelFor
 		);
 	}
 
+	Block GetBlock(float3 pos)
+	{
+		float3 edge = Util.EdgeOverlap(pos, cubeSize);
+
+		if		(edge.x > 0) return right[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 0)];
+		else if	(edge.x < 0) return left [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 1)];
+		else if	(edge.z > 0) return front[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 2)];
+		else if	(edge.z < 0) return back [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 3)];
+		//if(edge.x == 0 && edge.y == 0)
+		else		    	return blocks[util.Flatten(pos.x, pos.y, pos.z, cubeSize)];
+	}
+
 	public void Execute(int i)
 	{
 		//	Offset to allow buffer of blocks
 		i += mapSquare.drawIndexOffset;
+
 		if(blocks[i].type == 0) return;
 
 		//	Local position in cube
@@ -83,15 +73,27 @@ struct FacesJob : IJobParallelFor
 		faces.down 	= FaceExposed(positionInMesh, new float3( 0,   -1, 0), i);
 
 		//	Right, left, front, back
-		for(int d = 0; d < 4; d++)
+		if(blocks[i].slopeType == SlopeType.NOTSLOPED)
 		{
-			float2 slopeVerts = blocks[i].GetSlopeVerts(d);
-			if(slopeVerts.x >= 0 || slopeVerts.y >= 0)
+			for(int d = 0; d < 4; d++)
+				faces[d] = BlockTypes.translucent[GetBlock(positionInMesh + directions[d]).type];
+		}
+		else
+		{
+			for(int d = 0; d < 4; d++)
 			{
-				faces[d] = FaceExposed(positionInMesh, directions[d], i);
+				Block adjacentBlock = GetBlock(positionInMesh + directions[d]);
+				int exposed = BlockTypes.translucent[adjacentBlock.type];
+
+				float2 slopeVerts = blocks[i].GetSlopeVerts(d);
+
+				if(slopeVerts.x + slopeVerts.y == -1)
+				{
+					faces[d] = adjacentBlock.slopeType != SlopeType.NOTSLOPED ? 0 : 2;
+				}
+				else
+					faces[d] = 0;
 			}
-			else
-				faces[d] = 0;
 		}
 	
 		faces.SetCount();

@@ -72,8 +72,8 @@ struct MeshJob : IJobParallelFor
 	void DrawFace(int face, int triOffset, int vertOffset, Block block, float3 position, ref int triIndex, ref int vertIndex)
 	{
 		Triangles(triOffset, vertOffset);
-		triIndex += 6;
 		Vertices(face, position, block, vertOffset);
+		triIndex += 6;
 		vertIndex +=  4;
 	}
 

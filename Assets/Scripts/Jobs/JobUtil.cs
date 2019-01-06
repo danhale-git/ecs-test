@@ -9,6 +9,11 @@ public struct JobUtil
         return ((z * width) + x) + (y * (width * width));
     }
 
+    public int Flatten(float x, float y, float z, int width)
+    {
+        return (((int)z * width) + (int)x) + ((int)y * (width * width));
+    }
+
     public float3 Unflatten(int index, int width)
     {
         int y = (int)math.floor(index / (width * width));

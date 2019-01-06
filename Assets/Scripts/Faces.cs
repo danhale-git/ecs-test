@@ -1,12 +1,19 @@
 ﻿public struct Faces
 {
+	public enum Exp { HIDDEN, FULL, HALF }
+
 	public int right, left, up, down, front, back;
 	public int count;
 	public int faceIndex, triIndex, vertIndex;
 	
 	public void SetCount()
 	{
-		count = right + left + up + down + front + back;
+		if(right	> 0) count++;
+		if(left		> 0) count++;
+		if(up		> 0) count++;
+		if(down		> 0) count++;
+		if(front	> 0) count++;
+		if(back		> 0) count++;
 	}
 
 	public int this[int side]

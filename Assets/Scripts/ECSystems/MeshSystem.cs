@@ -318,13 +318,25 @@ public class MeshSystem : ComponentSystem
 
 				exposedFaces[i] = blockFaces;
 
-				//	Count verts
-				vertCount += count * 4;
+				for(int f = 0; f < 6; f++)
+				{
+					switch((Faces.Exp)blockFaces[f])
+					{
+						case Faces.Exp.HIDDEN: break;
+
+						case Faces.Exp.FULL:
+							vertCount += 4;
+							triCount  += 6;
+							break;
+
+						case Faces.Exp.HALF:
+							vertCount 	+= 3;
+							triCount 	+= 3;
+							break;
+					}
+				} 
 				//	Slopes always need two extra verts
 				if(blocks[i].slopeType != SlopeType.NOTSLOPED) vertCount += 2;
-
-				//	Count tris because they have an arbitrary ratio to verts
-				triCount += count * 6;
 
 				faceCount += count;
 			}

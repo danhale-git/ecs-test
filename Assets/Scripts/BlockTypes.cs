@@ -19,11 +19,11 @@ public static class BlockTypes
 		1
 	};
 
-	public static readonly int[] visible = new int[]
+	public static readonly int[] translucent = new int[]
 	{
+		1,
 		0,
-		1,
-		1,
-		1
+		0,
+		0
 	};
 }
