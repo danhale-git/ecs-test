@@ -7,6 +7,7 @@ using Unity.Transforms;
 using Unity.Rendering;
 using MyComponents;
 
+//	Create map squares based on player position
 public class MapSquareSystem : ComponentSystem
 {
 	EntityManager entityManager;

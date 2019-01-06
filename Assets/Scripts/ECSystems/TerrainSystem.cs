@@ -7,6 +7,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using MyComponents;
 
+//  Generate 2D terrain data from coherent noise
 [UpdateAfter(typeof(MapSquareSystem))]
 public class TerrainSystem : ComponentSystem
 {
@@ -56,7 +57,6 @@ public class TerrainSystem : ComponentSystem
 
     void GenerateTerrain(NativeArray<ArchetypeChunk> chunks)
     {
-        Debug.Log("- generate terrain");
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
         for(int c = 0; c < chunks.Length; c++)

@@ -7,6 +7,7 @@ using Unity.Transforms;
 using UnityEngine;
 using MyComponents;
 
+//	Generate 3D block data from 2D terrain data
 [UpdateAfter(typeof(BlockBufferSystem))]
 public class BlockSystem : ComponentSystem
 {
@@ -14,9 +15,11 @@ public class BlockSystem : ComponentSystem
 
 	int cubeSize;
 
-	ArchetypeChunkEntityType 			entityType;
-	ArchetypeChunkBufferType<Block> 	blocksType;
-	ArchetypeChunkBufferType<Topology> 	heightmapType;
+	ArchetypeChunkEntityType 				entityType;
+	ArchetypeChunkComponentType<MapSquare>	mapSquareType;
+	ArchetypeChunkBufferType<Block> 		blocksType;
+	ArchetypeChunkBufferType<Topology> 		heightmapType;
+	
 
 	EntityArchetypeQuery mapSquareQuery;
 
@@ -36,6 +39,7 @@ public class BlockSystem : ComponentSystem
 	protected override void OnUpdate()
 	{
 		entityType 		= GetArchetypeChunkEntityType();
+		mapSquareType	= GetArchetypeChunkComponentType<MapSquare>();
 
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
         heightmapType = GetArchetypeChunkBufferType<Topology>();
@@ -58,6 +62,7 @@ public class BlockSystem : ComponentSystem
 			ArchetypeChunk chunk = chunks[c];
 
 			NativeArray<Entity> entities 				= chunk.GetNativeArray(entityType);
+			NativeArray<MapSquare> mapSquares			= chunk.GetNativeArray(mapSquareType);
 			BufferAccessor<Block> blockAccessor 		= chunk.GetBufferAccessor(blocksType);
             BufferAccessor<Topology> heightmapAccessor 	= chunk.GetBufferAccessor(heightmapType);
 			
@@ -69,17 +74,13 @@ public class BlockSystem : ComponentSystem
 
 				MapSquare mapSquare = entityManager.GetComponentData<MapSquare>(entity);
 
-				commandBuffer.SetComponent<MapSquare>(entity, mapSquare);
-
 				//	Resize buffer to size of (blocks in a cube) * (number of cubes)
 				blockBuffer.ResizeUninitialized(mapSquare.blockGenerationArrayLength);
 
 				//	Generate block data from height map
 				NativeArray<Block> blocks = GetBlocks(
-					commandBuffer,
 					entities[e],
-					1,
-					mapSquare,
+					mapSquares[e],
 					heightmap.ToNativeArray()
 					);
 
@@ -101,30 +102,10 @@ public class BlockSystem : ComponentSystem
 		chunks.Dispose();
 	}
 
-	NativeArray<Block> GetBlocks(EntityCommandBuffer commandBuffer, Entity entity, int batchSize, MapSquare mapSquare, NativeArray<Topology> heightMap)
+	NativeArray<Block> GetBlocks(Entity entity, MapSquare mapSquare, NativeArray<Topology> heightMap)
 	{
 		//	Block data for all cubes in the map square
 		var blocks = new NativeArray<Block>(mapSquare.blockGenerationArrayLength, Allocator.TempJob);
-
-		//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.1f), mapSquare.topBlock, mapSquare.bottomBlock);
-		//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize-1, new Color(1, 1, 1, 0.2f), mapSquare.topBlockBuffer, mapSquare.bottomBlockBuffer);
-		//CustomDebugTools.MapSquareBufferDebug(entity);
-
-		/*for(int y = 0; y < mapSquare.height; y++)
-			for(int z = 0; z < cubeSize; z++)
-				for(int x = 0; x < cubeSize; x++)
-				{
-					blocks[Util.Flatten2(x, y, z, cubeSize)] = new Block{
-					type = 1,
-					localPosition = float3.zero//Util.Unflatten2(i, cubeSize)
-					};
-				} */
-
-		/*for(int i = 0; i < blocks.Length; i++)
-			blocks[i] = new Block{
-				type = 1,
-				localPosition = float3.zero//Util.Unflatten2(i, cubeSize)
-			};  */
 
 		BlocksJob job = new BlocksJob{
 			blocks = blocks,
@@ -134,7 +115,7 @@ public class BlockSystem : ComponentSystem
 			util = new JobUtil()
 		};
 		
-		job.Schedule(mapSquare.blockGenerationArrayLength, batchSize).Complete(); 
+		job.Schedule(mapSquare.blockGenerationArrayLength, 1).Complete(); 
 
 		return blocks;
 	}

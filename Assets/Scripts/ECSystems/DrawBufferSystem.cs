@@ -7,6 +7,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using MyComponents;
 
+//	Get y buffer for mesh drawing based on adjacent top/bottom blocks
 [UpdateAfter(typeof(TerrainSystem))]
 public class DrawBufferSystem : ComponentSystem
 {
@@ -75,6 +76,7 @@ public class DrawBufferSystem : ComponentSystem
 
                 Entity[] adjacent;
                 
+				//	Get 8 adjacent map squares
                 if(!GetAdjacentEntities(positions[e].Value, out adjacent))
                 {
 					//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize -1, Color.red);
@@ -116,10 +118,11 @@ public class DrawBufferSystem : ComponentSystem
 		int topBuffer 		= mapSquare.topBlock;
 		int bottomBuffer 	= mapSquare.bottomBlock;
 
-		//	Find highest in 3x3 squares
+		//	Find highest/lowest in 3x3 squares
 		for(int i = 0; i < 4; i++)
 		{
 			MapSquare adjacentSquare = entityManager.GetComponentData<MapSquare>(adjacent[i]);
+
 			int adjacentTop 	= adjacentSquare.topBlock;
 			int adjacentBottom 	= adjacentSquare.bottomBlock;
 
@@ -129,6 +132,7 @@ public class DrawBufferSystem : ComponentSystem
 
 		MapSquare updateSquare = mapSquare;
 
+		//	Top and bottom block levels to draw mesh
 		updateSquare.topDrawBuffer		= topBuffer + 1;
 		updateSquare.bottomDrawBuffer	= bottomBuffer - 1;
 
@@ -147,7 +151,7 @@ public class DrawBufferSystem : ComponentSystem
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			getAdjacentEntitiesQuery,
 			Allocator.TempJob
-			);
+		);
 
 		if(chunks.Length == 0)
 		{

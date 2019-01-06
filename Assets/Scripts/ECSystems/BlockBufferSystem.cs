@@ -7,6 +7,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using MyComponents;
 
+//	Get y buffer for block generation based on adjacent drawing buffer, calculate array lengths and offsets for block and mesh generation
 [UpdateAfter(typeof(DrawBufferSystem))]
 public class BlockBufferSystem : ComponentSystem
 {
@@ -16,9 +17,10 @@ public class BlockBufferSystem : ComponentSystem
 
 	EntityArchetypeQuery blockBufferQuery;
 
-	ArchetypeChunkEntityType 				entityType;
-    ArchetypeChunkComponentType<Position> 	positionType;
-	ArchetypeChunkComponentType<MapSquare> 	mapSquareType;
+	ArchetypeChunkEntityType 						entityType;
+    ArchetypeChunkComponentType<Position> 			positionType;
+	ArchetypeChunkComponentType<MapSquare> 			mapSquareType;
+	ArchetypeChunkComponentType<AdjacentSquares> 	adjacentType;
 
     protected override void OnCreateManager()
     {
@@ -38,6 +40,7 @@ public class BlockBufferSystem : ComponentSystem
         entityType 		= GetArchetypeChunkEntityType();
         positionType 	= GetArchetypeChunkComponentType<Position>();
 		mapSquareType 	= GetArchetypeChunkComponentType<MapSquare>();
+		adjacentType 	= GetArchetypeChunkComponentType<AdjacentSquares>();
 
         NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
             blockBufferQuery,
@@ -57,18 +60,17 @@ public class BlockBufferSystem : ComponentSystem
 		{
 			ArchetypeChunk chunk = chunks[c];
 
-			NativeArray<Entity> 	entities    = chunk.GetNativeArray(entityType);
-            NativeArray<Position> 	positions 	= chunk.GetNativeArray(positionType);
-			NativeArray<MapSquare> 	mapSquares 	= chunk.GetNativeArray(mapSquareType);
+			NativeArray<Entity> 	entities    	= chunk.GetNativeArray(entityType);
+            NativeArray<Position> 	positions 		= chunk.GetNativeArray(positionType);
+			NativeArray<MapSquare> 	mapSquares 		= chunk.GetNativeArray(mapSquareType);
+			NativeArray<AdjacentSquares> adjacent 	= chunk.GetNativeArray(adjacentType);
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity = entities[e];
 
-				AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(entity);
-
                 //  Get adjacent map square entities
-				BlockBuffer(entity, positions[e], mapSquares[e], adjacentSquares, commandBuffer);
+				BlockBuffer(entity, positions[e], mapSquares[e], adjacent[e], commandBuffer);
 
 				//  Set block buffer next
                 commandBuffer.RemoveComponent<Tags.SetBlockBuffer>(entity);
@@ -82,65 +84,42 @@ public class BlockBufferSystem : ComponentSystem
     	chunks.Dispose();
     }
 
-	void BlockBuffer(Entity entity, Position position, MapSquare square, AdjacentSquares adjacent, EntityCommandBuffer commandBuffer)
+	void BlockBuffer(Entity entity, Position position, MapSquare mapSquare, AdjacentSquares adjacent, EntityCommandBuffer commandBuffer)
 	{
-		MapSquare[] adjacentSquares = new MapSquare[] {
-			entityManager.GetComponentData<MapSquare>(adjacent.right),
-			entityManager.GetComponentData<MapSquare>(adjacent.left),
-			entityManager.GetComponentData<MapSquare>(adjacent.front),
-			entityManager.GetComponentData<MapSquare>(adjacent.back)
-			};
+		int topBuffer 		= mapSquare.topBlock;
+		int bottomBuffer 	= mapSquare.bottomBlock;
 
-		int topBuffer 		= square.topBlock;
-		int bottomBuffer 	= square.bottomBlock;
-
-		//	Set height to draw
-		//int topCubeDraw 	= (int)math.floor((topBuffer + 1) / cubeSize);
-		//int bottomCubeDraw 	= (int)math.floor((bottomBuffer - 1) / cubeSize);
-
-		//	Find highest in 3x3 squares
+		//	Find highest/lowest in 3x3 squares
 		for(int i = 0; i < 4; i++)
 		{
-			int adjacentTop 	= adjacentSquares[i].topDrawBuffer;
-			int adjacentBottom 	= adjacentSquares[i].bottomDrawBuffer;
-			//bool outerBuffer = entityManager.HasComponent<Tags.EdgeBuffer>(adjacent[i]);
-			//if(outerBuffer) continue;
+			MapSquare adjacentSquare = entityManager.GetComponentData<MapSquare>(adjacent[i]);
+			int adjacentTop 	= adjacentSquare.topDrawBuffer;
+			int adjacentBottom 	= adjacentSquare.bottomDrawBuffer;
 
 			if(adjacentTop > topBuffer) topBuffer = adjacentTop;
 			if(adjacentBottom < bottomBuffer) bottomBuffer = adjacentBottom;
-
-			/*if(square.position.x == -42 && square.position.z == 672 && i == 2)
-			{
-				Debug.Log(adjacentBottom+" < "+square.bottomBlock);
-				Debug.Log(bottomBuffer);
-				CustomDebugTools.SetMapSquareHighlight(
-					adjacent[i],
-					cubeSize,
-					Color.red,
-					adjacentSquares[i].topBlock,
-					adjacentSquares[i].bottomBlock);
-			} */
 		}
 
-		MapSquare mapSquare = square;
+		MapSquare updateSquare = mapSquare;
 
-		mapSquare.topBlockBuffer 	= topBuffer 	+ 1;
-		mapSquare.bottomBlockBuffer = bottomBuffer 	- 1;
+		//	Top and bottom block levels to generate blocks
+		updateSquare.topBlockBuffer 	= topBuffer 	+ 1;
+		updateSquare.bottomBlockBuffer = bottomBuffer 	- 1;
 
-		int blockGenerationHeight = mapSquare.topBlockBuffer - mapSquare.bottomBlockBuffer;
-		mapSquare.blockGenerationArrayLength = blockGenerationHeight * (cubeSize*cubeSize);
+		//	Calculate iteration length for block generation
+		int blockGenerationHeight = updateSquare.topBlockBuffer - updateSquare.bottomBlockBuffer;
+		updateSquare.blockGenerationArrayLength = blockGenerationHeight * (cubeSize*cubeSize);
 
-		int drawHeight = mapSquare.topDrawBuffer - mapSquare.bottomDrawBuffer;
-		mapSquare.drawArrayLength = drawHeight * (cubeSize * cubeSize);
-		mapSquare.drawIndexOffset = Util.Flatten(0, mapSquare.bottomDrawBuffer - mapSquare.bottomBlockBuffer, 0, cubeSize);
+		//	Calculate iteration length and offset for mesh drawing
+		int drawHeight = updateSquare.topDrawBuffer - updateSquare.bottomDrawBuffer;
+		updateSquare.drawArrayLength = drawHeight * (cubeSize * cubeSize);
+		updateSquare.drawIndexOffset = Util.Flatten(0, updateSquare.bottomDrawBuffer - updateSquare.bottomBlockBuffer, 0, cubeSize);
 
-		commandBuffer.SetComponent<MapSquare>(entity, mapSquare);
-
-		Position pos = new Position
-		{
-			Value = new float3(position.Value.x, mapSquare.bottomBlockBuffer, position.Value.z)
+		Position pos = new Position{
+			Value = new float3(position.Value.x, updateSquare.bottomBlockBuffer, position.Value.z)
 		};
 
+		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
 		commandBuffer.SetComponent<Position>(entity, pos);
 	}
 }

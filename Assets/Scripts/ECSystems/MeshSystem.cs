@@ -10,6 +10,7 @@ using MyComponents;
 using UnityEngine;
 using UnityEditor;
 
+//	Generate 3D mesh from block data
 [UpdateAfter(typeof(BlockSystem))]
 public class MeshSystem : ComponentSystem
 {
