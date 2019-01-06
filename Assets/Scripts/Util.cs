@@ -105,4 +105,13 @@ public static class Util
 	{
 		return System.Math.Round(value, decimalPlaces);
 	}
+
+    public static float3 EdgeOverlap(float3 localPosition, int cubeSize)
+    {
+        return new float3(
+					localPosition.x == cubeSize ? 1 : localPosition.x < 0 ? -1 : 0,
+					0,
+					localPosition.z == cubeSize ? 1 : localPosition.z < 0 ? -1 : 0
+					); 
+    }
 }

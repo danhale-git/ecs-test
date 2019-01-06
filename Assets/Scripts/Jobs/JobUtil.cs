@@ -69,17 +69,12 @@ public struct JobUtil
         return Flatten(WrapBlockIndex(position, chunkSize), chunkSize);
     }
 
-    public static float3[] CardinalDirections()
+    public float3 EdgeOverlap(float3 localPosition, int cubeSize)
     {
-        return new float3[8] {
-			new float3( 1,  0,  0), //  0  right
-			new float3(-1,  0,  0), //  1  left    
-			new float3( 0,  0,  1), //  2  front
-			new float3( 0,  0, -1), //  3  back
-			new float3( 1,  0,  1), //  4  front right
-			new float3(-1,  0,  1), //  5  front left
-			new float3( 1,  0, -1), //  6  back right
-			new float3(-1,  0, -1)	//  7  back left
-		    };
+        return new float3(
+					localPosition.x == cubeSize ? 1 : localPosition.x < 0 ? -1 : 0,
+					0,
+					localPosition.z == cubeSize ? 1 : localPosition.z < 0 ? -1 : 0
+					); 
     }
 }

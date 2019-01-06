@@ -41,11 +41,11 @@ namespace MyComponents
 		public Entity backRight;
 		public Entity backLeft;
 
-		public Entity this[int vert]
+		public Entity this[int side]
 		{
 			get
 			{
-				switch (vert)
+				switch (side)
 				{
 					case 0: return right;
 					case 1: return left;
@@ -56,11 +56,23 @@ namespace MyComponents
 					case 6: return backRight;
 					case 7: return backLeft;
 
-					default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + vert);
+					default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + side);
 				}
 			}
 		}
-		
+
+		public Entity Get(float3 dir)
+		{
+			if	   (dir.x ==  1 && dir.y == 0 && dir.z ==  0) return right;
+			else if(dir.x == -1 && dir.y == 0 && dir.z ==  0) return left;
+			else if(dir.x ==  0 && dir.y == 0 && dir.z ==  1) return front;
+			else if(dir.x ==  0 && dir.y == 0 && dir.z == -1) return back;
+			else if(dir.x ==  1 && dir.y == 0 && dir.z ==  1) return frontRight;
+			else if(dir.x == -1 && dir.y == 0 && dir.z ==  1) return frontLeft;
+			else if(dir.x ==  1 && dir.y == 0 && dir.z == -1) return backRight;
+			else if(dir.x == -1 && dir.y == 0 && dir.z == -1) return backLeft;
+			else throw new System.ArgumentOutOfRangeException("Index out of range 7: " + dir);
+		}
 	}
 
 	[InternalBufferCapacity(0)]

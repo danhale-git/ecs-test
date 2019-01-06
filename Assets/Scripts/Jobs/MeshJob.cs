@@ -104,14 +104,6 @@ struct MeshJob : IJobParallelFor
 			vertIndex +=  4;
 		}
 
-		if(faces[i].debug > 0)
-		{
-			for(int v = 0; v < vertIndex; v++)
-			{
-				colors[v+vertOffset] = new float4(1, 0, 0, 1);
-			}
-			return;
-		}
 		//	Vertex colours
 		for(int v = 0; v < vertIndex; v++)
 		{

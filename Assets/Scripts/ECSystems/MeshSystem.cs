@@ -247,25 +247,20 @@ public class MeshSystem : ComponentSystem
 
 			for(int d = 0; d < directions.Length; d++)
 			{
-				int xPos = (int)(directions[d].x + pos.x);
-				int zPos = (int)(directions[d].z + pos.z);
+				int x = (int)(directions[d].x + pos.x);
+				int z = (int)(directions[d].z + pos.z);
 
 				//	Direction of the adjacent map square that owns the required block
-				//	(0,0,0) if required block is in this map square 
-				float3 edge = new float3(
-					xPos == cubeSize ? 1 : xPos < 0 ? -1 : 0,
-					0,
-					zPos == cubeSize ? 1 : zPos < 0 ? -1 : 0
-					); 
+				float3 edge = Util.EdgeOverlap(new float3(x, 0, z), cubeSize);
 
 				int adjacentHeight;
 
 				//	Block is outside map square
 				if(	edge.x != 0 || edge.z != 0)
-					adjacentHeight = adjacentHeightMaps[Util.DirectionToIndex(edge)][Util.WrapAndFlatten2D(xPos, zPos, cubeSize)].height;
+					adjacentHeight = adjacentHeightMaps[Util.DirectionToIndex(edge)][Util.WrapAndFlatten2D(x, z, cubeSize)].height;
 				//	Block is inside map square
 				else
-					adjacentHeight = heightMap[Util.Flatten2D(xPos, zPos, cubeSize)].height;
+					adjacentHeight = heightMap[Util.Flatten2D(x, z, cubeSize)].height;
 
 				//	Height difference in blocks
 				int difference = adjacentHeight - height;

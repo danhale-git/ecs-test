@@ -36,64 +36,49 @@ struct FacesJob : IJobParallelFor
 		//	Outside this cube
 		if(pos.x == cubeSize)
 		{
-			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBlockBuffer, 0, blocks[blockIndex]);
-			//if(adjacentIndex < 0) return -1;
-			return right[adjacentIndex].type == 0 ? 1 : 0;			
+			int adjacentIndex = AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 0);
+			return BlockTypes.visible[right[adjacentIndex].type] == 0 ? 1 : 0;			
 		}
 		if(pos.x < 0)
 		{
-			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBlockBuffer, 1, blocks[blockIndex]);
-			//if(adjacentIndex < 0) return -1;
-			return left[adjacentIndex].type == 0 ? 1 : 0;	
+			int adjacentIndex = AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 1);
+			return BlockTypes.visible[left[adjacentIndex].type] == 0 ? 1 : 0;	
 		}
 		if(pos.z == cubeSize)
 		{
-			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBlockBuffer, 2, blocks[blockIndex]);
-			//if(adjacentIndex < 0) return -1;
-			return front[adjacentIndex].type == 0 ? 1 : 0;	
+			int adjacentIndex = AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 2);
+			return BlockTypes.visible[front[adjacentIndex].type] == 0 ? 1 : 0;	
 		}
 		if(pos.z < 0)
 		{
-			int adjacentIndex = AdjacentIndex(pos, mapSquare.bottomBlockBuffer, 3, blocks[blockIndex]);
-			//if(adjacentIndex < 0) return -1;
-			return back[adjacentIndex].type == 0 ? 1 : 0;
+			int adjacentIndex = AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 3);
+			return BlockTypes.visible[back[adjacentIndex].type] == 0 ? 1 : 0;
 		}
 
 		//	Inside this cube
 		return blocks[util.Flatten(pos.x, pos.y, pos.z, cubeSize)].type == 0 ? 1 : 0;
 	}
 
-	int AdjacentIndex(float3 pos, int lowest, int adjacentIndex, Block block)
+	int AdjacentBlockIndex(float3 pos, int lowest, int adjacentSquareIndex)
 	{
-		int yDifference = lowest - adjacentLowestBlocks[adjacentIndex];
-
-		float3 wrapped = util.WrapBlockIndex((int3)pos, cubeSize);
-
-		int adjusted = util.Flatten(new float3(
-				wrapped.x,
-				wrapped.y + yDifference,
-				wrapped.z
+		return util.WrapAndFlatten(new int3(
+				(int)pos.x,
+				(int)pos.y + (lowest - adjacentLowestBlocks[adjacentSquareIndex]),
+				(int)pos.z
 			),
 			cubeSize
 		);
-
-		return adjusted;
 	}
 
 	public void Execute(int i)
 	{
-		int debug = 0;
-
+		//	Offset to allow buffer of blocks
 		i += mapSquare.drawIndexOffset;
+
 		//	Local position in cube
 		float3 positionInMesh = util.Unflatten(i, cubeSize);
 
-		//	Skip air blocks
-		if(i >= blocks.Length){
-			debug = 1;
-			Debug.Log("BAD INDEX");
-		}
-		else if(blocks[i].type == 0) return;
+		if(blocks[i].type == 0) return;
 
 		int right = 0;
 		int left = 0;
@@ -121,26 +106,14 @@ struct FacesJob : IJobParallelFor
 		int down  	= FaceExposed(positionInMesh, new float3( 0,   -1, 0), i);		//	down	
 
 
-		if(right < 0 ||
-			left < 0 ||
-			forward < 0 ||
-			back < 0 ||
-			up < 0 ||
-			down < 0)
-			{
-				debug = 1;
-			} 
-
 		//	Get get exposed block faces
 		exposedFaces[i] = new Faces(
-			debug,
-
-			debug > 0 ? 1 : right,
-			debug > 0 ? 1 : left,
-			debug > 0 ? 1 : up,
-			debug > 0 ? 1 : down,
-			debug > 0 ? 1 : forward,
-			debug > 0 ? 1 : back,
+			right,
+			left,
+			up,
+			down,
+			forward,
+			back,
 			0,														
 			0,
 			0
