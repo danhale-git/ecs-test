@@ -89,25 +89,26 @@ public class CliffTerrainGenerator
         int height = terrainHeight;
         TerrainTypes type = 0;
 
-        float edge = Mathf.InverseLerp(0, 4, cell.distance2Edge);
         float value = cell.currentCellValue;
         float adjacentValue = cell.adjacentCellValue;
 
         float increment = 1.0f / levelCount;
 
-
         float cellHeight = 0;
         float adjacentHeight = 0;
 
+        //  Get height of cells
         for(int l = 1; l < levelCount; l++)
         {
             float nextStart = (increment * (l+1));
             float prevEnd = (increment * (l-1));
 
+            //  Adjacent cell height
             if((adjacentValue >= prevEnd || l == 0) && (adjacentValue <= nextStart || l == levelCount-1))
             {
                 adjacentHeight = levelHeight * l;
             }
+            //  This cell height
             if((value >= prevEnd || l == 0) && (value <= nextStart || l == levelCount-1))
             {
                 cellHeight = levelHeight * l;
@@ -116,20 +117,25 @@ public class CliffTerrainGenerator
         
         float depth = cliffDepth *2;
 
+        //  Close to the edge between two cells of different heights = cliff
         if(cell.distance2Edge < depth*2 && cellHeight != adjacentHeight)
         {
             type = TerrainTypes.CLIFF;            
         
+            //  Closer to the edge between cells, interpolate
+            //  between cell heigts for smooth transition
             if(cell.distance2Edge < depth) 
             {
                 float halfway = (cellHeight + adjacentHeight) / 2;
                 float interpolator = Mathf.InverseLerp(0, depth, cell.distance2Edge);
 
+                //  Interpolate towards midpoint using distance from midpoint
                 height += (int)math.lerp(halfway, cellHeight, interpolator);
             }
             else
                 height += (int)cellHeight;
         }
+        //  If not cliff then grass
         else
         {
             type = TerrainTypes.GRASS;
