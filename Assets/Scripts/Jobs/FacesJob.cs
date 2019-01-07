@@ -6,10 +6,12 @@ using Unity.Burst;
 using Unity.Entities;
 using MyComponents;
 
-[BurstCompile]
+//[BurstCompile]
 struct FacesJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<Faces> exposedFaces;
+
+	[ReadOnly] public MapSquare mapSquare;
 
 	//	Block data for this and adjacent map squares
 	[ReadOnly] public NativeArray<Block> blocks;
@@ -18,60 +20,92 @@ struct FacesJob : IJobParallelFor
 	[ReadOnly] public NativeArray<Block> front;
 	[ReadOnly] public NativeArray<Block> back;
 
-	//	Indices where cubes in this map square begin
-	[ReadOnly] public int cubeStart;
-	[ReadOnly] public int aboveStart;
-	[ReadOnly] public int belowStart;
+	[ReadOnly] public NativeArray<int> adjacentLowestBlocks;
 
 	[ReadOnly] public int cubeSize;
+	[ReadOnly] public NativeArray<float3> directions;	
 	[ReadOnly] public JobUtil util;
 
-	//	TODO: use byte instead
 	//	Return 1 for exposed or 0 for hidden
-	int FaceExposed(float3 position, float3 direction)
+	int FaceExposed(float3 position, float3 direction, int blockIndex)
 	{
 		//	Adjacent position
 		int3 pos = (int3)(position + direction);
 
-		//	Outside this cube
-		if(pos.x == cubeSize)
-			return right[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type 		== 0 ? 1 : 0;
-		if(pos.x < 0)
-			return left[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type 		== 0 ? 1 : 0;
-		if(pos.y == cubeSize)
-			return blocks[util.WrapAndFlatten(pos, cubeSize) + aboveStart].type 	== 0 ? 1 : 0;
-		if(pos.y < 0)
-			return blocks[util.WrapAndFlatten(pos, cubeSize) + belowStart].type		== 0 ? 1 : 0;
-		if(pos.z == cubeSize)
-			return front[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type 	== 0 ? 1 : 0;
-		if(pos.z < 0)
-			return back[util.WrapAndFlatten(pos, cubeSize) + cubeStart].type		== 0 ? 1 : 0;
+		return BlockTypes.translucent[GetBlock(pos).type];
+	}
 
-		//	Inside this cube
-		return blocks[util.Flatten(pos, cubeSize) + cubeStart].type == 0 ? 1 : 0;
+	int AdjacentBlockIndex(float3 pos, int lowest, int adjacentSquareIndex)
+	{
+		return util.WrapAndFlatten(new int3(
+				(int)pos.x,
+				(int)pos.y + (lowest - adjacentLowestBlocks[adjacentSquareIndex]),
+				(int)pos.z
+			),
+			cubeSize
+		);
+	}
+
+	Block GetBlock(float3 pos)
+	{
+		float3 edge = Util.EdgeOverlap(pos, cubeSize);
+
+		if		(edge.x > 0) return right[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 0)];
+		else if	(edge.x < 0) return left [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 1)];
+		else if	(edge.z > 0) return front[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 2)];
+		else if	(edge.z < 0) return back [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 3)];
+		//if(edge.x == 0 && edge.y == 0)
+		else		    	return blocks[util.Flatten(pos.x, pos.y, pos.z, cubeSize)];
 	}
 
 	public void Execute(int i)
 	{
-		//	Get local position in cube
-		float3 positionInCube = util.Unflatten(i, cubeSize);
+		//	Offset to allow buffer of blocks
+		i += mapSquare.drawIndexOffset;
 
-		//	Skip invisible blocks
-		if(blocks[i + cubeStart].type == 0) return;
+		if(blocks[i].type == 0) return;
 
-		//	Get get exposed block faces
-		exposedFaces[i+cubeStart] = new Faces(
-			FaceExposed(positionInCube, new float3( 1,	0, 0)),		//	right
-			FaceExposed(positionInCube, new float3(-1,	0, 0)),		//	left
-			FaceExposed(positionInCube, new float3( 0,	1, 0)),		//	up
-			FaceExposed(positionInCube, new float3( 0,   -1, 0)),	//	down	
-			FaceExposed(positionInCube, new float3( 0,	0, 1)),		//	forward
-			FaceExposed(positionInCube, new float3( 0,	0,-1)),		//	back
-			0														//	Face index is set later
-			);
+		//	Local position in cube
+		float3 position = util.Unflatten(i, cubeSize);
+
+		Faces faces = new Faces();
+		faces.up 	= FaceExposed(position, new float3( 0,	1, 0), i);
+		faces.down 	= FaceExposed(position, new float3( 0,   -1, 0), i);
 
 
+		//	Right, left, front, back
+		for(int d = 0; d < 4; d++)
+		{
+			Block adjacentBlock = GetBlock(position + directions[d]);
+			int exposed = BlockTypes.translucent[adjacentBlock.type];
 
+			//	Not a slope
+			if(blocks[i].slopeType == 0)
+			{
+				faces[d] = exposed > 0 ? (int)Faces.Exp.FULL : (int)Faces.Exp.HIDDEN;
+				continue;
+			}
+			else
+			{
+				float2 slopeVerts = blocks[i].GetSlopeVerts(d);
 
+				if(slopeVerts.x + slopeVerts.y == -2)
+					faces[d] = (int)Faces.Exp.HIDDEN;
+				else if(slopeVerts.x + slopeVerts.y == 0)
+					faces[d] = exposed > 0 ? (int)Faces.Exp.FULL : (int)Faces.Exp.HIDDEN;
+				// Half face
+				else if(slopeVerts.x + slopeVerts.y == -1)
+				{
+					if(exposed > 0)
+						faces[d] = (int)Faces.Exp.HALFOUT;
+					else if(adjacentBlock.slopeType == SlopeType.NOTSLOPED)
+						faces[d] = (int)Faces.Exp.HALFIN;
+				}
+			}
+		}
+	
+		faces.SetCount();
+
+		exposedFaces[i] = faces;
 	}
 }

@@ -1,19 +1,49 @@
 ﻿public struct Faces
 {
-	public readonly int right, left, up, down, forward, back;
-	public readonly int count;
-	public int faceIndex;
-	public Faces(int right, int left, int up, int down, int forward, int back, int faceIndex)
+	public enum Exp { HIDDEN, FULL, HALFOUT, HALFIN }
+
+	public int right, left, front, back, up, down;
+	public int count;
+	public int faceIndex, triIndex, vertIndex;
+	
+	public void SetCount()
 	{
-		this.right = right;
-		this.left = left;
-		this.up = up;
-		this.down = down;
-		this.forward = forward;
-		this.back = back;
+		if(right	> 0) count++;
+		if(left		> 0) count++;
+		if(front	> 0) count++;
+		if(back		> 0) count++;
+		if(up		> 0) count++;
+		if(down		> 0) count++;
+	}
 
-		count = right + left + up + down + forward + back;
+	public int this[int side]
+	{
+		get
+		{
+			switch(side)
+			{
+				case 0: return right;
+				case 1: return left;
+				case 2: return front;
+				case 3: return back;
+				case 4: return up;
+				case 5: return down;
+				default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + side);
+			}
+		}
 
-		this.faceIndex = faceIndex;
+		set
+		{
+			switch(side)
+			{
+				case 0: right = value; break;
+				case 1: left = value; break;
+				case 2: front = value; break;
+				case 3: back = value; break;
+				case 4: up = value; break;
+				case 5: down = value; break;
+				default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + side);
+			}
+		}
 	}
 }

@@ -12,91 +12,147 @@ using MyComponents;
 struct MeshJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<float3> vertices;
+	[NativeDisableParallelForRestriction] public NativeArray<float3> normals;
 	[NativeDisableParallelForRestriction] public NativeArray<int> triangles;
 	[NativeDisableParallelForRestriction] public NativeArray<float4> colors;
+
+	[ReadOnly] public MapSquare mapSquare;
 	
-	[ReadOnly] public int cubeStart;
 	[ReadOnly] public DynamicBuffer<Block> blocks;
 	[ReadOnly] public NativeArray<Faces> faces;
-	[ReadOnly] public NativeArray<MyComponents.Terrain> heightMap;
-	[ReadOnly] public NativeArray<float> heightDifferences;
 
-	//[ReadOnly] public MeshGenerator meshGenerator;
 	[ReadOnly] public JobUtil util;
 	[ReadOnly] public int cubeSize;
 
 	[ReadOnly] public CubeVertices baseVerts;
 
-	//	Vertices for given side
-	void GetVerts(int side, float3 position, int index, int sloped)
+	public void Execute(int i)
 	{
-		int heightMapIndex = util.Flatten2D(position.x, position.z, cubeSize);
-		int differenceIndex = heightMapIndex * 4;
+		i += mapSquare.drawIndexOffset;
+		Block block = blocks[i];
 
-		float3 frontRight;
-		float3 backRight;
-		float3 backLeft;
-		float3 frontLeft;
+		//	Skip blocks that aren't exposed
+		if(faces[i].count == 0) return;
 
-		if(position.y == heightMap[heightMapIndex].height && sloped > 0)
+		//	Get block position for vertex offset
+		float3 positionInMesh = util.Unflatten(i, cubeSize);
+
+		//	Current local indices
+		int vertIndex = 0;
+		int triIndex = 0;
+
+		//	Block starting indices
+		int vertOffset = faces[i].vertIndex;
+		int triOffset = faces[i].triIndex;
+
+		//	Vertices and Triangles for exposed sides
+
+		for(int f = 0; f < 6; f++)
 		{
-			frontRight 	= new float3(0, heightDifferences[differenceIndex + 0], 0);
-			backRight 	= new float3(0, heightDifferences[differenceIndex + 1], 0);
-			backLeft 	= new float3(0, heightDifferences[differenceIndex + 2], 0);
-			frontLeft 	= new float3(0, heightDifferences[differenceIndex + 3], 0);
+			int exposure = faces[i][f];
+			if(exposure == 0) continue;
+
+			//	Top face of sloped block
+			if(f == 4 && block.slopeType != SlopeType.NOTSLOPED)
+			{
+				DrawSlope(triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, ref triIndex, ref vertIndex);
+				continue;
+			}
+
+			//	All other faces
+			switch((Faces.Exp)exposure)
+			{
+				//	Normal cube face
+				case Faces.Exp.FULL:
+					DrawFace(f, triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, ref triIndex, ref vertIndex);
+					break;
+				//	Half faces for slope edges
+				case Faces.Exp.HALFOUT:
+				case Faces.Exp.HALFIN:
+					DrawHalfFace(f, triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, (Faces.Exp)faces[i][f], ref triIndex, ref vertIndex);
+					break;
+				default: continue;
+			}
 		}
-		else
+
+		for(int v = 0; v < vertIndex; v++)
 		{
-			frontRight = float3.zero;
-			backRight = float3.zero;
-			backLeft = float3.zero;
-			frontLeft = float3.zero;
-		}
-		
+			colors[v+vertOffset] = BlockTypes.color[blocks[i].type];
+		} 
+	}
+
+	void DrawFace(int face, int triOffset, int vertOffset, Block block, float3 position, ref int triIndex, ref int vertIndex)
+	{
+		Triangles(triOffset, vertOffset);
+		Vertices(face, position, block, vertOffset);
+		triIndex += 6;
+		vertIndex +=  4;
+	}
+
+	void DrawHalfFace(int face, int triOffset, int vertOffset, Block block, float3 position, Faces.Exp exposure, ref int triIndex, ref int vertIndex)
+	{
+		HalfVertices(vertOffset, face, position, block, exposure);
+		HalfTriangles(triOffset, vertOffset, face,  exposure);
+		vertIndex 	+= 3;
+		triIndex 	+= 3;
+	}
+
+	void DrawSlope(int triOffset, int vertOffset, Block block, float3 position, ref int triIndex, ref int vertIndex)
+	{
+		SlopedTriangles(triOffset, vertOffset, block);
+		triIndex += 6;
+		SlopedVertices(vertOffset, position, block);
+		vertIndex += 6;
+	}
+
+	//	Vertices for normal cube
+	void Vertices(int side, float3 position, Block block, int index)
+	{	
 		switch(side)
 		{
-			case 0:
-				vertices[index+0] = baseVerts[5]+frontRight+position;
-				vertices[index+1] = baseVerts[6]+backRight+position;
+			case 0:	//	Right
+				vertices[index+0] = baseVerts[5]+position;
+				vertices[index+1] = baseVerts[6]+position;
 				vertices[index+2] = baseVerts[2]+position;
 				vertices[index+3] = baseVerts[1]+position;
 				break;
-			case 1:
-				vertices[index+0] = baseVerts[7]+backLeft+position;
-				vertices[index+1] = baseVerts[4]+frontLeft+position;
+			case 1:	//	Left
+				vertices[index+0] = baseVerts[7]+position;
+				vertices[index+1] = baseVerts[4]+position;
 				vertices[index+2] = baseVerts[0]+position;
 				vertices[index+3] = baseVerts[3]+position;
 				break;
-			case 2:
-				vertices[index+0] = baseVerts[7]+backLeft+position;
-				vertices[index+1] = baseVerts[6]+backRight+position;
-				vertices[index+2] = baseVerts[5]+frontRight+position;
-				vertices[index+3] = baseVerts[4]+frontLeft+position;
+			case 2:	//	Front
+				vertices[index+0] = baseVerts[4]+position;
+				vertices[index+1] = baseVerts[5]+position;
+				vertices[index+2] = baseVerts[1]+position;
+				vertices[index+3] = baseVerts[0]+position;
 				break;
-			case 3:
+			case 3:	//	Back
+				vertices[index+0] = baseVerts[6]+position;
+				vertices[index+1] = baseVerts[7]+position;
+				vertices[index+2] = baseVerts[3]+position;
+				vertices[index+3] = baseVerts[2]+position;
+				break;
+			case 4:	//	Top
+				vertices[index+0] = baseVerts[7]+position;
+				vertices[index+1] = baseVerts[6]+position;
+				vertices[index+2] = baseVerts[5]+position;
+				vertices[index+3] = baseVerts[4]+position;
+				break;
+			case 5:	//	Bottom
 				vertices[index+0] = baseVerts[0]+position;
 				vertices[index+1] = baseVerts[1]+position;
 				vertices[index+2] = baseVerts[2]+position;
 				vertices[index+3] = baseVerts[3]+position;
 				break;
-			case 4:
-				vertices[index+0] = baseVerts[4]+frontLeft+position;
-				vertices[index+1] = baseVerts[5]+frontRight+position;
-				vertices[index+2] = baseVerts[1]+position;
-				vertices[index+3] = baseVerts[0]+position;
-				break;
-			case 5:
-				vertices[index+0] = baseVerts[6]+backRight+position;
-				vertices[index+1] = baseVerts[7]+backLeft+position;
-				vertices[index+2] = baseVerts[3]+position;
-				vertices[index+3] = baseVerts[2]+position;
-				break;
+			
 			default: throw new System.ArgumentOutOfRangeException("Index out of range 5: " + side);
 		}
 	}
 
-	//	Triangles are always the same set, offset to vertex index
-	void GetTris(int index, int vertIndex)
+	//	Triangles for normal cube
+	void Triangles(int index, int vertIndex)
 	{
 		triangles[index+0] = 3 + vertIndex; 
 		triangles[index+1] = 1 + vertIndex; 
@@ -105,74 +161,141 @@ struct MeshJob : IJobParallelFor
 		triangles[index+4] = 2 + vertIndex; 
 		triangles[index+5] = 1 + vertIndex;
 	}
-
-	public void Execute(int i)
+	
+	//	Vertices for sloped top face
+	//	Add two extra verts to enable hard
+	//	edges on the mesh
+	void SlopedVertices(int index, float3 position, Block block)
 	{
-		//	Skip blocks that aren't exposed
-		if(faces[i].count == 0) return;
+		switch(block.slopeFacing)
+		{
+			case SlopeFacing.NWSE:
+				vertices[index+0] = baseVerts[7]+new float3(0, block.backLeftSlope, 0)+position;	//	back Left
+				vertices[index+1] = vertices[index+0];
+				vertices[index+2] = baseVerts[6]+new float3(0, block.backRightSlope, 0)+position;	//	back Right
+				vertices[index+3] = baseVerts[5]+new float3(0, block.frontRightSlope, 0)+position;	//	front Right
+				vertices[index+4] = vertices[index+3];
+				vertices[index+5] = baseVerts[4]+new float3(0, block.frontLeftSlope, 0)+position;	//	front Left
+				break;
 
-		//	Mesh will be smoothed if > 0
-		int sloped = BlockTypes.sloped[blocks[i].type];
+			case SlopeFacing.SWNE:
+				vertices[index+0] = baseVerts[7]+new float3(0, block.backLeftSlope, 0)+position;	//	back Left
+				vertices[index+1] = baseVerts[6]+new float3(0, block.backRightSlope, 0)+position;	//	back Right
+				vertices[index+2] = vertices[index+1];
+				vertices[index+3] = baseVerts[5]+new float3(0, block.frontRightSlope, 0)+position;	//	front Right
+				vertices[index+4] = baseVerts[4]+new float3(0, block.frontLeftSlope, 0)+position;	//	front Left
+				vertices[index+5] = vertices[index+4];
+				break;
+		}
+	}
 
-		//	Get block position for vertex offset
-		float3 positionInMesh = blocks[i].squareLocalPosition;
+	//	Triangles for sloped top face
+	//	align so rect division always bisects
+	//	slope direction, for hard slope edges
+	void SlopedTriangles(int index, int vertIndex, Block block)
+	{
+		switch(block.slopeFacing)
+		{
+			case SlopeFacing.NWSE:
+				triangles[index+0] = 3 + vertIndex; 
+				triangles[index+1] = 0 + vertIndex; 
+				triangles[index+2] = 5 + vertIndex; 
+				triangles[index+3] = 1 + vertIndex; 
+				triangles[index+4] = 4 + vertIndex; 
+				triangles[index+5] = 2 + vertIndex;
+				break;
 
-		//	Current local indices
-		int vertIndex = 0;
-		int triIndex = 0;
+			case SlopeFacing.SWNE:
+				triangles[index+0] = 4 + vertIndex; 
+				triangles[index+1] = 1 + vertIndex; 
+				triangles[index+2] = 0 + vertIndex; 
+				triangles[index+3] = 5 + vertIndex; 
+				triangles[index+4] = 3 + vertIndex; 
+				triangles[index+5] = 2 + vertIndex;
+				break;
+		}
+	}
 
-		//	Block starting indices
-		int vertOffset = faces[i].faceIndex * 4;
-		int triOffset = faces[i].faceIndex * 6;
+	//	Vertices for half face, one triangle arranged to fill above/below two slop vertices
+	void HalfVertices(int index, int side, float3 position, Block block, Faces.Exp exposure)
+	{
+		float2 slope = block.GetSlopeVerts(side);
+		FaceVertices face = baseVerts.FaceVertices(side);
 
-		//	Vertices and Triangles for exposed sides
-		if(faces[i].right == 1)
+		float3 thirdVertex = float3.zero;
+
+		//	Half covering below slope
+		if(exposure == Faces.Exp.HALFOUT)
 		{
-			GetTris(triIndex+triOffset, vertIndex+vertOffset);
-			triIndex += 6;
-			GetVerts(0, positionInMesh, vertIndex+vertOffset, sloped);
-			vertIndex +=  4;
+			//	Top left or right face vertex
+			if(slope.x < 0) thirdVertex = face[1];
+			else if(slope.y < 0) thirdVertex = face[0];
+
+			//	Bottom two face vertices
+			vertices[index+0] = position + face[2];
+			vertices[index+1] = position + face[3];
 		}
-		if(faces[i].left == 1)
+		//	Half covering above slope
+		else if(exposure == Faces.Exp.HALFIN)
 		{
-			GetTris(triIndex+triOffset, vertIndex+vertOffset);
-			triIndex += 6;
-			GetVerts(1, positionInMesh, vertIndex+vertOffset, sloped);
-			vertIndex +=  4;
-		}
-		if(faces[i].up == 1)
-		{
-			GetTris(triIndex+triOffset, vertIndex+vertOffset);
-			triIndex += 6;
-			GetVerts(2, positionInMesh, vertIndex+vertOffset, sloped);
-			vertIndex +=  4;
-		}
-		if(faces[i].down == 1)
-		{
-			GetTris(triIndex+triOffset, vertIndex+vertOffset);
-			triIndex += 6;
-			GetVerts(3, positionInMesh, vertIndex+vertOffset, sloped);
-			vertIndex +=  4;
-		}
-		if(faces[i].forward == 1)
-		{
-			GetTris(triIndex+triOffset, vertIndex+vertOffset);
-			triIndex += 6;
-			GetVerts(4, positionInMesh, vertIndex+vertOffset, sloped);
-			vertIndex +=  4;
-		}
-		if(faces[i].back == 1)
-		{
-			GetTris(triIndex+triOffset, vertIndex+vertOffset);
-			triIndex += 6;
-			GetVerts(5, positionInMesh, vertIndex+vertOffset, sloped);
-			vertIndex +=  4;
+			//	Bottom left or right face vertex
+			if(slope.x < 0) thirdVertex = face[2];
+			else if(slope.y < 0) thirdVertex = face[3];
+
+			//	Top two face vertices
+			vertices[index+0] = position + face[0];
+			vertices[index+1] = position + face[1];
 		}
 
-		for(int v = 0; v < vertIndex; v++)
+		//	Assign third vertex
+		vertices[index+2] = position + thirdVertex;
+	}
+
+	//	Triangles for half face, flipped depending which side of the block
+	void HalfTriangles(int index, int vertIndex, int side, Faces.Exp exposure)
+	{
+		switch(side)
 		{
-			colors[v+vertOffset] = BlockTypes.color[blocks[i].type];
-		}	 
+			case 0:
+			case 3:
+				triangles[index+0] = 0 + vertIndex; 
+				triangles[index+1] = 1 + vertIndex; 
+				triangles[index+2] = 2 + vertIndex;
+				break;
+			case 1:
+			case 2:
+				triangles[index+0] = 2 + vertIndex; 
+				triangles[index+1] = 1 + vertIndex; 
+				triangles[index+2] = 0 + vertIndex;
+				break;
+		}
+	}
+}
+
+public struct FaceVertices
+{
+	public readonly float3 v0, v1, v2, v3;
+	public FaceVertices(float3 v0, float3 v1, float3 v2, float3 v3)
+	{
+		this.v0 = v0;
+		this.v1 = v1;
+		this.v2 = v2;
+		this.v3 = v3;
+	}
+
+	public float3 this[int side]
+	{
+		get
+		{
+			switch(side)
+			{
+				case 0: return v0;
+				case 1: return v1;
+				case 2: return v2;
+				case 3: return v3;
+				default: throw new System.ArgumentOutOfRangeException("Index out of range 3: " + side);
+			}
+		}
 	}
 }
 
@@ -197,6 +320,52 @@ public struct CubeVertices
 		v5 = new float3( 	 0.5f,  0.5f,	 0.5f );	//	right top front;
 		v6 = new float3( 	 0.5f,  0.5f,	-0.5f );	//	right top back;
 		v7 = new float3( 	-0.5f,  0.5f,	-0.5f );	//	left top back;
+	}
+
+	public FaceVertices FaceVertices(int side)
+	{
+		FaceVertices verts;
+
+		switch(side)
+		{
+			case 0:	//	Right
+				verts = new FaceVertices(
+					v5 = new float3( 	 0.5f,  0.5f,	 0.5f ),	//	right top front;
+					v6 = new float3( 	 0.5f,  0.5f,	-0.5f ),	//	right top back;
+					v1 = new float3( 	 0.5f, -0.5f,	 0.5f ),	//	right bottom front;
+					v2 = new float3( 	 0.5f, -0.5f,	-0.5f )		//	right bottom back;
+				);
+				break;
+
+			case 1:	//	Left
+				verts = new FaceVertices(
+					v4 = new float3( 	-0.5f,  0.5f,	 0.5f ),	//	left top front;
+					v7 = new float3( 	-0.5f,  0.5f,	-0.5f ),	//	left top back;
+					v0 = new float3( 	-0.5f, -0.5f,	 0.5f ),	//	left bottom front;
+					v3 = new float3( 	-0.5f, -0.5f,	-0.5f ) 	//	left bottom back;
+				);
+				break;
+
+			case 2:	//	Front
+				verts = new FaceVertices(
+					v5 = new float3( 	 0.5f,  0.5f,	 0.5f ),	//	right top front;
+					v4 = new float3( 	-0.5f,  0.5f,	 0.5f ),	//	left top front;
+					v1 = new float3( 	 0.5f, -0.5f,	 0.5f ),	//	right bottom front;
+					v0 = new float3( 	-0.5f, -0.5f,	 0.5f )		//	left bottom front;
+				);
+				break;
+
+			case 3:	//	Back
+				verts = new FaceVertices(
+					v6 = new float3( 	 0.5f,  0.5f,	-0.5f ),	//	right top back;
+					v7 = new float3( 	-0.5f,  0.5f,	-0.5f ),	//	left top back;
+					v2 = new float3( 	 0.5f, -0.5f,	-0.5f ),	//	right bottom back;
+					v3 = new float3( 	-0.5f, -0.5f,	-0.5f ) 	//	left bottom back;
+				);
+				break;
+			default: throw new System.ArgumentOutOfRangeException("Index out of range 3: " + side);
+		}
+		return verts;
 	}
 
 

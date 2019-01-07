@@ -6,15 +6,13 @@ using Unity.Burst;
 using Unity.Entities;
 using MyComponents;
 
-[BurstCompile]
+//[BurstCompile]
 struct BlocksJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<Block> blocks;
 
-	[ReadOnly] public int cubeStart;
-	[ReadOnly] public int cubePosY;
-
-	[ReadOnly] public NativeArray<MyComponents.Terrain> heightMap;
+	[ReadOnly] public MapSquare mapSquare;
+	[ReadOnly] public NativeArray<Topology> heightMap;
 	[ReadOnly] public int cubeSize;
 	[ReadOnly] public JobUtil util;
 
@@ -22,9 +20,10 @@ struct BlocksJob : IJobParallelFor
 	public void Execute(int i)
 	{
 		float3 pos = util.Unflatten(i, cubeSize);
-		float3 position = new float3(pos.x, pos.y+cubePosY, pos.z);
 
-		int hMapIndex = util.Flatten2D((int)pos.x, (int)pos.z, cubeSize);
+		float3 position = pos + new float3(0, mapSquare.bottomBlockBuffer, 0);
+
+		int hMapIndex = util.Flatten2D((int)position.x, (int)position.z, cubeSize);
 		int type = 0;
 
 		if(position.y <= heightMap[hMapIndex].height)
@@ -40,11 +39,20 @@ struct BlocksJob : IJobParallelFor
 			}
 		}
 
-		blocks[i + cubeStart] = new Block
+		float3 worldPosition = position + mapSquare.position;
+		int debug = 0;
+		/*if(position.y == heightMap[hMapIndex].height && worldPosition.x == 84 && worldPosition.z == 641)
+			debug = 1;
+		if(position.y == heightMap[hMapIndex].height && worldPosition.x == 83 && worldPosition.z == 641)
+			debug = 2; */
+
+		blocks[i] = new Block
 		{
-			index = i, 
+			debug = debug,
+
 			type = type,
-			squareLocalPosition = position,
+			localPosition = position,
+			worldPosition = worldPosition
 		};
 	}
 }

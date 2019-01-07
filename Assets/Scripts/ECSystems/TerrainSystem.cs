@@ -7,6 +7,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using MyComponents;
 
+//  Generate 2D terrain data from coherent noise
 [UpdateAfter(typeof(MapSquareSystem))]
 public class TerrainSystem : ComponentSystem
 {
@@ -56,7 +57,6 @@ public class TerrainSystem : ComponentSystem
 
     void GenerateTerrain(NativeArray<ArchetypeChunk> chunks)
     {
-        Debug.Log("- generate terrain");
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
         for(int c = 0; c < chunks.Length; c++)
@@ -72,16 +72,16 @@ public class TerrainSystem : ComponentSystem
                 float3 position = positions[e].Value;
 
                 //	Resize to Dynamic Buffer
-                DynamicBuffer<MyComponents.Terrain> heightBuffer = entityManager.GetBuffer<MyComponents.Terrain>(entity);
+                DynamicBuffer<Topology> heightBuffer = entityManager.GetBuffer<Topology>(entity);
 			    heightBuffer.ResizeUninitialized((int)math.pow(cubeSize, 2));
 
 			    //	Fill buffer with height map data
 			    MapSquare mapSquareComponent = GetHeightMap(position, heightBuffer);
 			    entityManager.SetComponentData<MapSquare>(entity, mapSquareComponent);
 
-                //  Create cubes next
+                //  Set draw buffer next
                 commandBuffer.RemoveComponent<Tags.GenerateTerrain>(entity);
-                commandBuffer.AddComponent(entity, new Tags.CreateCubes());
+                commandBuffer.AddComponent(entity, new Tags.SetDrawBuffer());
             }
         }
 
@@ -91,7 +91,7 @@ public class TerrainSystem : ComponentSystem
     chunks.Dispose();
     }
 
-    public MapSquare GetHeightMap(float3 position, DynamicBuffer<MyComponents.Terrain> heightMap)
+    public MapSquare GetHeightMap(float3 position, DynamicBuffer<Topology> heightMap)
     {
         return cliffTerrain.Generate(position, heightMap);
     }

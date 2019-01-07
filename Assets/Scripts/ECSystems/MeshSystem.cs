@@ -10,7 +10,8 @@ using MyComponents;
 using UnityEngine;
 using UnityEditor;
 
-[UpdateAfter(typeof(BlockSystem))]
+//	Generate 3D mesh from block data
+[UpdateAfter(typeof(TerrainSlopeSystem))]
 public class MeshSystem : ComponentSystem
 {
 	//	Parralel job batch size
@@ -24,13 +25,21 @@ public class MeshSystem : ComponentSystem
 	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
 
 	ArchetypeChunkEntityType 				entityType;
-	ArchetypeChunkComponentType<Position> 	positionType;
 	ArchetypeChunkComponentType<MapSquare>	squareType;
-	ArchetypeChunkBufferType<MapCube> 		cubeType;
 	ArchetypeChunkBufferType<Block> 		blocksType;
-	ArchetypeChunkBufferType<MyComponents.Terrain> 		heightType;
 
 	EntityArchetypeQuery squareQuery;
+
+	struct FaceCounts
+	{
+		public readonly int faceCount, vertCount, triCount;
+		public FaceCounts(int faceCount, int vertCount, int triCount)
+		{
+			this.faceCount = faceCount;
+			this.vertCount = vertCount;
+			this.triCount = triCount;
+		}
+	}
 
 	protected override void OnCreateManager()
 	{
@@ -41,7 +50,7 @@ public class MeshSystem : ComponentSystem
 
 		squareQuery = new EntityArchetypeQuery{
 			Any 	= Array.Empty<ComponentType>(),
-			None  	= new ComponentType[] { typeof(Tags.InnerBuffer), typeof(Tags.OuterBuffer), typeof(Tags.SetBlocks) },
+			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer), typeof(Tags.InnerBuffer) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.DrawMesh) }
 			};
 	}
@@ -50,11 +59,8 @@ public class MeshSystem : ComponentSystem
 	protected override void OnUpdate()
 	{
 		entityType 		= GetArchetypeChunkEntityType();
-		positionType 	= GetArchetypeChunkComponentType<Position>();
 		squareType		= GetArchetypeChunkComponentType<MapSquare>();
-		cubeType 		= GetArchetypeChunkBufferType<MapCube>();
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
-        heightType = GetArchetypeChunkBufferType<MyComponents.Terrain>();
 
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			squareQuery,
@@ -77,213 +83,141 @@ public class MeshSystem : ComponentSystem
 
 			//	Get chunk data
 			NativeArray<Entity> 	entities 		= chunk.GetNativeArray(entityType);
-			NativeArray<Position> 	positions		= chunk.GetNativeArray(positionType);
 			NativeArray<MapSquare>	squares			= chunk.GetNativeArray(squareType);
-			BufferAccessor<MapCube> cubeAccessor 	= chunk.GetBufferAccessor(cubeType);
 			BufferAccessor<Block> 	blockAccessor 	= chunk.GetBufferAccessor(blocksType);
-            BufferAccessor<MyComponents.Terrain> heightAccessor	= chunk.GetBufferAccessor(heightType);
 
 			//	Iterate over map square entities
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity = entities[e];
-				float2 position = new float2(
-					positions[e].Value.x,
-					positions[e].Value.z
-					);
 
-				//	Get blocks from adjacent map squares
+				//	List of adjacent square entities
 				AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(entity);
-				DynamicBuffer<Block>[] adjacentBlocks = new DynamicBuffer<Block>[4];
-				for(int i = 0; i < 4; i++)
-					adjacentBlocks[i] = entityManager.GetBuffer<Block>(adjacentSquares[i]);
 
-                DynamicBuffer<MyComponents.Terrain>[] adjacentHeightMaps = new DynamicBuffer<MyComponents.Terrain>[8];
-				for(int i = 0; i < 8; i++)
-					adjacentHeightMaps[i] = entityManager.GetBuffer<MyComponents.Terrain>(adjacentSquares[i]);
-
-				//	Get vertex offsets for slopes
-				NativeArray<float> slopes = GetSlopes(heightAccessor[e].ToNativeArray(), adjacentHeightMaps);
-
-				//	Check block face exposure
-				int faceCount;
-				NativeArray<Faces> faces = CheckBlockFaces(
-					squares[e],
-					adjacentBlocks,
-					blockAccessor[e],
-					cubeAccessor[e],
-					out faceCount
-					);
-
+				//	Check block face exposure and count mesh arrays
+				FaceCounts counts;
+				NativeArray<Faces> faces = CheckBlockFaces(squares[e], blockAccessor[e], adjacentSquares, out counts);
 
 				//	Create mesh entity if any faces are exposed
-				if(faceCount != 0)
+				if(counts.faceCount != 0)
 					SetMeshComponent(
-						GetMesh(faces, blockAccessor[e], heightAccessor[e].ToNativeArray(), slopes, faceCount),
-						position,
+						GetMesh(squares[e], faces, blockAccessor[e], counts),
 						entity,
-						commandBuffer
-						);
+						commandBuffer);
 
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 				faces.Dispose();
-				slopes.Dispose();
+
+				//DEBUG
+      			CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.5f), 40, 50);
 			}
 		}
 		commandBuffer.Playback(entityManager);
 		commandBuffer.Dispose();
 
 		chunks.Dispose();
-	}	
+	}
 
 	//	Generate structs with int values showing face exposure for each block
-	public NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, DynamicBuffer<Block>[] adjacentBlocks, DynamicBuffer<Block> blocks, DynamicBuffer<MapCube> cubes, out int faceCount)
+	NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, DynamicBuffer<Block> blocks, AdjacentSquares adjacentSquares, out FaceCounts counts)
 	{
 		var exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
 
-		NativeArray<Block>[] adjacent = new NativeArray<Block>[] {
-			new NativeArray<Block>(adjacentBlocks[0].Length, Allocator.TempJob),
-			new NativeArray<Block>(adjacentBlocks[1].Length, Allocator.TempJob),
-			new NativeArray<Block>(adjacentBlocks[2].Length, Allocator.TempJob),
-			new NativeArray<Block>(adjacentBlocks[3].Length, Allocator.TempJob)
-			};
+		NativeArray<float3> directions = new NativeArray<float3>(8, Allocator.TempJob);
+		directions.CopyFrom(Util.CardinalDirections());
 
-		for(int i = 0; i < 4; i++)
-			adjacent[i].CopyFrom(adjacentBlocks[i].ToNativeArray());
+		NativeArray<int> adjacentOffsets = new NativeArray<int>(8, Allocator.TempJob);
+			for(int i = 0; i < 8; i++)
+				adjacentOffsets[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).bottomBlockBuffer;
+		
+		var job = new FacesJob(){
+			exposedFaces = exposedFaces,
+			mapSquare = mapSquare,
 
-		int topCube 	= (int)math.floor((mapSquare.highestVisibleBlock + 1) / cubeSize);
-		int bottomCube 	= (int)math.floor((mapSquare.lowestVisibleBlock - 1) / cubeSize);
+			blocks 	= blocks.ToNativeArray(),
+			right 	= entityManager.GetBuffer<Block>(adjacentSquares[0]).ToNativeArray(),
+			left 	= entityManager.GetBuffer<Block>(adjacentSquares[1]).ToNativeArray(),
+			front 	= entityManager.GetBuffer<Block>(adjacentSquares[2]).ToNativeArray(),
+			back 	= entityManager.GetBuffer<Block>(adjacentSquares[3]).ToNativeArray(),
 
-		//	Leave a buffer of one to guarantee adjacent block data
-		for(int i = bottomCube; i <= topCube; i++)
-		{
-			if(((i-1) * cubeArrayLength) < 0) Debug.Log("negative index!");
-
-			var job = new FacesJob(){
-				exposedFaces = exposedFaces,
-
-				blocks 	= blocks.ToNativeArray(),
-				right 	= adjacent[0],
-				left 	= adjacent[1],
-				front 	= adjacent[2],
-				back 	= adjacent[3],
-
-				cubeStart 	= (i  ) * cubeArrayLength,
-				aboveStart 	= (i+1) * cubeArrayLength,
-				belowStart 	= (i-1) * cubeArrayLength,
-				
-				cubeSize 	= cubeSize,
-				util 		= new JobUtil()
-				};
+			adjacentLowestBlocks = adjacentOffsets,
 			
-			job.Schedule(cubeArrayLength, batchSize).Complete();
-		}
+			cubeSize 	= cubeSize,
+			directions 	= directions, 
+			util 		= new JobUtil()
+			};
+		
+		job.Schedule(mapSquare.drawArrayLength, batchSize).Complete();
 
-		for(int i = 0; i < 4; i++)
-		{
-			adjacent[i].Dispose();
-		}
+		directions.Dispose();
+		adjacentOffsets.Dispose();
 
-		//	Count total exposed faces and set face indices	
-		faceCount = 0;
+		//	Count vertices and triangles	
+		int faceCount = 0;
+		int vertCount = 0;
+		int triCount = 0;
 		for(int i = 0; i < exposedFaces.Length; i++)
 		{
 			int count = exposedFaces[i].count;
 			if(count > 0)
 			{
 				Faces blockFaces = exposedFaces[i];
+
+				//	Starting indices in mesh arrays
 				blockFaces.faceIndex = faceCount;
+				blockFaces.vertIndex = vertCount;
+				blockFaces.triIndex = triCount;
+
 				exposedFaces[i] = blockFaces;
+
+				for(int f = 0; f < 6; f++)
+				{
+					switch((Faces.Exp)blockFaces[f])
+					{
+						case Faces.Exp.HIDDEN: break;
+
+						case Faces.Exp.FULL:
+							vertCount += 4;
+							triCount  += 6;
+							break;
+
+						case Faces.Exp.HALFOUT:
+						case Faces.Exp.HALFIN:
+							vertCount 	+= 3;
+							triCount 	+= 3;
+							break;
+					}
+				} 
+				//	Slopes always need two extra verts
+				if(blocks[i].slopeType != SlopeType.NOTSLOPED) vertCount += 2;
+
 				faceCount += count;
 			}
 		}
 
+		counts = new FaceCounts(faceCount, vertCount, triCount);
+
 		return exposedFaces;
 	}
 
-	//	Generate list of Y offsets for top 4 cube vertices
-	public NativeArray<float> GetSlopes(NativeArray<MyComponents.Terrain> heightMap, DynamicBuffer<MyComponents.Terrain>[] adjacentHeightMaps)
+	Mesh GetMesh(MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, FaceCounts counts)
 	{
-		NativeArray<float> heightDifferences = new NativeArray<float>(heightMap.Length * 4, Allocator.TempJob);
-
-		for(int h = 0; h < heightMap.Length; h++)
-		{
-			int height = heightMap[h].height;
-
-			//	This position
-			float3 pos = Util.Unflatten2D(h, cubeSize);
-
-			float3[] directions = Util.CardinalDirections();
-
-			//	Height differences for all adjacent positions
-			float[] differences = new float[directions.Length];
-
-			for(int i = 0; i < differences.Length; i++)
-			{
-				int xPos = (int)(directions[i].x + pos.x);
-				int zPos = (int)(directions[i].z + pos.z);
-
-				//	1 or -1 = beyond the edge of the square 
-				float3 edge = new float3(
-					xPos == cubeSize ? 1 : xPos < 0 ? -1 : 0,
-					0,
-					zPos == cubeSize ? 1 : zPos < 0 ? -1 : 0
-					);
-
-				int adjacentHeight;
-
-				if(	edge.x != 0 || edge.z != 0)
-					adjacentHeight = adjacentHeightMaps[Util.CardinalDirectionIndex(edge)][Util.WrapAndFlatten2D(xPos, zPos, cubeSize)].height;
-				else
-					adjacentHeight = heightMap[Util.Flatten2D(xPos, zPos, cubeSize)].height;
-
-				differences[i] = adjacentHeight - height;
-			}
-			
-			int startIndex = h*4;
-
-			heightDifferences[startIndex + 0] = GetVertexOffset(differences[0], differences[2], differences[4]);	//	front right
-			heightDifferences[startIndex + 1] = GetVertexOffset(differences[0], differences[3], differences[6]);	//	back right
-			heightDifferences[startIndex + 2] = GetVertexOffset(differences[1], differences[3], differences[7]);	//	back left
-			heightDifferences[startIndex + 3] = GetVertexOffset(differences[1], differences[2], differences[5]);	//	front left
-		}
-		return heightDifferences;
-	}
-
-	float GetVertexOffset(float adjacent1, float adjacent2, float diagonal)
-	{
-		bool anyAboveOne = (adjacent1 > 1 || adjacent2 > 1 || diagonal > 1);
-		bool bothAdjacentAboveZero = (adjacent1 > 0 && adjacent2 > 0);
-		bool anyAdjacentAboveZero = (adjacent1 > 0 || adjacent2 > 0);
-
-		if(bothAdjacentAboveZero && anyAboveOne) return 1;
-		
-		if(anyAdjacentAboveZero) return 0;
-
-		return math.clamp(adjacent1 + adjacent2 + diagonal, -1, 0);
-		
-	}
-
-	public Mesh GetMesh(NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<MyComponents.Terrain> heightMap, NativeArray<float> heightDifferences, int faceCount)
-	{
-		if(blocks.Length == 0)
-		{
-			Debug.Log("Tried to draw empty cube!");
-		}
 		//	Determine vertex and triangle arrays using face count
-		NativeArray<float3> vertices 	= new NativeArray<float3>(faceCount * 4, Allocator.TempJob);
-		NativeArray<int> triangles 		= new NativeArray<int>	 (faceCount * 6, Allocator.TempJob);
-		NativeArray<float4> colors 		= new NativeArray<float4>(faceCount * 4, Allocator.TempJob);
+		NativeArray<float3> vertices 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
+		NativeArray<float3> normals 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
+		NativeArray<int> triangles 		= new NativeArray<int>	 (counts.triCount, Allocator.TempJob);
+		NativeArray<float4> colors 		= new NativeArray<float4>(counts.vertCount, Allocator.TempJob);
 
-		var job = new MeshJob(){
+		MeshJob job = new MeshJob(){
 			vertices 	= vertices,
+			normals 	= normals,
 			triangles 	= triangles,
 			colors 		= colors,
 
-			faces 		= faces,
+			mapSquare = mapSquare,
+
 			blocks 		= blocks,
-			heightMap	= heightMap,
-			heightDifferences = heightDifferences,
+			faces 		= faces,
 
 			util 		= new JobUtil(),
 			cubeSize 	= cubeSize,
@@ -292,14 +226,17 @@ public class MeshSystem : ComponentSystem
 		};
 
 		//	Run job
-		job.Schedule(faces.Length, batchSize).Complete();
+		job.Schedule(mapSquare.drawArrayLength, batchSize).Complete();
 
 		//	Convert vertices and colors from float3/float4 to Vector3/Color
 		Vector3[] verticesArray = new Vector3[vertices.Length];
+		Vector3[] normalsArray = new Vector3[vertices.Length];
 		Color[] colorsArray = new Color[colors.Length];
 		for(int i = 0; i < vertices.Length; i++)
 		{
 			verticesArray[i] = vertices[i];
+			normalsArray[i] = normals[i];
+
 			colorsArray[i] = new Color
 				(
 					colors[i].x,
@@ -314,27 +251,29 @@ public class MeshSystem : ComponentSystem
 		triangles.CopyTo(trianglesArray);
 		
 		vertices.Dispose();
+		normals.Dispose();
 		triangles.Dispose();
 		colors.Dispose();
 
-		return MakeMesh(verticesArray, trianglesArray, colorsArray);
+		return MakeMesh(verticesArray, normalsArray, trianglesArray, colorsArray);
 	}
 
-	Mesh MakeMesh(Vector3[] vertices, int[] triangles, Color[] colors)
+	Mesh MakeMesh(Vector3[] vertices, Vector3[] normals, int[] triangles, Color[] colors)
 	{
 		Mesh mesh 		= new Mesh();
 		mesh.vertices 	= vertices;
+		mesh.normals 	= normals;
 		mesh.colors 	= colors;
 		mesh.SetTriangles(triangles, 0);
 
-		UnityEditor.MeshUtility.Optimize(mesh);
+		//UnityEditor.MeshUtility.Optimize(mesh);
 		mesh.RecalculateNormals();
 
 		return mesh;
 	}
 
 	// Apply mesh to MapSquare entity
-	void SetMeshComponent(Mesh mesh, float2 pos, Entity entity, EntityCommandBuffer commandBuffer)
+	void SetMeshComponent(Mesh mesh, Entity entity, EntityCommandBuffer commandBuffer)
 	{
 		MeshInstanceRenderer renderer = new MeshInstanceRenderer();
 		renderer.mesh = mesh;
