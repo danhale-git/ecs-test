@@ -28,7 +28,7 @@ public class TerrainSlopeSystem : ComponentSystem
         query = new EntityArchetypeQuery
         {
             Any     = Array.Empty<ComponentType>(),
-            None    = new ComponentType[] { typeof(Tags.OuterBuffer) },
+            None    = new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
             All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.SetSlopes) }
         };
     }
@@ -190,7 +190,7 @@ public class TerrainSlopeSystem : ComponentSystem
 				slopeType = SlopeType.FLAT;
 				//	Don't need slope facing for flat slopes, only for corners
 			}
-			
+        
 			block.frontRightSlope = frontRight;
 			block.backRightSlope = backRight;
 			block.frontLeftSlope = frontLeft;

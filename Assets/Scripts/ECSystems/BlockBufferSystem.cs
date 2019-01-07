@@ -119,7 +119,8 @@ public class BlockBufferSystem : ComponentSystem
 			Value = new float3(position.Value.x, updateSquare.bottomBlockBuffer, position.Value.z)
 		};
 
-		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f), updateSquare.topBlockBuffer, updateSquare.bottomBlockBuffer);
+		//DEBUG
+		//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 0, 0, 0.5f), updateSquare.topBlockBuffer, updateSquare.bottomBlockBuffer);
 
 		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
 		commandBuffer.SetComponent<Position>(entity, pos);

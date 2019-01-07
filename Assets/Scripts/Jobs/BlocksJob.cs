@@ -39,11 +39,20 @@ struct BlocksJob : IJobParallelFor
 			}
 		}
 
+		float3 worldPosition = position + mapSquare.position;
+		int debug = 0;
+		/*if(position.y == heightMap[hMapIndex].height && worldPosition.x == 84 && worldPosition.z == 641)
+			debug = 1;
+		if(position.y == heightMap[hMapIndex].height && worldPosition.x == 83 && worldPosition.z == 641)
+			debug = 2; */
+
 		blocks[i] = new Block
 		{
+			debug = debug,
+
 			type = type,
 			localPosition = position,
-			worldPosition = position + mapSquare.position
+			worldPosition = worldPosition
 		};
 	}
 }

@@ -11,7 +11,7 @@ using UnityEngine;
 using UnityEditor;
 
 //	Generate 3D mesh from block data
-[UpdateAfter(typeof(BlockSystem))]
+[UpdateAfter(typeof(TerrainSlopeSystem))]
 public class MeshSystem : ComponentSystem
 {
 	//	Parralel job batch size
@@ -52,7 +52,7 @@ public class MeshSystem : ComponentSystem
 
 		squareQuery = new EntityArchetypeQuery{
 			Any 	= Array.Empty<ComponentType>(),
-			None  	= new ComponentType[] { typeof(Tags.InnerBuffer), typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer), typeof(Tags.GenerateBlocks) },
+			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer), typeof(Tags.InnerBuffer) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.DrawMesh) }
 			};
 	}
@@ -96,30 +96,9 @@ public class MeshSystem : ComponentSystem
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity = entities[e];
-				float2 position = new float2(
-					positions[e].Value.x,
-					positions[e].Value.z
-					);
 
 				//	List of adjacent square entities
 				AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(entity);
-
-				NativeArray<int> adjacentOffsets = new NativeArray<int>(8, Allocator.TempJob);
-				for(int i = 0; i < 8; i++)
-					adjacentOffsets[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).bottomBlockBuffer;
-
-				//	Adjacent height maps in 8 directions
-                DynamicBuffer<Topology>[] adjacentHeightMaps = new DynamicBuffer<Topology>[8];
-				for(int i = 0; i < 8; i++)
-					adjacentHeightMaps[i] = entityManager.GetBuffer<Topology>(adjacentSquares[i]);
-
-				/*//	Vertex offsets for 4 top vertices of each block (slopes)
-				GetSlopes(
-					squares[e],
-					blockAccessor[e],
-					heightAccessor[e].ToNativeArray(),
-					adjacentHeightMaps
-				); */
 
 				//	Check block face exposure
 				FaceCounts counts;
@@ -127,22 +106,22 @@ public class MeshSystem : ComponentSystem
 					squares[e],
 					blockAccessor[e],
 					adjacentSquares,
-					adjacentOffsets,
 					out counts
 				);
 
 				//	Create mesh entity if any faces are exposed
 				if(counts.faceCount != 0)
 					SetMeshComponent(
-						GetMesh(squares[e], faces, blockAccessor[e], heightAccessor[e].ToNativeArray(), adjacentOffsets, counts),
-						position,
+						GetMesh(squares[e], faces, blockAccessor[e], counts),
 						entity,
 						commandBuffer
 					);
 
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 				faces.Dispose();
-				adjacentOffsets.Dispose();
+
+				//DEBUG
+      			CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.5f), 40, 50);
 			}
 		}
 		commandBuffer.Playback(entityManager);
@@ -151,137 +130,17 @@ public class MeshSystem : ComponentSystem
 		chunks.Dispose();
 	}
 
-	//	Generate list of Y offsets for top 4 cube vertices
-	void GetSlopes(MapSquare mapSquare, DynamicBuffer<Block> blocks, NativeArray<Topology> heightMap, DynamicBuffer<Topology>[] adjacentHeightMaps)
-	{
-
-		//int slopeCount = 0;
-		float3[] directions = Util.CardinalDirections();
-		for(int h = 0; h < heightMap.Length; h++)
-		{
-			int height = heightMap[h].height;
-
-			//	2D position
-			float3 pos = Util.Unflatten2D(h, cubeSize);
-
-			//	3D position
-			int blockIndex = Util.Flatten(pos.x, height - mapSquare.bottomBlockBuffer, pos.z, cubeSize);
-			Block block = blocks[blockIndex];
-
-			//	Block type is not sloped
-			if(BlockTypes.sloped[block.type] == 0) continue;
-
-			//	Height differences for all adjacent positions
-			float[] differences = new float[directions.Length];
-
-			int heightDifferenceCount = 0;
-
-			for(int d = 0; d < directions.Length; d++)
-			{
-				int x = (int)(directions[d].x + pos.x);
-				int z = (int)(directions[d].z + pos.z);
-
-				//	Direction of the adjacent map square that owns the required block
-				float3 edge = Util.EdgeOverlap(new float3(x, 0, z), cubeSize);
-
-				int adjacentHeight;
-
-				//	Block is outside map square
-				if(	edge.x != 0 || edge.z != 0)
-					adjacentHeight = adjacentHeightMaps[Util.DirectionToIndex(edge)][Util.WrapAndFlatten2D(x, z, cubeSize)].height;
-				//	Block is inside map square
-				else
-					adjacentHeight = heightMap[Util.Flatten2D(x, z, cubeSize)].height;
-
-				//	Height difference in blocks
-				int difference = adjacentHeight - height;
-
-				if(difference != 0) heightDifferenceCount++;
-
-				differences[d] = difference;
-			}
-
-			//	Terrain is not sloped
-			if(heightDifferenceCount == 0) continue;
-			
-			//	Get vertex offsets (-1 to 1) for top vertices of cube required for slope.
-			float frontRight	= GetVertexOffset(differences[0], differences[2], differences[4]);	//	front right
-			float backRight		= GetVertexOffset(differences[0], differences[3], differences[6]);	//	back right
-			float frontLeft		= GetVertexOffset(differences[1], differences[2], differences[5]);	//	front left
-			float backLeft 		= GetVertexOffset(differences[1], differences[3], differences[7]);	//	back left
-
-			int changedVertexCount = 0;
-
-			if(frontRight != 0)	changedVertexCount++;
-			if(backRight != 0)	changedVertexCount++;
-			if(frontLeft != 0)	changedVertexCount++;
-			if(backLeft != 0)	changedVertexCount++;
-
-			SlopeType slopeType = 0;
-			SlopeFacing slopeFacing = 0;
-
-			//	Check slope type and facing axis
-			if(changedVertexCount == 1 && (frontLeft != 0 || backRight != 0))
-			{
-				slopeType = SlopeType.INNERCORNER;	//	NWSE
-				slopeFacing = SlopeFacing.NWSE;
-			}
-			else if(changedVertexCount == 1 && (frontRight != 0 || backLeft != 0))
-			{
-				slopeType = SlopeType.INNERCORNER;	//	SWNE
-				slopeFacing = SlopeFacing.SWNE;
-			}
-			else if(frontRight < 0 && backLeft < 0)
-			{
-				slopeType = SlopeType.OUTERCORNER;
-				slopeFacing = SlopeFacing.NWSE;
-			}
-			else if(frontLeft < 0 && backRight < 0)
-			{
-				slopeType = SlopeType.OUTERCORNER;
-				slopeFacing = SlopeFacing.SWNE;
-			}
-			else if(backLeft + backRight + frontLeft + frontRight == -2)
-			{
-				slopeType = SlopeType.FLAT;
-				//	Don't need slope facing for flat slopes, only for corners
-			}
-			
-			block.frontRightSlope = frontRight;
-			block.backRightSlope = backRight;
-			block.frontLeftSlope = frontLeft;
-			block.backLeftSlope = backLeft;
-			block.slopeType = slopeType;
-			block.slopeFacing = slopeFacing;
-
-			blocks[blockIndex] = block;
-		}
-	}
-
-	float GetVertexOffset(float adjacent1, float adjacent2, float diagonal)
-	{
-		bool anyAboveOne = (adjacent1 > 1 || adjacent2 > 1 || diagonal > 1);
-		bool bothAdjacentAboveZero = (adjacent1 > 0 && adjacent2 > 0);
-		bool anyAdjacentAboveZero = (adjacent1 > 0 || adjacent2 > 0);
-
-		//	Vert up
-		//if(bothAdjacentAboveZero && anyAboveOne) return 1;
-		
-		//	No change
-		if(anyAdjacentAboveZero) return 0;
-
-		//	Vert down
-		return math.clamp(adjacent1 + adjacent2 + diagonal, -1, 0);
-		
-	}
-
 	//	Generate structs with int values showing face exposure for each block
-	NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, DynamicBuffer<Block> blocks, AdjacentSquares adjacentSquares, NativeArray<int> adjacentOffsets, out FaceCounts counts)
+	NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, DynamicBuffer<Block> blocks, AdjacentSquares adjacentSquares, out FaceCounts counts)
 	{
 		var exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
 
 		NativeArray<float3> directions = new NativeArray<float3>(8, Allocator.TempJob);
 		directions.CopyFrom(Util.CardinalDirections());
+
+		NativeArray<int> adjacentOffsets = new NativeArray<int>(8, Allocator.TempJob);
+			for(int i = 0; i < 8; i++)
+				adjacentOffsets[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).bottomBlockBuffer;
 		
 		var job = new FacesJob(){
 			exposedFaces = exposedFaces,
@@ -303,8 +162,9 @@ public class MeshSystem : ComponentSystem
 		job.Schedule(mapSquare.drawArrayLength, batchSize).Complete();
 
 		directions.Dispose();
+		adjacentOffsets.Dispose();
 
-		//	Count total exposed faces and set face indices	
+		//	Count vertices and triangles	
 		int faceCount = 0;
 		int vertCount = 0;
 		int triCount = 0;
@@ -315,6 +175,7 @@ public class MeshSystem : ComponentSystem
 			{
 				Faces blockFaces = exposedFaces[i];
 
+				//	Starting indices in mesh arrays
 				blockFaces.faceIndex = faceCount;
 				blockFaces.vertIndex = vertCount;
 				blockFaces.triIndex = triCount;
@@ -351,13 +212,8 @@ public class MeshSystem : ComponentSystem
 		return exposedFaces;
 	}
 
-	Mesh GetMesh(MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, NativeArray<Topology> heightMap, NativeArray<int> adjacentLowestBlocks, FaceCounts counts)
+	Mesh GetMesh(MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, FaceCounts counts)
 	{
-		int cubeSlice = (cubeSize * cubeSize);
-		if(blocks.Length == 0)
-		{
-			Debug.Log("Tried to draw empty cube!");
-		}
 		//	Determine vertex and triangle arrays using face count
 		NativeArray<float3> vertices 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
 		NativeArray<float3> normals 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
@@ -374,11 +230,9 @@ public class MeshSystem : ComponentSystem
 
 			blocks 		= blocks,
 			faces 		= faces,
-			heightMap	= heightMap,
 
 			util 		= new JobUtil(),
 			cubeSize 	= cubeSize,
-			cubeSlice	= cubeSlice,
 
 			baseVerts 	= new CubeVertices(true)
 		};
@@ -431,7 +285,7 @@ public class MeshSystem : ComponentSystem
 	}
 
 	// Apply mesh to MapSquare entity
-	void SetMeshComponent(Mesh mesh, float2 pos, Entity entity, EntityCommandBuffer commandBuffer)
+	void SetMeshComponent(Mesh mesh, Entity entity, EntityCommandBuffer commandBuffer)
 	{
 		MeshInstanceRenderer renderer = new MeshInstanceRenderer();
 		renderer.mesh = mesh;
