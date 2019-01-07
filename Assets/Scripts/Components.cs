@@ -93,13 +93,24 @@ namespace MyComponents
 		{
 			switch(side)
 			{
-				case 0: return new float2(frontRightSlope, backRightSlope);
-				case 1:	return new float2(frontLeftSlope, backLeftSlope);
-				case 2: return new float2(frontRightSlope, frontLeftSlope);
-				case 3: return new float2(backRightSlope, backLeftSlope);
+				case 0: return new float2(frontRightSlope, backRightSlope);	//	Right
+				case 1:	return new float2(frontLeftSlope, backLeftSlope);	//	Left
+				case 2: return new float2(frontRightSlope, frontLeftSlope);	//	Front
+				case 3: return new float2(backRightSlope, backLeftSlope);	//	Back
 				default: throw new System.ArgumentOutOfRangeException("Index out of range 3: " + side);
 			}
 		}
+		/*public float2 GetOppositeSlopeVerts(int side)
+		{
+			switch(side)
+			{
+				case 0: return new float2(frontLeftSlope, backLeftSlope);	//	Left
+				case 1:	return new float2(frontRightSlope, backRightSlope);	//	Right
+				case 2: return new float2(backRightSlope, backLeftSlope);	//	Back
+				case 3: return new float2(frontRightSlope, frontLeftSlope);	//	Front
+				default: throw new System.ArgumentOutOfRangeException("Index out of range 3: " + side);
+			}
+		} */
 	}
 }
 

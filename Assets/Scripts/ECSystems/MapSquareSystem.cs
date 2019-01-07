@@ -128,7 +128,7 @@ public class MapSquareSystem : ComponentSystem
 		}
 		
 		CheckBuffer(entity, buffer, position);
-		CustomDebugTools.MapBufferDebug(entity);
+		//CustomDebugTools.MapBufferDebug(entity);
 		return 0;
 	}
 

@@ -264,10 +264,13 @@ public class MeshSystem : ComponentSystem
 		bool bothAdjacentAboveZero = (adjacent1 > 0 && adjacent2 > 0);
 		bool anyAdjacentAboveZero = (adjacent1 > 0 || adjacent2 > 0);
 
-		if(bothAdjacentAboveZero && anyAboveOne) return 1;
+		//	Vert up
+		//if(bothAdjacentAboveZero && anyAboveOne) return 1;
 		
+		//	No change
 		if(anyAdjacentAboveZero) return 0;
 
+		//	Vert down
 		return math.clamp(adjacent1 + adjacent2 + diagonal, -1, 0);
 		
 	}
@@ -329,7 +332,8 @@ public class MeshSystem : ComponentSystem
 							triCount  += 6;
 							break;
 
-						case Faces.Exp.HALF:
+						case Faces.Exp.HALFOUT:
+						case Faces.Exp.HALFIN:
 							vertCount 	+= 3;
 							triCount 	+= 3;
 							break;

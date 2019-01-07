@@ -1,6 +1,6 @@
 ﻿public struct Faces
 {
-	public enum Exp { HIDDEN, FULL, HALF }
+	public enum Exp { HIDDEN, FULL, HALFOUT, HALFIN }
 
 	public int right, left, front, back, up, down;
 	public int count;

@@ -66,35 +66,61 @@ struct FacesJob : IJobParallelFor
 		if(blocks[i].type == 0) return;
 
 		//	Local position in cube
-		float3 positionInMesh = util.Unflatten(i, cubeSize);
+		float3 position = util.Unflatten(i, cubeSize);
 
 		Faces faces = new Faces();
-		faces.up 	= FaceExposed(positionInMesh, new float3( 0,	1, 0), i);
-		faces.down 	= FaceExposed(positionInMesh, new float3( 0,   -1, 0), i);
+		faces.up 	= FaceExposed(position, new float3( 0,	1, 0), i);
+		faces.down 	= FaceExposed(position, new float3( 0,   -1, 0), i);
 
 		//	Right, left, front, back
-		if(blocks[i].slopeType == SlopeType.NOTSLOPED)
+		for(int d = 0; d < 4; d++)
 		{
-			for(int d = 0; d < 4; d++)
-				faces[d] = BlockTypes.translucent[GetBlock(positionInMesh + directions[d]).type];
-		}
-		else
-		{
-			for(int d = 0; d < 4; d++)
-			{
-				Block adjacentBlock = GetBlock(positionInMesh + directions[d]);
-				int exposed = BlockTypes.translucent[adjacentBlock.type];
+			Block adjacentBlock = GetBlock(position + directions[d]);
+			int exposed = BlockTypes.translucent[adjacentBlock.type];
 
+			//	Not a slope
+			if(blocks[i].slopeType == 0)
+			{
+				faces[d] = exposed > 0 ? (int)Faces.Exp.FULL : (int)Faces.Exp.HIDDEN;
+				continue;
+			}
+			else
+			{
 				float2 slopeVerts = blocks[i].GetSlopeVerts(d);
 
+				if(slopeVerts.x + slopeVerts.y == -2)
+					faces[d] = (int)Faces.Exp.HIDDEN;
+				else if(slopeVerts.x + slopeVerts.y == 0)
+					faces[d] = exposed > 0 ? (int)Faces.Exp.FULL : (int)Faces.Exp.HIDDEN;
+				
+				// Half face
 				if(slopeVerts.x + slopeVerts.y == -1)
 				{
-					faces[d] = adjacentBlock.slopeType != SlopeType.NOTSLOPED ? 0 : 2;
+					if(exposed > 0)
+						faces[d] = (int)Faces.Exp.HALFOUT;
+					else if(adjacentBlock.slopeType == SlopeType.NOTSLOPED)
+						faces[d] = (int)Faces.Exp.HALFIN;
 				}
-				else
-					faces[d] = 0;
 			}
+
 		}
+
+		//if(blocks[i].localPosition+mapSquare.po)
+		
+		/*for(int d = 0; d < 4; d++)
+		{
+			Block adjacentBlock = GetBlock(position + directions[d]);
+			int exposed = BlockTypes.translucent[adjacentBlock.type];
+
+			float2 slopeVerts = blocks[i].GetSlopeVerts(d);
+
+			if(slopeVerts.x + slopeVerts.y == -1)
+			{
+				faces[d] = adjacentBlock.slopeType != SlopeType.NOTSLOPED ? 0 : 2;
+			}
+			else
+				faces[d] = 0;
+		} */
 	
 		faces.SetCount();
 
