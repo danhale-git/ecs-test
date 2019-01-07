@@ -49,72 +49,38 @@ struct MeshJob : IJobParallelFor
 
 		//	Vertices and Triangles for exposed sides
 
-		int faceColor = 0;
-		
 		for(int f = 0; f < 6; f++)
 		{
 			int exposure = faces[i][f];
 			if(exposure == 0) continue;
 
+			//	Top face of sloped block
 			if(f == 4 && block.slopeType != SlopeType.NOTSLOPED)
 			{
 				DrawSlope(triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, ref triIndex, ref vertIndex);
 				continue;
 			}
 
+			//	All other faces
 			switch((Faces.Exp)exposure)
 			{
+				//	Normal cube face
 				case Faces.Exp.FULL:
 					DrawFace(f, triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, ref triIndex, ref vertIndex);
 					break;
+				//	Half faces for slope edges
 				case Faces.Exp.HALFOUT:
-					faceColor = 1;
-					DrawHalfFace(f, triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, (Faces.Exp)faces[i][f], ref triIndex, ref vertIndex);
-					break;
 				case Faces.Exp.HALFIN:
-					faceColor = 2;
 					DrawHalfFace(f, triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, (Faces.Exp)faces[i][f], ref triIndex, ref vertIndex);
 					break;
 				default: continue;
 			}
 		}
 
-		if(block.worldPosition.x == 145 && block.worldPosition.y == 39 && block.worldPosition.z == 640)
-		{
-			Debug.Log("mesh: "+faces[i][1]);
-			for(int v = 0; v < vertIndex; v++)
-			{
-				colors[v+vertOffset] = new float4(0, 1, 1, 1);
-			}
-		}
-		else
-		{	
-		//	Vertex colours
-			for(int v = 0; v < vertIndex; v++)
-			{
-				switch(faceColor)
-				{
-					case 0: colors[v+vertOffset] = BlockTypes.color[blocks[i].type]; break;
-					case 1: colors[v+vertOffset] = new float4(0, 1, 0, 1); break;
-					case 2: colors[v+vertOffset] = new float4(1, 0, 0, 1); break;
-				}
-			}
-
-			/*for(int v = 0; v < vertIndex; v++)
-			{
-				switch((int)block.slopeType)
-				{
-					case 0: colors[v+vertOffset] = new float4(1, 0, 0, 1); break;
-					case 1: colors[v+vertOffset] = new float4(0, 1, 0, 1); break;
-					default: colors[v+vertOffset] = BlockTypes.color[blocks[i].type]; break;
-				}
-			} */
-		}
-
-		/*for(int v = 0; v < vertIndex; v++)
+		for(int v = 0; v < vertIndex; v++)
 		{
 			colors[v+vertOffset] = BlockTypes.color[blocks[i].type];
-		} */
+		} 
 	}
 
 	void DrawFace(int face, int triOffset, int vertOffset, Block block, float3 position, ref int triIndex, ref int vertIndex)
@@ -264,69 +230,50 @@ struct MeshJob : IJobParallelFor
 
 		float3 thirdVertex = float3.zero;
 
+		//	Half covering below slope
 		if(exposure == Faces.Exp.HALFOUT)
 		{
+			//	Top left or right face vertex
 			if(slope.x < 0) thirdVertex = face[1];
 			else if(slope.y < 0) thirdVertex = face[0];
 
+			//	Bottom two face vertices
 			vertices[index+0] = position + face[2];
 			vertices[index+1] = position + face[3];
 		}
+		//	Half covering above slope
 		else if(exposure == Faces.Exp.HALFIN)
 		{
+			//	Bottom left or right face vertex
 			if(slope.x < 0) thirdVertex = face[2];
 			else if(slope.y < 0) thirdVertex = face[3];
 
-			vertices[index+0] = position + face[1];
-			vertices[index+1] = position + face[0];
+			//	Top two face vertices
+			vertices[index+0] = position + face[0];
+			vertices[index+1] = position + face[1];
 		}
 
+		//	Assign third vertex
 		vertices[index+2] = position + thirdVertex;
 	}
+
 	void HalfTriangles(int index, int vertIndex, int side, Faces.Exp exposure)
 	{
 		switch(side)
 		{
 			case 0:
 			case 3:
-				switch(exposure)
-				{
-					case Faces.Exp.HALFOUT:
-						HalfTris(index, vertIndex);
-						break;
-					case Faces.Exp.HALFIN:
-						HalfTrisFlipped(index, vertIndex);
-						break;
-				}
-				
+				triangles[index+0] = 0 + vertIndex; 
+				triangles[index+1] = 1 + vertIndex; 
+				triangles[index+2] = 2 + vertIndex;
 				break;
-			case 2:
 			case 1:
-				switch(exposure)
-				{
-					case Faces.Exp.HALFOUT:
-						HalfTrisFlipped(index, vertIndex);
-						break;
-					case Faces.Exp.HALFIN:
-						HalfTris(index, vertIndex);
-						break;
-				}
+			case 2:
+				triangles[index+0] = 2 + vertIndex; 
+				triangles[index+1] = 1 + vertIndex; 
+				triangles[index+2] = 0 + vertIndex;
 				break;
-
 		}
-	}
-	void HalfTris(int index, int vertIndex)
-	{
-		triangles[index+0] = 0 + vertIndex; 
-		triangles[index+1] = 1 + vertIndex; 
-		triangles[index+2] = 2 + vertIndex;
-	}
-
-	void HalfTrisFlipped(int index, int vertIndex)
-	{
-		triangles[index+0] = 2 + vertIndex; 
-		triangles[index+1] = 1 + vertIndex; 
-		triangles[index+2] = 0 + vertIndex;
 	}
 }
 
