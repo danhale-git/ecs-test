@@ -113,13 +113,13 @@ public class MeshSystem : ComponentSystem
 				for(int i = 0; i < 8; i++)
 					adjacentHeightMaps[i] = entityManager.GetBuffer<Topology>(adjacentSquares[i]);
 
-				//	Vertex offsets for 4 top vertices of each block (slopes)
+				/*//	Vertex offsets for 4 top vertices of each block (slopes)
 				GetSlopes(
 					squares[e],
 					blockAccessor[e],
 					heightAccessor[e].ToNativeArray(),
 					adjacentHeightMaps
-				);
+				); */
 
 				//	Check block face exposure
 				FaceCounts counts;

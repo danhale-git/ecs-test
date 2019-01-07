@@ -88,9 +88,9 @@ public class BlockSystem : ComponentSystem
 				for(int b = 0; b < blocks.Length; b++)
 					blockBuffer [b] = blocks[b];
 
-				//	Draw mesh next
+				//	Set slopes next
 				commandBuffer.RemoveComponent<Tags.GenerateBlocks>(entity);
-                commandBuffer.AddComponent(entity, new Tags.DrawMesh());
+                commandBuffer.AddComponent(entity, new Tags.SetSlopes());
 
 				blocks.Dispose();
 			}

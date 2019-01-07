@@ -112,6 +112,7 @@ namespace Tags
 	public struct SetDrawBuffer : IComponentData { }
 	public struct SetBlockBuffer : IComponentData { }
 	public struct GenerateBlocks : IComponentData { }
+	public struct SetSlopes : IComponentData { }
 	public struct DrawMesh : IComponentData { }
 
 	public struct InnerBuffer : IComponentData { }
