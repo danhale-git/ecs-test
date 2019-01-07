@@ -264,11 +264,23 @@ struct MeshJob : IJobParallelFor
 
 		float3 thirdVertex = float3.zero;
 
-		if(slope.x < 0) thirdVertex = exposure == Faces.Exp.HALFOUT ? face[1] : face[0];
-		else if(slope.y < 0) thirdVertex = exposure == Faces.Exp.HALFOUT ? face[0] : face[1];;
-		
-		vertices[index+0] = position + face[2];
-		vertices[index+1] = position + face[3];
+		if(exposure == Faces.Exp.HALFOUT)
+		{
+			if(slope.x < 0) thirdVertex = face[1];
+			else if(slope.y < 0) thirdVertex = face[0];
+
+			vertices[index+0] = position + face[2];
+			vertices[index+1] = position + face[3];
+		}
+		else if(exposure == Faces.Exp.HALFIN)
+		{
+			if(slope.x < 0) thirdVertex = face[2];
+			else if(slope.y < 0) thirdVertex = face[3];
+
+			vertices[index+0] = position + face[1];
+			vertices[index+1] = position + face[0];
+		}
+
 		vertices[index+2] = position + thirdVertex;
 	}
 	void HalfTriangles(int index, int vertIndex, int side, Faces.Exp exposure)
@@ -277,11 +289,28 @@ struct MeshJob : IJobParallelFor
 		{
 			case 0:
 			case 3:
-				HalfTris(index, vertIndex);
+				switch(exposure)
+				{
+					case Faces.Exp.HALFOUT:
+						HalfTris(index, vertIndex);
+						break;
+					case Faces.Exp.HALFIN:
+						HalfTrisFlipped(index, vertIndex);
+						break;
+				}
+				
 				break;
 			case 2:
 			case 1:
-				HalfTrisFlipped(index, vertIndex);				
+				switch(exposure)
+				{
+					case Faces.Exp.HALFOUT:
+						HalfTrisFlipped(index, vertIndex);
+						break;
+					case Faces.Exp.HALFIN:
+						HalfTris(index, vertIndex);
+						break;
+				}
 				break;
 
 		}

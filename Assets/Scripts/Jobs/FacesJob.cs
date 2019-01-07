@@ -115,6 +115,7 @@ struct FacesJob : IJobParallelFor
 						Debug.Log(adjacentBlock.worldPosition);
 						Debug.Log(directions[d]+" "+d+" half face");
 					}
+					
 					if(exposed > 0)
 						faces[d] = (int)Faces.Exp.HALFOUT;
 					else if(adjacentBlock.slopeType == SlopeType.NOTSLOPED)
