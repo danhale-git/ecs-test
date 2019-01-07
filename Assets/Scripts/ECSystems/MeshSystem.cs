@@ -22,7 +22,8 @@ public class MeshSystem : ComponentSystem
 	int cubeSize;
 	int cubeArrayLength;
 
-	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
+	//public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
+	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ShaderGraphTest.mat");
 
 	ArchetypeChunkEntityType 				entityType;
 	ArchetypeChunkComponentType<MapSquare>	squareType;
