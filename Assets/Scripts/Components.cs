@@ -9,6 +9,8 @@ namespace MyComponents
 
 	public struct MapSquare : IComponentData
 	{
+		public float3 position;
+
 		public int topBlock;
 		public int bottomBlock;
 
@@ -80,6 +82,7 @@ namespace MyComponents
 	{
 		public int type;
 		public float3 localPosition;
+		public float3 worldPosition;
 
 		public float frontRightSlope;
 		public float backRightSlope;

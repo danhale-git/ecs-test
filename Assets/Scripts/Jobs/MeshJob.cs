@@ -69,32 +69,52 @@ struct MeshJob : IJobParallelFor
 					break;
 				case Faces.Exp.HALFOUT:
 					faceColor = 1;
-					HalfVertices(vertIndex+vertOffset, f, positionInMesh, block, (Faces.Exp)faces[i][f]);
-					HalfTriangles(triIndex+triOffset, vertIndex+vertOffset, f,  (Faces.Exp)faces[i][f]);
-					vertIndex 	+= 3;
-					triIndex 	+= 3;
+					DrawHalfFace(f, triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, (Faces.Exp)faces[i][f], ref triIndex, ref vertIndex);
 					break;
 				case Faces.Exp.HALFIN:
 					faceColor = 2;
-					HalfVertices(vertIndex+vertOffset, f, positionInMesh, block, (Faces.Exp)faces[i][f]);
-					HalfTriangles(triIndex+triOffset, vertIndex+vertOffset, f,  (Faces.Exp)faces[i][f]);
-					vertIndex 	+= 3;
-					triIndex 	+= 3;
+					DrawHalfFace(f, triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, (Faces.Exp)faces[i][f], ref triIndex, ref vertIndex);
 					break;
 				default: continue;
 			}
 		}
 
-		//	Vertex colours
-		for(int v = 0; v < vertIndex; v++)
+		if(block.worldPosition.x == 145 && block.worldPosition.y == 39 && block.worldPosition.z == 640)
 		{
-			switch(faceColor)
+			Debug.Log("mesh: "+faces[i][1]);
+			for(int v = 0; v < vertIndex; v++)
 			{
-				case 0: colors[v+vertOffset] = BlockTypes.color[blocks[i].type]; break;
-				case 1: colors[v+vertOffset] = new float4(0, 1, 0, 1); break;
-				case 2: colors[v+vertOffset] = new float4(1, 0, 0, 1); break;
+				colors[v+vertOffset] = new float4(0, 1, 1, 1);
 			}
 		}
+		else
+		{	
+		//	Vertex colours
+			for(int v = 0; v < vertIndex; v++)
+			{
+				switch(faceColor)
+				{
+					case 0: colors[v+vertOffset] = BlockTypes.color[blocks[i].type]; break;
+					case 1: colors[v+vertOffset] = new float4(0, 1, 0, 1); break;
+					case 2: colors[v+vertOffset] = new float4(1, 0, 0, 1); break;
+				}
+			}
+
+			/*for(int v = 0; v < vertIndex; v++)
+			{
+				switch((int)block.slopeType)
+				{
+					case 0: colors[v+vertOffset] = new float4(1, 0, 0, 1); break;
+					case 1: colors[v+vertOffset] = new float4(0, 1, 0, 1); break;
+					default: colors[v+vertOffset] = BlockTypes.color[blocks[i].type]; break;
+				}
+			} */
+		}
+
+		/*for(int v = 0; v < vertIndex; v++)
+		{
+			colors[v+vertOffset] = BlockTypes.color[blocks[i].type];
+		} */
 	}
 
 	void DrawFace(int face, int triOffset, int vertOffset, Block block, float3 position, ref int triIndex, ref int vertIndex)
@@ -103,6 +123,14 @@ struct MeshJob : IJobParallelFor
 		Vertices(face, position, block, vertOffset);
 		triIndex += 6;
 		vertIndex +=  4;
+	}
+
+	void DrawHalfFace(int face, int triOffset, int vertOffset, Block block, float3 position, Faces.Exp exposure, ref int triIndex, ref int vertIndex)
+	{
+		HalfVertices(vertOffset, face, position, block, exposure);
+		HalfTriangles(triOffset, vertOffset, face,  exposure);
+		vertIndex 	+= 3;
+		triIndex 	+= 3;
 	}
 
 	void DrawSlope(int triOffset, int vertOffset, Block block, float3 position, ref int triIndex, ref int vertIndex)

@@ -43,6 +43,7 @@ struct BlocksJob : IJobParallelFor
 		{
 			type = type,
 			localPosition = position,
+			worldPosition = position + mapSquare.position
 		};
 	}
 }

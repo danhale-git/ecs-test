@@ -241,10 +241,10 @@ public class MeshSystem : ComponentSystem
 				slopeType = SlopeType.OUTERCORNER;
 				slopeFacing = SlopeFacing.SWNE;
 			}
-			else
+			else if(backLeft + backRight + frontLeft + frontRight == -2)
 			{
-				//	Don't need slope facing for flat slopes, only for corners
 				slopeType = SlopeType.FLAT;
+				//	Don't need slope facing for flat slopes, only for corners
 			}
 			
 			block.frontRightSlope = frontRight;

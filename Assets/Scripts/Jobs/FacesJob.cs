@@ -72,6 +72,13 @@ struct FacesJob : IJobParallelFor
 		faces.up 	= FaceExposed(position, new float3( 0,	1, 0), i);
 		faces.down 	= FaceExposed(position, new float3( 0,   -1, 0), i);
 
+		int debug = 0;
+		if(blocks[i].worldPosition.x == 145 && blocks[i].worldPosition.y == 39 && blocks[i].worldPosition.z == 640)
+		{
+			debug = 1;
+			Debug.Log("debugging block: "+i);
+		}
+
 		//	Right, left, front, back
 		for(int d = 0; d < 4; d++)
 		{
@@ -81,6 +88,7 @@ struct FacesJob : IJobParallelFor
 			//	Not a slope
 			if(blocks[i].slopeType == 0)
 			{
+				if(debug>0 && d == 1)Debug.Log("not slope");
 				faces[d] = exposed > 0 ? (int)Faces.Exp.FULL : (int)Faces.Exp.HIDDEN;
 				continue;
 			}
@@ -89,24 +97,35 @@ struct FacesJob : IJobParallelFor
 				float2 slopeVerts = blocks[i].GetSlopeVerts(d);
 
 				if(slopeVerts.x + slopeVerts.y == -2)
-					faces[d] = (int)Faces.Exp.HIDDEN;
-				else if(slopeVerts.x + slopeVerts.y == 0)
-					faces[d] = exposed > 0 ? (int)Faces.Exp.FULL : (int)Faces.Exp.HIDDEN;
-				
-				// Half face
-				if(slopeVerts.x + slopeVerts.y == -1)
 				{
+					if(debug>0 && d == 1)Debug.Log("hidden by slope");
+					faces[d] = (int)Faces.Exp.HIDDEN;
+				}
+				else if(slopeVerts.x + slopeVerts.y == 0)
+				{
+					if(debug>0 && d == 1)Debug.Log("full side on sloped block");
+					faces[d] = exposed > 0 ? (int)Faces.Exp.FULL : (int)Faces.Exp.HIDDEN;
+				}
+				// Half face
+				else if(slopeVerts.x + slopeVerts.y == -1)
+				{
+					if(debug>0 && d == 1)
+					{
+						Debug.Log(adjacentBlock.slopeType);
+						Debug.Log(adjacentBlock.worldPosition);
+						Debug.Log(directions[d]+" "+d+" half face");
+					}
 					if(exposed > 0)
 						faces[d] = (int)Faces.Exp.HALFOUT;
 					else if(adjacentBlock.slopeType == SlopeType.NOTSLOPED)
 						faces[d] = (int)Faces.Exp.HALFIN;
 				}
 			}
-
 		}
+		if(debug>0) Debug.Log("face check: "+faces[1]);
 
-		//if(blocks[i].localPosition+mapSquare.po)
-		
+			
+
 		/*for(int d = 0; d < 4; d++)
 		{
 			Block adjacentBlock = GetBlock(position + directions[d]);
