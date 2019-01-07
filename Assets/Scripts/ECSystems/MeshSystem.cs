@@ -25,10 +25,8 @@ public class MeshSystem : ComponentSystem
 	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
 
 	ArchetypeChunkEntityType 				entityType;
-	ArchetypeChunkComponentType<Position> 	positionType;
 	ArchetypeChunkComponentType<MapSquare>	squareType;
 	ArchetypeChunkBufferType<Block> 		blocksType;
-	ArchetypeChunkBufferType<Topology> 		heightType;
 
 	EntityArchetypeQuery squareQuery;
 
@@ -61,10 +59,8 @@ public class MeshSystem : ComponentSystem
 	protected override void OnUpdate()
 	{
 		entityType 		= GetArchetypeChunkEntityType();
-		positionType 	= GetArchetypeChunkComponentType<Position>();
 		squareType		= GetArchetypeChunkComponentType<MapSquare>();
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
-        heightType = GetArchetypeChunkBufferType<Topology>();
 
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			squareQuery,
@@ -87,10 +83,8 @@ public class MeshSystem : ComponentSystem
 
 			//	Get chunk data
 			NativeArray<Entity> 	entities 		= chunk.GetNativeArray(entityType);
-			NativeArray<Position> 	positions		= chunk.GetNativeArray(positionType);
 			NativeArray<MapSquare>	squares			= chunk.GetNativeArray(squareType);
 			BufferAccessor<Block> 	blockAccessor 	= chunk.GetBufferAccessor(blocksType);
-            BufferAccessor<Topology> heightAccessor	= chunk.GetBufferAccessor(heightType);
 
 			//	Iterate over map square entities
 			for(int e = 0; e < entities.Length; e++)
@@ -100,22 +94,16 @@ public class MeshSystem : ComponentSystem
 				//	List of adjacent square entities
 				AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(entity);
 
-				//	Check block face exposure
+				//	Check block face exposure and count mesh arrays
 				FaceCounts counts;
-				NativeArray<Faces> faces = CheckBlockFaces(
-					squares[e],
-					blockAccessor[e],
-					adjacentSquares,
-					out counts
-				);
+				NativeArray<Faces> faces = CheckBlockFaces(squares[e], blockAccessor[e], adjacentSquares, out counts);
 
 				//	Create mesh entity if any faces are exposed
 				if(counts.faceCount != 0)
 					SetMeshComponent(
 						GetMesh(squares[e], faces, blockAccessor[e], counts),
 						entity,
-						commandBuffer
-					);
+						commandBuffer);
 
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 				faces.Dispose();

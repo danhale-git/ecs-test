@@ -105,7 +105,7 @@ struct MeshJob : IJobParallelFor
 		vertIndex += 6;
 	}
 
-	//	Vertices for given side
+	//	Vertices for normal cube
 	void Vertices(int side, float3 position, Block block, int index)
 	{	
 		switch(side)
@@ -151,6 +151,7 @@ struct MeshJob : IJobParallelFor
 		}
 	}
 
+	//	Triangles for normal cube
 	void Triangles(int index, int vertIndex)
 	{
 		triangles[index+0] = 3 + vertIndex; 
@@ -160,67 +161,62 @@ struct MeshJob : IJobParallelFor
 		triangles[index+4] = 2 + vertIndex; 
 		triangles[index+5] = 1 + vertIndex;
 	}
-
-	//	Triangles are always the same set offset to vertex index
-	//	and align so rect division always bisects slope direction
-	void SlopedTriangles(int index, int vertIndex, Block block)
-	{
-		//	Slope is facing NW or SE
-		if(block.slopeFacing == SlopeFacing.NWSE)
-			TrianglesNWSE(index, vertIndex);
-		//	Slope is facing NE or SW
-		else
-			TrianglesSWNE(index, vertIndex);
-	}
+	
+	//	Vertices for sloped top face
+	//	Add two extra verts to enable hard
+	//	edges on the mesh
 	void SlopedVertices(int index, float3 position, Block block)
 	{
-		//	Slope is facing NW or SE
-		if(block.slopeFacing == SlopeFacing.NWSE)
-			SlopeVertsNWSE(index, position, block);
-		//	Slope is facing NE or SW
-		else
-			SlopeVertsSWNE(index, position, block);
-	}
-	
-	void SlopeVertsSWNE(int index, float3 position, Block block)
-	{
-		vertices[index+0] = baseVerts[7]+new float3(0, block.backLeftSlope, 0)+position;	//	back Left
-		vertices[index+1] = baseVerts[6]+new float3(0, block.backRightSlope, 0)+position;	//	back Right
-		vertices[index+2] = vertices[index+1];
-		vertices[index+3] = baseVerts[5]+new float3(0, block.frontRightSlope, 0)+position;	//	front Right
-		vertices[index+4] = baseVerts[4]+new float3(0, block.frontLeftSlope, 0)+position;	//	front Left
-		vertices[index+5] = vertices[index+4];
+		switch(block.slopeFacing)
+		{
+			case SlopeFacing.NWSE:
+				vertices[index+0] = baseVerts[7]+new float3(0, block.backLeftSlope, 0)+position;	//	back Left
+				vertices[index+1] = vertices[index+0];
+				vertices[index+2] = baseVerts[6]+new float3(0, block.backRightSlope, 0)+position;	//	back Right
+				vertices[index+3] = baseVerts[5]+new float3(0, block.frontRightSlope, 0)+position;	//	front Right
+				vertices[index+4] = vertices[index+3];
+				vertices[index+5] = baseVerts[4]+new float3(0, block.frontLeftSlope, 0)+position;	//	front Left
+				break;
+
+			case SlopeFacing.SWNE:
+				vertices[index+0] = baseVerts[7]+new float3(0, block.backLeftSlope, 0)+position;	//	back Left
+				vertices[index+1] = baseVerts[6]+new float3(0, block.backRightSlope, 0)+position;	//	back Right
+				vertices[index+2] = vertices[index+1];
+				vertices[index+3] = baseVerts[5]+new float3(0, block.frontRightSlope, 0)+position;	//	front Right
+				vertices[index+4] = baseVerts[4]+new float3(0, block.frontLeftSlope, 0)+position;	//	front Left
+				vertices[index+5] = vertices[index+4];
+				break;
+		}
 	}
 
-	void SlopeVertsNWSE(int index, float3 position, Block block)
+	//	Triangles for sloped top face
+	//	align so rect division always bisects
+	//	slope direction, for hard slope edges
+	void SlopedTriangles(int index, int vertIndex, Block block)
 	{
-		vertices[index+0] = baseVerts[7]+new float3(0, block.backLeftSlope, 0)+position;	//	back Left
-		vertices[index+1] = vertices[index+0];
-		vertices[index+2] = baseVerts[6]+new float3(0, block.backRightSlope, 0)+position;	//	back Right
-		vertices[index+3] = baseVerts[5]+new float3(0, block.frontRightSlope, 0)+position;	//	front Right
-		vertices[index+4] = vertices[index+3];
-		vertices[index+5] = baseVerts[4]+new float3(0, block.frontLeftSlope, 0)+position;	//	front Left
+		switch(block.slopeFacing)
+		{
+			case SlopeFacing.NWSE:
+				triangles[index+0] = 3 + vertIndex; 
+				triangles[index+1] = 0 + vertIndex; 
+				triangles[index+2] = 5 + vertIndex; 
+				triangles[index+3] = 1 + vertIndex; 
+				triangles[index+4] = 4 + vertIndex; 
+				triangles[index+5] = 2 + vertIndex;
+				break;
+
+			case SlopeFacing.SWNE:
+				triangles[index+0] = 4 + vertIndex; 
+				triangles[index+1] = 1 + vertIndex; 
+				triangles[index+2] = 0 + vertIndex; 
+				triangles[index+3] = 5 + vertIndex; 
+				triangles[index+4] = 3 + vertIndex; 
+				triangles[index+5] = 2 + vertIndex;
+				break;
+		}
 	}
 
-	void TrianglesSWNE(int index, int vertIndex)
-	{
-		triangles[index+0] = 4 + vertIndex; 
-		triangles[index+1] = 1 + vertIndex; 
-		triangles[index+2] = 0 + vertIndex; 
-		triangles[index+3] = 5 + vertIndex; 
-		triangles[index+4] = 3 + vertIndex; 
-		triangles[index+5] = 2 + vertIndex;
-	}
-	void TrianglesNWSE(int index, int vertIndex)
-	{
-		triangles[index+0] = 3 + vertIndex; 
-		triangles[index+1] = 0 + vertIndex; 
-		triangles[index+2] = 5 + vertIndex; 
-		triangles[index+3] = 1 + vertIndex; 
-		triangles[index+4] = 4 + vertIndex; 
-		triangles[index+5] = 2 + vertIndex;
-	}
-
+	//	Vertices for half face, one triangle arranged to fill above/below two slop vertices
 	void HalfVertices(int index, int side, float3 position, Block block, Faces.Exp exposure)
 	{
 		float2 slope = block.GetSlopeVerts(side);
@@ -255,6 +251,7 @@ struct MeshJob : IJobParallelFor
 		vertices[index+2] = position + thirdVertex;
 	}
 
+	//	Triangles for half face, flipped depending which side of the block
 	void HalfTriangles(int index, int vertIndex, int side, Faces.Exp exposure)
 	{
 		switch(side)
@@ -274,8 +271,6 @@ struct MeshJob : IJobParallelFor
 		}
 	}
 }
-
-
 
 public struct FaceVertices
 {
