@@ -53,10 +53,10 @@ public class PlayerInputSystem : ComponentSystem
         );
 
         if(chunks.Length == 0) chunks.Dispose();
-        else DoSomething(chunks);
+        else ApplyInput(chunks);
     }
 
-    void DoSomething(NativeArray<ArchetypeChunk> chunks)
+    void ApplyInput(NativeArray<ArchetypeChunk> chunks)
     {
         for(int c = 0; c < chunks.Length; c++)
         {
@@ -70,10 +70,10 @@ public class PlayerInputSystem : ComponentSystem
             for(int e = 0; e < entities.Length; e++)
             {
                 Entity entity = entities[e];
-                
 
-                float3 x = Input.GetAxis("Horizontal") * (float3)camera.transform.right;
-                float3 z = Input.GetAxis("Vertical") * (float3)camera.transform.forward;
+
+                float3 x = UnityEngine.Input.GetAxis("Horizontal") * (float3)camera.transform.right;
+                float3 z = UnityEngine.Input.GetAxis("Vertical") * (float3)camera.transform.forward;
 
                 float3 move = (x + z) * stats[e].speed;
 
