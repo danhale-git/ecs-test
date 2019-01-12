@@ -54,10 +54,10 @@ public class CameraSystem : ComponentSystem
         );
 
         if(chunks.Length == 0) chunks.Dispose();
-        else DoSomething(chunks);
+        else MoveCamera(chunks);
     }
 
-    void DoSomething(NativeArray<ArchetypeChunk> chunks)
+    void MoveCamera(NativeArray<ArchetypeChunk> chunks)
     {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
@@ -73,6 +73,7 @@ public class CameraSystem : ComponentSystem
                 Entity entity = entities[e];
                 float3 playerPosition = positions[e].Value;
 
+                //  Swivel
                 bool Q = Input.GetKey(KeyCode.Q);
                 bool E = Input.GetKey(KeyCode.E);
                 Quaternion cameraSwivel = Quaternion.identity;
@@ -84,9 +85,17 @@ public class CameraSystem : ComponentSystem
                 }
 
                 float3 rotated = Util.RotateAroundCenter(cameraSwivel, camera.transform.position, playerPosition);
-                float3 swivel = (float3)camera.transform.position - rotated;
+                float3 swivelOffset = (float3)camera.transform.position - rotated;
 
-                currentOffset += swivel;
+                //  Zoom
+                float3 zoomOffset = Input.GetAxis("Mouse ScrollWheel") * (camera.transform.forward * 10);
+
+                currentOffset += swivelOffset + zoomOffset;
+
+                float magnitude = math.sqrt(math.pow(currentOffset.x, 2) + math.pow(currentOffset.y, 2) + math.pow(currentOffset.z, 2));
+                
+                if(magnitude < 5 || magnitude > 50)
+                    currentOffset -= zoomOffset;
 
                 float3 newPosition =  playerPosition + currentOffset;
 
