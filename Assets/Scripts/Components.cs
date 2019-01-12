@@ -10,15 +10,10 @@ namespace MyComponents
 		public float speed;
 	}
 
-	public struct PhysicsEntity : IComponentData
-	{
-		//float weight;
-		//float3 size;
-	}
-
 	public struct Move : IComponentData
 	{
 		public float3 positionChangePerSecond;
+		public Entity currentMapSquare;
 	}
 
 	#endregion

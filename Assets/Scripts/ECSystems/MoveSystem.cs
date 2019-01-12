@@ -46,10 +46,10 @@ public class MoveSystem : ComponentSystem
         );
 
         if(chunks.Length == 0) chunks.Dispose();
-        else DoSomething(chunks);
+        else MoveEntities(chunks);
     }
 
-    void DoSomething(NativeArray<ArchetypeChunk> chunks)
+    void MoveEntities(NativeArray<ArchetypeChunk> chunks)
     {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
@@ -63,9 +63,25 @@ public class MoveSystem : ComponentSystem
             
             for(int e = 0; e < entities.Length; e++)
             {
-                float3 positionChange = movement[e].positionChangePerSecond * Time.deltaTime;
+                float3 newPos = positions[e].Value + (movement[e].positionChangePerSecond * Time.deltaTime);
 
-                Position newPosition = new Position { Value = positions[e].Value + positionChange };
+                Position newPosition;
+
+                if(entityManager.Exists(movement[e].currentMapSquare))
+                {
+                    DynamicBuffer<Topology> heightMap = entityManager.GetBuffer<Topology>(movement[e].currentMapSquare);
+                    if(heightMap.Length > 0)
+                    {
+                        float3 local = Util.LocalPosition(positions[e].Value, cubeSize);
+                        int height = heightMap[Util.Flatten2D(local.x, local.z, cubeSize)].height;
+                        newPosition = new Position { Value = new float3(newPos.x, height, newPos.z) };
+                    }
+                    else
+                        newPosition = new Position { Value = newPos };
+                }
+                else
+                    newPosition = new Position { Value = newPos };
+
 
                 commandBuffer.SetComponent<Position>(entities[e], newPosition);
             }

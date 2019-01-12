@@ -86,9 +86,12 @@ public class CameraSystem : ComponentSystem
 
                 currentOffset += swivel;
 
+                float3 newPosition =  playerPosition + currentOffset;
+
+                float yLerp = math.lerp(camera.transform.position.y, newPosition.y, 0.1f);
+
                 //DEBUG
-                camera.transform.position = playerPosition + currentOffset;
-                camera.transform.LookAt(playerPosition);
+                camera.transform.position = new float3(newPosition.x, yLerp, newPosition.z);
             }
         }
 

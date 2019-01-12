@@ -33,6 +33,10 @@ public static class Util
     {
         return (z * size) + x;
     }
+    public static int Flatten2D(float x, float z, int size)
+    {
+        return ((int)z * size) + (int)x;
+    }
 
     public static float To01(float value)
 	{
@@ -56,9 +60,13 @@ public static class Util
     public static Vector3 VoxelOwner(Vector3 voxel, int cubeSize)
 	{
 		int x = Mathf.FloorToInt(voxel.x / cubeSize);
-		int y = Mathf.FloorToInt(voxel.y / cubeSize);
 		int z = Mathf.FloorToInt(voxel.z / cubeSize);
-		return new Vector3(x*cubeSize,y*cubeSize,z*cubeSize);
+		return new Vector3(x*cubeSize, 0, z*cubeSize);
+	}
+    public static Vector3 LocalPosition(Vector3 voxel, int cubeSize)
+	{
+		Vector3 ownerWorldPosition = VoxelOwner(voxel, cubeSize);
+        return voxel - ownerWorldPosition;
 	}
 
     public static float3[] CardinalDirections()
@@ -122,5 +130,11 @@ public static class Util
     public static float3 RotateAroundCenter(Quaternion rotation, Vector3 position, Vector3 centre)
     {
         return rotation * (position - centre) + centre;
+    }
+
+    public static bool Float3sMatch(float3 a, float3 b)
+    {
+        if(a.x == b.x && a.y == b.y && a.z ==b.z) return true;
+        else return false;
     }
 }

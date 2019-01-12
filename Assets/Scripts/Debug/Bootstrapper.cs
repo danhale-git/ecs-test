@@ -37,7 +37,9 @@ public class Bootstrapper
 
         //  Mesh
         MeshInstanceRenderer renderer = new MeshInstanceRenderer();
-		renderer.mesh =  GameObject.CreatePrimitive(PrimitiveType.Capsule).GetComponent<MeshFilter>().mesh;
+        GameObject capsule = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+		renderer.mesh = capsule.GetComponent<MeshFilter>().mesh;
+        GameObject.Destroy(capsule);
 		renderer.material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ShaderGraphTest.mat");
 		entityManager.AddSharedComponentData<MeshInstanceRenderer>(playerEntity, renderer);
 

@@ -54,19 +54,37 @@ public class MapSquareSystem : ComponentSystem
 			};
 	}
 
-	Vector3 previousSquare;
+	Vector3 previousSquare = new Vector3(100, 100, 100);
 
 	//	Continually generate map squares
 	protected override void OnUpdate()
 	{
 		float3 position = entityManager.GetComponentData<Position>(playerEntity).Value;
 		//	Generate map in radius around player
-		Vector3 currentSquare = Util.VoxelOwner(position, cubeSize);
-		if(currentSquare != previousSquare)
+		float3 currentSquarePosition = Util.VoxelOwner(position, cubeSize);
+		if(!Util.Float3sMatch(currentSquarePosition, previousSquare))
 		{
-			previousSquare = currentSquare;
-			GenerateRadius(currentSquare, viewDistance);
+			previousSquare = currentSquarePosition;
+			GenerateRadius(currentSquarePosition, viewDistance);
+			UpdatePlayerCurrentSquare(currentSquarePosition);
 		}		
+	}
+
+	//TODO: Iterate over all entities with Move component and do this.
+	//		Work it into CreateUpdateRadius function
+	void UpdatePlayerCurrentSquare(float3 currentSquarePosition)
+	{
+		Entity currentSquareEntity;
+		if(GetMapSquare(currentSquarePosition, out currentSquareEntity))
+		{
+			Move movement = entityManager.GetComponentData<Move>(playerEntity);
+			movement.currentMapSquare = currentSquareEntity;
+			entityManager.SetComponentData<Move>(playerEntity, movement);
+		}
+		else
+		{
+			Debug.Log("Could not find map square at "+currentSquarePosition);
+		}
 	}
 
 	//	Create squares
@@ -102,8 +120,6 @@ public class MapSquareSystem : ComponentSystem
 			}
 
 		CreateUpdateRadius(positions, buffers);
-
-		
 
 		for(int i = 0; i < positions.Length; i++)
 		{

@@ -64,7 +64,7 @@ public class PlayerInputSystem : ComponentSystem
 
             NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
             NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-            NativeArray<Move> inputs = chunk.GetNativeArray(moveType);
+            NativeArray<Move> movement = chunk.GetNativeArray(moveType);
             NativeArray<Stats> stats = chunk.GetNativeArray(statsType);
             
             for(int e = 0; e < entities.Length; e++)
@@ -77,9 +77,11 @@ public class PlayerInputSystem : ComponentSystem
 
                 float3 move = (x + z) * stats[e].speed;
 
-                Move moveComponent = new Move { positionChangePerSecond = new float3(move.x, 0, move.z) };
+                Move moveComponent = movement[e];
+                
+                moveComponent.positionChangePerSecond = new float3(move.x, 0, move.z);
 
-                inputs[e] = moveComponent;
+                movement[e] = moveComponent;
             }
         }
         chunks.Dispose();
