@@ -3,6 +3,23 @@ using Unity.Mathematics;
 
 namespace MyComponents
 {
+	#region Player
+
+	public struct PlayerInput : IComponentData
+	{
+		public float3 move;
+	}
+
+	public struct PhysicsEntity : IComponentData
+	{
+		//float weight;
+		//float3 size;
+	}
+
+	#endregion
+
+	#region Map
+
 	public enum CubeComposition { MIXED, SOLID, AIR};
 	public enum SlopeType { NOTSLOPED, FLAT, INNERCORNER, OUTERCORNER }
 	public enum SlopeFacing { NWSE, SWNE }
@@ -106,7 +123,11 @@ namespace MyComponents
 			}
 		}
 	}
+
+	#endregion
 }
+
+#region Tags
 
 namespace Tags
 {
@@ -120,4 +141,8 @@ namespace Tags
 	public struct InnerBuffer : IComponentData { }
 	public struct OuterBuffer : IComponentData { }	
 	public struct EdgeBuffer : IComponentData { }
+
+	public struct PlayerEntity : IComponentData { }
 }
+
+#endregion
