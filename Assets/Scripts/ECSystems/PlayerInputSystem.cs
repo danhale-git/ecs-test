@@ -70,19 +70,18 @@ public class PlayerInputSystem : ComponentSystem
             for(int e = 0; e < entities.Length; e++)
             {
                 Entity entity = entities[e];
+                
 
-                float x = Input.GetAxis("Horizontal");
-                float z = Input.GetAxis("Vertical");
+                float3 x = Input.GetAxis("Horizontal") * (float3)camera.transform.right;
+                float3 z = Input.GetAxis("Vertical") * (float3)camera.transform.forward;
 
-                float3 move = new float3(x, 0, z) * stats[e].speed;
+                float3 move = (x + z) * stats[e].speed;
 
-                Move moveComponent = new Move { positionChangePerSecond = move };
+                Move moveComponent = new Move { positionChangePerSecond = new float3(move.x, 0, move.z) };
 
                 inputs[e] = moveComponent;
             }
         }
-
-
         chunks.Dispose();
     }
 }

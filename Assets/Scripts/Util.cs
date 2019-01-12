@@ -118,4 +118,9 @@ public static class Util
 					localPosition.z == cubeSize ? 1 : localPosition.z < 0 ? -1 : 0
 					); 
     }
+
+    public static float3 RotateAroundCenter(Quaternion rotation, Vector3 position, Vector3 centre)
+    {
+        return rotation * (position - centre) + centre;
+    }
 }

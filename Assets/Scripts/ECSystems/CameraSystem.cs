@@ -20,6 +20,8 @@ public class CameraSystem : ComponentSystem
 
     //DEBUG
     Camera camera;
+    float cameraSwivelSpeed = 1;
+    float3 currentOffset = new float3(10, 10, 10);
 
     protected override void OnCreateManager()
     {
@@ -67,13 +69,26 @@ public class CameraSystem : ComponentSystem
             for(int e = 0; e < entities.Length; e++)
             {
                 Entity entity = entities[e];
-                float3 position = positions[e].Value;
+                float3 playerPosition = positions[e].Value;
 
-                float3 offset = new float3(10, 10, 10);
+                bool Q = Input.GetKey(KeyCode.Q);
+                bool E = Input.GetKey(KeyCode.E);
+                Quaternion cameraSwivel = Quaternion.identity;
+
+                if( !(Q && E) )
+                {
+                    if (Q) cameraSwivel = Quaternion.Euler(new float3(0, cameraSwivelSpeed, 0));
+                    else if(E) cameraSwivel = Quaternion.Euler(new float3(0, -cameraSwivelSpeed, 0));
+                }
+
+                float3 rotated = Util.RotateAroundCenter(cameraSwivel, camera.transform.position, playerPosition);
+                float3 swivel = (float3)camera.transform.position - rotated;
+
+                currentOffset += swivel;
 
                 //DEBUG
-                camera.transform.position = position + offset;
-                camera.transform.LookAt(position);
+                camera.transform.position = playerPosition + currentOffset;
+                camera.transform.LookAt(playerPosition);
             }
         }
 
