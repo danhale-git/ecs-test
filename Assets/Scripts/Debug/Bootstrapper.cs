@@ -8,13 +8,18 @@ using Unity.Transforms;
 public class Bootstrapper
 {
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-    void Initialise()
+    public static void Initialise()
     {
-        
+        MapSquareSystem.playerEntity = CreatePlayer();
     }
  
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     public static void InitializeAfterSceneLoad()
+    {
+        //CreatePlayer();
+    }
+
+    static Entity CreatePlayer()
     {
         EntityManager entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
@@ -36,10 +41,11 @@ public class Bootstrapper
 		renderer.material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ShaderGraphTest.mat");
 		entityManager.AddSharedComponentData<MeshInstanceRenderer>(playerEntity, renderer);
 
-        Position position = new Position { Value = GameObject.FindObjectOfType<PlayerController>().transform.position };
-        entityManager.SetComponentData<Position>(playerEntity, position);
+        entityManager.SetComponentData<Position>(playerEntity, new Position());
 
         Stats stats = new Stats { speed = 20.0f };
         entityManager.SetComponentData<Stats>(playerEntity, stats);
+
+        return playerEntity;
     }
 }

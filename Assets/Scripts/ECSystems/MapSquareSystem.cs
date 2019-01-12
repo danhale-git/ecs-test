@@ -14,8 +14,7 @@ public class MapSquareSystem : ComponentSystem
 
 	EntityManager entityManager;
 
-	//	Player GameObject
-	PlayerController player;
+	public static Entity playerEntity;
 
 	//	Square data
 	EntityArchetype mapSquareArchetype;
@@ -36,9 +35,6 @@ public class MapSquareSystem : ComponentSystem
 	{
 		cubeSize 		= TerrainSettings.cubeSize;
 		viewDistance 	= TerrainSettings.viewDistance;
-		
-
-		player = GameObject.FindObjectOfType<PlayerController>();
 
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
@@ -63,8 +59,9 @@ public class MapSquareSystem : ComponentSystem
 	//	Continually generate map squares
 	protected override void OnUpdate()
 	{
+		float3 position = entityManager.GetComponentData<Position>(playerEntity).Value;
 		//	Generate map in radius around player
-		Vector3 currentSquare = Util.VoxelOwner(player.transform.position, cubeSize);
+		Vector3 currentSquare = Util.VoxelOwner(position, cubeSize);
 		if(currentSquare != previousSquare)
 		{
 			previousSquare = currentSquare;
