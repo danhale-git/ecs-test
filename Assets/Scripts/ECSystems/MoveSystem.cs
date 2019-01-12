@@ -65,7 +65,7 @@ public class MoveSystem : ComponentSystem
             {
                 float3 newPos = positions[e].Value + (movement[e].positionChangePerSecond * Time.deltaTime);
 
-                Position newPosition;
+                float yOffset = newPos.y;
 
                 if(entityManager.Exists(movement[e].currentMapSquare))
                 {
@@ -73,15 +73,13 @@ public class MoveSystem : ComponentSystem
                     if(heightMap.Length > 0)
                     {
                         float3 local = Util.LocalPosition(positions[e].Value, cubeSize);
-                        int height = heightMap[Util.Flatten2D(local.x, local.z, cubeSize)].height;
-                        newPosition = new Position { Value = new float3(newPos.x, height, newPos.z) };
+                        yOffset = heightMap[Util.Flatten2D(local.x, local.z, cubeSize)].height;
                     }
-                    else
-                        newPosition = new Position { Value = newPos };
                 }
-                else
-                    newPosition = new Position { Value = newPos };
 
+                yOffset += movement[e].size.y/2;
+
+                Position newPosition = new Position { Value = new float3(newPos.x, yOffset, newPos.z) };
 
                 commandBuffer.SetComponent<Position>(entities[e], newPosition);
             }

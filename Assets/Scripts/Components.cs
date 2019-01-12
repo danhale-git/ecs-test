@@ -13,6 +13,7 @@ namespace MyComponents
 	public struct Move : IComponentData
 	{
 		public float3 positionChangePerSecond;
+		public float3 size;
 		public Entity currentMapSquare;
 	}
 

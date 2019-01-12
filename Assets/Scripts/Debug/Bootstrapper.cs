@@ -10,7 +10,9 @@ public class Bootstrapper
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     public static void Initialise()
     {
-        MapSquareSystem.playerEntity = CreatePlayer();
+        Entity playerEntity = CreatePlayer();
+        MapSquareSystem.playerEntity = playerEntity;
+        CameraSystem.playerEntity = playerEntity;
     }
  
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -47,6 +49,9 @@ public class Bootstrapper
 
         Stats stats = new Stats { speed = 20.0f };
         entityManager.SetComponentData<Stats>(playerEntity, stats);
+
+        Move movement = new Move { size = 2 };
+        entityManager.SetComponentData<Move>(playerEntity, movement);
 
         return playerEntity;
     }

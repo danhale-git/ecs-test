@@ -13,6 +13,8 @@ public class CameraSystem : ComponentSystem
     EntityManager entityManager;
     int cubeSize;
 
+    public static Entity playerEntity;
+
     EntityArchetypeQuery query;
 
     ArchetypeChunkEntityType entityType;
@@ -21,7 +23,7 @@ public class CameraSystem : ComponentSystem
     //DEBUG
     Camera camera;
     float cameraSwivelSpeed = 1;
-    float3 currentOffset = new float3(10, 10, 10);
+    float3 currentOffset = new float3(10, 15, 10);
 
     protected override void OnCreateManager()
     {
@@ -77,8 +79,8 @@ public class CameraSystem : ComponentSystem
 
                 if( !(Q && E) )
                 {
-                    if (Q) cameraSwivel = Quaternion.Euler(new float3(0, cameraSwivelSpeed, 0));
-                    else if(E) cameraSwivel = Quaternion.Euler(new float3(0, -cameraSwivelSpeed, 0));
+                    if (Q) cameraSwivel = Quaternion.Euler(new float3(0, -cameraSwivelSpeed, 0));
+                    else if(E) cameraSwivel = Quaternion.Euler(new float3(0, cameraSwivelSpeed, 0));
                 }
 
                 float3 rotated = Util.RotateAroundCenter(cameraSwivel, camera.transform.position, playerPosition);
@@ -90,8 +92,11 @@ public class CameraSystem : ComponentSystem
 
                 float yLerp = math.lerp(camera.transform.position.y, newPosition.y, 0.1f);
 
+                Quaternion newRotation = Quaternion.LookRotation(playerPosition - (float3)camera.transform.position, Vector3.up);
+
                 //DEBUG
                 camera.transform.position = new float3(newPosition.x, yLerp, newPosition.z);
+                camera.transform.rotation = Quaternion.Lerp(camera.transform.rotation, newRotation, 0.1f);
             }
         }
 
