@@ -5,9 +5,9 @@ namespace MyComponents
 {
 	#region Player
 
-	public struct PlayerInput : IComponentData
+	public struct Stats : IComponentData
 	{
-		public float3 move;
+		public float speed;
 	}
 
 	public struct PhysicsEntity : IComponentData

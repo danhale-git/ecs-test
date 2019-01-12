@@ -21,8 +21,8 @@ public class Bootstrapper
         //  Archetype
         EntityArchetype playerArchetype = entityManager.CreateArchetype(
             ComponentType.Create<Tags.PlayerEntity>(),
-            ComponentType.Create<PlayerInput>(),
             ComponentType.Create<Move>(),
+            ComponentType.Create<Stats>(),
             ComponentType.Create<Position>(),
             ComponentType.Create<MeshInstanceRendererComponent>()
         );
@@ -33,11 +33,13 @@ public class Bootstrapper
         //  Mesh
         MeshInstanceRenderer renderer = new MeshInstanceRenderer();
 		renderer.mesh =  GameObject.CreatePrimitive(PrimitiveType.Capsule).GetComponent<MeshFilter>().mesh;
-        Debug.Log(renderer.mesh.vertexCount);
 		renderer.material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ShaderGraphTest.mat");
 		entityManager.AddSharedComponentData<MeshInstanceRenderer>(playerEntity, renderer);
 
         Position position = new Position { Value = GameObject.FindObjectOfType<PlayerController>().transform.position };
         entityManager.SetComponentData<Position>(playerEntity, position);
+
+        Stats stats = new Stats { speed = 20.0f };
+        entityManager.SetComponentData<Stats>(playerEntity, stats);
     }
 }

@@ -7,7 +7,8 @@ using Unity.Transforms;
 using Unity.Mathematics;
 using MyComponents;
 
-public class PlayerInputSystem : ComponentSystem
+[UpdateAfter(typeof(MoveSystem))]
+public class CameraSystem : ComponentSystem
 {
     EntityManager entityManager;
     int cubeSize;
@@ -16,8 +17,6 @@ public class PlayerInputSystem : ComponentSystem
 
     ArchetypeChunkEntityType entityType;
     ArchetypeChunkComponentType<Position> positionType;
-    ArchetypeChunkComponentType<Move> moveType;
-    ArchetypeChunkComponentType<Stats> statsType;
 
     //DEBUG
     Camera camera;
@@ -43,8 +42,6 @@ public class PlayerInputSystem : ComponentSystem
     {
         entityType = GetArchetypeChunkEntityType();
         positionType = GetArchetypeChunkComponentType<Position>();
-        moveType = GetArchetypeChunkComponentType<Move>();
-        statsType = GetArchetypeChunkComponentType<Stats>();
 
         NativeArray<ArchetypeChunk> chunks;
         chunks = entityManager.CreateArchetypeChunkArray(
@@ -58,30 +55,30 @@ public class PlayerInputSystem : ComponentSystem
 
     void DoSomething(NativeArray<ArchetypeChunk> chunks)
     {
+        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+
         for(int c = 0; c < chunks.Length; c++)
         {
             ArchetypeChunk chunk = chunks[c];
 
             NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
             NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-            NativeArray<Move> inputs = chunk.GetNativeArray(moveType);
-            NativeArray<Stats> stats = chunk.GetNativeArray(statsType);
             
             for(int e = 0; e < entities.Length; e++)
             {
                 Entity entity = entities[e];
+                float3 position = positions[e].Value;
 
-                float x = Input.GetAxis("Horizontal");
-                float z = Input.GetAxis("Vertical");
+                float3 offset = new float3(10, 10, 10);
 
-                float3 move = new float3(x, 0, z) * stats[e].speed;
-
-                Move moveComponent = new Move { positionChangePerSecond = move };
-
-                inputs[e] = moveComponent;
+                //DEBUG
+                camera.transform.position = position + offset;
+                camera.transform.LookAt(position);
             }
         }
 
+        commandBuffer.Playback(entityManager);
+        commandBuffer.Dispose();
 
         chunks.Dispose();
     }
