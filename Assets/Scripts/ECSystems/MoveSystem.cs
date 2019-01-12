@@ -7,7 +7,8 @@ using Unity.Transforms;
 using Unity.Mathematics;
 using MyComponents;
 
-public class PlayerInputSystem : ComponentSystem
+[UpdateAfter(typeof(PlayerInputSystem))]
+public class MoveSystem : ComponentSystem
 {
     EntityManager entityManager;
     int cubeSize;
@@ -16,7 +17,7 @@ public class PlayerInputSystem : ComponentSystem
 
     ArchetypeChunkEntityType entityType;
     ArchetypeChunkComponentType<Position> positionType;
-    ArchetypeChunkComponentType<PlayerInput> inputType;
+    ArchetypeChunkComponentType<Move> moveType;
 
     protected override void OnCreateManager()
     {
@@ -28,7 +29,7 @@ public class PlayerInputSystem : ComponentSystem
         {
             Any     = Array.Empty<ComponentType>(),
             None    = Array.Empty<ComponentType>(),
-            All     = new ComponentType[] { typeof(Tags.PlayerEntity) }
+            All     = new ComponentType[] { typeof(Move), typeof(Position) }
         };
     }
 
@@ -36,7 +37,7 @@ public class PlayerInputSystem : ComponentSystem
     {
         entityType = GetArchetypeChunkEntityType();
         positionType = GetArchetypeChunkComponentType<Position>();
-        inputType = GetArchetypeChunkComponentType<PlayerInput>();
+        moveType = GetArchetypeChunkComponentType<Move>();
 
         NativeArray<ArchetypeChunk> chunks;
         chunks = entityManager.CreateArchetypeChunkArray(
@@ -58,17 +59,15 @@ public class PlayerInputSystem : ComponentSystem
 
             NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
             NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-            NativeArray<PlayerInput> inputs = chunk.GetNativeArray(inputType);
+            NativeArray<Move> movement = chunk.GetNativeArray(moveType);
             
             for(int e = 0; e < entities.Length; e++)
             {
-                Entity entity = entities[e];
+                float3 positionChange = movement[e].positionChangePerSecond * Time.deltaTime;
 
-                float3 move = new float3(1, 0, 0);
+                Position newPosition = new Position { Value = positions[e].Value + positionChange };
 
-                Move moveComponent = new Move { positionChangePerSecond = move };
-
-                commandBuffer.SetComponent<Move>(entity, moveComponent);
+                commandBuffer.SetComponent<Position>(entities[e], newPosition);
             }
         }
 

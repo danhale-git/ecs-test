@@ -16,6 +16,11 @@ namespace MyComponents
 		//float3 size;
 	}
 
+	public struct Move : IComponentData
+	{
+		public float3 positionChangePerSecond;
+	}
+
 	#endregion
 
 	#region Map

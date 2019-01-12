@@ -22,6 +22,7 @@ public class Bootstrapper
         EntityArchetype playerArchetype = entityManager.CreateArchetype(
             ComponentType.Create<Tags.PlayerEntity>(),
             ComponentType.Create<PlayerInput>(),
+            ComponentType.Create<Move>(),
             ComponentType.Create<Position>(),
             ComponentType.Create<MeshInstanceRendererComponent>()
         );
