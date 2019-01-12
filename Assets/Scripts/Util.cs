@@ -137,4 +137,12 @@ public static class Util
         if(a.x == b.x && a.y == b.y && a.z ==b.z) return true;
         else return false;
     }
+
+    public static float3 Float3Lerp(float3 a, float3 b, float interpolator)
+    {
+        float x = math.lerp(a.x, b.x, interpolator);
+        float y = math.lerp(a.y, b.y, interpolator);
+        float z = math.lerp(a.z, b.z, interpolator);
+        return new float3(x, y, z);
+    }
 }

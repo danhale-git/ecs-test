@@ -88,7 +88,7 @@ public class CameraSystem : ComponentSystem
                 float3 swivelOffset = (float3)camera.transform.position - rotated;
 
                 //  Zoom
-                float3 zoomOffset = Input.GetAxis("Mouse ScrollWheel") * (camera.transform.forward * 10);
+                float3 zoomOffset = Input.GetAxis("Mouse ScrollWheel") * -currentOffset;
 
                 currentOffset += swivelOffset + zoomOffset;
 
@@ -104,7 +104,7 @@ public class CameraSystem : ComponentSystem
                 Quaternion newRotation = Quaternion.LookRotation(playerPosition - (float3)camera.transform.position, Vector3.up);
 
                 //DEBUG
-                camera.transform.position = new float3(newPosition.x, yLerp, newPosition.z);
+                camera.transform.position = Util.Float3Lerp(camera.transform.position, newPosition, 0.1f);// new float3(newPosition.x, yLerp, newPosition.z);
                 camera.transform.rotation = Quaternion.Lerp(camera.transform.rotation, newRotation, 0.1f);
             }
         }
