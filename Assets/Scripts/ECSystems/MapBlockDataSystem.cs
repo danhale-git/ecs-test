@@ -9,7 +9,7 @@ using MyComponents;
 
 //	Generate 3D block data from 2D terrain data
 [UpdateAfter(typeof(MapOuterBufferSystem))]
-public class MapBlockSystem : ComponentSystem
+public class MapBlockDataSystem : ComponentSystem
 {
 	EntityManager entityManager;
 

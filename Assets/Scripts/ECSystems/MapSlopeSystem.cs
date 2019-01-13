@@ -6,7 +6,7 @@ using Unity.Collections;
 using Unity.Mathematics;
 using MyComponents;
 
-[UpdateAfter(typeof(MapBlockSystem))]
+[UpdateAfter(typeof(MapBlockDataSystem))]
 public class MapSlopeSystem : ComponentSystem
 {
     EntityManager entityManager;
