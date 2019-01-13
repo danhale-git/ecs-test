@@ -99,18 +99,24 @@ public class MeshSystem : ComponentSystem
 				FaceCounts counts;
 				NativeArray<Faces> faces = CheckBlockFaces(squares[e], blockAccessor[e], adjacentSquares, out counts);
 
+				bool redraw = entityManager.HasComponent<Tags.Redraw>(entity);
+
 				//	Create mesh entity if any faces are exposed
 				if(counts.faceCount != 0)
 					SetMeshComponent(
+						redraw,
 						GetMesh(squares[e], faces, blockAccessor[e], counts),
 						entity,
 						commandBuffer);
 
+				if(redraw) commandBuffer.RemoveComponent(entity, typeof(Tags.Redraw));
+
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
+				
 				faces.Dispose();
 
 				//DEBUG
-      			CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.5f), 40, 50);
+      			//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.5f), 40, 50);
 			}
 		}
 		commandBuffer.Playback(entityManager);
@@ -274,8 +280,10 @@ public class MeshSystem : ComponentSystem
 	}
 
 	// Apply mesh to MapSquare entity
-	void SetMeshComponent(Mesh mesh, Entity entity, EntityCommandBuffer commandBuffer)
+	void SetMeshComponent(bool redraw, Mesh mesh, Entity entity, EntityCommandBuffer commandBuffer)
 	{
+		if(redraw) commandBuffer.RemoveComponent<MeshInstanceRenderer>(entity);
+
 		MeshInstanceRenderer renderer = new MeshInstanceRenderer();
 		renderer.mesh = mesh;
 		renderer.material = material;

@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using UnityEngine;
 using Unity.Mathematics;
+using MyComponents;
 
 public static class Util
 {
@@ -61,6 +62,15 @@ public static class Util
             math.floor(value.x),
             math.floor(value.y),
             math.floor(value.z)
+        );
+    }
+
+    public static float3 Float3Round(float3 value)
+    {
+        return new float3(
+            math.round(value.x),
+            math.round(value.y),
+            math.round(value.z)
         );
     }
 
@@ -153,5 +163,11 @@ public static class Util
         float y = math.lerp(a.y, b.y, interpolator);
         float z = math.lerp(a.z, b.z, interpolator);
         return new float3(x, y, z);
+    }
+
+    public static int BlockIndex(float3 voxelWorldPosition, MapSquare mapSquare, int cubeSize)
+    {
+        float3 voxel = voxelWorldPosition - mapSquare.position;
+        return Util.Flatten(voxel.x, voxel.y - mapSquare.bottomBlockBuffer, voxel.z, cubeSize);
     }
 }

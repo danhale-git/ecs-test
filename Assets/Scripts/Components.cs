@@ -138,6 +138,8 @@ namespace Tags
 	public struct GenerateBlocks : IComponentData { }
 	public struct SetSlopes : IComponentData { }
 	public struct DrawMesh : IComponentData { }
+	
+	public struct Redraw : IComponentData { }
 
 	public struct InnerBuffer : IComponentData { }
 	public struct OuterBuffer : IComponentData { }	
