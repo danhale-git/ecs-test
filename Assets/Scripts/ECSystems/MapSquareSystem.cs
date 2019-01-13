@@ -14,8 +14,7 @@ public class MapSquareSystem : ComponentSystem
 
 	EntityManager entityManager;
 
-	//	Player GameObject
-	PlayerController player;
+	public static Entity playerEntity;
 
 	//	Square data
 	EntityArchetype mapSquareArchetype;
@@ -36,9 +35,6 @@ public class MapSquareSystem : ComponentSystem
 	{
 		cubeSize 		= TerrainSettings.cubeSize;
 		viewDistance 	= TerrainSettings.viewDistance;
-		
-
-		player = GameObject.FindObjectOfType<PlayerController>();
 
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
@@ -58,17 +54,18 @@ public class MapSquareSystem : ComponentSystem
 			};
 	}
 
-	Vector3 previousSquare;
+	Vector3 previousSquare = new Vector3(100, 100, 100);
 
 	//	Continually generate map squares
 	protected override void OnUpdate()
 	{
+		float3 position = entityManager.GetComponentData<Position>(playerEntity).Value;
 		//	Generate map in radius around player
-		Vector3 currentSquare = Util.VoxelOwner(player.transform.position, cubeSize);
-		if(currentSquare != previousSquare)
+		float3 currentSquarePosition = Util.VoxelOwner(position, cubeSize);
+		if(!Util.Float3sMatch(currentSquarePosition, previousSquare))
 		{
-			previousSquare = currentSquare;
-			GenerateRadius(currentSquare, viewDistance);
+			previousSquare = currentSquarePosition;
+			GenerateRadius(currentSquarePosition, viewDistance);
 		}		
 	}
 
@@ -106,8 +103,6 @@ public class MapSquareSystem : ComponentSystem
 
 		CreateUpdateRadius(positions, buffers);
 
-		
-
 		for(int i = 0; i < positions.Length; i++)
 		{
 			CreateSquare(positions[i].Value, buffers[i]);
@@ -129,18 +124,18 @@ public class MapSquareSystem : ComponentSystem
 	void CreateSquare(Vector3 position, Buffer buffer)
 	{
 		//	Create square entity
-			Entity entity = entityManager.CreateEntity(mapSquareArchetype);
+		Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 
-			//	Set position
-			entityManager.SetComponentData(
-				entity,
-				new Position{ Value = position }
-				);		
+		//	Set position
+		entityManager.SetComponentData(
+			entity,
+			new Position{ Value = position }
+			);		
 
-			//	Generate terrain next
-			entityManager.AddComponent(entity, typeof(Tags.GenerateTerrain));
+		//	Generate terrain nezt
+		entityManager.AddComponent(entity, typeof(Tags.GenerateTerrain));
 
-			SetBuffer(entity, buffer);
+		SetBuffer(entity, buffer);
 	}
 
 	//	Set buffer type

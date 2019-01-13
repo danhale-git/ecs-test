@@ -33,6 +33,10 @@ public static class Util
     {
         return (z * size) + x;
     }
+    public static int Flatten2D(float x, float z, int size)
+    {
+        return ((int)z * size) + (int)x;
+    }
 
     public static float To01(float value)
 	{
@@ -51,14 +55,26 @@ public static class Util
 	                            new Vector3( 	 0.5f,  0.5f,	 0.5f ) };	//	right front top
     }
 
-    
+    public static float3 Float3Floor(float3 value)
+    {
+        return new float3(
+            math.floor(value.x),
+            math.floor(value.y),
+            math.floor(value.z)
+        );
+    }
 
-    public static Vector3 VoxelOwner(Vector3 voxel, int cubeSize)
+    public static Vector3 VoxelOwner(Vector3 position, int cubeSize)
 	{
-		int x = Mathf.FloorToInt(voxel.x / cubeSize);
-		int y = Mathf.FloorToInt(voxel.y / cubeSize);
-		int z = Mathf.FloorToInt(voxel.z / cubeSize);
-		return new Vector3(x*cubeSize,y*cubeSize,z*cubeSize);
+		int x = Mathf.FloorToInt(position.x / cubeSize);
+		int z = Mathf.FloorToInt(position.z / cubeSize);
+		return new Vector3(x*cubeSize, 0, z*cubeSize);
+	}
+
+    public static Vector3 LocalVoxel(Vector3 position, int cubeSize, bool debug = false)
+	{
+		float3 ownerWorldPosition = VoxelOwner(position, cubeSize);
+        return Float3Floor(position) - ownerWorldPosition;
 	}
 
     public static float3[] CardinalDirections()
@@ -112,10 +128,30 @@ public static class Util
 
     public static float3 EdgeOverlap(float3 localPosition, int cubeSize)
     {
+        float3 floor = Float3Floor(localPosition);
         return new float3(
-					localPosition.x == cubeSize ? 1 : localPosition.x < 0 ? -1 : 0,
+					floor.x == cubeSize ? 1 : floor.x < 0 ? -1 : 0,
 					0,
-					localPosition.z == cubeSize ? 1 : localPosition.z < 0 ? -1 : 0
+					floor.z == cubeSize ? 1 : floor.z < 0 ? -1 : 0
 					); 
+    }
+
+    public static float3 RotateAroundCenter(Quaternion rotation, Vector3 position, Vector3 centre)
+    {
+        return rotation * (position - centre) + centre;
+    }
+
+    public static bool Float3sMatch(float3 a, float3 b)
+    {
+        if(a.x == b.x && a.y == b.y && a.z ==b.z) return true;
+        else return false;
+    }
+
+    public static float3 Float3Lerp(float3 a, float3 b, float interpolator)
+    {
+        float x = math.lerp(a.x, b.x, interpolator);
+        float y = math.lerp(a.y, b.y, interpolator);
+        float z = math.lerp(a.z, b.z, interpolator);
+        return new float3(x, y, z);
     }
 }

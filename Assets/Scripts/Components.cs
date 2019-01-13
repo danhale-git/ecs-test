@@ -3,6 +3,24 @@ using Unity.Mathematics;
 
 namespace MyComponents
 {
+	#region Player
+
+	public struct Stats : IComponentData
+	{
+		public float speed;
+	}
+
+	public struct PhysicsEntity : IComponentData
+	{
+		public float3 positionChangePerSecond;
+		public float3 size;
+		public Entity currentMapSquare;
+	}
+
+	#endregion
+
+	#region Map
+
 	public enum CubeComposition { MIXED, SOLID, AIR};
 	public enum SlopeType { NOTSLOPED, FLAT, INNERCORNER, OUTERCORNER }
 	public enum SlopeFacing { NWSE, SWNE }
@@ -63,7 +81,7 @@ namespace MyComponents
 			}
 		}
 
-		public Entity Get(float3 dir)
+		public Entity GetByDirection(float3 dir)
 		{
 			if	   (dir.x ==  1 && dir.y == 0 && dir.z ==  0) return right;
 			else if(dir.x == -1 && dir.y == 0 && dir.z ==  0) return left;
@@ -106,7 +124,11 @@ namespace MyComponents
 			}
 		}
 	}
+
+	#endregion
 }
+
+#region Tags
 
 namespace Tags
 {
@@ -120,4 +142,8 @@ namespace Tags
 	public struct InnerBuffer : IComponentData { }
 	public struct OuterBuffer : IComponentData { }	
 	public struct EdgeBuffer : IComponentData { }
+
+	public struct PlayerEntity : IComponentData { }
 }
+
+#endregion
