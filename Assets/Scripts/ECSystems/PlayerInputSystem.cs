@@ -15,12 +15,11 @@ public class PlayerInputSystem : ComponentSystem
 
     EntityArchetypeQuery query;
 
-    ArchetypeChunkEntityType entityType;
-    ArchetypeChunkComponentType<Position> positionType;
-    ArchetypeChunkComponentType<Movement> moveType;
-    ArchetypeChunkComponentType<Stats> statsType;
+    ArchetypeChunkEntityType                entityType;
+    ArchetypeChunkComponentType<Position>   positionType;
+    ArchetypeChunkComponentType<Movement>   moveType;
+    ArchetypeChunkComponentType<Stats>      statsType;
 
-    //DEBUG
     Camera camera;
 
     protected override void OnCreateManager()
@@ -35,16 +34,15 @@ public class PlayerInputSystem : ComponentSystem
             All     = new ComponentType[] { typeof(Tags.PlayerEntity) }
         };
 
-        //DEBUG
         camera = GameObject.FindObjectOfType<Camera>();
     }
 
     protected override void OnUpdate()
     {
-        entityType = GetArchetypeChunkEntityType();
-        positionType = GetArchetypeChunkComponentType<Position>();
-        moveType = GetArchetypeChunkComponentType<Movement>();
-        statsType = GetArchetypeChunkComponentType<Stats>();
+        entityType      = GetArchetypeChunkEntityType();
+        positionType    = GetArchetypeChunkComponentType<Position>();
+        moveType        = GetArchetypeChunkComponentType<Movement>();
+        statsType       = GetArchetypeChunkComponentType<Stats>();
 
         NativeArray<ArchetypeChunk> chunks;
         chunks = entityManager.CreateArchetypeChunkArray(
@@ -62,25 +60,25 @@ public class PlayerInputSystem : ComponentSystem
         {
             ArchetypeChunk chunk = chunks[c];
 
-            NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
+            NativeArray<Entity> entities    = chunk.GetNativeArray(entityType);
             NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-            NativeArray<Movement> movement = chunk.GetNativeArray(moveType);
-            NativeArray<Stats> stats = chunk.GetNativeArray(statsType);
+            NativeArray<Movement> movement  = chunk.GetNativeArray(moveType);
+            NativeArray<Stats> stats        = chunk.GetNativeArray(statsType);
             
             for(int e = 0; e < entities.Length; e++)
             {
                 Entity entity = entities[e];
 
-
-                float3 x = UnityEngine.Input.GetAxis("Horizontal") * (float3)camera.transform.right;
-                float3 z = UnityEngine.Input.GetAxis("Vertical") * (float3)camera.transform.forward;
+                //  Move relative to camera angle
+                //TODO: camera.transform.forward points downwards, slowing z axis movement
+                float3 x = UnityEngine.Input.GetAxis("Horizontal")  * (float3)camera.transform.right;
+                float3 z = UnityEngine.Input.GetAxis("Vertical")    * (float3)camera.transform.forward;
 
                 float3 move = (x + z) * stats[e].speed;
 
+                //  Update movement component
                 Movement moveComponent = movement[e];
-                
                 moveComponent.positionChangePerSecond = new float3(move.x, 0, move.z);
-
                 movement[e] = moveComponent;
             }
         }

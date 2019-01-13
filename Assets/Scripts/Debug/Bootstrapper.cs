@@ -18,7 +18,6 @@ public class Bootstrapper
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     public static void InitializeAfterSceneLoad()
     {
-        //CreatePlayer();
     }
 
     static Entity CreatePlayer()
@@ -45,11 +44,14 @@ public class Bootstrapper
 		renderer.material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ShaderGraphTest.mat");
 		entityManager.AddSharedComponentData<MeshInstanceRenderer>(playerEntity, renderer);
 
+        //  Position
         entityManager.SetComponentData<Position>(playerEntity, new Position());
 
+        //  Stats
         Stats stats = new Stats { speed = 20.0f };
         entityManager.SetComponentData<Stats>(playerEntity, stats);
 
+        //  Movement
         Movement movement = new Movement { size = 2 };
         entityManager.SetComponentData<Movement>(playerEntity, movement);
 
