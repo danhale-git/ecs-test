@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.Jobs;
 using Unity.Entities;
@@ -7,7 +8,7 @@ using Unity.Transforms;
 using Unity.Mathematics;
 using MyComponents;
 
-[UpdateAfter(typeof(MapSquareSystem))]
+[UpdateAfter(typeof(MeshSystem))]
 public class PlayerInputSystem : ComponentSystem
 {
     EntityManager entityManager;
@@ -80,8 +81,157 @@ public class PlayerInputSystem : ComponentSystem
                 PhysicsEntity physicsComponent = physics[e];
                 physicsComponent.positionChangePerSecond = new float3(move.x, 0, move.z);
                 physics[e] = physicsComponent;
+
+                if(Input.GetButtonDown("Fire1"))
+                {
+                    SelectBlock();
+                }
             }
         }
         chunks.Dispose();
+    }
+
+    void SelectBlock()
+    {
+        float3 rayStart = Util.Float3Floor(camera.transform.position);
+        Debug.Log("start: "+rayStart);
+
+        float3 direction = camera.ScreenPointToRay(Input.mousePosition).direction;
+
+        List<float3> voxels = VoxelRay(float3.zero, direction, 100);
+
+        Entity currentOwner = QuickGetEntity(rayStart);
+        MapSquare currentMapSquare = entityManager.GetComponentData<MapSquare>(currentOwner);
+        float3 previousVoxelOwnerPosition = currentMapSquare.position;
+
+        for(int i = 0; i < voxels.Count; i++)
+        {       
+            float3 nextVoxelOwnerPosition = Util.VoxelOwner(voxels[i], cubeSize);
+
+            if(!Util.Float3sMatch(previousVoxelOwnerPosition, nextVoxelOwnerPosition))
+            {
+                currentOwner = QuickGetEntity(voxels[i] + rayStart);
+                currentMapSquare = entityManager.GetComponentData<MapSquare>(currentOwner);
+
+                //  edge of map
+                if(entityManager.HasComponent<Tags.InnerBuffer>(currentOwner))
+                {
+                    Debug.Log("HIT MAP EDGE");
+                    return;
+                }
+            }
+
+            float3 voxelWorldPosition = rayStart + voxels[i];
+            int index = Util.BlockIndex(voxelWorldPosition, currentMapSquare, cubeSize);
+            DynamicBuffer<Block> blocks = entityManager.GetBuffer<Block>(currentOwner);
+            if(index >= blocks.Length || index < 0) continue;
+            
+            
+
+            if(blocks[index].type != 0)
+            {
+                Block block = blocks[index];
+                block.type = 0;
+                blocks[index] = block;
+                //GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                //cube.transform.position = voxels[i] + (float3)camera.transform.position;
+                //CustomDebugTools.SetMapSquareHighlight(currentOwner, cubeSize-1, Color.red, 50, 0);
+                return;
+            }
+        }
+    }
+
+    Entity QuickGetEntity(float3 voxel)
+    {
+        NativeArray<Entity> entities = entityManager.GetAllEntities(Allocator.TempJob);
+        for(int i = 0; i< entities.Length; i++)
+        {
+            if(!entityManager.HasComponent<MapSquare>(entities[i]))
+                continue;
+            float3 position = entityManager.GetComponentData<MapSquare>(entities[i]).position;
+
+            if(Util.Float3sMatch(position, Util.VoxelOwner(voxel, cubeSize)))
+            {
+                Entity entity = entities[i];
+                entities.Dispose();
+                return entity;
+            }
+        }
+        entities.Dispose();
+        throw new Exception("Could not find entity");
+    }
+
+    List<float3> VoxelRay(Vector3 eye, Vector3 dir, int length)
+    {
+        int x, y, z;
+        int deltaX, deltaY, deltaZ;
+
+        x = Mathf.FloorToInt(eye.x);
+        y = Mathf.FloorToInt(eye.y);
+        z = Mathf.FloorToInt(eye.z);
+
+        deltaX = Mathf.FloorToInt(dir.x * length);
+        deltaY = Mathf.FloorToInt(dir.y * length);
+        deltaZ = Mathf.FloorToInt(dir.z * length);
+
+        int n, stepX, stepY, stepZ, ax, ay, az, bx, by, bz;
+        int exy, exz, ezy;
+
+        stepX = (int)Mathf.Sign(deltaX);
+        stepY = (int)Mathf.Sign(deltaY);
+        stepZ = (int)Mathf.Sign(deltaZ);
+
+        ax = Mathf.Abs(deltaX);
+        ay = Mathf.Abs(deltaY);
+        az = Mathf.Abs(deltaZ);
+
+        bx = 2 * ax;
+        by = 2 * ay;
+        bz = 2 * az;
+
+        exy = ay - ax;
+        exz = az - ax;
+        ezy = ay - az;
+
+        Gizmos.color = Color.white;
+
+        var start = new Vector3(x, y, z);
+        var end = new Vector3(x + deltaX, y + deltaY, z + deltaZ);
+
+        List<float3> voxels = new List<float3>();
+
+        n = ax + ay + az;
+        for(int i = 0; i < length; i++)
+        {
+            voxels.Add(new float3(x, y, z));
+
+            if (exy < 0)
+            {
+                if (exz < 0)
+                {
+                    x += stepX;
+                    exy += by; exz += bz;
+                }
+                else
+                {
+                    z += stepZ;
+                    exz -= bx; ezy += by;
+                }
+            }
+            else
+            {
+                if (ezy < 0)
+                {
+                    z += stepZ;
+                    exz -= bx; ezy += by;
+                }
+                else
+                {
+                    y += stepY;
+                    exy -= bx; ezy -= bz;
+                }
+            }
+        }
+        return voxels;
     }
 }
