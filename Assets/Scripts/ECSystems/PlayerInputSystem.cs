@@ -27,7 +27,6 @@ public class PlayerInputSystem : ComponentSystem
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         cubeSize = TerrainSettings.cubeSize;
 
-        //  Chunks that need blocks generating
         query = new EntityArchetypeQuery
         {
             Any     = Array.Empty<ComponentType>(),

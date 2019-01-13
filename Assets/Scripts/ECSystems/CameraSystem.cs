@@ -23,14 +23,14 @@ public class CameraSystem : ComponentSystem
     //DEBUG
     Camera camera;
     float cameraSwivelSpeed = 1;
-    float3 currentOffset = new float3(0, 15, 10);
+    //float3 currentOffset = new float3(0, 15, 10);
+    float3 currentOffset = new float3(0, 10, 10);
 
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         cubeSize = TerrainSettings.cubeSize;
 
-        //  Chunks that need blocks generating
         query = new EntityArchetypeQuery
         {
             Any     = Array.Empty<ComponentType>(),
@@ -104,7 +104,7 @@ public class CameraSystem : ComponentSystem
                 float3 newPosition =  playerPosition + currentOffset;
                 Quaternion newRotation = Quaternion.LookRotation(playerPosition - (float3)oldPosition, Vector3.up);
 
-                //  Lerp y for everything - x and z stay tight because horizontal movement depends on camera direction
+                //  Lerp y for everything - x and z position stay tight because horizontal movement depends on camera direction
                 float yLerp = math.lerp(oldPosition.y, newPosition.y, 0.1f);
 
                 //  Apply new position and rotation softly
