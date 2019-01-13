@@ -70,12 +70,12 @@ public class MoveSystem : ComponentSystem
                 float3 currentPosition = positions[e].Value;
                 Movement movement = movements[e];
 
-                float3 nextPosition = currentPosition + (movements[e].positionChangePerSecond * Time.deltaTime);
+                float3 nextPosition = currentPosition + (movement.positionChangePerSecond * Time.deltaTime);
 
                 float yOffset = nextPosition.y;
 
                 //  Current map square doesn't exist, find current map Square
-                if(!entityManager.Exists(movements[e].currentMapSquare))
+                if(!entityManager.Exists(movement.currentMapSquare))
                 {
                     Entity mapSquare;
                     if(!GetMapSquare(nextPosition, out mapSquare))
@@ -86,19 +86,19 @@ public class MoveSystem : ComponentSystem
                 //  Check if current map square changes after this movement
                 else
                 {
-                    float3 currentSquarePosition = entityManager.GetComponentData<MapSquare>(movements[e].currentMapSquare).position;
+                    float3 currentSquarePosition = entityManager.GetComponentData<MapSquare>(movement.currentMapSquare).position;               
                     float3 overlapDirection = Util.EdgeOverlap(nextPosition - currentSquarePosition, cubeSize);
 
                     //  Get next map square from current map square's AdjacentSquares component
                     if(!Util.Float3sMatch(overlapDirection, float3.zero))
                     {
-                        AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(movements[e].currentMapSquare);
+                        AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(movement.currentMapSquare);
                         movement.currentMapSquare = adjacentSquares.GetByDirection(overlapDirection);
                     }
                 }
 
                 DynamicBuffer<Topology> heightMap = entityManager.GetBuffer<Topology>(movement.currentMapSquare);
-                float3 local = Util.LocalPosition(nextPosition, cubeSize);
+                float3 local = Util.LocalVoxel(nextPosition, cubeSize, true);
                 yOffset = heightMap[Util.Flatten2D(local.x, local.z, cubeSize)].height;
 
                 yOffset += movements[e].size.y/2;

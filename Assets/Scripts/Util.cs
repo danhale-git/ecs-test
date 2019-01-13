@@ -55,18 +55,26 @@ public static class Util
 	                            new Vector3( 	 0.5f,  0.5f,	 0.5f ) };	//	right front top
     }
 
-    
+    public static float3 Float3Floor(float3 value)
+    {
+        return new float3(
+            math.floor(value.x),
+            math.floor(value.y),
+            math.floor(value.z)
+        );
+    }
 
-    public static Vector3 VoxelOwner(Vector3 voxel, int cubeSize)
+    public static Vector3 VoxelOwner(Vector3 position, int cubeSize)
 	{
-		int x = Mathf.FloorToInt(voxel.x / cubeSize);
-		int z = Mathf.FloorToInt(voxel.z / cubeSize);
+		int x = Mathf.FloorToInt(position.x / cubeSize);
+		int z = Mathf.FloorToInt(position.z / cubeSize);
 		return new Vector3(x*cubeSize, 0, z*cubeSize);
 	}
-    public static Vector3 LocalPosition(Vector3 voxel, int cubeSize)
+
+    public static Vector3 LocalVoxel(Vector3 position, int cubeSize, bool debug = false)
 	{
-		Vector3 ownerWorldPosition = VoxelOwner(voxel, cubeSize);
-        return voxel - ownerWorldPosition;
+		float3 ownerWorldPosition = VoxelOwner(position, cubeSize);
+        return Float3Floor(position) - ownerWorldPosition;
 	}
 
     public static float3[] CardinalDirections()
@@ -120,10 +128,11 @@ public static class Util
 
     public static float3 EdgeOverlap(float3 localPosition, int cubeSize)
     {
+        float3 floor = Float3Floor(localPosition);
         return new float3(
-					localPosition.x >= cubeSize ? 1 : localPosition.x < 0 ? -1 : 0,
+					floor.x == cubeSize ? 1 : floor.x < 0 ? -1 : 0,
 					0,
-					localPosition.z >= cubeSize ? 1 : localPosition.z < 0 ? -1 : 0
+					floor.z == cubeSize ? 1 : floor.z < 0 ? -1 : 0
 					); 
     }
 
