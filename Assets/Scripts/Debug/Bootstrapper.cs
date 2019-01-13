@@ -28,7 +28,7 @@ public class Bootstrapper
         //  Archetype
         EntityArchetype playerArchetype = entityManager.CreateArchetype(
             ComponentType.Create<Tags.PlayerEntity>(),
-            ComponentType.Create<Move>(),
+            ComponentType.Create<Movement>(),
             ComponentType.Create<Stats>(),
             ComponentType.Create<Position>(),
             ComponentType.Create<MeshInstanceRendererComponent>()
@@ -50,8 +50,8 @@ public class Bootstrapper
         Stats stats = new Stats { speed = 20.0f };
         entityManager.SetComponentData<Stats>(playerEntity, stats);
 
-        Move movement = new Move { size = 2 };
-        entityManager.SetComponentData<Move>(playerEntity, movement);
+        Movement movement = new Movement { size = 2 };
+        entityManager.SetComponentData<Movement>(playerEntity, movement);
 
         return playerEntity;
     }

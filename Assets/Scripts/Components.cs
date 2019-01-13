@@ -10,7 +10,7 @@ namespace MyComponents
 		public float speed;
 	}
 
-	public struct Move : IComponentData
+	public struct Movement : IComponentData
 	{
 		public float3 positionChangePerSecond;
 		public float3 size;
@@ -81,7 +81,7 @@ namespace MyComponents
 			}
 		}
 
-		public Entity Get(float3 dir)
+		public Entity GetByDirection(float3 dir)
 		{
 			if	   (dir.x ==  1 && dir.y == 0 && dir.z ==  0) return right;
 			else if(dir.x == -1 && dir.y == 0 && dir.z ==  0) return left;

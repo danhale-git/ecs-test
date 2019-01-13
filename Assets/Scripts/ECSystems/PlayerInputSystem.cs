@@ -7,6 +7,7 @@ using Unity.Transforms;
 using Unity.Mathematics;
 using MyComponents;
 
+[UpdateAfter(typeof(MapSquareSystem))]
 public class PlayerInputSystem : ComponentSystem
 {
     EntityManager entityManager;
@@ -16,7 +17,7 @@ public class PlayerInputSystem : ComponentSystem
 
     ArchetypeChunkEntityType entityType;
     ArchetypeChunkComponentType<Position> positionType;
-    ArchetypeChunkComponentType<Move> moveType;
+    ArchetypeChunkComponentType<Movement> moveType;
     ArchetypeChunkComponentType<Stats> statsType;
 
     //DEBUG
@@ -42,7 +43,7 @@ public class PlayerInputSystem : ComponentSystem
     {
         entityType = GetArchetypeChunkEntityType();
         positionType = GetArchetypeChunkComponentType<Position>();
-        moveType = GetArchetypeChunkComponentType<Move>();
+        moveType = GetArchetypeChunkComponentType<Movement>();
         statsType = GetArchetypeChunkComponentType<Stats>();
 
         NativeArray<ArchetypeChunk> chunks;
@@ -63,7 +64,7 @@ public class PlayerInputSystem : ComponentSystem
 
             NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
             NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-            NativeArray<Move> movement = chunk.GetNativeArray(moveType);
+            NativeArray<Movement> movement = chunk.GetNativeArray(moveType);
             NativeArray<Stats> stats = chunk.GetNativeArray(statsType);
             
             for(int e = 0; e < entities.Length; e++)
@@ -76,7 +77,7 @@ public class PlayerInputSystem : ComponentSystem
 
                 float3 move = (x + z) * stats[e].speed;
 
-                Move moveComponent = movement[e];
+                Movement moveComponent = movement[e];
                 
                 moveComponent.positionChangePerSecond = new float3(move.x, 0, move.z);
 

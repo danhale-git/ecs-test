@@ -66,25 +66,7 @@ public class MapSquareSystem : ComponentSystem
 		{
 			previousSquare = currentSquarePosition;
 			GenerateRadius(currentSquarePosition, viewDistance);
-			UpdatePlayerCurrentSquare(currentSquarePosition);
 		}		
-	}
-
-	//TODO: Iterate over all entities with Move component and do this.
-	//		Work it into CreateUpdateRadius function
-	void UpdatePlayerCurrentSquare(float3 currentSquarePosition)
-	{
-		Entity currentSquareEntity;
-		if(GetMapSquare(currentSquarePosition, out currentSquareEntity))
-		{
-			Move movement = entityManager.GetComponentData<Move>(playerEntity);
-			movement.currentMapSquare = currentSquareEntity;
-			entityManager.SetComponentData<Move>(playerEntity, movement);
-		}
-		else
-		{
-			Debug.Log("Could not find map square at "+currentSquarePosition);
-		}
 	}
 
 	//	Create squares
@@ -142,18 +124,20 @@ public class MapSquareSystem : ComponentSystem
 	void CreateSquare(Vector3 position, Buffer buffer)
 	{
 		//	Create square entity
-			Entity entity = entityManager.CreateEntity(mapSquareArchetype);
+		Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 
-			//	Set position
-			entityManager.SetComponentData(
-				entity,
-				new Position{ Value = position }
-				);		
+		Util.CheckVoxelPosition(position);
 
-			//	Generate terrain next
-			entityManager.AddComponent(entity, typeof(Tags.GenerateTerrain));
+		//	Set position
+		entityManager.SetComponentData(
+			entity,
+			new Position{ Value = position }
+			);		
 
-			SetBuffer(entity, buffer);
+		//	Generate terrain nezt
+		entityManager.AddComponent(entity, typeof(Tags.GenerateTerrain));
+
+		SetBuffer(entity, buffer);
 	}
 
 	//	Set buffer type
