@@ -121,7 +121,7 @@ public class BlockBufferSystem : ComponentSystem
 		};
 
 		//DEBUG
-		//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 0, 0, 0.5f), updateSquare.topBlockBuffer, updateSquare.bottomBlockBuffer);
+		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f), updateSquare.topBlockBuffer, updateSquare.bottomBlockBuffer);
 
 		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
 		commandBuffer.SetComponent<Position>(entity, pos);

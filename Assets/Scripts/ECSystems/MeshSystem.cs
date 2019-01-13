@@ -110,7 +110,7 @@ public class MeshSystem : ComponentSystem
 				faces.Dispose();
 
 				//DEBUG
-      			CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.5f), 40, 50);
+      			//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.5f), 40, 50);
 			}
 		}
 		commandBuffer.Playback(entityManager);
