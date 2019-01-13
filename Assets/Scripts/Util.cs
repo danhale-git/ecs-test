@@ -65,6 +65,15 @@ public static class Util
         );
     }
 
+    public static float3 Float3Round(float3 value)
+    {
+        return new float3(
+            math.round(value.x),
+            math.round(value.y),
+            math.round(value.z)
+        );
+    }
+
     public static Vector3 VoxelOwner(Vector3 position, int cubeSize)
 	{
 		int x = Mathf.FloorToInt(position.x / cubeSize);

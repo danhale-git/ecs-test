@@ -93,10 +93,11 @@ public class PlayerInputSystem : ComponentSystem
 
     void SelectBlock()
     {
-        float3 rayStart = Util.Float3Floor(camera.transform.position);
-        Debug.Log("start: "+rayStart);
+        Ray baseRay = camera.ScreenPointToRay(Input.mousePosition);
 
-        float3 direction = camera.ScreenPointToRay(Input.mousePosition).direction;
+        float3 rayStart = Util.Float3Round(baseRay.origin);
+
+        float3 direction = baseRay.direction;
 
         List<float3> voxels = VoxelRay(float3.zero, direction, 100);
 
@@ -126,16 +127,16 @@ public class PlayerInputSystem : ComponentSystem
             DynamicBuffer<Block> blocks = entityManager.GetBuffer<Block>(currentOwner);
             if(index >= blocks.Length || index < 0) continue;
             
-            
-
             if(blocks[index].type != 0)
             {
                 Block block = blocks[index];
                 block.type = 0;
                 blocks[index] = block;
-                //GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                //cube.transform.position = voxels[i] + (float3)camera.transform.position;
-                //CustomDebugTools.SetMapSquareHighlight(currentOwner, cubeSize-1, Color.red, 50, 0);
+                entityManager.AddComponent(currentOwner, typeof(Tags.Redraw));
+                entityManager.AddComponent(currentOwner, typeof(Tags.DrawMesh));
+
+                //entityManager.AddComponent(currentOwner, typeof(Tags.SetDrawBuffer));
+
                 return;
             }
         }
