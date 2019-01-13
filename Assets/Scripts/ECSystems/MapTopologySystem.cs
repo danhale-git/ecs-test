@@ -8,8 +8,8 @@ using Unity.Transforms;
 using MyComponents;
 
 //  Generate 2D terrain data from coherent noise
-[UpdateAfter(typeof(MapSquareSystem))]
-public class TerrainSystem : ComponentSystem
+[UpdateAfter(typeof(MapCreateSystem))]
+public class MapTopologySystem : ComponentSystem
 {
     EntityManager entityManager;
 

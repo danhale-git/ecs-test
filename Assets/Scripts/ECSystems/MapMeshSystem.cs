@@ -11,8 +11,8 @@ using UnityEngine;
 using UnityEditor;
 
 //	Generate 3D mesh from block data
-[UpdateAfter(typeof(TerrainSlopeSystem))]
-public class MeshSystem : ComponentSystem
+[UpdateAfter(typeof(MapSlopeSystem))]
+public class MapMeshSystem : ComponentSystem
 {
 	//	Parralel job batch size
 	int batchSize = 32;

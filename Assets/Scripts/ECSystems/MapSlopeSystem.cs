@@ -6,8 +6,8 @@ using Unity.Collections;
 using Unity.Mathematics;
 using MyComponents;
 
-[UpdateAfter(typeof(BlockSystem))]
-public class TerrainSlopeSystem : ComponentSystem
+[UpdateAfter(typeof(MapBlockSystem))]
+public class MapSlopeSystem : ComponentSystem
 {
     EntityManager entityManager;
     int cubeSize;

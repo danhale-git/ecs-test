@@ -8,8 +8,8 @@ using Unity.Transforms;
 using MyComponents;
 
 //	Get y buffer for mesh drawing based on adjacent top/bottom blocks
-[UpdateAfter(typeof(TerrainSystem))]
-public class DrawBufferSystem : ComponentSystem
+[UpdateAfter(typeof(MapTopologySystem))]
+public class MapInnerBufferSystem : ComponentSystem
 {
     EntityManager entityManager;
 

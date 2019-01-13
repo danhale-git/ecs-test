@@ -8,7 +8,7 @@ using Unity.Transforms;
 using Unity.Mathematics;
 using MyComponents;
 
-[UpdateAfter(typeof(MeshSystem))]
+[UpdateAfter(typeof(MapMeshSystem))]
 public class PlayerInputSystem : ComponentSystem
 {
     EntityManager entityManager;

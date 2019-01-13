@@ -8,8 +8,8 @@ using Unity.Transforms;
 using MyComponents;
 
 //	Get y buffer for block generation based on adjacent drawing buffer, calculate array lengths and offsets for block and mesh generation
-[UpdateAfter(typeof(DrawBufferSystem))]
-public class BlockBufferSystem : ComponentSystem
+[UpdateAfter(typeof(MapInnerBufferSystem))]
+public class MapOuterBufferSystem : ComponentSystem
 {
     EntityManager entityManager;
 
