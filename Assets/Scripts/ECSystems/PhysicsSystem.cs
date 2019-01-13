@@ -18,7 +18,7 @@ public class PhysicsSystem : ComponentSystem
 
     ArchetypeChunkEntityType                    entityType;
     ArchetypeChunkComponentType<Position>       positionType;
-    ArchetypeChunkComponentType<PhysicsEntity>  moveType;
+    ArchetypeChunkComponentType<PhysicsEntity>  physicsType;
 
     protected override void OnCreateManager()
     {
@@ -44,7 +44,7 @@ public class PhysicsSystem : ComponentSystem
     {
         entityType      = GetArchetypeChunkEntityType();
         positionType    = GetArchetypeChunkComponentType<Position>();
-        moveType        = GetArchetypeChunkComponentType<PhysicsEntity>();
+        physicsType     = GetArchetypeChunkComponentType<PhysicsEntity>();
 
         NativeArray<ArchetypeChunk> chunks;
         chunks = entityManager.CreateArchetypeChunkArray(
@@ -64,42 +64,42 @@ public class PhysicsSystem : ComponentSystem
 
             NativeArray<Entity>         entities    = chunk.GetNativeArray(entityType);
             NativeArray<Position>       positions   = chunk.GetNativeArray(positionType);
-            NativeArray<PhysicsEntity>  movements   = chunk.GetNativeArray(moveType);
+            NativeArray<PhysicsEntity>  physics     = chunk.GetNativeArray(physicsType);
             
             for(int e = 0; e < entities.Length; e++)
             {
                 float3 currentPosition = positions[e].Value;
-                PhysicsEntity movement = movements[e];
+                PhysicsEntity physicsComponent = physics[e];
 
-                float3 nextPosition = currentPosition + (movement.positionChangePerSecond * Time.deltaTime);
+                float3 nextPosition = currentPosition + (physicsComponent.positionChangePerSecond * Time.deltaTime);
 
                 //  Current map square doesn't exist, find current map Square
-                if(!entityManager.Exists(movement.currentMapSquare))
-                    GetMapSquare(nextPosition, out movement.currentMapSquare);
+                if(!entityManager.Exists(physicsComponent.currentMapSquare))
+                    GetMapSquare(nextPosition, out physicsComponent.currentMapSquare);
 
                 //  Get vector describing next position's overlap from this map square
-                float3 currentSquarePosition = entityManager.GetComponentData<MapSquare>(movement.currentMapSquare).position;               
+                float3 currentSquarePosition = entityManager.GetComponentData<MapSquare>(physicsComponent.currentMapSquare).position;               
                 float3 overlapDirection = Util.EdgeOverlap(nextPosition - currentSquarePosition, cubeSize);
 
                 //  Next position is outside current map square
                 if(!Util.Float3sMatch(overlapDirection, float3.zero))
                 {
                     //  Get next map square from current map square's AdjacentSquares component                        
-                    AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(movement.currentMapSquare);
-                    movement.currentMapSquare = adjacentSquares.GetByDirection(overlapDirection);
+                    AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(physicsComponent.currentMapSquare);
+                    physicsComponent.currentMapSquare = adjacentSquares.GetByDirection(overlapDirection);
                 }
 
                 //TODO: proper physics system
                 //  Get height of current block
-                DynamicBuffer<Topology> heightMap = entityManager.GetBuffer<Topology>(movement.currentMapSquare);
+                DynamicBuffer<Topology> heightMap = entityManager.GetBuffer<Topology>(physicsComponent.currentMapSquare);
                 float3 local = Util.LocalVoxel(nextPosition, cubeSize, true);
                 float yOffset = heightMap[Util.Flatten2D(local.x, local.z, cubeSize)].height;
 
                 //  Adjust for model size
-                yOffset += movements[e].size.y/2;
+                yOffset += physics[e].size.y/2;
 
                 positions[e] = new Position { Value = new float3(nextPosition.x, yOffset, nextPosition.z) };
-                movements[e] = movement;
+                physics[e] = physicsComponent;
             }
         }
         chunks.Dispose();

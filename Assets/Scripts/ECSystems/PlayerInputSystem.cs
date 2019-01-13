@@ -15,10 +15,10 @@ public class PlayerInputSystem : ComponentSystem
 
     EntityArchetypeQuery query;
 
-    ArchetypeChunkEntityType                entityType;
-    ArchetypeChunkComponentType<Position>   positionType;
-    ArchetypeChunkComponentType<PhysicsEntity>   moveType;
-    ArchetypeChunkComponentType<Stats>      statsType;
+    ArchetypeChunkEntityType                    entityType;
+    ArchetypeChunkComponentType<Position>       positionType;
+    ArchetypeChunkComponentType<PhysicsEntity>  physicsType;
+    ArchetypeChunkComponentType<Stats>          statsType;
 
     Camera camera;
 
@@ -41,7 +41,7 @@ public class PlayerInputSystem : ComponentSystem
     {
         entityType      = GetArchetypeChunkEntityType();
         positionType    = GetArchetypeChunkComponentType<Position>();
-        moveType = GetArchetypeChunkComponentType<PhysicsEntity>();
+        physicsType     = GetArchetypeChunkComponentType<PhysicsEntity>();
         statsType       = GetArchetypeChunkComponentType<Stats>();
 
         NativeArray<ArchetypeChunk> chunks;
@@ -60,10 +60,10 @@ public class PlayerInputSystem : ComponentSystem
         {
             ArchetypeChunk chunk = chunks[c];
 
-            NativeArray<Entity> entities    = chunk.GetNativeArray(entityType);
-            NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-            NativeArray<PhysicsEntity> movement  = chunk.GetNativeArray(moveType);
-            NativeArray<Stats> stats        = chunk.GetNativeArray(statsType);
+            NativeArray<Entity> entities        = chunk.GetNativeArray(entityType);
+            NativeArray<Position> positions     = chunk.GetNativeArray(positionType);
+            NativeArray<PhysicsEntity> physics  = chunk.GetNativeArray(physicsType);
+            NativeArray<Stats> stats            = chunk.GetNativeArray(statsType);
             
             for(int e = 0; e < entities.Length; e++)
             {
@@ -77,9 +77,9 @@ public class PlayerInputSystem : ComponentSystem
                 float3 move = (x + z) * stats[e].speed;
 
                 //  Update movement component
-                PhysicsEntity moveComponent = movement[e];
-                moveComponent.positionChangePerSecond = new float3(move.x, 0, move.z);
-                movement[e] = moveComponent;
+                PhysicsEntity physicsComponent = physics[e];
+                physicsComponent.positionChangePerSecond = new float3(move.x, 0, move.z);
+                physics[e] = physicsComponent;
             }
         }
         chunks.Dispose();
