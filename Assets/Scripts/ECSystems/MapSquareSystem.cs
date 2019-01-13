@@ -126,8 +126,6 @@ public class MapSquareSystem : ComponentSystem
 		//	Create square entity
 		Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 
-		Util.CheckVoxelPosition(position);
-
 		//	Set position
 		entityManager.SetComponentData(
 			entity,

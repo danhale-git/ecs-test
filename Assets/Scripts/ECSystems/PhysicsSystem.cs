@@ -8,7 +8,7 @@ using Unity.Mathematics;
 using MyComponents;
 
 [UpdateAfter(typeof(PlayerInputSystem))]
-public class MoveSystem : ComponentSystem
+public class PhysicsSystem : ComponentSystem
 {
     EntityManager entityManager;
     int cubeSize;
@@ -16,19 +16,20 @@ public class MoveSystem : ComponentSystem
     EntityArchetypeQuery moveQuery;
     EntityArchetypeQuery mapSquareQuery;
 
-    ArchetypeChunkEntityType entityType;
-    ArchetypeChunkComponentType<Position> positionType;
-    ArchetypeChunkComponentType<Movement> moveType;
+    ArchetypeChunkEntityType                    entityType;
+    ArchetypeChunkComponentType<Position>       positionType;
+    ArchetypeChunkComponentType<PhysicsEntity>  moveType;
 
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         cubeSize = TerrainSettings.cubeSize;
 
-        moveQuery = new EntityArchetypeQuery{
+        moveQuery = new EntityArchetypeQuery
+        {
             Any     = Array.Empty<ComponentType>(),
             None    = Array.Empty<ComponentType>(),
-            All     = new ComponentType[] { typeof(Movement), typeof(Position) }
+            All     = new ComponentType[] { typeof(PhysicsEntity), typeof(Position) }
         };
 
         //	All map squares
@@ -41,9 +42,9 @@ public class MoveSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        entityType = GetArchetypeChunkEntityType();
-        positionType = GetArchetypeChunkComponentType<Position>();
-        moveType = GetArchetypeChunkComponentType<Movement>();
+        entityType      = GetArchetypeChunkEntityType();
+        positionType    = GetArchetypeChunkComponentType<Position>();
+        moveType        = GetArchetypeChunkComponentType<PhysicsEntity>();
 
         NativeArray<ArchetypeChunk> chunks;
         chunks = entityManager.CreateArchetypeChunkArray(
@@ -61,46 +62,40 @@ public class MoveSystem : ComponentSystem
         {
             ArchetypeChunk chunk = chunks[c];
 
-            NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
-            NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-            NativeArray<Movement> movements = chunk.GetNativeArray(moveType);
+            NativeArray<Entity>         entities    = chunk.GetNativeArray(entityType);
+            NativeArray<Position>       positions   = chunk.GetNativeArray(positionType);
+            NativeArray<PhysicsEntity>  movements   = chunk.GetNativeArray(moveType);
             
             for(int e = 0; e < entities.Length; e++)
             {
                 float3 currentPosition = positions[e].Value;
-                Movement movement = movements[e];
+                PhysicsEntity movement = movements[e];
 
                 float3 nextPosition = currentPosition + (movement.positionChangePerSecond * Time.deltaTime);
 
-                float yOffset = nextPosition.y;
-
                 //  Current map square doesn't exist, find current map Square
                 if(!entityManager.Exists(movement.currentMapSquare))
-                {
-                    Entity mapSquare;
-                    if(!GetMapSquare(nextPosition, out mapSquare))
-                        throw new Exception("Could not find map square for moving object");
-                    else
-                        movement.currentMapSquare = mapSquare;
-                }
-                //  Check if current map square changes after this movement
-                else
-                {
-                    float3 currentSquarePosition = entityManager.GetComponentData<MapSquare>(movement.currentMapSquare).position;               
-                    float3 overlapDirection = Util.EdgeOverlap(nextPosition - currentSquarePosition, cubeSize);
+                    GetMapSquare(nextPosition, out movement.currentMapSquare);
 
-                    //  Get next map square from current map square's AdjacentSquares component
-                    if(!Util.Float3sMatch(overlapDirection, float3.zero))
-                    {
-                        AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(movement.currentMapSquare);
-                        movement.currentMapSquare = adjacentSquares.GetByDirection(overlapDirection);
-                    }
+                //  Get vector describing next position's overlap from this map square
+                float3 currentSquarePosition = entityManager.GetComponentData<MapSquare>(movement.currentMapSquare).position;               
+                float3 overlapDirection = Util.EdgeOverlap(nextPosition - currentSquarePosition, cubeSize);
+
+                //  Next position is outside current map square
+                if(!Util.Float3sMatch(overlapDirection, float3.zero))
+                {
+                    //  Get next map square from current map square's AdjacentSquares component                        
+                    AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(movement.currentMapSquare);
+                    movement.currentMapSquare = adjacentSquares.GetByDirection(overlapDirection);
                 }
 
+                //TODO: proper physics system
+                //  Get height of current block
                 DynamicBuffer<Topology> heightMap = entityManager.GetBuffer<Topology>(movement.currentMapSquare);
                 float3 local = Util.LocalVoxel(nextPosition, cubeSize, true);
-                yOffset = heightMap[Util.Flatten2D(local.x, local.z, cubeSize)].height;
+                float yOffset = heightMap[Util.Flatten2D(local.x, local.z, cubeSize)].height;
 
+                //  Adjust for model size
                 yOffset += movements[e].size.y/2;
 
                 positions[e] = new Position { Value = new float3(nextPosition.x, yOffset, nextPosition.z) };
@@ -110,7 +105,7 @@ public class MoveSystem : ComponentSystem
         chunks.Dispose();
     }
 
-    // TODO: This will not be efficient for multiple moving objects
+    //TODO: This will not be efficient for multiple moving objects
     //	Get map square by position using chunk iteration
 	bool GetMapSquare(float3 position, out Entity mapSquare)
 	{
@@ -153,7 +148,6 @@ public class MoveSystem : ComponentSystem
 		}
 
 		chunks.Dispose();
-		mapSquare = new Entity();
-		return false;
+        throw new Exception("Could not find map square for moving object");
 	}
 }

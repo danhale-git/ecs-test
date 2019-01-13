@@ -7,7 +7,7 @@ using Unity.Transforms;
 using Unity.Mathematics;
 using MyComponents;
 
-[UpdateAfter(typeof(MoveSystem))]
+[UpdateAfter(typeof(PhysicsSystem))]
 public class CameraSystem : ComponentSystem
 {
     EntityManager entityManager;

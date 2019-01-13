@@ -10,7 +10,7 @@ namespace MyComponents
 		public float speed;
 	}
 
-	public struct Movement : IComponentData
+	public struct PhysicsEntity : IComponentData
 	{
 		public float3 positionChangePerSecond;
 		public float3 size;
