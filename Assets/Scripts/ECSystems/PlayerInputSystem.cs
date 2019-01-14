@@ -94,42 +94,39 @@ public class PlayerInputSystem : ComponentSystem
     void SelectBlock()
     {
         //  Use built in screen to world point ray for origin and direction
-        Ray baseRay = camera.ScreenPointToRay(Input.mousePosition);
-        float3 originVoxel = Util.Float3Round(baseRay.origin);
+        Ray ray = camera.ScreenPointToRay(Input.mousePosition);
+        float3 originVoxel = Util.Float3Round(ray.origin);
 
         //  Cast ray, get positions of the voxels it hits
-        List<float3> voxels = VoxelRay(float3.zero, baseRay.direction, 100);
+        List<float3> traversedVoxelOffsets = VoxelRay(float3.zero, ray.direction, 100);
 
         //  Map square at origin
-        Entity currentOwner = QuickGetEntity(originVoxel);
-        MapSquare currentMapSquare = entityManager.GetComponentData<MapSquare>(currentOwner);
-        float3 previousVoxelOwnerPosition = currentMapSquare.position;
+        float3 previousVoxelOwnerPosition = Util.VoxelOwner(originVoxel, cubeSize);
+        Entity currentOwner = QuickGetOwner(previousVoxelOwnerPosition);
 
         //  Check all hit voxels
-        for(int i = 0; i < voxels.Count; i++)
+        for(int i = 0; i < traversedVoxelOffsets.Count; i++)
         {       
-            float3 nextVoxelOwnerPosition = Util.VoxelOwner(voxels[i], cubeSize);
+            float3 voxelWorldPosition = originVoxel + traversedVoxelOffsets[i];
+            float3 nextVoxelOwnerPosition = Util.VoxelOwner(voxelWorldPosition, cubeSize);
 
             //  Voxel is in a different map square
             if(!Util.Float3sMatch(previousVoxelOwnerPosition, nextVoxelOwnerPosition))
             {
                 //  Update current map square
-                currentOwner = QuickGetEntity(voxels[i] + originVoxel);
-                currentMapSquare = entityManager.GetComponentData<MapSquare>(currentOwner);
+                currentOwner = QuickGetOwner(nextVoxelOwnerPosition);
 
-                //  Hit the edge of the map
+                //  Hit the edge of the drawn map
                 if(entityManager.HasComponent<Tags.InnerBuffer>(currentOwner))
-                {
-                    Debug.Log("HIT MAP EDGE");
                     return;
-                }
             }
 
-            //  Voxel world position
-            float3 voxelWorldPosition = originVoxel + voxels[i];
-
             //  Index in map square block array
-            int index = Util.BlockIndex(voxelWorldPosition, currentMapSquare, cubeSize);
+            int index = Util.BlockIndex(
+                voxelWorldPosition,
+                entityManager.GetComponentData<MapSquare>(currentOwner),
+                cubeSize
+            );
 
             //  Map square block array
             DynamicBuffer<Block> blocks = entityManager.GetBuffer<Block>(currentOwner);
@@ -155,16 +152,18 @@ public class PlayerInputSystem : ComponentSystem
         }
     }
 
-    Entity QuickGetEntity(float3 voxel)
+    Entity QuickGetOwner(float3 currentMapSquarePostion)
     {
         NativeArray<Entity> entities = entityManager.GetAllEntities(Allocator.TempJob);
+        
         for(int i = 0; i< entities.Length; i++)
         {
             if(!entityManager.HasComponent<MapSquare>(entities[i]))
                 continue;
-            float3 position = entityManager.GetComponentData<MapSquare>(entities[i]).position;
 
-            if(Util.Float3sMatch(position, Util.VoxelOwner(voxel, cubeSize)))
+            float3 othereMapSquarePosition = entityManager.GetComponentData<MapSquare>(entities[i]).position;
+
+            if(Util.Float3sMatch(othereMapSquarePosition, currentMapSquarePostion))
             {
                 Entity entity = entities[i];
                 entities.Dispose();
