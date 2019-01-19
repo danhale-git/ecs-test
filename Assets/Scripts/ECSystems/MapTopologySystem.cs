@@ -81,7 +81,6 @@ public class MapTopologySystem : ComponentSystem
 
                 //  Set draw buffer next
                 commandBuffer.RemoveComponent<Tags.GenerateTerrain>(entity);
-                commandBuffer.AddComponent(entity, new Tags.GetAdjacentSquares());
             }
         }
 

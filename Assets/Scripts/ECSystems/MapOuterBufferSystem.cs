@@ -74,7 +74,6 @@ public class MapOuterBufferSystem : ComponentSystem
 
 				//  Set block buffer next
                 commandBuffer.RemoveComponent<Tags.SetBlockBuffer>(entity);
-                commandBuffer.AddComponent(entity, new Tags.GenerateBlocks());
             }
         }
     
@@ -104,7 +103,7 @@ public class MapOuterBufferSystem : ComponentSystem
 
 		//	Top and bottom block levels to generate blocks
 		updateSquare.topBlockBuffer 	= topBuffer 	+ 1;
-		updateSquare.bottomBlockBuffer = bottomBuffer 	- 1;
+		updateSquare.bottomBlockBuffer 	= bottomBuffer 	- 1;
 
 		//	Calculate iteration length for block generation
 		int blockGenerationHeight = updateSquare.topBlockBuffer - updateSquare.bottomBlockBuffer;

@@ -72,7 +72,6 @@ public class MapInnerBufferSystem : ComponentSystem
 
 				//  Set block buffer next
                 commandBuffer.RemoveComponent<Tags.SetDrawBuffer>(entity);
-                commandBuffer.AddComponent(entity, new Tags.SetBlockBuffer());
             }
         }
     

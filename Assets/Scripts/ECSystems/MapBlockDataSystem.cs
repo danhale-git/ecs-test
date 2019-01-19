@@ -90,7 +90,6 @@ public class MapBlockDataSystem : ComponentSystem
 
 				//	Set slopes next
 				commandBuffer.RemoveComponent<Tags.GenerateBlocks>(entity);
-                commandBuffer.AddComponent(entity, new Tags.SetSlopes());
 
 				blocks.Dispose();
 			}

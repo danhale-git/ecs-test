@@ -85,7 +85,6 @@ public class MapSlopeSystem : ComponentSystem
 
                 //	Draw mesh next
 				commandBuffer.RemoveComponent<Tags.SetSlopes>(entity);
-                commandBuffer.AddComponent(entity, new Tags.DrawMesh());
             } 
         }
         commandBuffer.Playback(entityManager);

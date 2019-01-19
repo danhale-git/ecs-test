@@ -43,7 +43,15 @@ public class MapCreateSystem : ComponentSystem
             ComponentType.Create<RenderMeshComponent>(),
             ComponentType.Create<MapSquare>(),
             ComponentType.Create<Topology>(),
-            ComponentType.Create<Block>()	
+            ComponentType.Create<Block>(),
+
+            ComponentType.Create<Tags.GenerateTerrain>(),
+            ComponentType.Create<Tags.GetAdjacentSquares>(),
+            ComponentType.Create<Tags.SetDrawBuffer>(),
+            ComponentType.Create<Tags.SetBlockBuffer>(),
+            ComponentType.Create<Tags.GenerateBlocks>(),
+            ComponentType.Create<Tags.SetSlopes>(),
+			ComponentType.Create<Tags.DrawMesh>()
 			);
 
 		//	All map squares
@@ -185,9 +193,6 @@ public class MapCreateSystem : ComponentSystem
 			entity,
 			new Position{ Value = position }
 			);		
-
-		//	Generate terrain nezt
-		entityManager.AddComponent(entity, typeof(Tags.GenerateTerrain));
 
 		SetBuffer(entity, buffer);
 	}

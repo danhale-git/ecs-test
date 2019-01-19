@@ -75,7 +75,6 @@ public class MapAdjacentSystem : ComponentSystem
 				Entity entity = entities[e];
 
                 commandBuffer.RemoveComponent<Tags.GetAdjacentSquares>(entity);
-                commandBuffer.AddComponent(entity, new Tags.SetDrawBuffer());
             }
         }
     
