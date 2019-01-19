@@ -125,6 +125,12 @@ namespace MyComponents
 		}
 	}
 
+	public struct BufferChange : IComponentData
+	{
+		int topBlockBuffer;
+		int bottomBlockBuffer;
+	}
+
 	#endregion
 }
 
@@ -140,7 +146,7 @@ namespace Tags
 	public struct SetSlopes : IComponentData { }
 	public struct DrawMesh : IComponentData { }
 	
-	public struct Redraw : IComponentData { }
+	public struct Update : IComponentData { }
 
 	public struct InnerBuffer : IComponentData { }
 	public struct OuterBuffer : IComponentData { }	

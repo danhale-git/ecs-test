@@ -12,6 +12,7 @@ using UnityEditor;
 
 //	Generate 3D mesh from block data
 [UpdateAfter(typeof(MapSlopeSystem))]
+[UpdateAfter(typeof(MapBufferChangeSystem))]
 public class MapMeshSystem : ComponentSystem
 {
 	//	Parralel job batch size
@@ -99,7 +100,7 @@ public class MapMeshSystem : ComponentSystem
 				FaceCounts counts;
 				NativeArray<Faces> faces = CheckBlockFaces(squares[e], blockAccessor[e], adjacentSquares, out counts);
 
-				bool redraw = entityManager.HasComponent<Tags.Redraw>(entity);
+				bool redraw = entityManager.HasComponent<Tags.Update>(entity);
 
 				//	Create mesh entity if any faces are exposed
 				if(counts.faceCount != 0)
@@ -109,7 +110,7 @@ public class MapMeshSystem : ComponentSystem
 						entity,
 						commandBuffer);
 
-				if(redraw) commandBuffer.RemoveComponent(entity, typeof(Tags.Redraw));
+				if(redraw) commandBuffer.RemoveComponent(entity, typeof(Tags.Update));
 
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 				

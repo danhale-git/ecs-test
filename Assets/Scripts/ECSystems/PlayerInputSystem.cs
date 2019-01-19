@@ -141,8 +141,11 @@ public class PlayerInputSystem : ComponentSystem
                 Block block = blocks[index];
                 block.type = 0;
                 blocks[index] = block;
-                entityManager.AddComponent(currentOwner, typeof(Tags.Redraw));
+                entityManager.AddComponent(currentOwner, typeof(Tags.Update));
                 entityManager.AddComponent(currentOwner, typeof(Tags.DrawMesh));
+
+                if(block.localPosition.y ==  entityManager.GetComponentData<MapSquare>(currentOwner).bottomDrawBuffer)
+                    Debug.Log("reached bottom");
 
                 //TODO: Recheck buffers before redrawing
                 //entityManager.AddComponent(currentOwner, typeof(Tags.SetDrawBuffer));
