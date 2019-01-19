@@ -40,7 +40,7 @@ public class MapCreateSystem : ComponentSystem
 
         mapSquareArchetype = entityManager.CreateArchetype(
             ComponentType.Create<Position>(),
-            ComponentType.Create<MeshInstanceRendererComponent>(),
+            ComponentType.Create<RenderMeshComponent>(),
             ComponentType.Create<MapSquare>(),
             ComponentType.Create<Topology>(),
             ComponentType.Create<Block>()	

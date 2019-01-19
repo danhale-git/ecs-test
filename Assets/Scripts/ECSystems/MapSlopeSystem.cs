@@ -79,7 +79,7 @@ public class MapSlopeSystem : ComponentSystem
 				GetSlopes(
 					squares[e],
 					blockAccessor[e],
-					heightAccessor[e].ToNativeArray(),
+					heightAccessor[e].AsNativeArray(),
 					adjacentHeightMaps
 				);
 

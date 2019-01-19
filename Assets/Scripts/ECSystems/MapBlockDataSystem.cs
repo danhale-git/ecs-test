@@ -81,7 +81,7 @@ public class MapBlockDataSystem : ComponentSystem
 				NativeArray<Block> blocks = GetBlocks(
 					entities[e],
 					mapSquares[e],
-					heightmap.ToNativeArray()
+					heightmap.AsNativeArray()
 					);
 
 				//	Fill buffer

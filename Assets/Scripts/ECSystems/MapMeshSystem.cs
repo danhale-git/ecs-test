@@ -3,8 +3,8 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Rendering;
 using Unity.Transforms;
+using Unity.Rendering;
 using MyComponents;
 
 using UnityEngine;
@@ -141,11 +141,11 @@ public class MapMeshSystem : ComponentSystem
 			exposedFaces = exposedFaces,
 			mapSquare = mapSquare,
 
-			blocks 	= blocks.ToNativeArray(),
-			right 	= entityManager.GetBuffer<Block>(adjacentSquares[0]).ToNativeArray(),
-			left 	= entityManager.GetBuffer<Block>(adjacentSquares[1]).ToNativeArray(),
-			front 	= entityManager.GetBuffer<Block>(adjacentSquares[2]).ToNativeArray(),
-			back 	= entityManager.GetBuffer<Block>(adjacentSquares[3]).ToNativeArray(),
+			blocks 	= blocks.AsNativeArray(),
+			right 	= entityManager.GetBuffer<Block>(adjacentSquares[0]).AsNativeArray(),
+			left 	= entityManager.GetBuffer<Block>(adjacentSquares[1]).AsNativeArray(),
+			front 	= entityManager.GetBuffer<Block>(adjacentSquares[2]).AsNativeArray(),
+			back 	= entityManager.GetBuffer<Block>(adjacentSquares[3]).AsNativeArray(),
 
 			adjacentLowestBlocks = adjacentOffsets,
 			
@@ -282,9 +282,9 @@ public class MapMeshSystem : ComponentSystem
 	// Apply mesh to MapSquare entity
 	void SetMeshComponent(bool redraw, Mesh mesh, Entity entity, EntityCommandBuffer commandBuffer)
 	{
-		if(redraw) commandBuffer.RemoveComponent<MeshInstanceRenderer>(entity);
+		if(redraw) commandBuffer.RemoveComponent<RenderMesh>(entity);
 
-		MeshInstanceRenderer renderer = new MeshInstanceRenderer();
+		RenderMesh renderer = new RenderMesh();
 		renderer.mesh = mesh;
 		renderer.material = material;
 
