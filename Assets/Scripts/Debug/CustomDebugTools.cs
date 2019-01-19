@@ -132,4 +132,11 @@ public static class CustomDebugTools
 	                            new Vector3(0, 0, 0),	//	left back top
 	                            new Vector3(1, 0, 1) };	//	right front top
     }
+
+    public static void Cube(Color color, Vector3 worldPosition)
+    {
+        GameObject capsule = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        capsule.GetComponent<Renderer>().material.color = color;
+        capsule.transform.position = worldPosition;
+    }
 }
