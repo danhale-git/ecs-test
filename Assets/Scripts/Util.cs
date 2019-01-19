@@ -156,6 +156,11 @@ public static class Util
         if(a.x == b.x && a.y == b.y && a.z ==b.z) return true;
         else return false;
     }
+    public static bool Float3sMatchXZ(float3 a, float3 b)
+    {
+        if(a.x == b.x && a.z ==b.z) return true;
+        else return false;
+    }
 
     public static float3 Float3Lerp(float3 a, float3 b, float interpolator)
     {

@@ -235,8 +235,7 @@ public class MapCreateSystem : ComponentSystem
 					Buffer buffer = radiusBuffers[p];
 
 
-					if(	radiusPosition.Value.x == mapSquarePositions[e].Value.x &&
-						radiusPosition.Value.z == mapSquarePositions[e].Value.z)
+					if(Util.Float3sMatchXZ(radiusPosition.Value, mapSquarePositions[e].Value))
 					{
 						// collect entities
 						updateMapSquares.Add(entity);
@@ -286,8 +285,7 @@ public class MapCreateSystem : ComponentSystem
 				Entity entity = entities[e];
 
 				//	If position matches return
-				if(	position.x == positions[e].Value.x &&
-					position.z == positions[e].Value.z)
+				if(Util.Float3sMatchXZ(position, positions[e].Value))
 				{
 					mapSquare = entity;
 					chunks.Dispose();
