@@ -100,22 +100,8 @@ public class MapInnerBufferSystem : ComponentSystem
 
 		MapSquare updateSquare = mapSquare;
 
-		//	Top and bottom block levels to draw mesh
-		updateSquare.topDrawBuffer		= topBuffer + 1;
-		updateSquare.bottomDrawBuffer	= bottomBuffer - 1;
-
-		if(	entityManager.HasComponent<Tags.Update>(entity) 		&&
-		   (updateSquare.topDrawBuffer != mapSquare.topDrawBuffer 	||
-			updateSquare.bottomDrawBuffer != mapSquare.bottomDrawBuffer))
-		{
-			Debug.Log("buffer changed");
-			BufferChange change = new BufferChange{
-				topDrawBuffer = mapSquare.topDrawBuffer - updateSquare.topDrawBuffer,
-				bottomDrawBuffer = mapSquare.bottomDrawBuffer - updateSquare.bottomDrawBuffer
-			};
-
-			commandBuffer.AddComponent<BufferChange>(entity, change);
-		}
+		updateSquare.topDrawBuffer		= topBuffer;
+		updateSquare.bottomDrawBuffer	= bottomBuffer;	
 
 		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
 	}

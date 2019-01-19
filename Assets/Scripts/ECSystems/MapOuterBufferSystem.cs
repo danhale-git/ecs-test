@@ -106,11 +106,11 @@ public class MapOuterBufferSystem : ComponentSystem
 		updateSquare.bottomBlockBuffer 	= bottomBuffer 	- 1;
 
 		//	Calculate iteration length for block generation
-		int blockGenerationHeight = updateSquare.topBlockBuffer - updateSquare.bottomBlockBuffer;
+		int blockGenerationHeight = (updateSquare.topBlockBuffer - updateSquare.bottomBlockBuffer)+1;
 		updateSquare.blockGenerationArrayLength = blockGenerationHeight * (cubeSize*cubeSize);
 
 		//	Calculate iteration length and offset for mesh drawing
-		int drawHeight = updateSquare.topDrawBuffer - updateSquare.bottomDrawBuffer;
+		int drawHeight = (updateSquare.topDrawBuffer - updateSquare.bottomDrawBuffer)+1;
 		updateSquare.drawArrayLength = drawHeight * (cubeSize * cubeSize);
 		updateSquare.drawIndexOffset = Util.Flatten(0, updateSquare.bottomDrawBuffer - updateSquare.bottomBlockBuffer, 0, cubeSize);
 
@@ -119,14 +119,14 @@ public class MapOuterBufferSystem : ComponentSystem
 			Value = new float3(position.Value.x, updateSquare.bottomBlockBuffer, position.Value.z)
 		};
 
-		if(entityManager.HasComponent<BufferChange>(entity))
+		/*if(entityManager.HasComponent<BufferChange>(entity))
 		{
 			BufferChange updateChange = entityManager.GetComponentData<BufferChange>(entity);
 			updateChange.topBlockBuffer = mapSquare.topBlockBuffer - updateSquare.topBlockBuffer;
 			updateChange.bottomBlockBuffer = mapSquare.bottomBlockBuffer - updateSquare.bottomBlockBuffer;
 			
 			commandBuffer.SetComponent<BufferChange>(entity, updateChange);
-		}
+		} */
 
 		//DEBUG
 		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f), updateSquare.topBlockBuffer, updateSquare.bottomBlockBuffer);
