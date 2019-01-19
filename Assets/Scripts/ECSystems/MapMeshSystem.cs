@@ -100,7 +100,7 @@ public class MapMeshSystem : ComponentSystem
 				FaceCounts counts;
 				NativeArray<Faces> faces = CheckBlockFaces(squares[e], blockAccessor[e], adjacentSquares, out counts);
 
-				bool redraw = entityManager.HasComponent<Tags.Update>(entity);
+				bool redraw = entityManager.HasComponent<Tags.Redraw>(entity);
 
 				//	Create mesh entity if any faces are exposed
 				if(counts.faceCount != 0)
@@ -110,7 +110,7 @@ public class MapMeshSystem : ComponentSystem
 						entity,
 						commandBuffer);
 
-				if(redraw) commandBuffer.RemoveComponent(entity, typeof(Tags.Update));
+				if(redraw) commandBuffer.RemoveComponent(entity, typeof(Tags.Redraw));
 
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 				

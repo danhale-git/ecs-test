@@ -142,8 +142,8 @@ public class PlayerInputSystem : ComponentSystem
     //  
     void AddMeshTags(Entity entity)
     {
-        if(!entityManager.HasComponent<Tags.Update>(entity) && entityManager.HasComponent<RenderMesh>(entity))
-            entityManager.AddComponentData<Tags.Update>(entity, new Tags.Update());
+        if(!entityManager.HasComponent<Tags.Redraw>(entity) && entityManager.HasComponent<RenderMesh>(entity))
+            entityManager.AddComponentData<Tags.Redraw>(entity, new Tags.Redraw());
         if(!entityManager.HasComponent<Tags.DrawMesh>(entity))
             entityManager.AddComponentData<Tags.DrawMesh>(entity, new Tags.DrawMesh());
     }

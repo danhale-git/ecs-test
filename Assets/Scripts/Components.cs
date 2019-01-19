@@ -150,7 +150,7 @@ namespace Tags
 	public struct SetSlopes : IComponentData { }
 	public struct DrawMesh : IComponentData { }
 	
-	public struct Update : IComponentData { }
+	public struct Redraw : IComponentData { }
 	public struct BufferChange : IComponentData { }
 
 	public struct InnerBuffer : IComponentData { }
