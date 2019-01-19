@@ -65,60 +65,114 @@ public class MapCreateSystem : ComponentSystem
 		if(!Util.Float3sMatch(currentSquarePosition, previousSquare))
 		{
 			previousSquare = currentSquarePosition;
-			GenerateRadius(currentSquarePosition, viewDistance);
+			GenerateRadius(currentSquarePosition);
 		}		
 	}
 
 	//	Create squares
-	public void GenerateRadius(Vector3 center, int radius)
+	public void GenerateRadius(Vector3 center)
 	{
 		center = new Vector3(center.x, 0, center.z);
 
-		int squaresCreated = 0;
+		NativeList<Position> positions;
+		NativeList<Buffer> buffers;
 
-		NativeList<Position> positions = new NativeList<Position>(Allocator.TempJob);
-		NativeList<Buffer> buffers = new NativeList<Buffer>(Allocator.TempJob);
+		PositionsAndBuffers(out positions, out buffers, center, viewDistance);
 
-		//	Generate grid of map squares in radius
-		for(int x = -radius-1; x <= radius+1; x++)
-			for(int z = -radius-1; z <= radius+1; z++)
-			{
-				Buffer buffer = 0;
-				//	Chunk is at the edge of the map 		- edge buffer
-				if 		(x < -radius || x >  radius 		|| z < -radius 		|| z >  radius )
-					buffer = Buffer.EDGE;
-				//	Chunk is next to the edge of the map 	- outer buffer
-				else if	(x == -radius || x ==  radius 		|| z == -radius 	|| z ==  radius )
-					buffer = Buffer.OUTER;
-				//	Chunk is 1 from the edge of the map 	- inner buffer
-				else if	(x == -radius+1 || x ==  radius-1 	|| z == -radius +1 	|| z ==  radius -1 )
-					buffer = Buffer.INNER;
-
-				//	Create map square at position
-				Vector3 offset = new Vector3(x*cubeSize, 0, z*cubeSize);
-
-				positions.Add(new Position{ Value = center + offset });
-				buffers.Add(buffer);
-			}
-
-		CreateUpdateRadius(positions, buffers);
+		CreateOrUpdate(positions, buffers);
 
 		for(int i = 0; i < positions.Length; i++)
-		{
 			CreateSquare(positions[i].Value, buffers[i]);
-		}
-		for(int i = 0; i < updateMapSquares.Length; i++)
-		{
-			CheckBuffer(updateMapSquares[i], updateBuffers[i]);
-		}
 
-		squaresCreated = positions.Length;
+		for(int i = 0; i < updateMapSquares.Length; i++)
+			CheckBuffer(updateMapSquares[i], updateBuffers[i]);
 
 		positions.Dispose();
 		buffers.Dispose();
 
 		updateMapSquares.Dispose();
 		updateBuffers.Dispose();
+	}
+
+	void PositionsAndBuffers(out NativeList<Position> positions, out NativeList<Buffer> buffers, float3 center, int radius)
+	{
+		positions = new NativeList<Position>(Allocator.TempJob);
+ 		buffers = new NativeList<Buffer>(Allocator.TempJob);
+
+		//	Generate grid of map squares in radius
+		for(int x = -radius-1; x <= radius+1; x++)
+			for(int z = -radius-1; z <= radius+1; z++)
+			{
+				Buffer buffer = 0;
+
+				//	Chunk is at the edge of the map 		- edge buffer
+				if 		(x < -radius || x >  radius 		|| z < -radius 		|| z >  radius )
+					buffer = Buffer.EDGE;
+
+				//	Chunk is next to the edge of the map 	- outer buffer
+				else if	(x == -radius || x ==  radius 		|| z == -radius 	|| z ==  radius )
+					buffer = Buffer.OUTER;
+
+				//	Chunk is 1 from the edge of the map 	- inner buffer
+				else if	(x == -radius+1 || x ==  radius-1 	|| z == -radius +1 	|| z ==  radius -1 )
+					buffer = Buffer.INNER;
+
+				//	Create map square at position
+				float3 offset = new Vector3(x*cubeSize, 0, z*cubeSize);
+
+				positions.Add(new Position{ Value = center + offset });
+				buffers.Add(buffer);
+			}
+	}
+
+	//	Organise positions into existing and non existent map squares
+	bool CreateOrUpdate(NativeList<Position> radiusPositions, NativeList<Buffer> radiusBuffers)
+	{
+		entityType	 	= GetArchetypeChunkEntityType();
+		positionType	= GetArchetypeChunkComponentType<Position>();
+
+		updateMapSquares = new NativeList<Entity>(Allocator.Persistent);
+		updateBuffers = new NativeList<Buffer>(Allocator.Persistent);
+		
+		//	All map squares
+		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
+			mapSquareQuery,
+			Allocator.TempJob
+			);		
+
+		for(int d = 0; d < chunks.Length; d++)
+		{
+			ArchetypeChunk chunk = chunks[d];
+
+			NativeArray<Entity> entities 				= chunk.GetNativeArray(entityType);
+			NativeArray<Position> mapSquarePositions 	= chunk.GetNativeArray(positionType);
+
+			for(int e = 0; e < entities.Length; e++)
+			{
+				Entity entity = entities[e];
+
+				for(int p = 0; p < radiusPositions.Length; p++)
+				{
+					Position radiusPosition = radiusPositions[p];
+					Buffer buffer = radiusBuffers[p];
+
+					if(Util.Float3sMatchXZ(radiusPosition.Value, mapSquarePositions[e].Value))
+					{
+						// collect entities
+						updateMapSquares.Add(entity);
+						updateBuffers.Add(buffer);
+
+						radiusPositions.RemoveAtSwapBack(p);
+						radiusBuffers.RemoveAtSwapBack(p);
+
+						break;
+					}
+				}
+			}
+		}
+
+		chunks.Dispose();
+		return false;
 	}
 
 	void CreateSquare(Vector3 position, Buffer buffer)
@@ -201,57 +255,6 @@ public class MapCreateSystem : ComponentSystem
 					entityManager.RemoveComponent<Tags.InnerBuffer>(entity);
 				break;
 		}
-	}
-
-	//	Organise positions into existing and non existent map squares
-	bool CreateUpdateRadius(NativeList<Position> radiusPositions, NativeList<Buffer> radiusBuffers)
-	{
-		entityType	 	= GetArchetypeChunkEntityType();
-		positionType	= GetArchetypeChunkComponentType<Position>();
-
-		updateMapSquares = new NativeList<Entity>(Allocator.Persistent);
-		updateBuffers = new NativeList<Buffer>(Allocator.Persistent);
-		
-		//	All map squares
-		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-			mapSquareQuery,
-			Allocator.TempJob
-			);		
-
-		for(int d = 0; d < chunks.Length; d++)
-		{
-			ArchetypeChunk chunk = chunks[d];
-
-			NativeArray<Entity> entities 				= chunk.GetNativeArray(entityType);
-			NativeArray<Position> mapSquarePositions 	= chunk.GetNativeArray(positionType);
-
-			for(int e = 0; e < entities.Length; e++)
-			{
-				Entity entity = entities[e];
-
-				for(int p = 0; p < radiusPositions.Length; p++)
-				{
-					Position radiusPosition = radiusPositions[p];
-					Buffer buffer = radiusBuffers[p];
-
-
-					if(Util.Float3sMatchXZ(radiusPosition.Value, mapSquarePositions[e].Value))
-					{
-						// collect entities
-						updateMapSquares.Add(entity);
-						updateBuffers.Add(buffer);
-
-						radiusPositions.RemoveAtSwapBack(p);
-						radiusBuffers.RemoveAtSwapBack(p);
-
-						break;
-					}
-				}
-			}
-		}
-
-		chunks.Dispose();
-		return false;
 	}
 
 	//	Get map square by position using chunk iteration
