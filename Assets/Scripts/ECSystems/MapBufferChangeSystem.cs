@@ -78,7 +78,7 @@ public class MapBufferChangeSystem : ComponentSystem
 				blockBuffer.ResizeUninitialized(mapSquare.blockGenerationArrayLength);
 
 				//	Set slopes next
-				commandBuffer.RemoveComponent<Tags.GenerateBlocks>(entity);
+				commandBuffer.RemoveComponent<BufferChange>(entity);
 			}
 		}
 		

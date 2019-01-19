@@ -57,6 +57,8 @@ public class PlayerInputSystem : ComponentSystem
 
     void ApplyInput(NativeArray<ArchetypeChunk> chunks)
     {
+        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+
         for(int c = 0; c < chunks.Length; c++)
         {
             ArchetypeChunk chunk = chunks[c];
@@ -84,14 +86,17 @@ public class PlayerInputSystem : ComponentSystem
 
                 if(Input.GetButtonDown("Fire1"))
                 {
-                    SelectBlock();
+                    SelectBlock(commandBuffer);
                 }
             }
         }
+
+        commandBuffer.Playback(entityManager);
+		commandBuffer.Dispose();
         chunks.Dispose();
     }
 
-    void SelectBlock()
+    void SelectBlock(EntityCommandBuffer commandBuffer)
     {
         //  Use built in screen to world point ray for origin and direction
         Ray ray = camera.ScreenPointToRay(Input.mousePosition);
@@ -121,10 +126,12 @@ public class PlayerInputSystem : ComponentSystem
                     return;
             }
 
+            MapSquare currentSquare = entityManager.GetComponentData<MapSquare>(currentOwner);
+
             //  Index in map square block array
             int index = Util.BlockIndex(
                 voxelWorldPosition,
-                entityManager.GetComponentData<MapSquare>(currentOwner),
+                currentSquare,
                 cubeSize
             );
 
@@ -141,14 +148,24 @@ public class PlayerInputSystem : ComponentSystem
                 Block block = blocks[index];
                 block.type = 0;
                 blocks[index] = block;
-                entityManager.AddComponent(currentOwner, typeof(Tags.Update));
-                entityManager.AddComponent(currentOwner, typeof(Tags.DrawMesh));
 
-                if(block.localPosition.y ==  entityManager.GetComponentData<MapSquare>(currentOwner).bottomDrawBuffer)
-                    Debug.Log("reached bottom");
+                commandBuffer.AddComponent<Tags.Update>(currentOwner, new Tags.Update());
+                commandBuffer.AddComponent<Tags.DrawMesh>(currentOwner, new Tags.DrawMesh());
+
+                if(block.localPosition.y <= currentSquare.bottomDrawBuffer)
+                {
+                    currentSquare.bottomBlock = (int)block.localPosition.y - 1;
+                    commandBuffer.SetComponent<MapSquare>(currentOwner, currentSquare);
+
+                    Debug.Log("reached bottom: "+currentSquare.bottomBlock+" "+block.localPosition.y);
+
+                    //commandBuffer.AddComponent<Tags.SetDrawBuffer>(currentOwner, new Tags.SetDrawBuffer());
+                    //commandBuffer.AddComponent<Tags.SetBlockBuffer>(currentOwner, new Tags.SetBlockBuffer());
+
+
+                }
 
                 //TODO: Recheck buffers before redrawing
-                //entityManager.AddComponent(currentOwner, typeof(Tags.SetDrawBuffer));
 
                 return;
             }

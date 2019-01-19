@@ -43,6 +43,16 @@ namespace MyComponents
 		public int drawArrayLength;
 		public int drawIndexOffset;
 	}
+
+	public struct BufferChange : IComponentData
+	{
+		public int topDrawBuffer;
+		public int bottomDrawBuffer;
+
+		public int topBlockBuffer;
+		public int bottomBlockBuffer;
+	}
+
 	[InternalBufferCapacity(0)]
 	public struct Topology : IBufferElementData
 	{
@@ -123,12 +133,6 @@ namespace MyComponents
 				default: throw new System.ArgumentOutOfRangeException("Index out of range 3: " + side);
 			}
 		}
-	}
-
-	public struct BufferChange : IComponentData
-	{
-		int topBlockBuffer;
-		int bottomBlockBuffer;
 	}
 
 	#endregion
