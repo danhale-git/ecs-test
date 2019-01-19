@@ -104,6 +104,19 @@ public class MapInnerBufferSystem : ComponentSystem
 		updateSquare.topDrawBuffer		= topBuffer + 1;
 		updateSquare.bottomDrawBuffer	= bottomBuffer - 1;
 
+		if(	entityManager.HasComponent<Tags.Update>(entity) 		&&
+		   (updateSquare.topDrawBuffer != mapSquare.topDrawBuffer 	||
+			updateSquare.bottomDrawBuffer != mapSquare.bottomDrawBuffer))
+		{
+			Debug.Log("buffer changed");
+			BufferChange change = new BufferChange{
+				topDrawBuffer = mapSquare.topDrawBuffer - updateSquare.topDrawBuffer,
+				bottomDrawBuffer = mapSquare.bottomDrawBuffer - updateSquare.bottomDrawBuffer
+			};
+
+			commandBuffer.AddComponent<BufferChange>(entity, change);
+		}
+
 		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
 	}
 }

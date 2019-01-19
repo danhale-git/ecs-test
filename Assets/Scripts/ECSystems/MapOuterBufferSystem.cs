@@ -119,6 +119,15 @@ public class MapOuterBufferSystem : ComponentSystem
 			Value = new float3(position.Value.x, updateSquare.bottomBlockBuffer, position.Value.z)
 		};
 
+		if(entityManager.HasComponent<BufferChange>(entity))
+		{
+			BufferChange updateChange = entityManager.GetComponentData<BufferChange>(entity);
+			updateChange.topBlockBuffer = mapSquare.topBlockBuffer - updateSquare.topBlockBuffer;
+			updateChange.bottomBlockBuffer = mapSquare.bottomBlockBuffer - updateSquare.bottomBlockBuffer;
+			
+			commandBuffer.SetComponent<BufferChange>(entity, updateChange);
+		}
+
 		//DEBUG
 		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f), updateSquare.topBlockBuffer, updateSquare.bottomBlockBuffer);
 

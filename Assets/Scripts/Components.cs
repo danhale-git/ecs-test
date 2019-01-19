@@ -43,6 +43,16 @@ namespace MyComponents
 		public int drawArrayLength;
 		public int drawIndexOffset;
 	}
+
+	public struct BufferChange : IComponentData
+	{
+		public int topDrawBuffer;
+		public int bottomDrawBuffer;
+
+		public int topBlockBuffer;
+		public int bottomBlockBuffer;
+	}
+
 	[InternalBufferCapacity(0)]
 	public struct Topology : IBufferElementData
 	{
