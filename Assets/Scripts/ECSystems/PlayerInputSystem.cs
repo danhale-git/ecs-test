@@ -117,38 +117,69 @@ public class PlayerInputSystem : ComponentSystem
             entityManager.SetComponentData<MapSquare>(blockOwner, ownerSquare);
 
             Debug.Log("reached bottom: "+ownerSquare.bottomBlock+" "+block.localPosition.y);
-            //UpdateBuffer(commandBuffer, blockOwner);
+            UpdateBuffer(commandBuffer, blockOwner);
         }
     }
 
     void UpdateMesh(EntityCommandBuffer commandBuffer, Entity entity)
     {
-        commandBuffer.AddComponent<Tags.Update>(entity, new Tags.Update());
-        commandBuffer.AddComponent<Tags.DrawMesh>(entity, new Tags.DrawMesh());
+        AddMeshTags(entity);
 
         AdjacentSquares adjacent = entityManager.GetComponentData<AdjacentSquares>(entity);
 
         for(int i = 0; i < 4; i++)
         {
-            Entity adjacentEntity = adjacent[i];
-            commandBuffer.AddComponent<Tags.Update>(adjacentEntity, new Tags.Update());
-            commandBuffer.AddComponent<Tags.DrawMesh>(adjacentEntity, new Tags.DrawMesh());
+            AddMeshTags(adjacent[i]);
+            AdjacentSquares otherAdjacent = entityManager.GetComponentData<AdjacentSquares>(adjacent[i]);
+            for(int e = 0; e < 4; e++)
+            {
+                AddMeshTags(otherAdjacent[e]);
+            }
         }
+    }
+
+    void AddMeshTags(Entity entity)
+    {
+        if(!entityManager.HasComponent<Tags.Update>(entity))
+            entityManager.AddComponentData<Tags.Update>(entity, new Tags.Update());
+        if(!entityManager.HasComponent<Tags.DrawMesh>(entity))
+            entityManager.AddComponentData<Tags.DrawMesh>(entity, new Tags.DrawMesh());
     }
 
     void UpdateBuffer(EntityCommandBuffer commandBuffer, Entity entity)
     {
-        commandBuffer.AddComponent<Tags.SetDrawBuffer>(entity, new Tags.SetDrawBuffer());
-        commandBuffer.AddComponent<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
+        AddBufferTags(entity);
 
         AdjacentSquares adjacent = entityManager.GetComponentData<AdjacentSquares>(entity);
 
         for(int i = 0; i < 4; i++)
         {
-            Entity adjacentEntity = adjacent[i];
-            commandBuffer.AddComponent<Tags.SetDrawBuffer>(adjacentEntity, new Tags.SetDrawBuffer());
-            commandBuffer.AddComponent<Tags.SetBlockBuffer>(adjacentEntity, new Tags.SetBlockBuffer());
+            AddBufferTags(adjacent[i]);
+
+            AdjacentSquares otherAdjacent = entityManager.GetComponentData<AdjacentSquares>(adjacent[i]);
+            for(int e = 0; e < 4; e++)
+            {
+                AddOutsideBufferTags(otherAdjacent[e]);
+            }
         }
+    }
+
+    void AddBufferTags(Entity entity)
+    {
+        entityManager.AddComponentData<Tags.SetDrawBuffer>(entity, new Tags.SetDrawBuffer());
+
+        entityManager.AddComponentData<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
+
+        entityManager.AddComponentData<Tags.BufferChange>(entity, new Tags.BufferChange());
+    }
+
+    void AddOutsideBufferTags(Entity entity)
+    {
+        if(!entityManager.HasComponent<Tags.SetBlockBuffer>(entity))
+            entityManager.AddComponentData<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
+            
+        if(!entityManager.HasComponent<Tags.BufferChange>(entity))
+            entityManager.AddComponentData<Tags.BufferChange>(entity, new Tags.BufferChange());
     }
 
     bool SelectBlock(out int blockIndex, out Entity blockOwner)

@@ -113,20 +113,14 @@ public class MapOuterBufferSystem : ComponentSystem
 		int drawHeight = (updateSquare.topDrawBuffer - updateSquare.bottomDrawBuffer)+1;
 		updateSquare.drawArrayLength = drawHeight * (cubeSize * cubeSize);
 		updateSquare.drawIndexOffset = Util.Flatten(0, updateSquare.bottomDrawBuffer - updateSquare.bottomBlockBuffer, 0, cubeSize);
+		
+		if(entityManager.HasComponent<Tags.Update>(entity))
+			Debug.Log(mapSquare.drawIndexOffset - updateSquare.drawIndexOffset);
 
 		//	Position of mesh in world space
 		Position pos = new Position{
 			Value = new float3(position.Value.x, updateSquare.bottomBlockBuffer, position.Value.z)
 		};
-
-		/*if(entityManager.HasComponent<BufferChange>(entity))
-		{
-			BufferChange updateChange = entityManager.GetComponentData<BufferChange>(entity);
-			updateChange.topBlockBuffer = mapSquare.topBlockBuffer - updateSquare.topBlockBuffer;
-			updateChange.bottomBlockBuffer = mapSquare.bottomBlockBuffer - updateSquare.bottomBlockBuffer;
-			
-			commandBuffer.SetComponent<BufferChange>(entity, updateChange);
-		} */
 
 		//DEBUG
 		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f), updateSquare.topBlockBuffer, updateSquare.bottomBlockBuffer);

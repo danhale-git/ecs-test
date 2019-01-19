@@ -84,4 +84,11 @@ public struct JobUtil
 					localPosition.z == cubeSize ? 1 : localPosition.z < 0 ? -1 : 0
 					); 
     }
+
+    public float3 VoxelOwner(float3 position, int cubeSize)
+	{
+		int x = (int)math.floor(position.x / cubeSize);
+		int z = (int)math.floor(position.z / cubeSize);
+		return new float3(x*cubeSize, 0, z*cubeSize);
+	}
 }

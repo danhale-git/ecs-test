@@ -44,14 +44,14 @@ namespace MyComponents
 		public int drawIndexOffset;
 	}
 
-	public struct BufferChange : IComponentData
+	/*public struct BufferChange : IComponentData
 	{
 		public int topDrawBuffer;
 		public int bottomDrawBuffer;
 
 		public int topBlockBuffer;
 		public int bottomBlockBuffer;
-	}
+	} */
 
 	[InternalBufferCapacity(0)]
 	public struct Topology : IBufferElementData
@@ -151,6 +151,7 @@ namespace Tags
 	public struct DrawMesh : IComponentData { }
 	
 	public struct Update : IComponentData { }
+	public struct BufferChange : IComponentData { }
 
 	public struct InnerBuffer : IComponentData { }
 	public struct OuterBuffer : IComponentData { }	

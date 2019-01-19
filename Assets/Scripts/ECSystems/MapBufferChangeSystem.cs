@@ -31,7 +31,7 @@ public class MapBufferChangeSystem : ComponentSystem
 		{
 			Any 	= Array.Empty<ComponentType>(),
 			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare) }
+			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.BufferChange) }
 		};
 	}
 
@@ -72,6 +72,32 @@ public class MapBufferChangeSystem : ComponentSystem
                 DynamicBuffer<Topology> heightmap		= heightmapAccessor[e];
 
 				MapSquare mapSquare = entityManager.GetComponentData<MapSquare>(entity);
+
+				float sliceLength = math.pow(cubeSize, 2);
+
+				float bottomSliceCount = blockBuffer[0].localPosition.y - mapSquare.bottomBlockBuffer;
+
+				NativeArray<Block> oldBlocks = new NativeArray<Block>(blockBuffer.Length, Allocator.TempJob);
+				oldBlocks.CopyFrom(blockBuffer.AsNativeArray());
+
+				DynamicBuffer<Block> newBuffer = commandBuffer.SetBuffer<Block>(entity);
+				newBuffer.ResizeUninitialized(mapSquare.blockGenerationArrayLength);
+
+				int bottomOffset = (int)(bottomSliceCount*sliceLength);
+
+				for(int i = 0; i < bottomOffset; i++)
+				{
+					newBuffer[i] = GetBlock(i, mapSquare, heightmap);
+				}
+
+				for(int i = 0; i < oldBlocks.Length; i++)
+				{
+					newBuffer[i+bottomOffset] = oldBlocks[i];
+				}
+
+				commandBuffer.RemoveComponent<Tags.BufferChange>(entity);
+
+				oldBlocks.Dispose();
 			}
 		}
 		
@@ -79,5 +105,44 @@ public class MapBufferChangeSystem : ComponentSystem
 		commandBuffer.Dispose();
 
 		chunks.Dispose();
+	}
+
+	public Block GetBlock(int index, MapSquare mapSquare, DynamicBuffer<Topology> heightMap)
+	{
+		float3 pos = Util.Unflatten(index, cubeSize);
+
+		float3 position = pos + new float3(0, mapSquare.bottomBlockBuffer, 0);
+
+		int hMapIndex = Util.Flatten2D((int)position.x, (int)position.z, cubeSize);
+		int type = 0;
+
+		if(position.y <= heightMap[hMapIndex].height)
+		{
+			switch(heightMap[hMapIndex].type)
+			{
+				case TerrainTypes.DIRT:
+					type = 1; break;
+				case TerrainTypes.GRASS:
+					type = 2; break;
+				case TerrainTypes.CLIFF:
+					type = 3; break;
+			}
+		}
+
+		float3 worldPosition = position + mapSquare.position;
+		int debug = 0;
+		/*if(position.y == heightMap[hMapIndex].height && worldPosition.x == 84 && worldPosition.z == 641)
+			debug = 1;
+		if(position.y == heightMap[hMapIndex].height && worldPosition.x == 83 && worldPosition.z == 641)
+			debug = 2; */
+
+		return new Block
+		{
+			debug = debug,
+
+			type = type,
+			localPosition = position,
+			worldPosition = worldPosition
+		};
 	}
 }
