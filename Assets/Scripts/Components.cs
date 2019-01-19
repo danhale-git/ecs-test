@@ -125,12 +125,6 @@ namespace MyComponents
 		}
 	}
 
-	public struct BufferChange : IComponentData
-	{
-		int topBlockBuffer;
-		int bottomBlockBuffer;
-	}
-
 	#endregion
 }
 

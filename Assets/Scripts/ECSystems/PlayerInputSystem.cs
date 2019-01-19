@@ -57,6 +57,8 @@ public class PlayerInputSystem : ComponentSystem
 
     void ApplyInput(NativeArray<ArchetypeChunk> chunks)
     {
+        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+
         for(int c = 0; c < chunks.Length; c++)
         {
             ArchetypeChunk chunk = chunks[c];
@@ -84,15 +86,75 @@ public class PlayerInputSystem : ComponentSystem
 
                 if(Input.GetButtonDown("Fire1"))
                 {
-                    SelectBlock();
+                    int blockIndex;
+                    Entity blockOwner;
+                    if(SelectBlock(out blockIndex, out blockOwner))
+                    {
+                        RemoveBlock(commandBuffer, blockIndex, blockOwner);
+                    }
                 }
             }
         }
+
+        commandBuffer.Playback(entityManager);
+		commandBuffer.Dispose();
         chunks.Dispose();
     }
 
-    void SelectBlock()
+    void RemoveBlock(EntityCommandBuffer commandBuffer, int blockIndex, Entity blockOwner)
     {
+        DynamicBuffer<Block> blocks = entityManager.GetBuffer<Block>(blockOwner);
+        Block block = blocks[blockIndex];
+        MapSquare ownerSquare = entityManager.GetComponentData<MapSquare>(blockOwner);
+        block.type = 0;
+        blocks[blockIndex] = block;
+
+        UpdateMesh(commandBuffer, blockOwner);
+
+        if(block.localPosition.y <= ownerSquare.bottomBlock)
+        {
+            ownerSquare.bottomBlock = (int)block.localPosition.y - 1;
+            entityManager.SetComponentData<MapSquare>(blockOwner, ownerSquare);
+
+            Debug.Log("reached bottom: "+ownerSquare.bottomBlock+" "+block.localPosition.y);
+            //UpdateBuffer(commandBuffer, blockOwner);
+        }
+    }
+
+    void UpdateMesh(EntityCommandBuffer commandBuffer, Entity entity)
+    {
+        commandBuffer.AddComponent<Tags.Update>(entity, new Tags.Update());
+        commandBuffer.AddComponent<Tags.DrawMesh>(entity, new Tags.DrawMesh());
+
+        AdjacentSquares adjacent = entityManager.GetComponentData<AdjacentSquares>(entity);
+
+        for(int i = 0; i < 4; i++)
+        {
+            Entity adjacentEntity = adjacent[i];
+            commandBuffer.AddComponent<Tags.Update>(adjacentEntity, new Tags.Update());
+            commandBuffer.AddComponent<Tags.DrawMesh>(adjacentEntity, new Tags.DrawMesh());
+        }
+    }
+
+    void UpdateBuffer(EntityCommandBuffer commandBuffer, Entity entity)
+    {
+        commandBuffer.AddComponent<Tags.SetDrawBuffer>(entity, new Tags.SetDrawBuffer());
+        commandBuffer.AddComponent<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
+
+        AdjacentSquares adjacent = entityManager.GetComponentData<AdjacentSquares>(entity);
+
+        for(int i = 0; i < 4; i++)
+        {
+            Entity adjacentEntity = adjacent[i];
+            commandBuffer.AddComponent<Tags.SetDrawBuffer>(adjacentEntity, new Tags.SetDrawBuffer());
+            commandBuffer.AddComponent<Tags.SetBlockBuffer>(adjacentEntity, new Tags.SetBlockBuffer());
+        }
+    }
+
+    bool SelectBlock(out int blockIndex, out Entity blockOwner)
+    {
+        blockOwner = new Entity();
+        blockIndex = 0;
         //  Use built in screen to world point ray for origin and direction
         Ray ray = camera.ScreenPointToRay(Input.mousePosition);
         float3 originVoxel = Util.Float3Round(ray.origin);
@@ -118,13 +180,15 @@ public class PlayerInputSystem : ComponentSystem
 
                 //  Hit the edge of the drawn map
                 if(entityManager.HasComponent<Tags.InnerBuffer>(currentOwner))
-                    return;
+                    return false;
             }
+
+            MapSquare currentSquare = entityManager.GetComponentData<MapSquare>(currentOwner);
 
             //  Index in map square block array
             int index = Util.BlockIndex(
                 voxelWorldPosition,
-                entityManager.GetComponentData<MapSquare>(currentOwner),
+                currentSquare,
                 cubeSize
             );
 
@@ -134,25 +198,16 @@ public class PlayerInputSystem : ComponentSystem
             //  Outside map square's generated bounds (no block data)
             if(index >= blocks.Length || index < 0) continue;
             
-            //TODO: Add type filter to function instead of just avoiding air
+            //  Found a non-air block
             if(blocks[index].type != 0)
             {
-                //TODO: return block instead of removing
-                Block block = blocks[index];
-                block.type = 0;
-                blocks[index] = block;
-                entityManager.AddComponent(currentOwner, typeof(Tags.Update));
-                entityManager.AddComponent(currentOwner, typeof(Tags.DrawMesh));
-
-                if(block.localPosition.y ==  entityManager.GetComponentData<MapSquare>(currentOwner).bottomDrawBuffer)
-                    Debug.Log("reached bottom");
-
-                //TODO: Recheck buffers before redrawing
-                //entityManager.AddComponent(currentOwner, typeof(Tags.SetDrawBuffer));
-
-                return;
+                blockOwner = currentOwner;
+                blockIndex = index;
+                return true;
             }
         }
+
+        return false;
     }
 
     Entity QuickGetOwner(float3 currentMapSquarePostion)

@@ -15,11 +15,10 @@ public class MapBufferChangeSystem : ComponentSystem
 
 	int cubeSize;
 
-	ArchetypeChunkEntityType 				entityType;
-	ArchetypeChunkComponentType<MapSquare>	mapSquareType;
-	ArchetypeChunkBufferType<Block> 		blocksType;
-	ArchetypeChunkBufferType<Topology> 		heightmapType;
-	
+	ArchetypeChunkEntityType 					entityType;
+	ArchetypeChunkComponentType<MapSquare>		mapSquareType;
+	ArchetypeChunkBufferType<Block> 			blocksType;
+	ArchetypeChunkBufferType<Topology> 		heightmapType;	
 
 	EntityArchetypeQuery mapSquareQuery;
 
@@ -32,7 +31,7 @@ public class MapBufferChangeSystem : ComponentSystem
 		{
 			Any 	= Array.Empty<ComponentType>(),
 			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(BufferChange) }
+			All  	= new ComponentType[] { typeof(MapSquare) }
 		};
 	}
 
@@ -73,12 +72,6 @@ public class MapBufferChangeSystem : ComponentSystem
                 DynamicBuffer<Topology> heightmap		= heightmapAccessor[e];
 
 				MapSquare mapSquare = entityManager.GetComponentData<MapSquare>(entity);
-
-				//	Resize buffer to size of (blocks in a cube) * (number of cubes)
-				blockBuffer.ResizeUninitialized(mapSquare.blockGenerationArrayLength);
-
-				//	Set slopes next
-				commandBuffer.RemoveComponent<Tags.GenerateBlocks>(entity);
 			}
 		}
 		
@@ -87,5 +80,4 @@ public class MapBufferChangeSystem : ComponentSystem
 
 		chunks.Dispose();
 	}
-
 }
