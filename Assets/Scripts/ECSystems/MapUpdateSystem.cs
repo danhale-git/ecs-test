@@ -122,7 +122,7 @@ public class MapUpdateSystem : ComponentSystem
             if(newBlock.localPosition.y <= mapSquare.bottomBlock)
             {
                 verticalBufferChanged = true;
-                updateSquare.bottomBlock = (int)newBlock.localPosition.y - 1;
+                updateSquare.bottomBlock = (int)newBlock.localPosition.y - 5;
             }
         }
         //  Block changed from translucent to opaque
@@ -131,7 +131,7 @@ public class MapUpdateSystem : ComponentSystem
             if(newBlock.localPosition.y > mapSquare.topBlock)
             {
                 verticalBufferChanged = true;
-                updateSquare.topBlock = (int)newBlock.localPosition.y;
+                updateSquare.topBlock = (int)newBlock.localPosition.y + 4;
             }
         }
 
