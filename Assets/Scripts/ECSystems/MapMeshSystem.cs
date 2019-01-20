@@ -28,6 +28,7 @@ public class MapMeshSystem : ComponentSystem
 
 	ArchetypeChunkEntityType 				entityType;
 	ArchetypeChunkComponentType<MapSquare>	squareType;
+	ArchetypeChunkComponentType<Position>	positionType;
 	ArchetypeChunkBufferType<Block> 		blocksType;
 
 	EntityArchetypeQuery squareQuery;
@@ -62,6 +63,7 @@ public class MapMeshSystem : ComponentSystem
 	{
 		entityType 		= GetArchetypeChunkEntityType();
 		squareType		= GetArchetypeChunkComponentType<MapSquare>();
+		positionType	= GetArchetypeChunkComponentType<Position>();
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
 
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
@@ -86,6 +88,7 @@ public class MapMeshSystem : ComponentSystem
 			//	Get chunk data
 			NativeArray<Entity> 	entities 		= chunk.GetNativeArray(entityType);
 			NativeArray<MapSquare>	squares			= chunk.GetNativeArray(squareType);
+			NativeArray<Position>	positions		= chunk.GetNativeArray(positionType);
 			BufferAccessor<Block> 	blockAccessor 	= chunk.GetBufferAccessor(blocksType);
 
 			//	Iterate over map square entities
@@ -102,13 +105,17 @@ public class MapMeshSystem : ComponentSystem
 
 				bool redraw = entityManager.HasComponent<Tags.Redraw>(entity);
 
-				//	Create mesh entity if any faces are exposed
+				//	Create mesh entity if any faces are exposed and adjust position
 				if(counts.faceCount != 0)
+				{
 					SetMeshComponent(
 						redraw,
 						GetMesh(squares[e], faces, blockAccessor[e], counts),
 						entity,
 						commandBuffer);
+					
+					SetPosition(entity, squares[e], positions[e].Value, commandBuffer);
+				}
 
 				if(redraw) commandBuffer.RemoveComponent(entity, typeof(Tags.Redraw));
 
@@ -290,5 +297,11 @@ public class MapMeshSystem : ComponentSystem
 		renderer.material = material;
 
 		commandBuffer.AddSharedComponent(entity, renderer);
+	}
+
+	void SetPosition(Entity entity, MapSquare mapSquare, float3 currentPosition, EntityCommandBuffer commandBuffer)
+	{
+		Position newPosition = new Position { Value = new float3(currentPosition.x, mapSquare.bottomBlockBuffer, currentPosition.z) };
+		commandBuffer.SetComponent<Position>(entity, newPosition);
 	}
 } 
