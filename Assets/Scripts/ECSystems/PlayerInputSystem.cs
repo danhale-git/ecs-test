@@ -13,11 +13,9 @@ using MyComponents;
 public class PlayerInputSystem : ComponentSystem
 {
     EntityManager entityManager;
-
-    public static Entity playerEntity;
-
     int cubeSize;
 
+    public static Entity playerEntity;
     Camera camera;
 
     protected override void OnCreateManager()
@@ -47,16 +45,15 @@ public class PlayerInputSystem : ComponentSystem
 
     void MovePlayer()
     {
-        float3 playerPosition = entityManager.GetComponentData<Position>(playerEntity).Value;
-        PhysicsEntity physicsComponent = entityManager.GetComponentData<PhysicsEntity>(playerEntity);
-        Stats stats = entityManager.GetComponentData<Stats>(playerEntity);
+        float3          playerPosition      = entityManager.GetComponentData<Position>(playerEntity).Value;
+        PhysicsEntity   physicsComponent    = entityManager.GetComponentData<PhysicsEntity>(playerEntity);
+        Stats           stats               = entityManager.GetComponentData<Stats>(playerEntity);
 
         //  Camera forward ignoring x axis tilt
-        float3 forward = math.normalize(playerPosition - new float3(camera.transform.position.x, playerPosition.y, camera.transform.position.z));
-        float3 right =  camera.transform.right;
+        float3 forward  = math.normalize(playerPosition - new float3(camera.transform.position.x, playerPosition.y, camera.transform.position.z));
 
          //  Move relative to camera angle
-        float3 x = UnityEngine.Input.GetAxis("Horizontal")  * (float3)right;
+        float3 x = UnityEngine.Input.GetAxis("Horizontal")  * (float3)camera.transform.right;
         float3 z = UnityEngine.Input.GetAxis("Vertical")    * (float3)forward;
 
         //  Update movement component
@@ -107,13 +104,13 @@ public class PlayerInputSystem : ComponentSystem
         blocks      = entityManager.GetBuffer<Block>(entity);       
 
         //  Round to closest (up or down) for accurate results
-        float3 eye = Util.Float3Round(ray.origin);
+        float3 origin = Util.Float3Round(ray.origin);
 
         int x, y, z;
 
-        x = (int)math.floor(eye.x);
-        y = (int)math.floor(eye.y);
-        z = (int)math.floor(eye.z);
+        x = (int)math.floor(origin.x);
+        y = (int)math.floor(origin.y);
+        z = (int)math.floor(origin.z);
 
         int stepX, stepY, stepZ, ax, ay, az, bx, by, bz;
         int exy, exz, ezy;
@@ -122,9 +119,9 @@ public class PlayerInputSystem : ComponentSystem
         stepY = (int)math.sign(ray.direction.y);
         stepZ = (int)math.sign(ray.direction.z);
 
-        ax = math.abs((int)math.floor(ray.direction.x * 200));
-        ay = math.abs((int)math.floor(ray.direction.y * 200));
-        az = math.abs((int)math.floor(ray.direction.z * 200));
+        ax = math.abs((int)math.floor(ray.direction.x * 50));
+        ay = math.abs((int)math.floor(ray.direction.y * 50));
+        az = math.abs((int)math.floor(ray.direction.z * 50));
 
         bx = 2 * ax;
         by = 2 * ay;
@@ -134,6 +131,7 @@ public class PlayerInputSystem : ComponentSystem
         exz = az - ax;
         ezy = ay - az;
 
+        //  Traverse voxels
         for(int i = 0; i < 1000; i++)
         {
             //  Current voxel
@@ -176,14 +174,15 @@ public class PlayerInputSystem : ComponentSystem
                 if(!GetBlockOwner(nextVoxelOwnerPosition, out entity))
                     continue;
 
-                mapSquare = entityManager.GetComponentData<MapSquare>(entity);
-                blocks = entityManager.GetBuffer<Block>(entity);
+                mapSquare   = entityManager.GetComponentData<MapSquare>(entity);
+                blocks      = entityManager.GetBuffer<Block>(entity);
 
                 //  Hit the edge of the drawn map
                 if(entityManager.HasComponent<Tags.InnerBuffer>(entity))
                     return false;
             }
 
+            //  Index in Dynamic Buffer
             int index = Util.BlockIndex(voxel, mapSquare, cubeSize);
 
             //  Outside map square's generated bounds (no block data)
@@ -199,7 +198,17 @@ public class PlayerInputSystem : ComponentSystem
         throw new Exception("Ray traversed 1000 voxels without finding anything");
     }
 
+    DynamicBuffer<PendingBlockChange> GetOrCreatePendingChangeBuffer(Entity entity)
+    {
+        DynamicBuffer<PendingBlockChange> changes;
 
+        if(!entityManager.HasComponent<PendingBlockChange>(entity))
+            changes = entityManager.AddBuffer<PendingBlockChange>(entity);
+        else
+            changes = entityManager.GetBuffer<PendingBlockChange>(entity);
+
+        return changes;
+    }
 
     bool GetBlockOwner(float3 currentMapSquarePostion, out Entity owner)
     {
@@ -223,17 +232,5 @@ public class PlayerInputSystem : ComponentSystem
         entities.Dispose();
         owner = Entity.Null;
         return false;
-    }
-
-    DynamicBuffer<PendingBlockChange> GetOrCreatePendingChangeBuffer(Entity entity)
-    {
-        DynamicBuffer<PendingBlockChange> changes;
-
-        if(!entityManager.HasComponent<PendingBlockChange>(entity))
-            changes = entityManager.AddBuffer<PendingBlockChange>(entity);
-        else
-            changes = entityManager.GetBuffer<PendingBlockChange>(entity);
-
-        return changes;
     }
 }
