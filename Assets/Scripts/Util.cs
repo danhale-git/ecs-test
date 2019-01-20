@@ -175,4 +175,9 @@ public static class Util
         float3 voxel = voxelWorldPosition - mapSquare.position;
         return Util.Flatten(voxel.x, voxel.y - mapSquare.bottomBlockBuffer, voxel.z, cubeSize);
     }
+    public static int BlockIndex(Block block, MapSquare mapSquare, int cubeSize)
+    {
+        float3 voxel = block.localPosition;
+        return Util.Flatten(voxel.x, voxel.y - mapSquare.bottomBlockBuffer, voxel.z, cubeSize);
+    }
 }

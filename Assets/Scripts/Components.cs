@@ -136,9 +136,14 @@ namespace MyComponents
 	}
 
 	[InternalBufferCapacity(100)]
-	public struct BlockChange : IBufferElementData
+	public struct PendingBlockChange : IBufferElementData
 	{
-		public Block newBlock;
+		public Block block;
+	}
+	[InternalBufferCapacity(100)]
+	public struct CompletedBlockChange : IBufferElementData
+	{
+		public Block block;
 	}
 
 	#endregion

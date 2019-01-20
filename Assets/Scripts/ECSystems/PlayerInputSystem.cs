@@ -55,20 +55,20 @@ public class PlayerInputSystem : ComponentSystem
             Entity blockOwner;
             if(SelectBlock(out blockIndex, out blockOwner))
             {
-                RemoveBlock(commandBuffer, blockIndex, blockOwner);
+                //RemoveBlock(commandBuffer, blockIndex, blockOwner);
 
                 Block block = entityManager.GetBuffer<Block>(blockOwner)[blockIndex];
 
                 block.type = 0;
 
-                DynamicBuffer<BlockChange> changes;
+                DynamicBuffer<PendingBlockChange> changes;
 
-                if(!entityManager.HasComponent<BlockChange>(blockOwner))
-                    changes = entityManager.AddBuffer<BlockChange>(blockOwner);
+                if(!entityManager.HasComponent<PendingBlockChange>(blockOwner))
+                    changes = entityManager.AddBuffer<PendingBlockChange>(blockOwner);
                 else
-                    changes = entityManager.GetBuffer<BlockChange>(blockOwner);
+                    changes = entityManager.GetBuffer<PendingBlockChange>(blockOwner);
 
-                changes.Add(new BlockChange { newBlock = block });
+                changes.Add(new PendingBlockChange { block = block });
 
                 entityManager.AddComponent(blockOwner, typeof(Tags.BlockChanged));
             }
