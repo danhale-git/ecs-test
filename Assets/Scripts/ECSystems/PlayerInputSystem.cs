@@ -64,12 +64,13 @@ public class PlayerInputSystem : ComponentSystem
                 DynamicBuffer<BlockChange> changes;
 
                 if(!entityManager.HasComponent<BlockChange>(blockOwner))
-                    changes =  entityManager.AddBuffer<BlockChange>(blockOwner);
+                    changes = entityManager.AddBuffer<BlockChange>(blockOwner);
                 else
                     changes = entityManager.GetBuffer<BlockChange>(blockOwner);
 
                 changes.Add(new BlockChange { newBlock = block });
 
+                entityManager.AddComponent(blockOwner, typeof(Tags.BlockChanged));
             }
         }
     }

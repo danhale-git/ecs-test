@@ -9,6 +9,7 @@ using MyComponents;
 
 //	Get y buffer for mesh drawing based on adjacent top/bottom blocks
 [UpdateAfter(typeof(MapAdjacentSystem))]
+[UpdateAfter(typeof(MapUpdateSystem))]
 public class MapInnerBufferSystem : ComponentSystem
 {
     EntityManager entityManager;
