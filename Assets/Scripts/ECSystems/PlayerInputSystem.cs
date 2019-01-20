@@ -13,7 +13,9 @@ using MyComponents;
 public class PlayerInputSystem : ComponentSystem
 {
     EntityManager entityManager;
+
     public static Entity playerEntity;
+
     int cubeSize;
 
     Camera camera;
@@ -28,138 +30,62 @@ public class PlayerInputSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        ApplyInput();
+        MovePlayer();
+
+        VoxelRayHit hit;
+
+        bool targetingBlock = SelectBlock(out hit);
+
+        if(Input.GetButtonDown("Fire1") && targetingBlock)
+            ChangeBlock(0, hit);
     }
 
-    void ApplyInput()
+    void MovePlayer()
     {
-        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
-
+        float3 playerPosition = entityManager.GetComponentData<Position>(playerEntity).Value;
         PhysicsEntity physicsComponent = entityManager.GetComponentData<PhysicsEntity>(playerEntity);
         Stats stats = entityManager.GetComponentData<Stats>(playerEntity);
 
-        //  Move relative to camera angle
-        //TODO: camera.transform.forward points downwards, slowing z axis movement
-        float3 x = UnityEngine.Input.GetAxis("Horizontal")  * (float3)camera.transform.right;
-        float3 z = UnityEngine.Input.GetAxis("Vertical")    * (float3)camera.transform.forward;
+        //  Camera forward ignoring x axis tilt
+        float3 forward = math.normalize(playerPosition - new float3(camera.transform.position.x, playerPosition.y, camera.transform.position.z));
+        float3 right =  camera.transform.right;
 
-        float3 move = (x + z) * stats.speed;
+         //  Move relative to camera angle
+        float3 x = UnityEngine.Input.GetAxis("Horizontal")  * (float3)right;
+        float3 z = UnityEngine.Input.GetAxis("Vertical")    * (float3)forward;
 
         //  Update movement component
+        float3 move = (x + z) * stats.speed;
         physicsComponent.positionChangePerSecond = new float3(move.x, 0, move.z);
         entityManager.SetComponentData<PhysicsEntity>(playerEntity, physicsComponent);
-
-        if(Input.GetButtonDown("Fire1"))
-        {
-            int blockIndex;
-            Entity blockOwner;
-            if(SelectBlock(out blockIndex, out blockOwner))
-            {
-                //RemoveBlock(commandBuffer, blockIndex, blockOwner);
-
-                Block block = entityManager.GetBuffer<Block>(blockOwner)[blockIndex];
-
-                block.type = 0;
-
-                DynamicBuffer<PendingBlockChange> changes;
-
-                if(!entityManager.HasComponent<PendingBlockChange>(blockOwner))
-                    changes = entityManager.AddBuffer<PendingBlockChange>(blockOwner);
-                else
-                    changes = entityManager.GetBuffer<PendingBlockChange>(blockOwner);
-
-                changes.Add(new PendingBlockChange { block = block });
-
-                entityManager.AddComponent(blockOwner, typeof(Tags.BlockChanged));
-            }
-        }
     }
 
-    void RemoveBlock(EntityCommandBuffer commandBuffer, int blockIndex, Entity blockOwner)
+    void ChangeBlock(int type, VoxelRayHit hit)
     {
-        DynamicBuffer<Block> blocks = entityManager.GetBuffer<Block>(blockOwner);
-        Block block = blocks[blockIndex];
-        MapSquare ownerSquare = entityManager.GetComponentData<MapSquare>(blockOwner);
+        Block block = entityManager.GetBuffer<Block>(hit.blockOwner)[hit.blockIndex];
         block.type = 0;
-        blocks[blockIndex] = block;
 
-        UpdateMesh(commandBuffer, blockOwner);
+        GetOrCreatePendingChangeBuffer(hit.blockOwner).Add(new PendingBlockChange { block = block });
+        entityManager.AddComponent(hit.blockOwner, typeof(Tags.BlockChanged));
+    }
 
-        if(block.localPosition.y <= ownerSquare.bottomBlock)
+    struct VoxelRayHit
+    {
+        readonly public int blockIndex;
+        readonly public Entity blockOwner;
+        readonly public float3 hitWorldPosition;
+        public VoxelRayHit(int blockIndex, Entity blockOwner, float3 hitWorldPosition)
         {
-            ownerSquare.bottomBlock = (int)block.localPosition.y - 1;
-            entityManager.SetComponentData<MapSquare>(blockOwner, ownerSquare);
-
-            UpdateBuffer(commandBuffer, blockOwner);
+            this.blockIndex         = blockIndex;
+            this.blockOwner         = blockOwner;
+            this.hitWorldPosition   = hitWorldPosition;
         }
     }
 
-    void UpdateMesh(EntityCommandBuffer commandBuffer, Entity entity)
+    bool SelectBlock(out VoxelRayHit hit)
     {
-        AddMeshTags(entity);
+        hit = new VoxelRayHit();
 
-        AdjacentSquares adjacent = entityManager.GetComponentData<AdjacentSquares>(entity);
-
-        for(int i = 0; i < 4; i++)
-        {
-            AddMeshTags(adjacent[i]);
-            AdjacentSquares otherAdjacent = entityManager.GetComponentData<AdjacentSquares>(adjacent[i]);
-            for(int e = 0; e < 4; e++)
-            {
-                AddMeshTags(otherAdjacent[e]);
-            }
-        }
-    }
-
-    //  
-    void AddMeshTags(Entity entity)
-    {
-        if(!entityManager.HasComponent<Tags.Redraw>(entity) && entityManager.HasComponent<RenderMesh>(entity))
-            entityManager.AddComponentData<Tags.Redraw>(entity, new Tags.Redraw());
-        if(!entityManager.HasComponent<Tags.DrawMesh>(entity))
-            entityManager.AddComponentData<Tags.DrawMesh>(entity, new Tags.DrawMesh());
-    }
-
-    void UpdateBuffer(EntityCommandBuffer commandBuffer, Entity entity)
-    {
-        AddBufferTags(entity);
-
-        AdjacentSquares adjacent = entityManager.GetComponentData<AdjacentSquares>(entity);
-
-        for(int i = 0; i < 4; i++)
-        {
-            AddBufferTags(adjacent[i]);
-
-            AdjacentSquares otherAdjacent = entityManager.GetComponentData<AdjacentSquares>(adjacent[i]);
-            for(int e = 0; e < 4; e++)
-            {
-                AddOutsideBufferTags(otherAdjacent[e]);
-            }
-        }
-    }
-
-    void AddBufferTags(Entity entity)
-    {
-        entityManager.AddComponentData<Tags.SetDrawBuffer>(entity, new Tags.SetDrawBuffer());
-
-        entityManager.AddComponentData<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
-
-        entityManager.AddComponentData<Tags.BufferChanged>(entity, new Tags.BufferChanged());
-    }
-
-    void AddOutsideBufferTags(Entity entity)
-    {
-        if(!entityManager.HasComponent<Tags.SetBlockBuffer>(entity))
-            entityManager.AddComponentData<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
-            
-        if(!entityManager.HasComponent<Tags.BufferChanged>(entity))
-            entityManager.AddComponentData<Tags.BufferChanged>(entity, new Tags.BufferChanged());
-    }
-
-    bool SelectBlock(out int blockIndex, out Entity blockOwner)
-    {
-        blockOwner = new Entity();
-        blockIndex = 0;
         //  Use built in screen to world point ray for origin and direction
         Ray ray = camera.ScreenPointToRay(Input.mousePosition);
         float3 originVoxel = Util.Float3Round(ray.origin);
@@ -169,7 +95,11 @@ public class PlayerInputSystem : ComponentSystem
 
         //  Map square at origin
         float3 previousVoxelOwnerPosition = Util.VoxelOwner(originVoxel, cubeSize);
-        Entity currentOwner = QuickGetOwner(previousVoxelOwnerPosition);
+        Entity currentOwner;
+
+        //  Origin entity does not exist
+        if(!GetBlockOwner(previousVoxelOwnerPosition, out currentOwner))
+            return false;
 
         //  Check all hit voxels
         for(int i = 0; i < traversedVoxelOffsets.Count; i++)
@@ -181,7 +111,8 @@ public class PlayerInputSystem : ComponentSystem
             if(!Util.Float3sMatch(previousVoxelOwnerPosition, nextVoxelOwnerPosition))
             {
                 //  Update current map square
-                currentOwner = QuickGetOwner(nextVoxelOwnerPosition);
+                if(!GetBlockOwner(nextVoxelOwnerPosition, out currentOwner))
+                    continue;
 
                 //  Hit the edge of the drawn map
                 if(entityManager.HasComponent<Tags.InnerBuffer>(currentOwner))
@@ -206,8 +137,11 @@ public class PlayerInputSystem : ComponentSystem
             //  Found a non-air block
             if(blocks[index].type != 0)
             {
-                blockOwner = currentOwner;
-                blockIndex = index;
+                hit = new VoxelRayHit(
+                    index,
+                    currentOwner,
+                    voxelWorldPosition
+                );
                 return true;
             }
         }
@@ -215,7 +149,7 @@ public class PlayerInputSystem : ComponentSystem
         return false;
     }
 
-    Entity QuickGetOwner(float3 currentMapSquarePostion)
+    bool GetBlockOwner(float3 currentMapSquarePostion, out Entity owner)
     {
         NativeArray<Entity> entities = entityManager.GetAllEntities(Allocator.TempJob);
         
@@ -230,11 +164,25 @@ public class PlayerInputSystem : ComponentSystem
             {
                 Entity entity = entities[i];
                 entities.Dispose();
-                return entity;
+                owner = entity;
+                return true;
             }
         }
         entities.Dispose();
-        throw new Exception("Could not find entity");
+        owner = Entity.Null;
+        return false;
+    }
+
+    DynamicBuffer<PendingBlockChange> GetOrCreatePendingChangeBuffer(Entity entity)
+    {
+        DynamicBuffer<PendingBlockChange> changes;
+
+        if(!entityManager.HasComponent<PendingBlockChange>(entity))
+            changes = entityManager.AddBuffer<PendingBlockChange>(entity);
+        else
+            changes = entityManager.GetBuffer<PendingBlockChange>(entity);
+
+        return changes;
     }
 
     //  Return list of voxel positions hit by ray from eye to dir
