@@ -198,8 +198,6 @@ public class PlayerInputSystem : ComponentSystem
             if(index >= blocks.Length || index < 0)
                 continue;
 
-            Debug.Log(blocks[index].type);
-
             //  Found a non-air block
             if(blocks[index].type != 0)
             {

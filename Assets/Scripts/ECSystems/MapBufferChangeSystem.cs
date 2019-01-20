@@ -77,7 +77,6 @@ public class MapBufferChangeSystem : ComponentSystem
 
 				float bottomSliceCount 	= blockBuffer[0].localPosition.y - mapSquare.bottomBlockBuffer;
 				float topSliceCount 	= mapSquare.topBlockBuffer - blockBuffer[blockBuffer.Length-1].localPosition.y;
-				Debug.Log("slice count "+topSliceCount);
 
 				NativeArray<Block> oldBlocks = new NativeArray<Block>(blockBuffer.Length, Allocator.TempJob);
 				oldBlocks.CopyFrom(blockBuffer.AsNativeArray());
@@ -87,7 +86,6 @@ public class MapBufferChangeSystem : ComponentSystem
 
 				int bottomOffset 	= (int)(bottomSliceCount*sliceLength);
 				int topOffset		= (int)(topSliceCount*sliceLength);
-				Debug.Log("offset "+topOffset);
 
 				for(int i = 0; i < bottomOffset; i++)
 				{
@@ -128,7 +126,6 @@ public class MapBufferChangeSystem : ComponentSystem
 
 		if(position.y <= heightMap[hMapIndex].height)
 		{
-			Debug.Log("terrain block");
 			switch(heightMap[hMapIndex].type)
 			{
 				case TerrainTypes.DIRT:
