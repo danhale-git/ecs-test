@@ -50,7 +50,6 @@ public class MapUpdateSystem : ComponentSystem
                 MapSquare mapSquare = mapSquares[e];
                 DynamicBuffer<PendingBlockChange> blockChanges = blockChangeBuffers[e];
                 DynamicBuffer<Block> blocks = blockBuffers[e];
-                Debug.Log("changing something");
 
                 bool verticalBuffersChanged = false;
 
