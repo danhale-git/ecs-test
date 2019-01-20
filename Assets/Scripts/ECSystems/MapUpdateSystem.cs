@@ -73,11 +73,7 @@ public class MapUpdateSystem : ComponentSystem
                     if(buffersChanged)
                     {
                         mapSquares[e] = updateMapSquare;
-
-                        ChangeVerticalBuffers(entity, commandBuffer);
                     }
-
-                   RedrawSquare(entity, commandBuffer);
 
                     //  Set new block data
                     blocks[index] = newBlock;
@@ -87,12 +83,17 @@ public class MapUpdateSystem : ComponentSystem
                     blockChanges.RemoveAt(i);
                 }
 
-                /*NativeArray<Entity> squaresToUpdate = SquaresToUpdate(entity, verticalBuffersChanged);
+                NativeList<Entity> squaresToUpdate = SquaresToUpdate(entity, verticalBuffersChanged);
 
                 for(int i = 0; i < squaresToUpdate.Length; i++)
                 {
+                   RedrawSquare(squaresToUpdate[i], commandBuffer);
 
-                } */
+                    if(verticalBuffersChanged)
+                        RecalculateVerticalBuffers(squaresToUpdate[i], commandBuffer);
+                }
+
+                squaresToUpdate.Dispose();
 
                 commandBuffer.RemoveComponent<Tags.BlockChanged>(entity);
             }
@@ -143,17 +144,21 @@ public class MapUpdateSystem : ComponentSystem
 
     void RedrawSquare(Entity entity, EntityCommandBuffer commandBuffer)
     {
-        if(entityManager.HasComponent<RenderMesh>(entity))
+        if(entityManager.HasComponent<RenderMesh>(entity) && !entityManager.HasComponent<Tags.Redraw>(entity))
             commandBuffer.AddComponent<Tags.Redraw>(entity, new Tags.Redraw());
 
-        commandBuffer.AddComponent<Tags.DrawMesh>(entity, new Tags.DrawMesh());
+        if(!entityManager.HasComponent<Tags.DrawMesh>(entity))
+            commandBuffer.AddComponent<Tags.DrawMesh>(entity, new Tags.DrawMesh());
     }
 
-    void ChangeVerticalBuffers(Entity entity, EntityCommandBuffer commandBuffer)
+    void RecalculateVerticalBuffers(Entity entity, EntityCommandBuffer commandBuffer)
     {
-        commandBuffer.AddComponent<Tags.SetDrawBuffer>(entity, new Tags.SetDrawBuffer());
-        commandBuffer.AddComponent<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
-        commandBuffer.AddComponent<Tags.BufferChanged>(entity, new Tags.BufferChanged());
+        if(!entityManager.HasComponent<Tags.SetDrawBuffer>(entity))
+            commandBuffer.AddComponent<Tags.SetDrawBuffer>(entity, new Tags.SetDrawBuffer());
+        if(!entityManager.HasComponent<Tags.SetBlockBuffer>(entity))
+            commandBuffer.AddComponent<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
+        if(!entityManager.HasComponent<Tags.BufferChanged>(entity))
+            commandBuffer.AddComponent<Tags.BufferChanged>(entity, new Tags.BufferChanged());
     }
 
     NativeList<Entity> SquaresToUpdate(Entity centerSquare, bool verticalBufferChanged)
@@ -162,7 +167,7 @@ public class MapUpdateSystem : ComponentSystem
 
         entities.Add(centerSquare);
 
-        AdjacentSquares centerAdjacent = entityManager.GetChunkComponentData<AdjacentSquares>(centerSquare);
+        AdjacentSquares centerAdjacent = entityManager.GetComponentData<AdjacentSquares>(centerSquare);
 
         for(int i = 0; i < 4; i++)
         {
@@ -178,8 +183,5 @@ public class MapUpdateSystem : ComponentSystem
                 entities.Add(centerAdjacent[i]);
 
         return entities;
-
-
-
     }
 }
