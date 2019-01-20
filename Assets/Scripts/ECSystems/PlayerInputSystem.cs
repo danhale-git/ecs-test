@@ -88,13 +88,12 @@ public class PlayerInputSystem : ComponentSystem
 
         //  Use built in screen to world point ray for origin and direction
         Ray ray = camera.ScreenPointToRay(Input.mousePosition);
-        float3 originVoxel = Util.Float3Round(ray.origin);
 
         //  Cast ray, get positions of the voxels it hits
-        List<float3> traversedVoxelOffsets = VoxelRay(float3.zero, ray.direction, 100);
+        List<float3> traversedVoxelOffsets = VoxelRay(camera.ScreenPointToRay(Input.mousePosition));
 
         //  Map square at origin
-        float3 previousVoxelOwnerPosition = Util.VoxelOwner(originVoxel, cubeSize);
+        float3 previousVoxelOwnerPosition = Util.VoxelOwner(ray.origin, cubeSize);
         Entity currentOwner;
 
         //  Origin entity does not exist
@@ -104,7 +103,7 @@ public class PlayerInputSystem : ComponentSystem
         //  Check all hit voxels
         for(int i = 0; i < traversedVoxelOffsets.Count; i++)
         {       
-            float3 voxelWorldPosition = originVoxel + traversedVoxelOffsets[i];
+            float3 voxelWorldPosition = traversedVoxelOffsets[i];
             float3 nextVoxelOwnerPosition = Util.VoxelOwner(voxelWorldPosition, cubeSize);
 
             //  Voxel is in a different map square
@@ -186,8 +185,12 @@ public class PlayerInputSystem : ComponentSystem
     }
 
     //  Return list of voxel positions hit by ray from eye to dir
-    List<float3> VoxelRay(Vector3 eye, Vector3 dir, int length)
+    List<float3> VoxelRay(Ray ray)
     {
+        float3 eye = ray.origin;
+        float3 dir = ray.direction;
+        int length = 100;
+
         int x, y, z;
         int deltaX, deltaY, deltaZ;
 
