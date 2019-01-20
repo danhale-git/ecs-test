@@ -31,7 +31,7 @@ public class MapBufferChangeSystem : ComponentSystem
 		{
 			Any 	= Array.Empty<ComponentType>(),
 			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.BufferChange) }
+			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.BufferChanged) }
 		};
 	}
 
@@ -95,7 +95,7 @@ public class MapBufferChangeSystem : ComponentSystem
 					newBuffer[i+bottomOffset] = oldBlocks[i];
 				}
 
-				commandBuffer.RemoveComponent<Tags.BufferChange>(entity);
+				commandBuffer.RemoveComponent<Tags.BufferChanged>(entity);
 
 				oldBlocks.Dispose();
 			}
