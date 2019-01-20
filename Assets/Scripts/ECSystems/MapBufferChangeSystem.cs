@@ -49,10 +49,10 @@ public class MapBufferChangeSystem : ComponentSystem
 			);
 
 		if(chunks.Length == 0) chunks.Dispose();
-		else GenerateCubes(chunks);
+		else UpdateBuffers(chunks);
 	}
 
-	void GenerateCubes(NativeArray<ArchetypeChunk> chunks)
+	void UpdateBuffers(NativeArray<ArchetypeChunk> chunks)
 	{
 		EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
@@ -75,7 +75,9 @@ public class MapBufferChangeSystem : ComponentSystem
 
 				float sliceLength = math.pow(cubeSize, 2);
 
-				float bottomSliceCount = blockBuffer[0].localPosition.y - mapSquare.bottomBlockBuffer;
+				float bottomSliceCount 	= blockBuffer[0].localPosition.y - mapSquare.bottomBlockBuffer;
+				float topSliceCount 	= mapSquare.topBlockBuffer - blockBuffer[blockBuffer.Length-1].localPosition.y;
+				Debug.Log("slice count "+topSliceCount);
 
 				NativeArray<Block> oldBlocks = new NativeArray<Block>(blockBuffer.Length, Allocator.TempJob);
 				oldBlocks.CopyFrom(blockBuffer.AsNativeArray());
@@ -83,7 +85,9 @@ public class MapBufferChangeSystem : ComponentSystem
 				DynamicBuffer<Block> newBuffer = commandBuffer.SetBuffer<Block>(entity);
 				newBuffer.ResizeUninitialized(mapSquare.blockGenerationArrayLength);
 
-				int bottomOffset = (int)(bottomSliceCount*sliceLength);
+				int bottomOffset 	= (int)(bottomSliceCount*sliceLength);
+				int topOffset		= (int)(topSliceCount*sliceLength);
+				Debug.Log("offset "+topOffset);
 
 				for(int i = 0; i < bottomOffset; i++)
 				{
@@ -93,6 +97,11 @@ public class MapBufferChangeSystem : ComponentSystem
 				for(int i = 0; i < oldBlocks.Length; i++)
 				{
 					newBuffer[i+bottomOffset] = oldBlocks[i];
+				}
+
+				for(int i = 0; i < topOffset; i++)
+				{
+					newBuffer[i+bottomOffset+oldBlocks.Length] = GetBlock(i, mapSquare, heightmap);
 				}
 
 				commandBuffer.RemoveComponent<Tags.BufferChanged>(entity);

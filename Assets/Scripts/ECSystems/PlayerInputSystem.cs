@@ -41,6 +41,11 @@ public class PlayerInputSystem : ComponentSystem
             if(VoxelRay(camera.ScreenPointToRay(Input.mousePosition), out hit))
                 ChangeBlock(0, hit);
         }
+        else if(Input.GetButtonDown("Fire2")/* && targetingBlock */)
+        {
+            if(VoxelRay(camera.ScreenPointToRay(Input.mousePosition), out hit))
+                ChangeBlock(1, hit);
+        }
     }
 
     void MovePlayer()

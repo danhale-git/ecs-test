@@ -115,7 +115,8 @@ public class MapOuterBufferSystem : ComponentSystem
 		updateSquare.drawIndexOffset = Util.Flatten(0, updateSquare.bottomDrawBuffer - updateSquare.bottomBlockBuffer, 0, cubeSize);
 		
 		//DEBUG
-		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f), updateSquare.topBlockBuffer, updateSquare.bottomBlockBuffer);
+		//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f), updateSquare.topBlockBuffer, updateSquare.bottomBlockBuffer);
+		CustomDebugTools.MapSquareBufferDebug(entity);
 
 		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
 	}
