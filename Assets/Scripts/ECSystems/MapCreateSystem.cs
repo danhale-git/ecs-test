@@ -87,7 +87,7 @@ public class MapCreateSystem : ComponentSystem
 
 		PositionsAndBuffers(out positions, out buffers, center, viewDistance);
 
-		CreateOrUpdate(positions, buffers);
+		CreateOrCheck(positions, buffers);
 
 		for(int i = 0; i < positions.Length; i++)
 			CreateSquare(positions[i].Value, buffers[i]);
@@ -134,7 +134,7 @@ public class MapCreateSystem : ComponentSystem
 	}
 
 	//	Organise positions into existing and non existent map squares
-	bool CreateOrUpdate(NativeList<Position> radiusPositions, NativeList<Buffer> radiusBuffers)
+	bool CreateOrCheck(NativeList<Position> radiusPositions, NativeList<Buffer> radiusBuffers)
 	{
 		entityType	 	= GetArchetypeChunkEntityType();
 		positionType	= GetArchetypeChunkComponentType<Position>();
