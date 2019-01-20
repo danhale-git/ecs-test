@@ -87,6 +87,9 @@ public static class Util
         return Float3Floor(position) - ownerWorldPosition;
 	}
 
+    //  5  2  4
+    //  1  x  0
+    //  7  3  6
     public static float3[] CardinalDirections()
     {
         return new float3[8] {
