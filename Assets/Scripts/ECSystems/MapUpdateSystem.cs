@@ -143,7 +143,10 @@ public class MapUpdateSystem : ComponentSystem
 
     void RedrawSquare(Entity entity, EntityCommandBuffer commandBuffer)
     {
-        if(entityManager.HasComponent<RenderMesh>(entity) && !entityManager.HasComponent<Tags.Redraw>(entity))
+        //  Tags needed to redraw mesh. Skip if mesh is not drawn yet.
+        if(!entityManager.HasComponent<RenderMesh>(entity)) return;
+
+        if(!entityManager.HasComponent<Tags.Redraw>(entity))
             commandBuffer.AddComponent<Tags.Redraw>(entity, new Tags.Redraw());
 
         if(!entityManager.HasComponent<Tags.DrawMesh>(entity))
@@ -152,6 +155,7 @@ public class MapUpdateSystem : ComponentSystem
 
     void RecalculateVerticalBuffers(Entity entity, EntityCommandBuffer commandBuffer)
     {
+        //  Tags needed to check buffers and resize block array
         if(!entityManager.HasComponent<Tags.SetDrawBuffer>(entity))
             commandBuffer.AddComponent<Tags.SetDrawBuffer>(entity, new Tags.SetDrawBuffer());
         if(!entityManager.HasComponent<Tags.SetBlockBuffer>(entity))
@@ -164,6 +168,14 @@ public class MapUpdateSystem : ComponentSystem
     {
         NativeList<Entity> entities = new NativeList<Entity>(Allocator.TempJob);
 
+        //  Graph of squares, top down. B and C are only used when o (center) buffer is changed
+        //  -  -  b  -  -
+        //  -  c  a  c  -
+        //  b  a  o  a  b
+        //  -  c  a  c  -
+        //  -  -  b  -  -
+
+        //  o
         entities.Add(centerSquare);
 
         AdjacentSquares centerAdjacent = entityManager.GetComponentData<AdjacentSquares>(centerSquare);
@@ -171,13 +183,16 @@ public class MapUpdateSystem : ComponentSystem
         for(int i = 0; i < 4; i++)
         {
             Entity adjacent = centerAdjacent[i];
+            //  a
             entities.Add(adjacent);
 
+            //  b
             if(verticalBufferChanged)
                 entities.Add(entityManager.GetComponentData<AdjacentSquares>(adjacent)[i]);
         }
 
         if(verticalBufferChanged)
+            //  c
             for(int i = 4; i < 8; i++)
                 entities.Add(centerAdjacent[i]);
 
