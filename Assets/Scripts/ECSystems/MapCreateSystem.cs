@@ -16,6 +16,8 @@ public class MapCreateSystem : ComponentSystem
 
 	public static Entity playerEntity;
 
+	public static NativeHashMap<float2, Entity> allSquares;
+
 	//	Square data
 	EntityArchetype mapSquareArchetype;
 
@@ -60,6 +62,8 @@ public class MapCreateSystem : ComponentSystem
 			None 	= System.Array.Empty<ComponentType>(),
 			All 	= new ComponentType [] { typeof(MapSquare) }
 			};
+
+		allSquares = new NativeHashMap<float2, Entity>(500, Allocator.Persistent);
 	}
 
 	Vector3 previousSquare = new Vector3(100, 100, 100);
@@ -195,6 +199,13 @@ public class MapCreateSystem : ComponentSystem
 			);		
 
 		SetBuffer(entity, buffer);
+
+		if(buffer == Buffer.NONE) allSquares.TryAdd(new float2(position.x, position.z), entity);
+	}
+
+	static Entity GetSquare(float3 position)
+	{
+		return allSquares[new float2(position.x, position.z)];
 	}
 
 	//	Set buffer type
