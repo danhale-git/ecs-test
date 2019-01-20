@@ -56,6 +56,20 @@ public class PlayerInputSystem : ComponentSystem
             if(SelectBlock(out blockIndex, out blockOwner))
             {
                 RemoveBlock(commandBuffer, blockIndex, blockOwner);
+
+                Block block = entityManager.GetBuffer<Block>(blockOwner)[blockIndex];
+
+                block.type = 0;
+
+                DynamicBuffer<BlockChange> changes;
+
+                if(!entityManager.HasComponent<BlockChange>(blockOwner))
+                    changes =  entityManager.AddBuffer<BlockChange>(blockOwner);
+                else
+                    changes = entityManager.GetBuffer<BlockChange>(blockOwner);
+
+                changes.Add(new BlockChange { newBlock = block });
+
             }
         }
     }
@@ -129,7 +143,7 @@ public class PlayerInputSystem : ComponentSystem
 
         entityManager.AddComponentData<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
 
-        entityManager.AddComponentData<Tags.BufferChange>(entity, new Tags.BufferChange());
+        entityManager.AddComponentData<Tags.BufferChanged>(entity, new Tags.BufferChanged());
     }
 
     void AddOutsideBufferTags(Entity entity)
@@ -137,8 +151,8 @@ public class PlayerInputSystem : ComponentSystem
         if(!entityManager.HasComponent<Tags.SetBlockBuffer>(entity))
             entityManager.AddComponentData<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
             
-        if(!entityManager.HasComponent<Tags.BufferChange>(entity))
-            entityManager.AddComponentData<Tags.BufferChange>(entity, new Tags.BufferChange());
+        if(!entityManager.HasComponent<Tags.BufferChanged>(entity))
+            entityManager.AddComponentData<Tags.BufferChanged>(entity, new Tags.BufferChanged());
     }
 
     bool SelectBlock(out int blockIndex, out Entity blockOwner)
