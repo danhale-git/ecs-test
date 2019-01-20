@@ -30,11 +30,13 @@ public class PlayerInputSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
+        if(Time.fixedTime < 0.5) return;
+        
         MovePlayer();
 
         VoxelRayHit hit;
 
-        bool targetingBlock = SelectBlock(out hit);
+        bool targetingBlock = VoxelRay(camera.ScreenPointToRay(Input.mousePosition), out hit);
 
         if(Input.GetButtonDown("Fire1") && targetingBlock)
             ChangeBlock(0, hit);
@@ -82,71 +84,131 @@ public class PlayerInputSystem : ComponentSystem
         }
     }
 
-    bool SelectBlock(out VoxelRayHit hit)
+    //  Return list of voxel positions hit by ray from eye to dir
+    bool VoxelRay(Ray ray, out VoxelRayHit hit)
     {
         hit = new VoxelRayHit();
 
-        //  Use built in screen to world point ray for origin and direction
-        Ray ray = camera.ScreenPointToRay(Input.mousePosition);
-
-        //  Cast ray, get positions of the voxels it hits
-        List<float3> traversedVoxelOffsets = VoxelRay(camera.ScreenPointToRay(Input.mousePosition));
-
         //  Map square at origin
         float3 previousVoxelOwnerPosition = Util.VoxelOwner(ray.origin, cubeSize);
-        Entity currentOwner;
+
+        Entity                  entity;
+        MapSquare               mapSquare;
+        DynamicBuffer<Block>    blocks;
 
         //  Origin entity does not exist
-        if(!GetBlockOwner(previousVoxelOwnerPosition, out currentOwner))
-            return false;
+        if(!GetBlockOwner(previousVoxelOwnerPosition, out entity))
+            throw new Exception("Camera is in non-existent map square");
 
-        //  Check all hit voxels
-        for(int i = 0; i < traversedVoxelOffsets.Count; i++)
-        {       
-            float3 voxelWorldPosition = traversedVoxelOffsets[i];
-            float3 nextVoxelOwnerPosition = Util.VoxelOwner(voxelWorldPosition, cubeSize);
+        mapSquare   = entityManager.GetComponentData<MapSquare>(entity);
+        blocks      = entityManager.GetBuffer<Block>(entity);       
+
+        int length = 100;
+
+        //  Round to closest (up or down) for accurate results
+        float3 eye = Util.Float3Round(ray.origin);
+        float3 dir = ray.direction;
+
+        int x, y, z;
+        int deltaX, deltaY, deltaZ;
+
+        x = Mathf.FloorToInt(eye.x);
+        y = Mathf.FloorToInt(eye.y);
+        z = Mathf.FloorToInt(eye.z);
+
+        deltaX = Mathf.FloorToInt(dir.x * length);
+        deltaY = Mathf.FloorToInt(dir.y * length);
+        deltaZ = Mathf.FloorToInt(dir.z * length);
+
+        int n, stepX, stepY, stepZ, ax, ay, az, bx, by, bz;
+        int exy, exz, ezy;
+
+        stepX = (int)Mathf.Sign(deltaX);
+        stepY = (int)Mathf.Sign(deltaY);
+        stepZ = (int)Mathf.Sign(deltaZ);
+
+        ax = Mathf.Abs(deltaX);
+        ay = Mathf.Abs(deltaY);
+        az = Mathf.Abs(deltaZ);
+
+        bx = 2 * ax;
+        by = 2 * ay;
+        bz = 2 * az;
+
+        exy = ay - ax;
+        exz = az - ax;
+        ezy = ay - az;
+
+        var start = new Vector3(x, y, z);
+        var end = new Vector3(x + deltaX, y + deltaY, z + deltaZ);
+        n = ax + ay + az;
+
+        for(int i = 0; i < 1000; i++)
+        {
+            //  Current voxel
+            float3 voxel = new float3(x, y, z);
+
+            //  March ray to next voxel
+            if (exy < 0)
+            {
+                if (exz < 0)
+                {
+                    x += stepX;
+                    exy += by; exz += bz;
+                }
+                else
+                {
+                    z += stepZ;
+                    exz -= bx; ezy += by;
+                }
+            }
+            else
+            {
+                if (ezy < 0)
+                {
+                    z += stepZ;
+                    exz -= bx; ezy += by;
+                }
+                else
+                {
+                    y += stepY;
+                    exy -= bx; ezy -= bz;
+                }
+            }
+
+            float3 nextVoxelOwnerPosition = Util.VoxelOwner(voxel, cubeSize);
 
             //  Voxel is in a different map square
             if(!Util.Float3sMatch(previousVoxelOwnerPosition, nextVoxelOwnerPosition))
             {
                 //  Update current map square
-                if(!GetBlockOwner(nextVoxelOwnerPosition, out currentOwner))
+                if(!GetBlockOwner(nextVoxelOwnerPosition, out entity))
                     continue;
 
+                mapSquare = entityManager.GetComponentData<MapSquare>(entity);
+                blocks = entityManager.GetBuffer<Block>(entity);
+
                 //  Hit the edge of the drawn map
-                if(entityManager.HasComponent<Tags.InnerBuffer>(currentOwner))
+                if(entityManager.HasComponent<Tags.InnerBuffer>(entity))
                     return false;
             }
 
-            MapSquare currentSquare = entityManager.GetComponentData<MapSquare>(currentOwner);
-
-            //  Index in map square block array
-            int index = Util.BlockIndex(
-                voxelWorldPosition,
-                currentSquare,
-                cubeSize
-            );
-
-            //  Map square block array
-            DynamicBuffer<Block> blocks = entityManager.GetBuffer<Block>(currentOwner);
+            int index = Util.BlockIndex(voxel, mapSquare, cubeSize);
 
             //  Outside map square's generated bounds (no block data)
             if(index >= blocks.Length || index < 0) continue;
-            
+
             //  Found a non-air block
             if(blocks[index].type != 0)
             {
-                hit = new VoxelRayHit(
-                    index,
-                    currentOwner,
-                    voxelWorldPosition
-                );
+                hit = new VoxelRayHit(index, entity, voxel);
                 return true;
             }
         }
-
-        return false;
+        throw new Exception("Ray traversed 1000 voxels without finding anything");
     }
+
+
 
     bool GetBlockOwner(float3 currentMapSquarePostion, out Entity owner)
     {
@@ -182,84 +244,5 @@ public class PlayerInputSystem : ComponentSystem
             changes = entityManager.GetBuffer<PendingBlockChange>(entity);
 
         return changes;
-    }
-
-    //  Return list of voxel positions hit by ray from eye to dir
-    List<float3> VoxelRay(Ray ray)
-    {
-        float3 eye = ray.origin;
-        float3 dir = ray.direction;
-        int length = 100;
-
-        int x, y, z;
-        int deltaX, deltaY, deltaZ;
-
-        x = Mathf.FloorToInt(eye.x);
-        y = Mathf.FloorToInt(eye.y);
-        z = Mathf.FloorToInt(eye.z);
-
-        deltaX = Mathf.FloorToInt(dir.x * length);
-        deltaY = Mathf.FloorToInt(dir.y * length);
-        deltaZ = Mathf.FloorToInt(dir.z * length);
-
-        int n, stepX, stepY, stepZ, ax, ay, az, bx, by, bz;
-        int exy, exz, ezy;
-
-        stepX = (int)Mathf.Sign(deltaX);
-        stepY = (int)Mathf.Sign(deltaY);
-        stepZ = (int)Mathf.Sign(deltaZ);
-
-        ax = Mathf.Abs(deltaX);
-        ay = Mathf.Abs(deltaY);
-        az = Mathf.Abs(deltaZ);
-
-        bx = 2 * ax;
-        by = 2 * ay;
-        bz = 2 * az;
-
-        exy = ay - ax;
-        exz = az - ax;
-        ezy = ay - az;
-
-        Gizmos.color = Color.white;
-
-        var start = new Vector3(x, y, z);
-        var end = new Vector3(x + deltaX, y + deltaY, z + deltaZ);
-
-        List<float3> voxels = new List<float3>();
-
-        n = ax + ay + az;
-        for(int i = 0; i < length; i++)
-        {
-            voxels.Add(new float3(x, y, z));
-
-            if (exy < 0)
-            {
-                if (exz < 0)
-                {
-                    x += stepX;
-                    exy += by; exz += bz;
-                }
-                else
-                {
-                    z += stepZ;
-                    exz -= bx; ezy += by;
-                }
-            }
-            else
-            {
-                if (ezy < 0)
-                {
-                    z += stepZ;
-                    exz -= bx; ezy += by;
-                }
-                else
-                {
-                    y += stepY;
-                    exy -= bx; ezy -= bz;
-                }
-            }
-        }
-        return voxels;
     }
 }
