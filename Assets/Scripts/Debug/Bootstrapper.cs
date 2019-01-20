@@ -13,6 +13,7 @@ public class Bootstrapper
         Entity playerEntity = CreatePlayer();
         MapCreateSystem.playerEntity = playerEntity;
         CameraSystem.playerEntity = playerEntity;
+        PlayerInputSystem.playerEntity = playerEntity;
     }
  
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]

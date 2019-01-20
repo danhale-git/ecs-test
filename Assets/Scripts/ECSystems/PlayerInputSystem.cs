@@ -13,14 +13,8 @@ using MyComponents;
 public class PlayerInputSystem : ComponentSystem
 {
     EntityManager entityManager;
+    public static Entity playerEntity;
     int cubeSize;
-
-    EntityArchetypeQuery query;
-
-    ArchetypeChunkEntityType                    entityType;
-    ArchetypeChunkComponentType<Position>       positionType;
-    ArchetypeChunkComponentType<PhysicsEntity>  physicsType;
-    ArchetypeChunkComponentType<Stats>          statsType;
 
     Camera camera;
 
@@ -29,77 +23,41 @@ public class PlayerInputSystem : ComponentSystem
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         cubeSize = TerrainSettings.cubeSize;
 
-        query = new EntityArchetypeQuery
-        {
-            Any     = Array.Empty<ComponentType>(),
-            None    = Array.Empty<ComponentType>(),
-            All     = new ComponentType[] { typeof(Tags.PlayerEntity) }
-        };
-
         camera = GameObject.FindObjectOfType<Camera>();
     }
 
     protected override void OnUpdate()
     {
-        entityType      = GetArchetypeChunkEntityType();
-        positionType    = GetArchetypeChunkComponentType<Position>();
-        physicsType     = GetArchetypeChunkComponentType<PhysicsEntity>();
-        statsType       = GetArchetypeChunkComponentType<Stats>();
-
-        NativeArray<ArchetypeChunk> chunks;
-        chunks = entityManager.CreateArchetypeChunkArray(
-            query,
-            Allocator.TempJob
-        );
-
-        if(chunks.Length == 0) chunks.Dispose();
-        else ApplyInput(chunks);
+        ApplyInput();
     }
 
-    void ApplyInput(NativeArray<ArchetypeChunk> chunks)
+    void ApplyInput()
     {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
-        for(int c = 0; c < chunks.Length; c++)
+        PhysicsEntity physicsComponent = entityManager.GetComponentData<PhysicsEntity>(playerEntity);
+        Stats stats = entityManager.GetComponentData<Stats>(playerEntity);
+
+        //  Move relative to camera angle
+        //TODO: camera.transform.forward points downwards, slowing z axis movement
+        float3 x = UnityEngine.Input.GetAxis("Horizontal")  * (float3)camera.transform.right;
+        float3 z = UnityEngine.Input.GetAxis("Vertical")    * (float3)camera.transform.forward;
+
+        float3 move = (x + z) * stats.speed;
+
+        //  Update movement component
+        physicsComponent.positionChangePerSecond = new float3(move.x, 0, move.z);
+        entityManager.SetComponentData<PhysicsEntity>(playerEntity, physicsComponent);
+
+        if(Input.GetButtonDown("Fire1"))
         {
-            ArchetypeChunk chunk = chunks[c];
-
-            NativeArray<Entity> entities        = chunk.GetNativeArray(entityType);
-            NativeArray<Position> positions     = chunk.GetNativeArray(positionType);
-            NativeArray<PhysicsEntity> physics  = chunk.GetNativeArray(physicsType);
-            NativeArray<Stats> stats            = chunk.GetNativeArray(statsType);
-            
-            for(int e = 0; e < entities.Length; e++)
+            int blockIndex;
+            Entity blockOwner;
+            if(SelectBlock(out blockIndex, out blockOwner))
             {
-                Entity entity = entities[e];
-
-                //  Move relative to camera angle
-                //TODO: camera.transform.forward points downwards, slowing z axis movement
-                float3 x = UnityEngine.Input.GetAxis("Horizontal")  * (float3)camera.transform.right;
-                float3 z = UnityEngine.Input.GetAxis("Vertical")    * (float3)camera.transform.forward;
-
-                float3 move = (x + z) * stats[e].speed;
-
-                //  Update movement component
-                PhysicsEntity physicsComponent = physics[e];
-                physicsComponent.positionChangePerSecond = new float3(move.x, 0, move.z);
-                physics[e] = physicsComponent;
-
-                if(Input.GetButtonDown("Fire1"))
-                {
-                    int blockIndex;
-                    Entity blockOwner;
-                    if(SelectBlock(out blockIndex, out blockOwner))
-                    {
-                        RemoveBlock(commandBuffer, blockIndex, blockOwner);
-                    }
-                }
+                RemoveBlock(commandBuffer, blockIndex, blockOwner);
             }
         }
-
-        commandBuffer.Playback(entityManager);
-		commandBuffer.Dispose();
-        chunks.Dispose();
     }
 
     void RemoveBlock(EntityCommandBuffer commandBuffer, int blockIndex, Entity blockOwner)
@@ -117,7 +75,6 @@ public class PlayerInputSystem : ComponentSystem
             ownerSquare.bottomBlock = (int)block.localPosition.y - 1;
             entityManager.SetComponentData<MapSquare>(blockOwner, ownerSquare);
 
-            Debug.Log("reached bottom: "+ownerSquare.bottomBlock+" "+block.localPosition.y);
             UpdateBuffer(commandBuffer, blockOwner);
         }
     }
