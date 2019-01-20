@@ -115,7 +115,7 @@ public class MapUpdateSystem : ComponentSystem
         //  Vertical buffer(s) need updating
         bool verticalBufferChanged = false;
 
-        //  Block gone from opaque to translucent
+        //  Block changed from opaque to translucent
         if(becomeTranslucent)
         {
             //  Bottom buffer has been exposed
@@ -123,6 +123,15 @@ public class MapUpdateSystem : ComponentSystem
             {
                 verticalBufferChanged = true;
                 updateSquare.bottomBlock = (int)newBlock.localPosition.y - 1;
+            }
+        }
+        //  Block changed from translucent to opaque
+        if(becomeOpaque)
+        {
+            if(newBlock.localPosition.y > mapSquare.topBlock)
+            {
+                verticalBufferChanged = true;
+                updateSquare.topBlock = (int)newBlock.localPosition.y;
             }
         }
 

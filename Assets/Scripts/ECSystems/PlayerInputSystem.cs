@@ -39,12 +39,12 @@ public class PlayerInputSystem : ComponentSystem
         if(Input.GetButtonDown("Fire1")/* && targetingBlock */)
         {
             if(VoxelRay(camera.ScreenPointToRay(Input.mousePosition), out hit))
-                ChangeBlock(0, hit);
+                ChangeBlock(0, hit.hitBlock, hit.blockOwner);
         }
         else if(Input.GetButtonDown("Fire2")/* && targetingBlock */)
         {
             if(VoxelRay(camera.ScreenPointToRay(Input.mousePosition), out hit))
-                ChangeBlock(1, hit);
+                ChangeBlock(1, hit.faceHitBlock, hit.faceBlockOwner);
         }
     }
 
@@ -67,25 +67,25 @@ public class PlayerInputSystem : ComponentSystem
         entityManager.SetComponentData<PhysicsEntity>(playerEntity, physicsComponent);
     }
 
-    void ChangeBlock(int type, VoxelRayHit hit)
+    void ChangeBlock(int type, Block block, Entity owner)
     {
-        Block block = entityManager.GetBuffer<Block>(hit.blockOwner)[hit.blockIndex];
-        block.type = 0;
-
-        GetOrCreatePendingChangeBuffer(hit.blockOwner).Add(new PendingBlockChange { block = block });
-        entityManager.AddComponent(hit.blockOwner, typeof(Tags.BlockChanged));
+        block.type = type;
+        GetOrCreatePendingChangeBuffer(owner).Add(new PendingBlockChange { block = block });
+        entityManager.AddComponent(owner, typeof(Tags.BlockChanged));
     }
 
     struct VoxelRayHit
     {
         readonly public int blockIndex;
-        readonly public Entity blockOwner;
-        readonly public float3 hitWorldPosition;
-        public VoxelRayHit(int blockIndex, Entity blockOwner, float3 hitWorldPosition)
+        readonly public Entity blockOwner, faceBlockOwner;
+        readonly public Block hitBlock, faceHitBlock;
+        public VoxelRayHit(int blockIndex, Entity blockOwner, Block hitBlock, Block faceHitBlock, Entity faceBlockOwner)
         {
             this.blockIndex         = blockIndex;
             this.blockOwner         = blockOwner;
-            this.hitWorldPosition   = hitWorldPosition;
+            this.hitBlock           = hitBlock;
+            this.faceHitBlock       = faceHitBlock;
+            this.faceBlockOwner     = faceBlockOwner;
         }
     }
 
@@ -135,6 +135,10 @@ public class PlayerInputSystem : ComponentSystem
         exy = ay - ax;
         exz = az - ax;
         ezy = ay - az;
+
+        float3 previousVoxel = float3.zero;
+        Entity previousEntity = entity;
+        MapSquare previousMapSquare = mapSquare;
 
         //  Traverse voxels
         for(int i = 0; i < 1000; i++)
@@ -191,14 +195,26 @@ public class PlayerInputSystem : ComponentSystem
             int index = Util.BlockIndex(voxel, mapSquare, cubeSize);
 
             //  Outside map square's generated bounds (no block data)
-            if(index >= blocks.Length || index < 0) continue;
+            if(index >= blocks.Length || index < 0)
+                continue;
+
+            Debug.Log(blocks[index].type);
 
             //  Found a non-air block
             if(blocks[index].type != 0)
             {
-                hit = new VoxelRayHit(index, entity, voxel);
+                if(i == 0 || previousVoxel.Equals(float3.zero))
+                    throw new Exception("Hit on try "+(i+1)+" with previous hit at "+previousVoxel);
+
+                int previousIndex = Util.BlockIndex(previousVoxel, previousMapSquare, cubeSize);
+
+                hit = new VoxelRayHit(index, entity, blocks[index], blocks[previousIndex], previousEntity);
                 return true;
             }
+
+            previousVoxel = voxel;
+            previousEntity = entity;
+            previousMapSquare = mapSquare;
         }
         throw new Exception("Ray traversed 1000 voxels without finding anything");
     }

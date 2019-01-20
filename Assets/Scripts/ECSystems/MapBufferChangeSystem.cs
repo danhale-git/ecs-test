@@ -41,7 +41,7 @@ public class MapBufferChangeSystem : ComponentSystem
 		mapSquareType	= GetArchetypeChunkComponentType<MapSquare>();
 
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
-        heightmapType = GetArchetypeChunkBufferType<Topology>();
+        heightmapType 	= GetArchetypeChunkBufferType<Topology>();
 
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
 			mapSquareQuery,
@@ -101,7 +101,8 @@ public class MapBufferChangeSystem : ComponentSystem
 
 				for(int i = 0; i < topOffset; i++)
 				{
-					newBuffer[i+bottomOffset+oldBlocks.Length] = GetBlock(i, mapSquare, heightmap);
+					int index = i+bottomOffset+oldBlocks.Length;
+					newBuffer[index] = GetBlock(index, mapSquare, heightmap);
 				}
 
 				commandBuffer.RemoveComponent<Tags.BufferChanged>(entity);
@@ -127,6 +128,7 @@ public class MapBufferChangeSystem : ComponentSystem
 
 		if(position.y <= heightMap[hMapIndex].height)
 		{
+			Debug.Log("terrain block");
 			switch(heightMap[hMapIndex].type)
 			{
 				case TerrainTypes.DIRT:

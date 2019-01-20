@@ -102,7 +102,7 @@ public class MapOuterBufferSystem : ComponentSystem
 		MapSquare updateSquare = mapSquare;
 
 		//	Top and bottom block levels to generate blocks
-		updateSquare.topBlockBuffer 	= topBuffer 	+ 1;
+		updateSquare.topBlockBuffer 	= topBuffer 	+ 2;
 		updateSquare.bottomBlockBuffer 	= bottomBuffer 	- 1;
 
 		//	Calculate iteration length for block generation
@@ -115,8 +115,8 @@ public class MapOuterBufferSystem : ComponentSystem
 		updateSquare.drawIndexOffset = Util.Flatten(0, updateSquare.bottomDrawBuffer - updateSquare.bottomBlockBuffer, 0, cubeSize);
 		
 		//DEBUG
-		//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f), updateSquare.topBlockBuffer, updateSquare.bottomBlockBuffer);
-		CustomDebugTools.MapSquareBufferDebug(entity);
+		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f), updateSquare.topBlockBuffer, updateSquare.bottomBlockBuffer);
+		//CustomDebugTools.MapSquareBufferDebug(entity);
 
 		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
 	}
