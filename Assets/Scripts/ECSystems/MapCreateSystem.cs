@@ -70,7 +70,7 @@ public class MapCreateSystem : ComponentSystem
 		float3 position = entityManager.GetComponentData<Position>(playerEntity).Value;
 		//	Generate map in radius around player
 		float3 currentSquarePosition = Util.VoxelOwner(position, cubeSize);
-		if(!Util.Float3sMatch(currentSquarePosition, previousSquare))
+		if(!currentSquarePosition.Equals(previousSquare))
 		{
 			previousSquare = currentSquarePosition;
 			GenerateRadius(currentSquarePosition);

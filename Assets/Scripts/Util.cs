@@ -151,11 +151,6 @@ public static class Util
         return rotation * (position - centre) + centre;
     }
 
-    public static bool Float3sMatch(float3 a, float3 b)
-    {
-        if(a.x == b.x && a.y == b.y && a.z ==b.z) return true;
-        else return false;
-    }
     public static bool Float3sMatchXZ(float3 a, float3 b)
     {
         if(a.x == b.x && a.z ==b.z) return true;

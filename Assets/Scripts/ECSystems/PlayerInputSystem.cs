@@ -170,7 +170,7 @@ public class PlayerInputSystem : ComponentSystem
             float3 nextVoxelOwnerPosition = Util.VoxelOwner(voxel, cubeSize);
 
             //  Voxel is in a different map square
-            if(!Util.Float3sMatch(previousVoxelOwnerPosition, nextVoxelOwnerPosition))
+            if(!previousVoxelOwnerPosition.Equals(nextVoxelOwnerPosition))
             {
                 //  Update current map square
                 if(!GetBlockOwner(nextVoxelOwnerPosition, out entity))
@@ -212,7 +212,7 @@ public class PlayerInputSystem : ComponentSystem
 
             float3 othereMapSquarePosition = entityManager.GetComponentData<MapSquare>(entities[i]).position;
 
-            if(Util.Float3sMatch(othereMapSquarePosition, currentMapSquarePostion))
+            if(othereMapSquarePosition.Equals(currentMapSquarePostion))
             {
                 Entity entity = entities[i];
                 entities.Dispose();

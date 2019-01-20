@@ -82,7 +82,7 @@ public class PhysicsSystem : ComponentSystem
                 float3 overlapDirection = Util.EdgeOverlap(nextPosition - currentSquarePosition, cubeSize);
 
                 //  Next position is outside current map square
-                if(!Util.Float3sMatch(overlapDirection, float3.zero))
+                if(!overlapDirection.Equals(float3.zero))
                 {
                     //  Get next map square from current map square's AdjacentSquares component                        
                     AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(physicsComponent.currentMapSquare);
