@@ -36,10 +36,13 @@ public class PlayerInputSystem : ComponentSystem
 
         VoxelRayHit hit;
 
-        bool targetingBlock = VoxelRay(camera.ScreenPointToRay(Input.mousePosition), out hit);
+        //bool targetingBlock = VoxelRay(camera.ScreenPointToRay(Input.mousePosition), out hit);
 
-        if(Input.GetButtonDown("Fire1") && targetingBlock)
-            ChangeBlock(0, hit);
+        if(Input.GetButtonDown("Fire1")/* && targetingBlock */)
+        {
+            if(VoxelRay(camera.ScreenPointToRay(Input.mousePosition), out hit))
+                ChangeBlock(0, hit);
+        }
     }
 
     void MovePlayer()
@@ -103,33 +106,25 @@ public class PlayerInputSystem : ComponentSystem
         mapSquare   = entityManager.GetComponentData<MapSquare>(entity);
         blocks      = entityManager.GetBuffer<Block>(entity);       
 
-        int length = 100;
-
         //  Round to closest (up or down) for accurate results
         float3 eye = Util.Float3Round(ray.origin);
-        float3 dir = ray.direction;
 
         int x, y, z;
-        int deltaX, deltaY, deltaZ;
 
-        x = Mathf.FloorToInt(eye.x);
-        y = Mathf.FloorToInt(eye.y);
-        z = Mathf.FloorToInt(eye.z);
+        x = (int)math.floor(eye.x);
+        y = (int)math.floor(eye.y);
+        z = (int)math.floor(eye.z);
 
-        deltaX = Mathf.FloorToInt(dir.x * length);
-        deltaY = Mathf.FloorToInt(dir.y * length);
-        deltaZ = Mathf.FloorToInt(dir.z * length);
-
-        int n, stepX, stepY, stepZ, ax, ay, az, bx, by, bz;
+        int stepX, stepY, stepZ, ax, ay, az, bx, by, bz;
         int exy, exz, ezy;
 
-        stepX = (int)Mathf.Sign(deltaX);
-        stepY = (int)Mathf.Sign(deltaY);
-        stepZ = (int)Mathf.Sign(deltaZ);
+        stepX = (int)math.sign(ray.direction.x);
+        stepY = (int)math.sign(ray.direction.y);
+        stepZ = (int)math.sign(ray.direction.z);
 
-        ax = Mathf.Abs(deltaX);
-        ay = Mathf.Abs(deltaY);
-        az = Mathf.Abs(deltaZ);
+        ax = math.abs((int)math.floor(ray.direction.x * 200));
+        ay = math.abs((int)math.floor(ray.direction.y * 200));
+        az = math.abs((int)math.floor(ray.direction.z * 200));
 
         bx = 2 * ax;
         by = 2 * ay;
@@ -138,10 +133,6 @@ public class PlayerInputSystem : ComponentSystem
         exy = ay - ax;
         exz = az - ax;
         ezy = ay - az;
-
-        var start = new Vector3(x, y, z);
-        var end = new Vector3(x + deltaX, y + deltaY, z + deltaZ);
-        n = ax + ay + az;
 
         for(int i = 0; i < 1000; i++)
         {
