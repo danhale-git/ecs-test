@@ -44,15 +44,6 @@ namespace MyComponents
 		public int drawIndexOffset;
 	}
 
-	/*public struct BufferChange : IComponentData
-	{
-		public int topDrawBuffer;
-		public int bottomDrawBuffer;
-
-		public int topBlockBuffer;
-		public int bottomBlockBuffer;
-	} */
-
 	[InternalBufferCapacity(0)]
 	public struct Topology : IBufferElementData
 	{
@@ -136,12 +127,12 @@ namespace MyComponents
 	}
 
 	[InternalBufferCapacity(100)]
-	public struct PendingBlockChange : IBufferElementData
+	public struct PendingChange : IBufferElementData
 	{
 		public Block block;
 	}
 	[InternalBufferCapacity(100)]
-	public struct CompletedBlockChange : IBufferElementData
+	public struct CompletedChange : IBufferElementData
 	{
 		public Block block;
 	}

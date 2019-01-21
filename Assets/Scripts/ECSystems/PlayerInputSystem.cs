@@ -70,7 +70,7 @@ public class PlayerInputSystem : ComponentSystem
     void ChangeBlock(int type, Block block, Entity owner)
     {
         block.type = type;
-        GetOrCreatePendingChangeBuffer(owner).Add(new PendingBlockChange { block = block });
+        GetOrCreatePendingChangeBuffer(owner).Add(new PendingChange { block = block });
         entityManager.AddComponent(owner, typeof(Tags.BlockChanged));
     }
 
@@ -217,14 +217,14 @@ public class PlayerInputSystem : ComponentSystem
         throw new Exception("Ray traversed 1000 voxels without finding anything");
     }
 
-    DynamicBuffer<PendingBlockChange> GetOrCreatePendingChangeBuffer(Entity entity)
+    DynamicBuffer<PendingChange> GetOrCreatePendingChangeBuffer(Entity entity)
     {
-        DynamicBuffer<PendingBlockChange> changes;
+        DynamicBuffer<PendingChange> changes;
 
-        if(!entityManager.HasComponent<PendingBlockChange>(entity))
-            changes = entityManager.AddBuffer<PendingBlockChange>(entity);
+        if(!entityManager.HasComponent<PendingChange>(entity))
+            changes = entityManager.AddBuffer<PendingChange>(entity);
         else
-            changes = entityManager.GetBuffer<PendingBlockChange>(entity);
+            changes = entityManager.GetBuffer<PendingChange>(entity);
 
         return changes;
     }
