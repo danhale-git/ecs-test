@@ -177,7 +177,8 @@ public class MapUpdateSystem : ComponentSystem
     {
         NativeList<Entity> entities = new NativeList<Entity>(Allocator.TempJob);
 
-        //  Graph of squares, top down. B and C are only used when o (center) buffer is changed
+        //  Graph of squares, top down
+        //  B and C are only used when o (center) buffer is changed
         //  -  -  b  -  -
         //  -  c  a  c  -
         //  b  a  o  a  b
