@@ -16,12 +16,17 @@ public class MapCreateSystem : ComponentSystem
 
 	public static Entity playerEntity;
 
+	public static NativeArray<Entity> mapSquareMatrix;
+	public static float3 matrixRootPosition;
+	float3 center;
+
 	//	Square data
 	EntityArchetype mapSquareArchetype;
 
 	//	Terrain settings
 	int cubeSize;
 	int viewDistance;
+	int viewDiameter;
 
 	NativeList<Entity>		updateMapSquares;
 	NativeList<Buffer>		updateBuffers;
@@ -35,6 +40,7 @@ public class MapCreateSystem : ComponentSystem
 	{
 		cubeSize 		= TerrainSettings.cubeSize;
 		viewDistance 	= TerrainSettings.viewDistance;
+		viewDiameter	= (viewDistance*2)+3;
 
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
@@ -67,6 +73,9 @@ public class MapCreateSystem : ComponentSystem
 	//	Continually generate map squares
 	protected override void OnUpdate()
 	{
+		if(mapSquareMatrix.IsCreated) mapSquareMatrix.Dispose();
+		mapSquareMatrix = new NativeArray<Entity>((int)math.pow(viewDiameter, 2), Allocator.Persistent);
+
 		float3 position = entityManager.GetComponentData<Position>(playerEntity).Value;
 		//	Generate map in radius around player
 		float3 currentSquarePosition = Util.VoxelOwner(position, cubeSize);
@@ -74,13 +83,13 @@ public class MapCreateSystem : ComponentSystem
 		{
 			previousSquare = currentSquarePosition;
 			GenerateRadius(currentSquarePosition);
-		}		
+		}	
 	}
 
 	//	Create squares
-	public void GenerateRadius(Vector3 center)
+	public void GenerateRadius(Vector3 radiusCenter)
 	{
-		center = new Vector3(center.x, 0, center.z);
+		center = new Vector3(radiusCenter.x, 0, radiusCenter.z);
 
 		NativeList<Position> positions;
 		NativeList<Buffer> buffers;
@@ -173,6 +182,8 @@ public class MapCreateSystem : ComponentSystem
 						radiusPositions.RemoveAtSwapBack(p);
 						radiusBuffers.RemoveAtSwapBack(p);
 
+						AddMapSquareToMatrix(entity, mapSquarePositions[e].Value);
+
 						break;
 					}
 				}
@@ -189,12 +200,11 @@ public class MapCreateSystem : ComponentSystem
 		Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 
 		//	Set position
-		entityManager.SetComponentData(
-			entity,
-			new Position{ Value = position }
-			);		
+		entityManager.SetComponentData<Position>(entity, new Position{ Value = position } );
 
 		SetBuffer(entity, buffer);
+
+		AddMapSquareToMatrix(entity, position);
 	}
 
 	//	Set buffer type
@@ -260,6 +270,31 @@ public class MapCreateSystem : ComponentSystem
 					entityManager.RemoveComponent<Tags.InnerBuffer>(entity);
 				break;
 		}
+	}
+
+	void AddMapSquareToMatrix(Entity entity, float3 position)
+	{
+		int2 index = MatrixIndex(position, center, viewDistance);
+		mapSquareMatrix[Util.Flatten2D(index.x, index.y, viewDiameter)] = entity;
+	}
+
+	public Entity GetMapSquareFromMatrix(float3 position)
+	{
+		int2 index = MatrixIndex(position, center, viewDistance);
+		return mapSquareMatrix[Util.Flatten2D(index.x, index.y, viewDiameter)];
+	}
+
+	int2 MatrixIndex(float3 worldPosition, float3 radiusCenter, int radius)
+	{
+		float3 root = new float3(
+			radiusCenter.x - ((radius+1) * cubeSize),
+			0,
+			radiusCenter.z - ((radius+1) * cubeSize)
+		);
+
+		float3 local = worldPosition - root;
+
+		return new int2((int)local.x, (int)local.z) / cubeSize;
 	}
 
 	//	Get map square by position using chunk iteration
