@@ -68,7 +68,7 @@ public class MapCreateSystem : ComponentSystem
 			};
 	}
 
-	Vector3 previousSquare = new Vector3(100, 100, 100);
+	float3 previousSquare = new float3(100, 100, 100);
 
 	bool debug1 = true;
 
@@ -78,9 +78,15 @@ public class MapCreateSystem : ComponentSystem
 		if(mapSquareMatrix.IsCreated) mapSquareMatrix.Dispose();
 		mapSquareMatrix = new NativeArray<Entity>((int)math.pow(viewDiameter, 2), Allocator.Persistent);
 
+
 		float3 position = entityManager.GetComponentData<Position>(playerEntity).Value;
 		//	Generate map in radius around player
 		float3 currentSquare = Util.VoxelOwner(position, cubeSize);
+
+		float3 direction = (currentSquare - previousSquare) / cubeSize;
+		
+		//TODO: trim squares
+
 		if(!currentSquare.Equals(previousSquare))
 		{
 			int rootOffset = (viewDistance+1) * cubeSize; 
@@ -105,8 +111,13 @@ public class MapCreateSystem : ComponentSystem
 		debug1 = false;
 	}
 
+	void TrimMapSquares()
+	{
+
+	}
+
 	//	Create squares
-	public void GenerateRadius(Vector3 radiusCenter)
+	void GenerateRadius(Vector3 radiusCenter)
 	{
 		center = new Vector3(radiusCenter.x, 0, radiusCenter.z);
 
