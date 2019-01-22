@@ -221,15 +221,7 @@ public class MapCreateSystem : ComponentSystem
 		//	Set position
 		entityManager.SetComponentData<Position>(entity, new Position{ Value = position } );
 
-		SetBuffer(entity, buffer);
-
-		AddMapSquareToMatrix(entity, position);
-	}
-
-	//	Set buffer type
-	void SetBuffer(Entity entity, Buffer edge)
-	{
-		switch(edge)
+		switch(buffer)
 		{
 			//	Is inner buffer
 			case Buffer.INNER:
@@ -250,6 +242,8 @@ public class MapCreateSystem : ComponentSystem
 			default:
 				break;
 		}
+
+		AddMapSquareToMatrix(entity, position);
 	}
 
 	//	Check if buffer type needs updating
@@ -309,7 +303,7 @@ public class MapCreateSystem : ComponentSystem
 		return new int2((int)local.x, (int)local.z) / cubeSize;
 	}
 
-	//	Get map square by position using chunk iteration
+	/*//	Get map square by position using chunk iteration
 	bool GetMapSquare(float3 position, out Entity mapSquare)
 	{
 		entityType	 	= GetArchetypeChunkEntityType();
@@ -353,4 +347,6 @@ public class MapCreateSystem : ComponentSystem
 		mapSquare = new Entity();
 		return false;
 	}
+	
+	 */
 }
