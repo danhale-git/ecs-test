@@ -88,41 +88,22 @@ public class MapBufferChangeSystem : ComponentSystem
 				int topOffset		= (int)	(topSliceCount		* sliceLength);
 				int topStart		= 		(bottomOffset + oldBlocks.Length);
 
-				/*Debug.Log("bottomOffset: "+bottomOffset);
-				Debug.Log("topOffset: "+topOffset);
-				Debug.Log("topStart: "+topStart); */
-
-
-				/*NativeArray<Block> prepend = GetBlocks(mapSquare, heightmap, bottomOffset);
-				newBuffer.AddRange(prepend);
-				prepend.Dispose();
-
-				NativeArray<Block> copy = GetBlocks(mapSquare, heightmap, oldBlocks.Length, bottomOffset);
-				newBuffer.AddRange(copy);
-				copy.Dispose();
-
+				NativeArray<Block> prepend = GetBlocks(mapSquare, heightmap, bottomOffset);
 				NativeArray<Block> append = GetBlocks(mapSquare, heightmap, topOffset, topStart);
-				newBuffer.AddRange(append); 
-				append.Dispose(); */
 
 				for(int i = 0; i < bottomOffset; i++)
-				{
-					newBuffer[i] = GetBlock(i, mapSquare, heightmap);
-				} 
+					newBuffer[i] 				= prepend[i];//GetBlock(i, mapSquare, heightmap);
 
 				for(int i = 0; i < oldBlocks.Length; i++)
-				{
-					newBuffer[i+bottomOffset] = oldBlocks[i];
-				} 
-				
+					newBuffer[i+bottomOffset] 	= oldBlocks[i];
+
 				for(int i = 0; i < topOffset; i++)
-				{
-					int index = i + topStart;
-					newBuffer[index] = GetBlock(index, mapSquare, heightmap);
-				}    
+					newBuffer[i + topStart] 	= append[i];//GetBlock(index, mapSquare, heightmap);
 
 				commandBuffer.RemoveComponent<Tags.BufferChanged>(entity);
 
+				prepend.Dispose();
+				append.Dispose(); 
 				oldBlocks.Dispose();
 			}
 		}
@@ -150,44 +131,5 @@ public class MapBufferChangeSystem : ComponentSystem
 		job.Schedule(arrayLength, 1).Complete(); 
 
 		return blocks;
-	}
-
-	public Block GetBlock(int index, MapSquare mapSquare, DynamicBuffer<Topology> heightMap)
-	{
-		float3 pos = Util.Unflatten(index, cubeSize);
-
-		float3 position = pos + new float3(0, mapSquare.bottomBlockBuffer, 0);
-
-		int hMapIndex = Util.Flatten2D((int)position.x, (int)position.z, cubeSize);
-		int type = 0;
-
-		if(position.y <= heightMap[hMapIndex].height)
-		{
-			switch(heightMap[hMapIndex].type)
-			{
-				case TerrainTypes.DIRT:
-					type = 1; break;
-				case TerrainTypes.GRASS:
-					type = 2; break;
-				case TerrainTypes.CLIFF:
-					type = 3; break;
-			}
-		}
-
-		float3 worldPosition = position + mapSquare.position;
-		int debug = 0;
-		/*if(position.y == heightMap[hMapIndex].height && worldPosition.x == 84 && worldPosition.z == 641)
-			debug = 1;
-		if(position.y == heightMap[hMapIndex].height && worldPosition.x == 83 && worldPosition.z == 641)
-			debug = 2; */
-
-		return new Block
-		{
-			debug = debug,
-
-			type = type,
-			localPosition = position,
-			worldPosition = worldPosition
-		};
 	}
 }
