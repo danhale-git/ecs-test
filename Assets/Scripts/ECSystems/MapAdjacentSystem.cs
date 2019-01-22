@@ -16,63 +16,61 @@ public class MapAdjacentSystem : ComponentSystem
 
 	int cubeSize;
 
-	EntityArchetypeQuery adjacentQuery;
-	EntityArchetypeQuery allMapSquaresQuery;
-
-	ArchetypeChunkEntityType 				entityType;
-    ArchetypeChunkComponentType<Position> 	positionType;
+	ComponentGroup adjacentGroup;
 
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
 		cubeSize = TerrainSettings.cubeSize;
 
-		adjacentQuery = new EntityArchetypeQuery
+		EntityArchetypeQuery adjacentQuery = new EntityArchetypeQuery
 		{
 			Any 	= Array.Empty<ComponentType>(),
             None  	= new ComponentType[] { typeof(Tags.EdgeBuffer) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GetAdjacentSquares) }
 		};
 
-        allMapSquaresQuery = new EntityArchetypeQuery
-		{
-			Any 	= Array.Empty<ComponentType>(),
-			None 	= Array.Empty<ComponentType>(),
-			All  	= new ComponentType[] { typeof(MapSquare) }
-		};
+		adjacentGroup = GetComponentGroup(adjacentQuery);
     }
 
     protected override void OnUpdate()
     {
-        entityType 		= GetArchetypeChunkEntityType();
-        positionType 	= GetArchetypeChunkComponentType<Position>();
-
-        NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-            adjacentQuery,
-            Allocator.TempJob
-            );
-
-        if(chunks.Length == 0) chunks.Dispose();
-        else
-			GetAdjacentSquares(chunks);
-    }
-
-    void GetAdjacentSquares(NativeArray<ArchetypeChunk> chunks)
-    {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
-		for(int c = 0; c < chunks.Length; c++)
+        ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
+        ArchetypeChunkComponentType<Position> 	positionType 	= GetArchetypeChunkComponentType<Position>();
+
+        NativeArray<ArchetypeChunk> chunks = adjacentGroup.CreateArchetypeChunkArray(Allocator.TempJob);
+
+		float3[] adjacentPositions = new float3[8];
+		float3[] directions = Util.CardinalDirections();
+		for(int i = 0; i < directions.Length; i++)
+			adjacentPositions[i] = directions[i] * cubeSize;
+
+        for(int c = 0; c < chunks.Length; c++)
 		{
 			ArchetypeChunk chunk = chunks[c];
 
 			NativeArray<Entity> 	entities    = chunk.GetNativeArray(entityType);
             NativeArray<Position> 	positions 	= chunk.GetNativeArray(positionType);
-
-			GetAdjacentEntities(entities, positions, commandBuffer);
-			
+	
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity = entities[e];
+				float3 position = positions[e].Value;
+
+				AdjacentSquares adjacent = new AdjacentSquares{
+					right 		= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[0]),
+					left 		= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[1]),
+					front 		= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[2]),
+					back 		= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[3]),
+					frontRight 	= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[4]),
+					frontLeft 	= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[5]),
+					backRight 	= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[6]),
+					backLeft 	= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[7])
+				};
+
+				commandBuffer.AddComponent<AdjacentSquares>(entity, adjacent);
 
                 commandBuffer.RemoveComponent<Tags.GetAdjacentSquares>(entity);
             }
@@ -83,67 +81,4 @@ public class MapAdjacentSystem : ComponentSystem
 
     	chunks.Dispose();
     }
-
-    void GetAdjacentEntities(NativeArray<Entity> centerEntities, NativeArray<Position> centerPositions, EntityCommandBuffer commandBuffer)
-	{
-		Entity[][] adjacentSquares = new Entity[centerEntities.Length][];
-
-		for(int c = 0; c < centerEntities.Length; c++)
-			adjacentSquares[c] = new Entity[8];
-
-		float3[] adjacentPositions = new float3[8];
-		float3[] directions = Util.CardinalDirections();
-		for(int i = 0; i < directions.Length; i++)
-			adjacentPositions[i] = directions[i] * cubeSize;
-
-		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-			allMapSquaresQuery,
-			Allocator.TempJob
-		);
-
-		for(int d = 0; d < chunks.Length; d++)
-		{
-			ArchetypeChunk chunk = chunks[d];
-
-			NativeArray<Entity>   adjacentEntities 	= chunk.GetNativeArray(entityType);
-			NativeArray<Position> adjacentEntityPositions = chunk.GetNativeArray(positionType);
-
-			for(int e = 0; e < adjacentEntities.Length; e++)
-			{
-				for(int c = 0; c < centerEntities.Length; c++)
-				{
-					//  check if each entity matches each position
-					for(int p = 0; p < adjacentPositions.Length; p++)
-					{
-						float3 position = adjacentPositions[p] + centerPositions[c].Value;
-						
-						if(	position.x == adjacentEntityPositions[e].Value.x &&
-							position.z == adjacentEntityPositions[e].Value.z)
-						{
-							adjacentSquares[c][p] = adjacentEntities[e];
-						}
-					}
-				}
-			}
-		}
-
-		for(int i = 0; i < adjacentSquares.Length; i++)
-		{
-			AdjacentSquares adjacent = new AdjacentSquares{
-				right 		= adjacentSquares[i][0],
-				left 		= adjacentSquares[i][1],
-				front 		= adjacentSquares[i][2],
-				back 		= adjacentSquares[i][3],
-				frontRight 	= adjacentSquares[i][4],
-				frontLeft 	= adjacentSquares[i][5],
-				backRight 	= adjacentSquares[i][6],
-				backLeft 	= adjacentSquares[i][7]
-			};
-
-			commandBuffer.AddComponent(centerEntities[i], adjacent);
-		}
-
-		chunks.Dispose();
-		return;
-	}
 }
