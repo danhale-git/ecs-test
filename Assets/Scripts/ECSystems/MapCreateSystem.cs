@@ -24,9 +24,9 @@ public class MapCreateSystem : ComponentSystem
 	EntityArchetype mapSquareArchetype;
 
 	//	Terrain settings
-	int cubeSize;
-	int viewDistance;
-	int viewDiameter;
+	static int cubeSize;
+	static int viewDistance;
+	static int viewDiameter;
 
 	NativeList<Entity>		updateMapSquares;
 	NativeList<Buffer>		updateBuffers;
@@ -70,6 +70,8 @@ public class MapCreateSystem : ComponentSystem
 
 	Vector3 previousSquare = new Vector3(100, 100, 100);
 
+	bool debug1 = true;
+
 	//	Continually generate map squares
 	protected override void OnUpdate()
 	{
@@ -78,12 +80,29 @@ public class MapCreateSystem : ComponentSystem
 
 		float3 position = entityManager.GetComponentData<Position>(playerEntity).Value;
 		//	Generate map in radius around player
-		float3 currentSquarePosition = Util.VoxelOwner(position, cubeSize);
-		if(!currentSquarePosition.Equals(previousSquare))
+		float3 currentSquare = Util.VoxelOwner(position, cubeSize);
+		if(!currentSquare.Equals(previousSquare))
 		{
-			previousSquare = currentSquarePosition;
-			GenerateRadius(currentSquarePosition);
-		}	
+			int rootOffset = (viewDistance+1) * cubeSize; 
+			matrixRootPosition = new float3(
+				currentSquare.x - rootOffset,
+				0,
+				currentSquare.z - rootOffset
+			);
+
+			previousSquare = currentSquare;
+			GenerateRadius(currentSquare);
+		}
+
+		if(!debug1) return;
+
+		for(int i = 0; i < mapSquareMatrix.Length; i++)
+		{
+			if(mapSquareMatrix[i].Index == 0) Debug.Log(i);
+			CustomDebugTools.Cube(Color.red, ((Util.Unflatten2D(i, viewDiameter) * cubeSize) + matrixRootPosition) + (cubeSize/2));
+		}
+
+		debug1 = false;
 	}
 
 	//	Create squares
@@ -274,26 +293,19 @@ public class MapCreateSystem : ComponentSystem
 
 	void AddMapSquareToMatrix(Entity entity, float3 position)
 	{
-		int2 index = MatrixIndex(position, center, viewDistance);
+		int2 index = MatrixIndex(position, viewDistance);
 		mapSquareMatrix[Util.Flatten2D(index.x, index.y, viewDiameter)] = entity;
 	}
 
-	public Entity GetMapSquareFromMatrix(float3 position)
+	public static Entity GetMapSquareFromMatrix(float3 position)
 	{
-		int2 index = MatrixIndex(position, center, viewDistance);
+		int2 index = MatrixIndex(position, viewDistance);
 		return mapSquareMatrix[Util.Flatten2D(index.x, index.y, viewDiameter)];
 	}
 
-	int2 MatrixIndex(float3 worldPosition, float3 radiusCenter, int radius)
+	static int2 MatrixIndex(float3 worldPosition, int radius)
 	{
-		float3 root = new float3(
-			radiusCenter.x - ((radius+1) * cubeSize),
-			0,
-			radiusCenter.z - ((radius+1) * cubeSize)
-		);
-
-		float3 local = worldPosition - root;
-
+		float3 local = worldPosition - matrixRootPosition;
 		return new int2((int)local.x, (int)local.z) / cubeSize;
 	}
 
