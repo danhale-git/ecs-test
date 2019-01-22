@@ -84,24 +84,42 @@ public class MapBufferChangeSystem : ComponentSystem
 				DynamicBuffer<Block> newBuffer = commandBuffer.SetBuffer<Block>(entity);
 				newBuffer.ResizeUninitialized(mapSquare.blockGenerationArrayLength);
 
-				int bottomOffset 	= (int)(bottomSliceCount*sliceLength);
-				int topOffset		= (int)(topSliceCount*sliceLength);
+				int bottomOffset 	= (int)	(bottomSliceCount	* sliceLength);
+				int topOffset		= (int)	(topSliceCount		* sliceLength);
+				int topStart		= 		(bottomOffset + oldBlocks.Length);
+
+				/*Debug.Log("bottomOffset: "+bottomOffset);
+				Debug.Log("topOffset: "+topOffset);
+				Debug.Log("topStart: "+topStart); */
+
+
+				/*NativeArray<Block> prepend = GetBlocks(mapSquare, heightmap, bottomOffset);
+				newBuffer.AddRange(prepend);
+				prepend.Dispose();
+
+				NativeArray<Block> copy = GetBlocks(mapSquare, heightmap, oldBlocks.Length, bottomOffset);
+				newBuffer.AddRange(copy);
+				copy.Dispose();
+
+				NativeArray<Block> append = GetBlocks(mapSquare, heightmap, topOffset, topStart);
+				newBuffer.AddRange(append); 
+				append.Dispose(); */
 
 				for(int i = 0; i < bottomOffset; i++)
 				{
 					newBuffer[i] = GetBlock(i, mapSquare, heightmap);
-				}
+				} 
 
 				for(int i = 0; i < oldBlocks.Length; i++)
 				{
 					newBuffer[i+bottomOffset] = oldBlocks[i];
-				}
-
+				} 
+				
 				for(int i = 0; i < topOffset; i++)
 				{
-					int index = i+bottomOffset+oldBlocks.Length;
+					int index = i + topStart;
 					newBuffer[index] = GetBlock(index, mapSquare, heightmap);
-				}
+				}    
 
 				commandBuffer.RemoveComponent<Tags.BufferChanged>(entity);
 
@@ -113,6 +131,25 @@ public class MapBufferChangeSystem : ComponentSystem
 		commandBuffer.Dispose();
 
 		chunks.Dispose();
+	}
+
+	NativeArray<Block> GetBlocks(MapSquare mapSquare, DynamicBuffer<Topology> heightMap, int arrayLength, int offset = 0)
+	{
+		//	Block data for all cubes in the map square
+		var blocks = new NativeArray<Block>(arrayLength, Allocator.TempJob);
+
+		BlocksJob job = new BlocksJob{
+			blocks = blocks,
+			mapSquare = mapSquare,
+			heightMap = heightMap,
+			cubeSize = cubeSize,
+			util = new JobUtil(),
+			offset = offset
+		};
+		
+		job.Schedule(arrayLength, 1).Complete(); 
+
+		return blocks;
 	}
 
 	public Block GetBlock(int index, MapSquare mapSquare, DynamicBuffer<Topology> heightMap)

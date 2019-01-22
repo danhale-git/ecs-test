@@ -50,10 +50,10 @@ public class MapBlockDataSystem : ComponentSystem
 			);
 
 		if(chunks.Length == 0) chunks.Dispose();
-		else GenerateCubes(chunks);
+		else GenerateBlockData(chunks);
 	}
 
-	void GenerateCubes(NativeArray<ArchetypeChunk> chunks)
+	void GenerateBlockData(NativeArray<ArchetypeChunk> chunks)
 	{
 		EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
@@ -79,9 +79,8 @@ public class MapBlockDataSystem : ComponentSystem
 
 				//	Generate block data from height map
 				NativeArray<Block> blocks = GetBlocks(
-					entities[e],
 					mapSquares[e],
-					heightmap.AsNativeArray()
+					heightmap
 					);
 
 				//	Fill buffer
@@ -101,7 +100,7 @@ public class MapBlockDataSystem : ComponentSystem
 		chunks.Dispose();
 	}
 
-	NativeArray<Block> GetBlocks(Entity entity, MapSquare mapSquare, NativeArray<Topology> heightMap)
+	NativeArray<Block> GetBlocks(MapSquare mapSquare, DynamicBuffer<Topology> heightMap)
 	{
 		//	Block data for all cubes in the map square
 		var blocks = new NativeArray<Block>(mapSquare.blockGenerationArrayLength, Allocator.TempJob);
