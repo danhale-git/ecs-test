@@ -7,6 +7,7 @@ using Unity.Transforms;
 using Unity.Rendering;
 using MyComponents;
 
+[AlwaysUpdateSystem]
 //	Create map squares based on player position
 public class MapCreateSystem : ComponentSystem
 {
@@ -31,10 +32,7 @@ public class MapCreateSystem : ComponentSystem
 	NativeList<Entity>		updateMapSquares;
 	NativeList<Buffer>		updateBuffers;
 							
-	ArchetypeChunkEntityType 				entityType;
-	ArchetypeChunkComponentType<Position> 	positionType;
-
-	EntityArchetypeQuery mapSquareQuery;
+	ComponentGroup allSquaresGroup;
 
 	protected override void OnCreateManager()
 	{
@@ -61,11 +59,16 @@ public class MapCreateSystem : ComponentSystem
 			);
 
 		//	All map squares
-		mapSquareQuery = new EntityArchetypeQuery{		
-			Any 	= System.Array.Empty<ComponentType>(),
-			None 	= System.Array.Empty<ComponentType>(),
+		EntityArchetypeQuery allSquaresQuery = new EntityArchetypeQuery{		
 			All 	= new ComponentType [] { typeof(MapSquare) }
-			};
+		};
+
+		allSquaresGroup = GetComponentGroup(allSquaresQuery);
+	}
+
+    protected override void OnDestroyManager()
+	{
+		if(mapSquareMatrix.IsCreated) mapSquareMatrix.Dispose();
 	}
 
 	float3 previousSquare = new float3(100, 100, 100);
@@ -78,12 +81,9 @@ public class MapCreateSystem : ComponentSystem
 		if(mapSquareMatrix.IsCreated) mapSquareMatrix.Dispose();
 		mapSquareMatrix = new NativeArray<Entity>((int)math.pow(viewDiameter, 2), Allocator.Persistent);
 
-
 		float3 position = entityManager.GetComponentData<Position>(playerEntity).Value;
-		//	Generate map in radius around player
 		float3 currentSquare = Util.VoxelOwner(position, cubeSize);
-
-		float3 direction = (currentSquare - previousSquare) / cubeSize;
+		float3 mapSquaresTraversed = (currentSquare - previousSquare) / cubeSize;
 		
 		//TODO: trim squares
 
@@ -99,16 +99,6 @@ public class MapCreateSystem : ComponentSystem
 			previousSquare = currentSquare;
 			GenerateRadius(currentSquare);
 		}
-
-		if(!debug1) return;
-
-		for(int i = 0; i < mapSquareMatrix.Length; i++)
-		{
-			if(mapSquareMatrix[i].Index == 0) Debug.Log(i);
-			CustomDebugTools.Cube(Color.red, ((Util.Unflatten2D(i, viewDiameter) * cubeSize) + matrixRootPosition) + (cubeSize/2));
-		}
-
-		debug1 = false;
 	}
 
 	void TrimMapSquares()
@@ -175,17 +165,14 @@ public class MapCreateSystem : ComponentSystem
 	//	Organise positions into existing and non existent map squares
 	bool CreateOrCheck(NativeList<Position> radiusPositions, NativeList<Buffer> radiusBuffers)
 	{
-		entityType	 	= GetArchetypeChunkEntityType();
-		positionType	= GetArchetypeChunkComponentType<Position>();
+		ArchetypeChunkEntityType entityType	 	= GetArchetypeChunkEntityType();
+		ArchetypeChunkComponentType<Position> positionType	= GetArchetypeChunkComponentType<Position>();
 
 		updateMapSquares = new NativeList<Entity>(Allocator.Persistent);
 		updateBuffers = new NativeList<Buffer>(Allocator.Persistent);
 		
 		//	All map squares
-		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-			mapSquareQuery,
-			Allocator.TempJob
-			);		
+		NativeArray<ArchetypeChunk> chunks = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);	
 
 		for(int d = 0; d < chunks.Length; d++)
 		{
@@ -313,51 +300,4 @@ public class MapCreateSystem : ComponentSystem
 		float3 local = worldPosition - matrixRootPosition;
 		return new int2((int)local.x, (int)local.z) / cubeSize;
 	}
-
-	/*//	Get map square by position using chunk iteration
-	bool GetMapSquare(float3 position, out Entity mapSquare)
-	{
-		entityType	 	= GetArchetypeChunkEntityType();
-		positionType	= GetArchetypeChunkComponentType<Position>();
-
-		//	All map squares
-		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-			mapSquareQuery,
-			Allocator.TempJob
-			);
-
-		if(chunks.Length == 0)
-		{
-			chunks.Dispose();
-			mapSquare = new Entity();
-			return false;
-		}
-
-		for(int d = 0; d < chunks.Length; d++)
-		{
-			ArchetypeChunk chunk = chunks[d];
-
-			NativeArray<Entity> entities 	= chunk.GetNativeArray(entityType);
-			NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-
-			for(int e = 0; e < entities.Length; e++)
-			{
-				Entity entity = entities[e];
-
-				//	If position matches return
-				if(Util.Float3sMatchXZ(position, positions[e].Value))
-				{
-					mapSquare = entity;
-					chunks.Dispose();
-					return true;
-				}
-			}
-		}
-
-		chunks.Dispose();
-		mapSquare = new Entity();
-		return false;
-	}
-	
-	 */
 }
