@@ -162,6 +162,21 @@ public class MapCreateSystem : ComponentSystem
 			}
 	}
 
+	bool SquareInCurrentRadius(float3 position)
+	{
+		Debug.Log(matrixRootPosition+" "+(matrixRootPosition+ (viewDiameter * cubeSize)));
+
+		if(	position.x >= matrixRootPosition.x &&
+			position.z >= matrixRootPosition.z &&
+			position.x <  matrixRootPosition.x + ((viewDiameter) * cubeSize) &&
+			position.z <  matrixRootPosition.z + ((viewDiameter) * cubeSize))
+		{
+			return true;
+		}
+		else
+			return false;
+	}
+
 	//	Organise positions into existing and non existent map squares
 	bool CreateOrCheck(NativeList<Position> radiusPositions, NativeList<Buffer> radiusBuffers)
 	{
