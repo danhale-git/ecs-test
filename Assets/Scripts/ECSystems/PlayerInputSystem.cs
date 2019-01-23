@@ -112,21 +112,26 @@ public class PlayerInputSystem : ComponentSystem
         float3 origin = Util.Float3Round(ray.origin);
 
         int x, y, z;
+        int deltaX, deltaY, deltaZ;
 
-        x = (int)math.floor(origin.x);
-        y = (int)math.floor(origin.y);
-        z = (int)math.floor(origin.z);
+        x = (int)math.round(ray.origin.x);
+        y = (int)math.round(ray.origin.y);
+        z = (int)math.round(ray.origin.z);
+
+        deltaX = (int)math.floor(ray.direction.x * 50);
+        deltaY = (int)math.floor(ray.direction.y * 50);
+        deltaZ = (int)math.floor(ray.direction.z * 50);
 
         int stepX, stepY, stepZ, ax, ay, az, bx, by, bz;
         int exy, exz, ezy;
 
-        stepX = (int)math.sign(ray.direction.x);
-        stepY = (int)math.sign(ray.direction.y);
-        stepZ = (int)math.sign(ray.direction.z);
+        stepX = (int)math.sign(deltaX);
+        stepY = (int)math.sign(deltaY);
+        stepZ = (int)math.sign(deltaZ);
 
-        ax = math.abs((int)math.floor(ray.direction.x * 50));
-        ay = math.abs((int)math.floor(ray.direction.y * 50));
-        az = math.abs((int)math.floor(ray.direction.z * 50));
+        ax = math.abs(deltaX);
+        ay = math.abs(deltaY);
+        az = math.abs(deltaZ);
 
         bx = 2 * ax;
         by = 2 * ay;
