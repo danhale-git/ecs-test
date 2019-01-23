@@ -79,13 +79,12 @@ public class MapSlopeSystem : ComponentSystem
 				GetSlopes(
 					squares[e],
 					blockAccessor[e],
-					heightAccessor[e].ToNativeArray(),
+					heightAccessor[e].AsNativeArray(),
 					adjacentHeightMaps
 				);
 
                 //	Draw mesh next
 				commandBuffer.RemoveComponent<Tags.SetSlopes>(entity);
-                commandBuffer.AddComponent(entity, new Tags.DrawMesh());
             } 
         }
         commandBuffer.Playback(entityManager);

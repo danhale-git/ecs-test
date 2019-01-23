@@ -12,14 +12,17 @@ struct BlocksJob : IJobParallelFor
 	[NativeDisableParallelForRestriction] public NativeArray<Block> blocks;
 
 	[ReadOnly] public MapSquare mapSquare;
-	[ReadOnly] public NativeArray<Topology> heightMap;
+	[ReadOnly] public DynamicBuffer<Topology> heightMap;
+
 	[ReadOnly] public int cubeSize;
 	[ReadOnly] public JobUtil util;
-
+	[ReadOnly] public int offset;
 
 	public void Execute(int i)
 	{
-		float3 pos = util.Unflatten(i, cubeSize);
+		int index = i + offset;
+
+		float3 pos = util.Unflatten(index, cubeSize);
 
 		float3 position = pos + new float3(0, mapSquare.bottomBlockBuffer, 0);
 
@@ -41,10 +44,6 @@ struct BlocksJob : IJobParallelFor
 
 		float3 worldPosition = position + mapSquare.position;
 		int debug = 0;
-		/*if(position.y == heightMap[hMapIndex].height && worldPosition.x == 84 && worldPosition.z == 641)
-			debug = 1;
-		if(position.y == heightMap[hMapIndex].height && worldPosition.x == 83 && worldPosition.z == 641)
-			debug = 2; */
 
 		blocks[i] = new Block
 		{

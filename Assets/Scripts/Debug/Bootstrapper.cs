@@ -1,8 +1,8 @@
 ﻿using UnityEngine;
 using Unity.Entities;
 using MyComponents;
-using Unity.Rendering;
 using UnityEditor;
+using Unity.Rendering;
 using Unity.Transforms;
 
 public class Bootstrapper
@@ -13,6 +13,7 @@ public class Bootstrapper
         Entity playerEntity = CreatePlayer();
         MapCreateSystem.playerEntity = playerEntity;
         CameraSystem.playerEntity = playerEntity;
+        PlayerInputSystem.playerEntity = playerEntity;
     }
  
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -30,19 +31,19 @@ public class Bootstrapper
             ComponentType.Create<PhysicsEntity>(),
             ComponentType.Create<Stats>(),
             ComponentType.Create<Position>(),
-            ComponentType.Create<MeshInstanceRendererComponent>()
+            ComponentType.Create<RenderMeshComponent>()
         );
 
         //  Entity
         Entity playerEntity = entityManager.CreateEntity(playerArchetype);
 
         //  Mesh
-        MeshInstanceRenderer renderer = new MeshInstanceRenderer();
+        RenderMesh renderer = new RenderMesh();
         GameObject capsule = GameObject.CreatePrimitive(PrimitiveType.Capsule);
 		renderer.mesh = capsule.GetComponent<MeshFilter>().mesh;
         GameObject.Destroy(capsule);
 		renderer.material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ShaderGraphTest.mat");
-		entityManager.AddSharedComponentData<MeshInstanceRenderer>(playerEntity, renderer);
+		entityManager.AddSharedComponentData<RenderMesh>(playerEntity, renderer);
 
         //  Position
         entityManager.SetComponentData<Position>(playerEntity, new Position());

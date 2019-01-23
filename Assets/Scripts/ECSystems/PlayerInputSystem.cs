@@ -6,6 +6,7 @@ using Unity.Entities;
 using Unity.Collections;
 using Unity.Transforms;
 using Unity.Mathematics;
+using Unity.Rendering;
 using MyComponents;
 
 [UpdateAfter(typeof(MapMeshSystem))]
@@ -14,13 +15,7 @@ public class PlayerInputSystem : ComponentSystem
     EntityManager entityManager;
     int cubeSize;
 
-    EntityArchetypeQuery query;
-
-    ArchetypeChunkEntityType                    entityType;
-    ArchetypeChunkComponentType<Position>       positionType;
-    ArchetypeChunkComponentType<PhysicsEntity>  physicsType;
-    ArchetypeChunkComponentType<Stats>          statsType;
-
+    public static Entity playerEntity;
     Camera camera;
 
     protected override void OnCreateManager()
@@ -28,163 +23,115 @@ public class PlayerInputSystem : ComponentSystem
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         cubeSize = TerrainSettings.cubeSize;
 
-        query = new EntityArchetypeQuery
-        {
-            Any     = Array.Empty<ComponentType>(),
-            None    = Array.Empty<ComponentType>(),
-            All     = new ComponentType[] { typeof(Tags.PlayerEntity) }
-        };
-
         camera = GameObject.FindObjectOfType<Camera>();
     }
 
     protected override void OnUpdate()
     {
-        entityType      = GetArchetypeChunkEntityType();
-        positionType    = GetArchetypeChunkComponentType<Position>();
-        physicsType     = GetArchetypeChunkComponentType<PhysicsEntity>();
-        statsType       = GetArchetypeChunkComponentType<Stats>();
+        if(Time.fixedTime < 0.5) return;
+        
+        MovePlayer();
 
-        NativeArray<ArchetypeChunk> chunks;
-        chunks = entityManager.CreateArchetypeChunkArray(
-            query,
-            Allocator.TempJob
-        );
+        VoxelRayHit hit;
 
-        if(chunks.Length == 0) chunks.Dispose();
-        else ApplyInput(chunks);
-    }
+        //bool targetingBlock = VoxelRay(camera.ScreenPointToRay(Input.mousePosition), out hit);
 
-    void ApplyInput(NativeArray<ArchetypeChunk> chunks)
-    {
-        for(int c = 0; c < chunks.Length; c++)
+        if(Input.GetButtonDown("Fire1")/* && targetingBlock */)
         {
-            ArchetypeChunk chunk = chunks[c];
-
-            NativeArray<Entity> entities        = chunk.GetNativeArray(entityType);
-            NativeArray<Position> positions     = chunk.GetNativeArray(positionType);
-            NativeArray<PhysicsEntity> physics  = chunk.GetNativeArray(physicsType);
-            NativeArray<Stats> stats            = chunk.GetNativeArray(statsType);
-            
-            for(int e = 0; e < entities.Length; e++)
-            {
-                Entity entity = entities[e];
-
-                //  Move relative to camera angle
-                //TODO: camera.transform.forward points downwards, slowing z axis movement
-                float3 x = UnityEngine.Input.GetAxis("Horizontal")  * (float3)camera.transform.right;
-                float3 z = UnityEngine.Input.GetAxis("Vertical")    * (float3)camera.transform.forward;
-
-                float3 move = (x + z) * stats[e].speed;
-
-                //  Update movement component
-                PhysicsEntity physicsComponent = physics[e];
-                physicsComponent.positionChangePerSecond = new float3(move.x, 0, move.z);
-                physics[e] = physicsComponent;
-
-                if(Input.GetButtonDown("Fire1"))
-                {
-                    SelectBlock();
-                }
-            }
+            if(VoxelRay(camera.ScreenPointToRay(Input.mousePosition), out hit))
+                ChangeBlock(0, hit.hitBlock, hit.blockOwner);
         }
-        chunks.Dispose();
-    }
-
-    void SelectBlock()
-    {
-        Ray baseRay = camera.ScreenPointToRay(Input.mousePosition);
-
-        float3 rayStart = Util.Float3Round(baseRay.origin);
-
-        float3 direction = baseRay.direction;
-
-        List<float3> voxels = VoxelRay(float3.zero, direction, 100);
-
-        Entity currentOwner = QuickGetEntity(rayStart);
-        MapSquare currentMapSquare = entityManager.GetComponentData<MapSquare>(currentOwner);
-        float3 previousVoxelOwnerPosition = currentMapSquare.position;
-
-        for(int i = 0; i < voxels.Count; i++)
-        {       
-            float3 nextVoxelOwnerPosition = Util.VoxelOwner(voxels[i], cubeSize);
-
-            if(!Util.Float3sMatch(previousVoxelOwnerPosition, nextVoxelOwnerPosition))
-            {
-                currentOwner = QuickGetEntity(voxels[i] + rayStart);
-                currentMapSquare = entityManager.GetComponentData<MapSquare>(currentOwner);
-
-                //  edge of map
-                if(entityManager.HasComponent<Tags.InnerBuffer>(currentOwner))
-                {
-                    Debug.Log("HIT MAP EDGE");
-                    return;
-                }
-            }
-
-            float3 voxelWorldPosition = rayStart + voxels[i];
-            int index = Util.BlockIndex(voxelWorldPosition, currentMapSquare, cubeSize);
-            DynamicBuffer<Block> blocks = entityManager.GetBuffer<Block>(currentOwner);
-            if(index >= blocks.Length || index < 0) continue;
-            
-            if(blocks[index].type != 0)
-            {
-                Block block = blocks[index];
-                block.type = 0;
-                blocks[index] = block;
-                entityManager.AddComponent(currentOwner, typeof(Tags.Redraw));
-                entityManager.AddComponent(currentOwner, typeof(Tags.DrawMesh));
-
-                //entityManager.AddComponent(currentOwner, typeof(Tags.SetDrawBuffer));
-
-                return;
-            }
-        }
-    }
-
-    Entity QuickGetEntity(float3 voxel)
-    {
-        NativeArray<Entity> entities = entityManager.GetAllEntities(Allocator.TempJob);
-        for(int i = 0; i< entities.Length; i++)
+        else if(Input.GetButtonDown("Fire2")/* && targetingBlock */)
         {
-            if(!entityManager.HasComponent<MapSquare>(entities[i]))
-                continue;
-            float3 position = entityManager.GetComponentData<MapSquare>(entities[i]).position;
-
-            if(Util.Float3sMatch(position, Util.VoxelOwner(voxel, cubeSize)))
-            {
-                Entity entity = entities[i];
-                entities.Dispose();
-                return entity;
-            }
+            if(VoxelRay(camera.ScreenPointToRay(Input.mousePosition), out hit))
+                ChangeBlock(1, hit.faceHitBlock, hit.faceBlockOwner);
         }
-        entities.Dispose();
-        throw new Exception("Could not find entity");
     }
 
-    List<float3> VoxelRay(Vector3 eye, Vector3 dir, int length)
+    void MovePlayer()
     {
+        float3          playerPosition      = entityManager.GetComponentData<Position>(playerEntity).Value;
+        PhysicsEntity   physicsComponent    = entityManager.GetComponentData<PhysicsEntity>(playerEntity);
+        Stats           stats               = entityManager.GetComponentData<Stats>(playerEntity);
+
+        //  Camera forward ignoring x axis tilt
+        float3 forward  = math.normalize(playerPosition - new float3(camera.transform.position.x, playerPosition.y, camera.transform.position.z));
+
+         //  Move relative to camera angle
+        float3 x = UnityEngine.Input.GetAxis("Horizontal")  * (float3)camera.transform.right;
+        float3 z = UnityEngine.Input.GetAxis("Vertical")    * (float3)forward;
+
+        //  Update movement component
+        float3 move = (x + z) * stats.speed;
+        physicsComponent.positionChangePerSecond = new float3(move.x, 0, move.z);
+        entityManager.SetComponentData<PhysicsEntity>(playerEntity, physicsComponent);
+    }
+
+    void ChangeBlock(int type, Block block, Entity owner)
+    {
+        block.type = type;
+        GetOrCreatePendingChangeBuffer(owner).Add(new PendingChange { block = block });
+        entityManager.AddComponent(owner, typeof(Tags.BlockChanged));
+    }
+
+    struct VoxelRayHit
+    {
+        readonly public int blockIndex;
+        readonly public Entity blockOwner, faceBlockOwner;
+        readonly public Block hitBlock, faceHitBlock;
+        public VoxelRayHit(int blockIndex, Entity blockOwner, Block hitBlock, Block faceHitBlock, Entity faceBlockOwner)
+        {
+            this.blockIndex         = blockIndex;
+            this.blockOwner         = blockOwner;
+            this.hitBlock           = hitBlock;
+            this.faceHitBlock       = faceHitBlock;
+            this.faceBlockOwner     = faceBlockOwner;
+        }
+    }
+
+    //  Return list of voxel positions hit by ray from eye to dir
+    bool VoxelRay(Ray ray, out VoxelRayHit hit)
+    {
+        hit = new VoxelRayHit();
+
+        //  Map square at origin
+        float3 previousVoxelOwnerPosition = Util.VoxelOwner(ray.origin, cubeSize);
+
+        Entity                  entity;
+        MapSquare               mapSquare;
+        DynamicBuffer<Block>    blocks;
+
+        //  Origin entity does not exist
+        if(!GetBlockOwner(previousVoxelOwnerPosition, out entity))
+            throw new Exception("Camera is in non-existent map square");
+
+        mapSquare   = entityManager.GetComponentData<MapSquare>(entity);
+        blocks      = entityManager.GetBuffer<Block>(entity);       
+
+        //  Round to closest (up or down) for accurate results
+        float3 origin = Util.Float3Round(ray.origin);
+
         int x, y, z;
         int deltaX, deltaY, deltaZ;
 
-        x = Mathf.FloorToInt(eye.x);
-        y = Mathf.FloorToInt(eye.y);
-        z = Mathf.FloorToInt(eye.z);
+        x = (int)math.round(ray.origin.x);
+        y = (int)math.round(ray.origin.y);
+        z = (int)math.round(ray.origin.z);
 
-        deltaX = Mathf.FloorToInt(dir.x * length);
-        deltaY = Mathf.FloorToInt(dir.y * length);
-        deltaZ = Mathf.FloorToInt(dir.z * length);
+        deltaX = (int)math.floor(ray.direction.x * 50);
+        deltaY = (int)math.floor(ray.direction.y * 50);
+        deltaZ = (int)math.floor(ray.direction.z * 50);
 
-        int n, stepX, stepY, stepZ, ax, ay, az, bx, by, bz;
+        int stepX, stepY, stepZ, ax, ay, az, bx, by, bz;
         int exy, exz, ezy;
 
-        stepX = (int)Mathf.Sign(deltaX);
-        stepY = (int)Mathf.Sign(deltaY);
-        stepZ = (int)Mathf.Sign(deltaZ);
+        stepX = (int)math.sign(deltaX);
+        stepY = (int)math.sign(deltaY);
+        stepZ = (int)math.sign(deltaZ);
 
-        ax = Mathf.Abs(deltaX);
-        ay = Mathf.Abs(deltaY);
-        az = Mathf.Abs(deltaZ);
+        ax = math.abs(deltaX);
+        ay = math.abs(deltaY);
+        az = math.abs(deltaZ);
 
         bx = 2 * ax;
         by = 2 * ay;
@@ -194,18 +141,17 @@ public class PlayerInputSystem : ComponentSystem
         exz = az - ax;
         ezy = ay - az;
 
-        Gizmos.color = Color.white;
+        float3 previousVoxel = float3.zero;
+        Entity previousEntity = entity;
+        MapSquare previousMapSquare = mapSquare;
 
-        var start = new Vector3(x, y, z);
-        var end = new Vector3(x + deltaX, y + deltaY, z + deltaZ);
-
-        List<float3> voxels = new List<float3>();
-
-        n = ax + ay + az;
-        for(int i = 0; i < length; i++)
+        //  Traverse voxels
+        for(int i = 0; i < 1000; i++)
         {
-            voxels.Add(new float3(x, y, z));
+            //  Current voxel
+            float3 voxel = new float3(x, y, z);
 
+            //  March ray to next voxel
             if (exy < 0)
             {
                 if (exz < 0)
@@ -232,7 +178,83 @@ public class PlayerInputSystem : ComponentSystem
                     exy -= bx; ezy -= bz;
                 }
             }
+
+            float3 nextVoxelOwnerPosition = Util.VoxelOwner(voxel, cubeSize);
+
+            //  Voxel is in a different map square
+            if(!previousVoxelOwnerPosition.Equals(nextVoxelOwnerPosition))
+            {
+                //  Update current map square
+                if(!GetBlockOwner(nextVoxelOwnerPosition, out entity))
+                    continue;
+
+                mapSquare   = entityManager.GetComponentData<MapSquare>(entity);
+                blocks      = entityManager.GetBuffer<Block>(entity);
+
+                //  Hit the edge of the drawn map
+                if(entityManager.HasComponent<Tags.InnerBuffer>(entity))
+                    return false;
+            }
+
+            //  Index in Dynamic Buffer
+            int index = Util.BlockIndex(voxel, mapSquare, cubeSize);
+
+            //  Outside map square's generated bounds (no block data)
+            if(index >= blocks.Length || index < 0)
+                continue;
+
+            //  Found a non-air block
+            if(blocks[index].type != 0)
+            {
+                if(i == 0 || previousVoxel.Equals(float3.zero))
+                    throw new Exception("Hit on try "+(i+1)+" with previous hit at "+previousVoxel);
+
+                int previousIndex = Util.BlockIndex(previousVoxel, previousMapSquare, cubeSize);
+
+                hit = new VoxelRayHit(index, entity, blocks[index], blocks[previousIndex], previousEntity);
+                return true;
+            }
+
+            previousVoxel = voxel;
+            previousEntity = entity;
+            previousMapSquare = mapSquare;
         }
-        return voxels;
+        throw new Exception("Ray traversed 1000 voxels without finding anything");
+    }
+
+    DynamicBuffer<PendingChange> GetOrCreatePendingChangeBuffer(Entity entity)
+    {
+        DynamicBuffer<PendingChange> changes;
+
+        if(!entityManager.HasComponent<PendingChange>(entity))
+            changes = entityManager.AddBuffer<PendingChange>(entity);
+        else
+            changes = entityManager.GetBuffer<PendingChange>(entity);
+
+        return changes;
+    }
+
+    bool GetBlockOwner(float3 currentMapSquarePostion, out Entity owner)
+    {
+        NativeArray<Entity> entities = entityManager.GetAllEntities(Allocator.TempJob);
+        
+        for(int i = 0; i< entities.Length; i++)
+        {
+            if(!entityManager.HasComponent<MapSquare>(entities[i]))
+                continue;
+
+            float3 othereMapSquarePosition = entityManager.GetComponentData<MapSquare>(entities[i]).position;
+
+            if(othereMapSquarePosition.Equals(currentMapSquarePostion))
+            {
+                Entity entity = entities[i];
+                entities.Dispose();
+                owner = entity;
+                return true;
+            }
+        }
+        entities.Dispose();
+        owner = Entity.Null;
+        return false;
     }
 }

@@ -9,6 +9,7 @@ using MyComponents;
 
 //	Get y buffer for mesh drawing based on adjacent top/bottom blocks
 [UpdateAfter(typeof(MapAdjacentSystem))]
+[UpdateAfter(typeof(MapUpdateSystem))]
 public class MapInnerBufferSystem : ComponentSystem
 {
     EntityManager entityManager;
@@ -72,7 +73,6 @@ public class MapInnerBufferSystem : ComponentSystem
 
 				//  Set block buffer next
                 commandBuffer.RemoveComponent<Tags.SetDrawBuffer>(entity);
-                commandBuffer.AddComponent(entity, new Tags.SetBlockBuffer());
             }
         }
     
@@ -101,9 +101,8 @@ public class MapInnerBufferSystem : ComponentSystem
 
 		MapSquare updateSquare = mapSquare;
 
-		//	Top and bottom block levels to draw mesh
-		updateSquare.topDrawBuffer		= topBuffer + 1;
-		updateSquare.bottomDrawBuffer	= bottomBuffer - 1;
+		updateSquare.topDrawBuffer		= topBuffer;
+		updateSquare.bottomDrawBuffer	= bottomBuffer;	
 
 		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
 	}

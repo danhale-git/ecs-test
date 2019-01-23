@@ -12,15 +12,9 @@ using MyComponents;
 public class MapTopologySystem : ComponentSystem
 {
     EntityManager entityManager;
-
     int cubeSize;
-	int terrainHeight;
-	int terrainStretch;
 
-    EntityArchetypeQuery generateTerrainQuery;
-
-    ArchetypeChunkEntityType                entityType;
-    ArchetypeChunkComponentType<Position>   positionType;
+    ComponentGroup terrainGroup;
 
     CliffTerrainGenerator cliffTerrain;
 
@@ -28,36 +22,24 @@ public class MapTopologySystem : ComponentSystem
     {
         entityManager   = World.Active.GetOrCreateManager<EntityManager>();
         cubeSize        = TerrainSettings.cubeSize;
-        terrainHeight 	= TerrainSettings.terrainHeight;
-		terrainStretch 	= TerrainSettings.terrainStretch;
 
-        generateTerrainQuery = new EntityArchetypeQuery
-        {
-            Any     = Array.Empty<ComponentType>(),
-            None    = Array.Empty<ComponentType>(),
+        EntityArchetypeQuery terrainQuery = new EntityArchetypeQuery{
             All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateTerrain) }
         };
+
+        terrainGroup = GetComponentGroup(terrainQuery);
 
         cliffTerrain = new CliffTerrainGenerator(5, 10);
     }
 
     protected override void OnUpdate()
     {
-        entityType = GetArchetypeChunkEntityType();
-        positionType = GetArchetypeChunkComponentType<Position>();
-
-        NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-            generateTerrainQuery,
-            Allocator.TempJob
-            );
-
-        if(chunks.Length == 0) chunks.Dispose();
-        else GenerateTerrain(chunks);
-    }
-
-    void GenerateTerrain(NativeArray<ArchetypeChunk> chunks)
-    {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+
+        ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
+        ArchetypeChunkComponentType<Position> positionType = GetArchetypeChunkComponentType<Position>();
+
+        NativeArray<ArchetypeChunk> chunks = terrainGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
         for(int c = 0; c < chunks.Length; c++)
         {
@@ -75,24 +57,18 @@ public class MapTopologySystem : ComponentSystem
                 DynamicBuffer<Topology> heightBuffer = entityManager.GetBuffer<Topology>(entity);
 			    heightBuffer.ResizeUninitialized((int)math.pow(cubeSize, 2));
 
-			    //	Fill buffer with height map data
-			    MapSquare mapSquareComponent = GetHeightMap(position, heightBuffer);
+			    //	Fill buffer with heightmap data and update map square highest/lowest block
+			    MapSquare mapSquareComponent = cliffTerrain.GenerateTopology(position, heightBuffer);
 			    entityManager.SetComponentData<MapSquare>(entity, mapSquareComponent);
 
                 //  Set draw buffer next
                 commandBuffer.RemoveComponent<Tags.GenerateTerrain>(entity);
-                commandBuffer.AddComponent(entity, new Tags.GetAdjacentSquares());
             }
         }
 
-    commandBuffer.Playback(entityManager);
-    commandBuffer.Dispose();
+        commandBuffer.Playback(entityManager);
+        commandBuffer.Dispose();
 
-    chunks.Dispose();
-    }
-
-    public MapSquare GetHeightMap(float3 position, DynamicBuffer<Topology> heightMap)
-    {
-        return cliffTerrain.Generate(position, heightMap);
+        chunks.Dispose();
     }
 }

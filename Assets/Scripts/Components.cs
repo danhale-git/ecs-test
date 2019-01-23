@@ -43,6 +43,7 @@ namespace MyComponents
 		public int drawArrayLength;
 		public int drawIndexOffset;
 	}
+
 	[InternalBufferCapacity(0)]
 	public struct Topology : IBufferElementData
 	{
@@ -125,6 +126,17 @@ namespace MyComponents
 		}
 	}
 
+	[InternalBufferCapacity(100)]
+	public struct PendingChange : IBufferElementData
+	{
+		public Block block;
+	}
+	[InternalBufferCapacity(100)]
+	public struct CompletedChange : IBufferElementData
+	{
+		public Block block;
+	}
+
 	#endregion
 }
 
@@ -141,6 +153,8 @@ namespace Tags
 	public struct DrawMesh : IComponentData { }
 	
 	public struct Redraw : IComponentData { }
+	public struct BufferChanged : IComponentData { }
+	public struct BlockChanged : IComponentData { }
 
 	public struct InnerBuffer : IComponentData { }
 	public struct OuterBuffer : IComponentData { }	

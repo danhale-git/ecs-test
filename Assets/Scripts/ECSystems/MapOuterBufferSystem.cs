@@ -74,7 +74,6 @@ public class MapOuterBufferSystem : ComponentSystem
 
 				//  Set block buffer next
                 commandBuffer.RemoveComponent<Tags.SetBlockBuffer>(entity);
-                commandBuffer.AddComponent(entity, new Tags.GenerateBlocks());
             }
         }
     
@@ -103,27 +102,22 @@ public class MapOuterBufferSystem : ComponentSystem
 		MapSquare updateSquare = mapSquare;
 
 		//	Top and bottom block levels to generate blocks
-		updateSquare.topBlockBuffer 	= topBuffer 	+ 1;
-		updateSquare.bottomBlockBuffer = bottomBuffer 	- 1;
+		updateSquare.topBlockBuffer 	= topBuffer 	+ 2;
+		updateSquare.bottomBlockBuffer 	= bottomBuffer 	- 1;
 
 		//	Calculate iteration length for block generation
-		int blockGenerationHeight = updateSquare.topBlockBuffer - updateSquare.bottomBlockBuffer;
+		int blockGenerationHeight = (updateSquare.topBlockBuffer - updateSquare.bottomBlockBuffer)+1;
 		updateSquare.blockGenerationArrayLength = blockGenerationHeight * (cubeSize*cubeSize);
 
 		//	Calculate iteration length and offset for mesh drawing
-		int drawHeight = updateSquare.topDrawBuffer - updateSquare.bottomDrawBuffer;
+		int drawHeight = (updateSquare.topDrawBuffer - updateSquare.bottomDrawBuffer)+1;
 		updateSquare.drawArrayLength = drawHeight * (cubeSize * cubeSize);
 		updateSquare.drawIndexOffset = Util.Flatten(0, updateSquare.bottomDrawBuffer - updateSquare.bottomBlockBuffer, 0, cubeSize);
-
-		//	Position of mesh in world space
-		Position pos = new Position{
-			Value = new float3(position.Value.x, updateSquare.bottomBlockBuffer, position.Value.z)
-		};
-
+		
 		//DEBUG
 		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f), updateSquare.topBlockBuffer, updateSquare.bottomBlockBuffer);
+		//CustomDebugTools.MapSquareBufferDebug(entity);
 
 		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
-		commandBuffer.SetComponent<Position>(entity, pos);
 	}
 }

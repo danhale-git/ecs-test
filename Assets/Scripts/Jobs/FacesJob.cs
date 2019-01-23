@@ -32,7 +32,7 @@ struct FacesJob : IJobParallelFor
 		//	Adjacent position
 		int3 pos = (int3)(position + direction);
 
-		return BlockTypes.translucent[GetBlock(pos).type];
+		return BlockTypes.translucent[GetBlock(pos, mapSquare).type];
 	}
 
 	int AdjacentBlockIndex(float3 pos, int lowest, int adjacentSquareIndex)
@@ -46,9 +46,15 @@ struct FacesJob : IJobParallelFor
 		);
 	}
 
-	Block GetBlock(float3 pos)
+	Block GetBlock(float3 pos, MapSquare mapSquare)
 	{
 		float3 edge = Util.EdgeOverlap(pos, cubeSize);
+
+		if((edge.x > 0) && AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 0)<0)
+		{
+			Debug.Log(mapSquare.bottomBlockBuffer+" - "+adjacentLowestBlocks[0]);
+			CustomDebugTools.SetBlockHighlight(mapSquare.position, Color.red);
+		}
 
 		if		(edge.x > 0) return right[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 0)];
 		else if	(edge.x < 0) return left [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 1)];
@@ -76,7 +82,7 @@ struct FacesJob : IJobParallelFor
 		//	Right, left, front, back
 		for(int d = 0; d < 4; d++)
 		{
-			Block adjacentBlock = GetBlock(position + directions[d]);
+			Block adjacentBlock = GetBlock(position + directions[d], mapSquare);
 			int exposed = BlockTypes.translucent[adjacentBlock.type];
 
 			//	Not a slope

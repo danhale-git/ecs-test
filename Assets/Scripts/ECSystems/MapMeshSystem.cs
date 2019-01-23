@@ -3,8 +3,8 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Rendering;
 using Unity.Transforms;
+using Unity.Rendering;
 using MyComponents;
 
 using UnityEngine;
@@ -12,6 +12,7 @@ using UnityEditor;
 
 //	Generate 3D mesh from block data
 [UpdateAfter(typeof(MapSlopeSystem))]
+[UpdateAfter(typeof(MapBufferChangeSystem))]
 public class MapMeshSystem : ComponentSystem
 {
 	//	Parralel job batch size
@@ -27,6 +28,7 @@ public class MapMeshSystem : ComponentSystem
 
 	ArchetypeChunkEntityType 				entityType;
 	ArchetypeChunkComponentType<MapSquare>	squareType;
+	ArchetypeChunkComponentType<Position>	positionType;
 	ArchetypeChunkBufferType<Block> 		blocksType;
 
 	EntityArchetypeQuery squareQuery;
@@ -61,6 +63,7 @@ public class MapMeshSystem : ComponentSystem
 	{
 		entityType 		= GetArchetypeChunkEntityType();
 		squareType		= GetArchetypeChunkComponentType<MapSquare>();
+		positionType	= GetArchetypeChunkComponentType<Position>();
 		blocksType 		= GetArchetypeChunkBufferType<Block>();
 
 		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
@@ -85,6 +88,7 @@ public class MapMeshSystem : ComponentSystem
 			//	Get chunk data
 			NativeArray<Entity> 	entities 		= chunk.GetNativeArray(entityType);
 			NativeArray<MapSquare>	squares			= chunk.GetNativeArray(squareType);
+			NativeArray<Position>	positions		= chunk.GetNativeArray(positionType);
 			BufferAccessor<Block> 	blockAccessor 	= chunk.GetBufferAccessor(blocksType);
 
 			//	Iterate over map square entities
@@ -101,13 +105,17 @@ public class MapMeshSystem : ComponentSystem
 
 				bool redraw = entityManager.HasComponent<Tags.Redraw>(entity);
 
-				//	Create mesh entity if any faces are exposed
+				//	Create mesh entity if any faces are exposed and adjust position
 				if(counts.faceCount != 0)
+				{
 					SetMeshComponent(
 						redraw,
 						GetMesh(squares[e], faces, blockAccessor[e], counts),
 						entity,
 						commandBuffer);
+					
+					SetPosition(entity, squares[e], positions[e].Value, commandBuffer);
+				}
 
 				if(redraw) commandBuffer.RemoveComponent(entity, typeof(Tags.Redraw));
 
@@ -141,11 +149,11 @@ public class MapMeshSystem : ComponentSystem
 			exposedFaces = exposedFaces,
 			mapSquare = mapSquare,
 
-			blocks 	= blocks.ToNativeArray(),
-			right 	= entityManager.GetBuffer<Block>(adjacentSquares[0]).ToNativeArray(),
-			left 	= entityManager.GetBuffer<Block>(adjacentSquares[1]).ToNativeArray(),
-			front 	= entityManager.GetBuffer<Block>(adjacentSquares[2]).ToNativeArray(),
-			back 	= entityManager.GetBuffer<Block>(adjacentSquares[3]).ToNativeArray(),
+			blocks 	= blocks.AsNativeArray(),
+			right 	= entityManager.GetBuffer<Block>(adjacentSquares[0]).AsNativeArray(),
+			left 	= entityManager.GetBuffer<Block>(adjacentSquares[1]).AsNativeArray(),
+			front 	= entityManager.GetBuffer<Block>(adjacentSquares[2]).AsNativeArray(),
+			back 	= entityManager.GetBuffer<Block>(adjacentSquares[3]).AsNativeArray(),
 
 			adjacentLowestBlocks = adjacentOffsets,
 			
@@ -282,12 +290,18 @@ public class MapMeshSystem : ComponentSystem
 	// Apply mesh to MapSquare entity
 	void SetMeshComponent(bool redraw, Mesh mesh, Entity entity, EntityCommandBuffer commandBuffer)
 	{
-		if(redraw) commandBuffer.RemoveComponent<MeshInstanceRenderer>(entity);
+		if(redraw) commandBuffer.RemoveComponent<RenderMesh>(entity);
 
-		MeshInstanceRenderer renderer = new MeshInstanceRenderer();
+		RenderMesh renderer = new RenderMesh();
 		renderer.mesh = mesh;
 		renderer.material = material;
 
 		commandBuffer.AddSharedComponent(entity, renderer);
+	}
+
+	void SetPosition(Entity entity, MapSquare mapSquare, float3 currentPosition, EntityCommandBuffer commandBuffer)
+	{
+		Position newPosition = new Position { Value = new float3(currentPosition.x, mapSquare.bottomBlockBuffer, currentPosition.z) };
+		commandBuffer.SetComponent<Position>(entity, newPosition);
 	}
 } 

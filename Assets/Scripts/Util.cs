@@ -87,6 +87,9 @@ public static class Util
         return Float3Floor(position) - ownerWorldPosition;
 	}
 
+    //  5  2  4
+    //  1  x  0
+    //  7  3  6
     public static float3[] CardinalDirections()
     {
         return new float3[8] {
@@ -151,9 +154,9 @@ public static class Util
         return rotation * (position - centre) + centre;
     }
 
-    public static bool Float3sMatch(float3 a, float3 b)
+    public static bool Float3sMatchXZ(float3 a, float3 b)
     {
-        if(a.x == b.x && a.y == b.y && a.z ==b.z) return true;
+        if(a.x == b.x && a.z ==b.z) return true;
         else return false;
     }
 
@@ -168,6 +171,11 @@ public static class Util
     public static int BlockIndex(float3 voxelWorldPosition, MapSquare mapSquare, int cubeSize)
     {
         float3 voxel = voxelWorldPosition - mapSquare.position;
+        return Util.Flatten(voxel.x, voxel.y - mapSquare.bottomBlockBuffer, voxel.z, cubeSize);
+    }
+    public static int BlockIndex(Block block, MapSquare mapSquare, int cubeSize)
+    {
+        float3 voxel = block.localPosition;
         return Util.Flatten(voxel.x, voxel.y - mapSquare.bottomBlockBuffer, voxel.z, cubeSize);
     }
 }

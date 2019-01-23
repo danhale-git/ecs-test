@@ -148,7 +148,7 @@ public class CliffTerrainGenerator
         };
     }
 
-    public MapSquare Generate(float3 position, DynamicBuffer<Topology> heightMap)
+    public MapSquare GenerateTopology(float3 position, DynamicBuffer<Topology> heightBuffer)
     {
         NativeArray<float> noiseMap = noiseGenerator.Simplex(position, levelFrequency);
         NativeArray<CellData> cellMap = noiseGenerator.CellularDistanceToEdge(position, levelFrequency);        
@@ -158,10 +158,11 @@ public class CliffTerrainGenerator
 
         for(int i = 0; i < noiseMap.Length; i++)
         {
-            Topology heightComponent = GetCellHeight(cellMap[i]);            
+            Topology heightComponent = GetCellHeight(cellMap[i]);
+            //Topology heightComponent = new Topology {type = 0, height = 60};     
             //Topology heightComponent = GetHeight(noiseMap[i]);
 		    
-            heightMap[i] = heightComponent;
+            heightBuffer[i] = heightComponent;
 
             
 				
