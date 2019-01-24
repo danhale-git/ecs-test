@@ -18,6 +18,7 @@ public class MapCreateSystem : ComponentSystem
 	public static Entity playerEntity;
 
 	public static NativeArray<Entity> mapSquareMatrix;
+	public static float3 previousMatrixRootPosition;	
 	public static float3 matrixRootPosition;
 	float3 center;
 
@@ -78,6 +79,9 @@ public class MapCreateSystem : ComponentSystem
 	//	Continually generate map squares
 	protected override void OnUpdate()
 	{
+
+
+
 		if(mapSquareMatrix.IsCreated) mapSquareMatrix.Dispose();
 		mapSquareMatrix = new NativeArray<Entity>((int)math.pow(viewDiameter, 2), Allocator.Persistent);
 
@@ -89,7 +93,10 @@ public class MapCreateSystem : ComponentSystem
 
 		if(!currentSquare.Equals(previousSquare))
 		{
+			previousMatrixRootPosition = matrixRootPosition;
+
 			int rootOffset = (viewDistance+1) * cubeSize; 
+			
 			matrixRootPosition = new float3(
 				currentSquare.x - rootOffset,
 				0,
@@ -101,9 +108,62 @@ public class MapCreateSystem : ComponentSystem
 		}
 	}
 
-	void TrimMapSquares()
+	void MakeSquares(float3 center, int radius)
 	{
+		//	Generate grid of map squares in radius
+		for(int x = -radius-1; x <= radius+1; x++)
+			for(int z = -radius-1; z <= radius+1; z++)
+			{
+				Buffer buffer = 0;
 
+				//	Chunk is at the edge of the map 		- edge buffer
+				if 		(x < -radius || x >  radius 		|| z < -radius 		|| z >  radius )
+					buffer = Buffer.EDGE;
+
+				//	Chunk is next to the edge of the map 	- outer buffer
+				else if	(x == -radius || x ==  radius 		|| z == -radius 	|| z ==  radius )
+					buffer = Buffer.OUTER;
+
+				//	Chunk is 1 from the edge of the map 	- inner buffer
+				else if	(x == -radius+1 || x ==  radius-1 	|| z == -radius +1 	|| z ==  radius -1 )
+					buffer = Buffer.INNER;
+
+				//	Create map square at position
+				float3 position = new float3(x*cubeSize, 0, z*cubeSize) + center;
+
+				if(!SquareInRadius(position, previousMatrixRootPosition))
+					AddSquare(position+new float3(0,1,0));
+				else
+					CheckSquare(position);
+			}
+	}
+
+	void AddSquare(float3 position)
+	{
+		CustomDebugTools.Cube(Color.green, position + cubeSize / 2);
+	}
+
+	void CheckSquare(float3 position)
+	{
+		CustomDebugTools.Cube(Color.blue, position + cubeSize / 2);
+	}
+
+	void RemoveSquare(float3 position)
+	{
+		CustomDebugTools.Cube(Color.red, position + cubeSize / 2);
+	}
+
+	bool SquareInRadius(float3 position, float3 rootPosition)
+	{
+		if(	position.x >= rootPosition.x &&
+			position.z >= rootPosition.z &&
+			position.x <  rootPosition.x + ((viewDiameter) * cubeSize) &&
+			position.z <  rootPosition.z + ((viewDiameter) * cubeSize))
+		{
+			return true;
+		}
+		else
+			return false;
 	}
 
 	//	Create squares
@@ -155,26 +215,11 @@ public class MapCreateSystem : ComponentSystem
 					buffer = Buffer.INNER;
 
 				//	Create map square at position
-				float3 offset = new Vector3(x*cubeSize, 0, z*cubeSize);
+				float3 position = new float3(x*cubeSize, 0, z*cubeSize) + center;
 
-				positions.Add(new Position{ Value = center + offset });
+				positions.Add(new Position{ Value = position });
 				buffers.Add(buffer);
 			}
-	}
-
-	bool SquareInCurrentRadius(float3 position)
-	{
-		Debug.Log(matrixRootPosition+" "+(matrixRootPosition+ (viewDiameter * cubeSize)));
-
-		if(	position.x >= matrixRootPosition.x &&
-			position.z >= matrixRootPosition.z &&
-			position.x <  matrixRootPosition.x + ((viewDiameter) * cubeSize) &&
-			position.z <  matrixRootPosition.z + ((viewDiameter) * cubeSize))
-		{
-			return true;
-		}
-		else
-			return false;
 	}
 
 	//	Organise positions into existing and non existent map squares
