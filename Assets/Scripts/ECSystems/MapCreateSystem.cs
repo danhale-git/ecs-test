@@ -79,9 +79,6 @@ public class MapCreateSystem : ComponentSystem
 	//	Continually generate map squares
 	protected override void OnUpdate()
 	{
-
-
-
 		if(mapSquareMatrix.IsCreated) mapSquareMatrix.Dispose();
 		mapSquareMatrix = new NativeArray<Entity>((int)math.pow(viewDiameter, 2), Allocator.Persistent);
 
@@ -103,40 +100,14 @@ public class MapCreateSystem : ComponentSystem
 				currentSquare.z - rootOffset
 			);
 
+			center = new Vector3(currentSquare.x, 0, currentSquare.z);
+
 			previousSquare = currentSquare;
 			GenerateRadius(currentSquare);
 		}
 	}
 
-	void MakeSquares(float3 center, int radius)
-	{
-		//	Generate grid of map squares in radius
-		for(int x = -radius-1; x <= radius+1; x++)
-			for(int z = -radius-1; z <= radius+1; z++)
-			{
-				Buffer buffer = 0;
-
-				//	Chunk is at the edge of the map 		- edge buffer
-				if 		(x < -radius || x >  radius 		|| z < -radius 		|| z >  radius )
-					buffer = Buffer.EDGE;
-
-				//	Chunk is next to the edge of the map 	- outer buffer
-				else if	(x == -radius || x ==  radius 		|| z == -radius 	|| z ==  radius )
-					buffer = Buffer.OUTER;
-
-				//	Chunk is 1 from the edge of the map 	- inner buffer
-				else if	(x == -radius+1 || x ==  radius-1 	|| z == -radius +1 	|| z ==  radius -1 )
-					buffer = Buffer.INNER;
-
-				//	Create map square at position
-				float3 position = new float3(x*cubeSize, 0, z*cubeSize) + center;
-
-				if(!SquareInRadius(position, previousMatrixRootPosition))
-					AddSquare(position+new float3(0,1,0));
-				else
-					CheckSquare(position);
-			}
-	}
+	
 
 	void AddSquare(float3 position)
 	{
@@ -169,7 +140,7 @@ public class MapCreateSystem : ComponentSystem
 	//	Create squares
 	void GenerateRadius(Vector3 radiusCenter)
 	{
-		center = new Vector3(radiusCenter.x, 0, radiusCenter.z);
+		
 
 		NativeList<Position> positions;
 		NativeList<Buffer> buffers;
@@ -220,6 +191,28 @@ public class MapCreateSystem : ComponentSystem
 				positions.Add(new Position{ Value = position });
 				buffers.Add(buffer);
 			}
+	}
+
+	Buffer GetBuffer(float3 position, float3 center, int radius)
+	{
+		float3 local = (position - center)/cubeSize;
+
+		Buffer buffer = 0;
+
+		//	Chunk is at the edge of the map 		- edge buffer
+		if 		(local.x < -radius || local.x >  radius 		|| local.z < -radius 		|| local.z >  radius )
+			buffer = Buffer.EDGE;
+
+		//	Chunk is next to the edge of the map 	- outer buffer
+		else if	(local.x == -radius || local.x ==  radius 		|| local.z == -radius 	|| local.z ==  radius )
+			buffer = Buffer.OUTER;
+
+		//	Chunk is 1 from the edge of the map 	- inner buffer
+		else if	(local.x == -radius+1 || local.x ==  radius-1 	|| local.z == -radius +1 	|| local.z ==  radius -1 )
+			buffer = Buffer.INNER;
+
+		//	Create map square at position
+		return buffer;
 	}
 
 	//	Organise positions into existing and non existent map squares
