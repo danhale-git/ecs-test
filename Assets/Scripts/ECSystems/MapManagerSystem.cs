@@ -17,6 +17,7 @@ public class MapManagerSystem : ComponentSystem
     static NativeArray<Entity> mapMatrix;
     static int cubeSize;
     static int matrixWidth;
+    int matrixArrayLength;
     int matrixCenterOffset;
 
 	public static Entity playerEntity;
@@ -38,6 +39,7 @@ public class MapManagerSystem : ComponentSystem
 
         matrixWidth         = (TerrainSettings.viewDistance * 2) + 1;
         matrixCenterOffset  = TerrainSettings.viewDistance;
+        matrixArrayLength        = (int)math.pow(matrixWidth, 2);
 
         mapSquareArchetype = entityManager.CreateArchetype(
             ComponentType.Create<Position>(),
@@ -72,9 +74,8 @@ public class MapManagerSystem : ComponentSystem
     protected override void OnUpdate()
     {
         //  Reset matrix array
-        int matrixLength = (int)math.pow(matrixWidth, 2);
         if(mapMatrix.IsCreated) mapMatrix.Dispose();
-        mapMatrix = new NativeArray<Entity>(matrixLength, Allocator.Persistent);
+        mapMatrix = new NativeArray<Entity>(matrixArrayLength, Allocator.Persistent);
 
         //  Update current positions
         currentMapSquare    = CurrentMapSquare();
