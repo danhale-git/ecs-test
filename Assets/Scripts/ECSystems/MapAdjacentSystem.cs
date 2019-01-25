@@ -60,14 +60,14 @@ public class MapAdjacentSystem : ComponentSystem
 				float3 position = positions[e].Value;
 
 				AdjacentSquares adjacent = new AdjacentSquares{
-					right 		= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[0]),
-					left 		= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[1]),
-					front 		= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[2]),
-					back 		= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[3]),
-					frontRight 	= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[4]),
-					frontLeft 	= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[5]),
-					backRight 	= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[6]),
-					backLeft 	= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[7])
+					right 		= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[0]),
+					left 		= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[1]),
+					front 		= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[2]),
+					back 		= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[3]),
+					frontRight 	= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[4]),
+					frontLeft 	= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[5]),
+					backRight 	= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[6]),
+					backLeft 	= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[7])
 				};
 
 				commandBuffer.AddComponent<AdjacentSquares>(entity, adjacent);

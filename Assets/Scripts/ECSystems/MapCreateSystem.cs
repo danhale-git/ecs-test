@@ -81,7 +81,7 @@ public class MapCreateSystem : ComponentSystem
 	//	Continually generate map squares
 	protected override void OnUpdate()
 	{
-		if(mapSquareMatrix.IsCreated) mapSquareMatrix.Dispose();
+		/*if(mapSquareMatrix.IsCreated) mapSquareMatrix.Dispose();
 		mapSquareMatrix = new NativeArray<Entity>((int)math.pow(viewDiameter, 2), Allocator.Persistent);
 
 		float3 position = entityManager.GetComponentData<Position>(playerEntity).Value;
@@ -106,7 +106,7 @@ public class MapCreateSystem : ComponentSystem
 
 			previousSquare = currentSquare;
 			GenerateRadius(currentSquare);
-		}
+		} */
 	}
 
 	
@@ -144,24 +144,24 @@ public class MapCreateSystem : ComponentSystem
 	{
 		
 
-		NativeList<Position> positions;
+		/*NativeList<Position> positions;
 		NativeList<Buffer> buffers;
 
 		PositionsAndBuffers(out positions, out buffers, center, viewDistance);
 
 		CreateOrCheck(positions, buffers);
 
-		for(int i = 0; i < positions.Length; i++)
-			CreateSquare(positions[i].Value, buffers[i]);
+		//for(int i = 0; i < positions.Length; i++)
+		//	CreateSquare(positions[i].Value, buffers[i]);
 
-		for(int i = 0; i < updateMapSquares.Length; i++)
-			CheckBuffer(updateMapSquares[i], updateBuffers[i]);
+		//for(int i = 0; i < updateMapSquares.Length; i++)
+		//	CheckBuffer(updateMapSquares[i], updateBuffers[i]);
 
 		positions.Dispose();
 		buffers.Dispose();
 
 		updateMapSquares.Dispose();
-		updateBuffers.Dispose();
+		updateBuffers.Dispose(); */
 	}
 
 	void PositionsAndBuffers(out NativeList<Position> positions, out NativeList<Buffer> buffers, float3 center, int radius)
