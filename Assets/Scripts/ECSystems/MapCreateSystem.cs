@@ -8,6 +8,7 @@ using Unity.Rendering;
 using MyComponents;
 
 [AlwaysUpdateSystem]
+[UpdateAfter(typeof(MapManagerSystem))]
 //	Create map squares based on player position
 public class MapCreateSystem : ComponentSystem
 {
@@ -60,6 +61,7 @@ public class MapCreateSystem : ComponentSystem
 			);
 
 		//	All map squares
+
 		EntityArchetypeQuery allSquaresQuery = new EntityArchetypeQuery{		
 			All 	= new ComponentType [] { typeof(MapSquare) }
 		};
