@@ -22,7 +22,7 @@ public class MapManagerSystem : ComponentSystem
     static int cubeSize;
 
     static  int matrixWidth;
-            int matrixArrayLength;
+    static  int matrixArrayLength;
             int matrixCenterOffset;
 
     float3 currentMapSquare;
@@ -91,8 +91,11 @@ public class MapManagerSystem : ComponentSystem
         //  Player moved to a different square
         if(!currentMapSquare.Equals(previousMapSquare))
         {
-            CheckExistingSquares();
+            NativeList<Entity> squaresToRemove = CheckExistingSquares();
             CreateNewSquares();
+
+            RemoveSquares(squaresToRemove);
+            squaresToRemove.Dispose();
         }
 
         this.previousMapSquare = currentMapSquare;
@@ -101,7 +104,7 @@ public class MapManagerSystem : ComponentSystem
         createdMatrix.Dispose();
     }
 
-    void CheckExistingSquares()
+    NativeList<Entity> CheckExistingSquares()
 	{
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
@@ -109,6 +112,8 @@ public class MapManagerSystem : ComponentSystem
 		ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>();
 		
 		NativeArray<ArchetypeChunk> chunks = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);	
+
+        NativeList<Entity> toRemove = new NativeList<Entity>(Allocator.TempJob);
 
 		for(int c = 0; c < chunks.Length; c++)
 		{
@@ -132,6 +137,10 @@ public class MapManagerSystem : ComponentSystem
                     UpdateBuffer(entity, GetBuffer(IndexInCurrentMatrix(position)), commandBuffer);
                     AddMapSquareToMatrix(entity, position);
                 }
+                else
+                {
+                    toRemove.Add(entity);
+                }
 			}
 		}
 
@@ -139,6 +148,8 @@ public class MapManagerSystem : ComponentSystem
 		commandBuffer.Dispose();
 
 		chunks.Dispose();
+
+        return toRemove;
 	}
 
     //	Check if buffer type needs updating
@@ -146,26 +157,41 @@ public class MapManagerSystem : ComponentSystem
 	{
 		switch(buffer)
 		{
-			//	Outer buffer changed to inner buffer
+			//	Outer/None buffer changed to inner buffer
 			case MapBuffer.INNER:
 				if(entityManager.HasComponent<Tags.OuterBuffer>(entity))
 				{
 					commandBuffer.RemoveComponent<Tags.OuterBuffer>(entity);
 					commandBuffer.AddComponent<Tags.InnerBuffer>(entity, new Tags.InnerBuffer());
-				}	
+				}
+                else if(!entityManager.HasComponent<Tags.InnerBuffer>(entity))
+                {
+					commandBuffer.AddComponent<Tags.InnerBuffer>(entity, new Tags.InnerBuffer());
+                }
 				break;
 
-			//	Edge buffer changed to outer buffer
+			//	Edge/Inner buffer changed to outer buffer
 			case MapBuffer.OUTER:
 				if(entityManager.HasComponent<Tags.EdgeBuffer>(entity))
 				{
 					commandBuffer.RemoveComponent<Tags.EdgeBuffer>(entity);
 					commandBuffer.AddComponent<Tags.OuterBuffer>(entity, new Tags.OuterBuffer());
 				}
+                else if(entityManager.HasComponent<Tags.InnerBuffer>(entity))
+				{
+					commandBuffer.RemoveComponent<Tags.InnerBuffer>(entity);
+					commandBuffer.AddComponent<Tags.OuterBuffer>(entity, new Tags.OuterBuffer());
+				}
 				break;
 
-			//	Still edge buffer
-			case MapBuffer.EDGE: break;
+			//	Outer buffer changed to edge buffer
+			case MapBuffer.EDGE:
+                if(entityManager.HasComponent<Tags.OuterBuffer>(entity))
+				{
+					commandBuffer.RemoveComponent<Tags.OuterBuffer>(entity);
+					commandBuffer.AddComponent<Tags.EdgeBuffer>(entity, new Tags.EdgeBuffer());
+				}
+                break;
 			
 			//	Not a buffer
 			default:
@@ -219,6 +245,33 @@ public class MapManagerSystem : ComponentSystem
 
             CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
         }
+    }
+
+    void RemoveSquares(NativeList<Entity> toRemove)
+    {
+        for(int i = 0; i < toRemove.Length; i++)
+            RemoveMapSquare(toRemove[i]);
+    }
+
+    void RemoveMapSquare(Entity entity)
+    {
+        float3 position = entityManager.GetComponentData<Position>(entity).Value;
+        NativeArray<float3> cardinalDirections = Util.CardinalDirectionsNative();
+
+        for(int i = 0; i < cardinalDirections.Length; i++)
+        {
+            float3 adjacentPosition = position + (cardinalDirections[i] * cubeSize);
+
+            if(SquareInMatrix(adjacentPosition, currentMatrixRoot))
+            {
+                Entity adjacent = GetMapSquareFromMatrix(adjacentPosition);
+                
+                if(!entityManager.HasComponent<Tags.GetAdjacentSquares>(adjacent))
+                    entityManager.AddComponent(adjacent, typeof(Tags.GetAdjacentSquares));
+            }
+        }
+
+        entityManager.DestroyEntity(entity);
     }
 
     MapBuffer GetBuffer(float3 index)
@@ -286,12 +339,8 @@ public class MapManagerSystem : ComponentSystem
     public static Entity GetMapSquareFromMatrix(float3 worldPosition)
 	{
 		float3 index = IndexInCurrentMatrix(worldPosition);
-		Entity entity = mapMatrix[Util.Flatten2D(index.x, index.z, matrixWidth)];
-        if(!World.Active.GetOrCreateManager<EntityManager>().Exists(entity))
-        {
-            Debug.Log("Matrix entity does not exist at "+index);
-            CustomDebugTools.MarkError(worldPosition);
-        }
+        int i = Util.Flatten2D(index.x, index.z, matrixWidth);
+		Entity entity = mapMatrix[i];
         return entity;
 	}
 }
