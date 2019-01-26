@@ -94,7 +94,9 @@ public class MapManagerSystem : ComponentSystem
             NativeList<Entity> squaresToRemove = CheckExistingSquares();
             CreateNewSquares();
 
-            RemoveSquares(squaresToRemove);
+            for(int i = 0; i < squaresToRemove.Length; i++)
+                RemoveMapSquare(squaresToRemove[i]);
+
             squaresToRemove.Dispose();
         }
 
@@ -247,30 +249,27 @@ public class MapManagerSystem : ComponentSystem
         }
     }
 
-    void RemoveSquares(NativeList<Entity> toRemove)
-    {
-        for(int i = 0; i < toRemove.Length; i++)
-            RemoveMapSquare(toRemove[i]);
-    }
-
     void RemoveMapSquare(Entity entity)
     {
         float3 position = entityManager.GetComponentData<Position>(entity).Value;
-        NativeArray<float3> cardinalDirections = Util.CardinalDirectionsNative();
 
+        NativeArray<float3> cardinalDirections = Util.CardinalDirectionsNative();
         for(int i = 0; i < cardinalDirections.Length; i++)
         {
             float3 adjacentPosition = position + (cardinalDirections[i] * cubeSize);
 
+            //  Adjacent square is in active radius
             if(SquareInMatrix(adjacentPosition, currentMatrixRoot))
             {
                 Entity adjacent = GetMapSquareFromMatrix(adjacentPosition);
-                
+
+                //  Update AdjacentSquares component when out of Edge buffer   
                 if(!entityManager.HasComponent<Tags.GetAdjacentSquares>(adjacent))
                     entityManager.AddComponent(adjacent, typeof(Tags.GetAdjacentSquares));
             }
         }
 
+        cardinalDirections.Dispose();
         entityManager.DestroyEntity(entity);
     }
 
