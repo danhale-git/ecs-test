@@ -8,7 +8,7 @@ using UnityEngine;
 using MyComponents;
 
 //	Generate 3D block data from 2D terrain data
-[UpdateAfter(typeof(MapOuterBufferSystem))]
+[UpdateAfter(typeof(MapBlockBufferSystem))]
 public class MapBlockDataSystem : ComponentSystem
 {
 	EntityManager entityManager;
