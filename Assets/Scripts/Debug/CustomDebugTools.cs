@@ -78,15 +78,16 @@ public static class CustomDebugTools
     }
 
     //  allLines[2]
-    public static void MarkError(Entity entity)
+    public static void MarkError(Entity entity, Color color)
     {
+        if(color == null) color = Color.red;
         EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
 
         float3 pos = manager.GetComponentData<Position>(entity).Value;
         List<DebugLine> errorCuboid = CreateBox(
             new float3(pos.x, 0, pos.z),
             cubeSize,
-            new Color(1, 0, 0),
+            color,
             TerrainSettings.terrainHeight+TerrainSettings.terrainStretch,
             0,
             noSides: false
@@ -96,18 +97,20 @@ public static class CustomDebugTools
     }
 
     //  allLines[2]
-    public static void MarkError(float3 position)
+    public static void MarkError(float3 position, Color color)
     {
+        EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
+
         List<DebugLine> errorCuboid = CreateBox(
             new float3(position.x, 0, position.z),
             cubeSize,
-            new Color(1, 0, 0),
+            color,
             TerrainSettings.terrainHeight+TerrainSettings.terrainStretch,
             0,
             noSides: false
         );
 
-        allLines[2][new Entity()] = errorCuboid;
+        allLines[2][manager.CreateEntity()] = errorCuboid;
     }
 
     static List<DebugLine> CreateBox(Vector3 position, float size, Color color, float top, float bottom, bool noSides = false, bool topOnly = false)
