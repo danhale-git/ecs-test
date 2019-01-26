@@ -69,7 +69,11 @@ public class MapAdjacentSystem : ComponentSystem
 					backLeft 	= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[7])
 				};
 
-				commandBuffer.AddComponent<AdjacentSquares>(entity, adjacent);
+				if(entityManager.HasComponent<AdjacentSquares>(entity))
+					commandBuffer.SetComponent<AdjacentSquares>(entity, adjacent);
+				else
+					commandBuffer.AddComponent<AdjacentSquares>(entity, adjacent);
+
                 commandBuffer.RemoveComponent<Tags.GetAdjacentSquares>(entity);
             }
         }
