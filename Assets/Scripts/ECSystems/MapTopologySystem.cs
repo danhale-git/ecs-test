@@ -26,7 +26,6 @@ public class MapTopologySystem : ComponentSystem
         EntityArchetypeQuery terrainQuery = new EntityArchetypeQuery{
             All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateTerrain) }
         };
-
         terrainGroup = GetComponentGroup(terrainQuery);
 
         cliffTerrain = new CliffTerrainGenerator(5, 10);
@@ -36,8 +35,8 @@ public class MapTopologySystem : ComponentSystem
     {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
-        ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
-        ArchetypeChunkComponentType<Position> positionType = GetArchetypeChunkComponentType<Position>();
+        ArchetypeChunkEntityType                entityType      = GetArchetypeChunkEntityType();
+        ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>();
 
         NativeArray<ArchetypeChunk> chunks = terrainGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
