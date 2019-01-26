@@ -171,6 +171,8 @@ public class MapManagerSystem : ComponentSystem
 					commandBuffer.RemoveComponent<Tags.InnerBuffer>(entity);
 				break;
 		}
+
+        CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
 	}
 
     void CreateNewSquares()
@@ -210,6 +212,8 @@ public class MapManagerSystem : ComponentSystem
                 default:
                     break;
             }
+
+            CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
         }
     }
 

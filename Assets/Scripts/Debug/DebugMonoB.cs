@@ -1,40 +1,31 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Entities;
 
 public class DebugMonoB : MonoBehaviour
 {
-    public bool cubes = true;
-    void Awake()
-    {
-        CustomDebugTools.lines.Clear();
-    }
 
     void OnDrawGizmos()
     {
         if(!Application.isPlaying) return;
-        foreach(CustomDebugTools.DebugLine line in CustomDebugTools.lines)
-		{
-			Gizmos.color = line.c;
-			Gizmos.DrawLine(line.a, line.b);
-		}
 
-        foreach(KeyValuePair<Vector3, List<CustomDebugTools.DebugLine>> kvp in CustomDebugTools.blockHighlights)
-        {
-            if(!cubes) break;
-            foreach(CustomDebugTools.DebugLine line in kvp.Value)
-            {
-                Gizmos.color = line.c;
-                Gizmos.DrawLine(line.a, line.b);
-            }
-        }
+        EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
 
-        foreach(KeyValuePair<Vector3, List<CustomDebugTools.DebugLine>> kvp in CustomDebugTools.squareHighlights)
+        foreach(Dictionary<Entity, List<CustomDebugTools.DebugLine>> dict in CustomDebugTools.allLines)
         {
-            foreach(CustomDebugTools.DebugLine line in kvp.Value)
+            foreach(KeyValuePair<Entity, List<CustomDebugTools.DebugLine>> kvp in dict)
             {
-                Gizmos.color = line.c;
-                Gizmos.DrawLine(line.a, line.b);
+                if(!manager.Exists(kvp.Key))
+                {
+                    dict.Remove(kvp.Key);
+                    continue;
+                }
+                foreach(CustomDebugTools.DebugLine line in kvp.Value)
+                {
+                    Gizmos.color = line.c;
+			        Gizmos.DrawLine(line.a, line.b);
+                }
             }
         }
     }
