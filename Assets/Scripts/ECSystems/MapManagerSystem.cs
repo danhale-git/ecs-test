@@ -10,23 +10,25 @@ using MyComponents;
 [AlwaysUpdateSystem]
 public class MapManagerSystem : ComponentSystem
 {
-	enum Buffer { NONE, INNER, OUTER, EDGE }
+	enum MapBuffer { NONE, INNER, OUTER, EDGE }
     
     EntityManager entityManager;
 
-    static NativeArray<Entity> mapMatrix;
-    static int cubeSize;
-    static int matrixWidth;
-    int matrixArrayLength;
-    int matrixCenterOffset;
-
 	public static Entity playerEntity;
+
+    static NativeArray<Entity> mapMatrix;
+
+    static int cubeSize;
+
+    static  int matrixWidth;
+            int matrixArrayLength;
+            int matrixCenterOffset;
 
     float3 currentMapSquare;
     float3 previousMapSquare;
 
-    static float3 matrixRoot;
-    float3 previousMatrixRoot;
+    static  float3 currentMatrixRoot;
+            float3 previousMatrixRoot;
 
     EntityArchetype mapSquareArchetype;
 
@@ -39,7 +41,7 @@ public class MapManagerSystem : ComponentSystem
 
         matrixWidth         = (TerrainSettings.viewDistance * 2) + 1;
         matrixCenterOffset  = TerrainSettings.viewDistance;
-        matrixArrayLength        = (int)math.pow(matrixWidth, 2);
+        matrixArrayLength   = (int)math.pow(matrixWidth, 2);
 
         mapSquareArchetype = entityManager.CreateArchetype(
             ComponentType.Create<Position>(),
@@ -55,7 +57,7 @@ public class MapManagerSystem : ComponentSystem
             ComponentType.Create<Tags.GenerateBlocks>(),
             ComponentType.Create<Tags.SetSlopes>(),
 			ComponentType.Create<Tags.DrawMesh>()
-			);
+		);
 
 		EntityArchetypeQuery allSquaresQuery = new EntityArchetypeQuery{		
 			All = new ComponentType [] { typeof(MapSquare) }
@@ -67,6 +69,7 @@ public class MapManagerSystem : ComponentSystem
     {
         //  Set previous square and matrix root position to != current
         float3 offset = (new float3(100, 100, 100) * cubeSize);
+
         previousMapSquare   = CurrentMapSquare()    + offset;
         previousMatrixRoot  = MatrixRoot()          + offset;
     }
@@ -79,27 +82,24 @@ public class MapManagerSystem : ComponentSystem
 
         //  Update current positions
         currentMapSquare    = CurrentMapSquare();
-        matrixRoot          = MatrixRoot();
+        currentMatrixRoot          = MatrixRoot();
 
         //  Player moved to a different square
         if(!currentMapSquare.Equals(previousMapSquare))
         {
-            CheckAllSquares();
-            CreateSquares();
-
-            for(int i = 0; i < mapMatrix.Length; i++)
-                CustomDebugTools.MapBufferDebug(mapMatrix[i]);
+            CheckExistingSquares();
+            CreateNewSquares();
         }
 
         this.previousMapSquare = currentMapSquare;
-        this.previousMatrixRoot = matrixRoot;
+        this.previousMatrixRoot = currentMatrixRoot;
     }
 
-    void CheckAllSquares()
+    void CheckExistingSquares()
 	{
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
-		ArchetypeChunkEntityType entityType	 	= GetArchetypeChunkEntityType();
+		ArchetypeChunkEntityType entityType	 = GetArchetypeChunkEntityType();
 		ArchetypeChunkComponentType<Position> positionType	= GetArchetypeChunkComponentType<Position>();
 		
 		NativeArray<ArchetypeChunk> chunks = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);	
@@ -117,13 +117,21 @@ public class MapManagerSystem : ComponentSystem
 				float3 position = positions[e].Value;
 
                 bool inPreviousRadius   = SquareInMatrix(position, previousMatrixRoot);
-                bool inCurrentRadius    = SquareInMatrix(position, matrixRoot);
+                bool inCurrentRadius    = SquareInMatrix(position, currentMatrixRoot);
 
-                if(inPreviousRadius && inCurrentRadius)
+                //  Square already exists and is in current view radius
+                if(inCurrentRadius)
                 {
-                    UpdateBuffer(entity, GetBuffer(MatrixIndex(position)), commandBuffer);
-                    AddMapSquareToMatrix(entity, position);
+                    if(inPreviousRadius)
+                    {
+                        UpdateBuffer(entity, GetBuffer(IndexInCurrentMatrix(position)), commandBuffer);
+                        AddMapSquareToMatrix(entity, position);
+                    }
                 }
+                /*else
+                {
+                    DeleteSquare(entity, commandBuffer);
+                } */
 			}
 		}
 
@@ -134,12 +142,12 @@ public class MapManagerSystem : ComponentSystem
 	}
 
     //	Check if buffer type needs updating
-	void UpdateBuffer(Entity entity, Buffer edge, EntityCommandBuffer commandBuffer)
+	void UpdateBuffer(Entity entity, MapBuffer buffer, EntityCommandBuffer commandBuffer)
 	{
-		switch(edge)
+		switch(buffer)
 		{
 			//	Outer buffer changed to inner buffer
-			case Buffer.INNER:
+			case MapBuffer.INNER:
 				if(entityManager.HasComponent<Tags.OuterBuffer>(entity))
 				{
 					commandBuffer.RemoveComponent<Tags.OuterBuffer>(entity);
@@ -148,7 +156,7 @@ public class MapManagerSystem : ComponentSystem
 				break;
 
 			//	Edge buffer changed to outer buffer
-			case Buffer.OUTER:
+			case MapBuffer.OUTER:
 				if(entityManager.HasComponent<Tags.EdgeBuffer>(entity))
 				{
 					commandBuffer.RemoveComponent<Tags.EdgeBuffer>(entity);
@@ -157,26 +165,30 @@ public class MapManagerSystem : ComponentSystem
 				break;
 
 			//	Still edge buffer
-			case Buffer.EDGE: break;
+			case MapBuffer.EDGE: break;
 			
 			//	Not a buffer
 			default:
 				if(entityManager.HasComponent<Tags.EdgeBuffer>(entity))
 					commandBuffer.RemoveComponent<Tags.EdgeBuffer>(entity);
-
 				if(entityManager.HasComponent<Tags.InnerBuffer>(entity))
 					commandBuffer.RemoveComponent<Tags.InnerBuffer>(entity);
 				break;
 		}
 	}
 
-    void CreateSquares()
+    /*void DeleteSquare(Entity entity, EntityCommandBuffer commandBuffer)
+    {
+        commandBuffer.DestroyEntity(entity);
+    } */
+
+    void CreateNewSquares()
     {
         for(int i = 0; i < mapMatrix.Length; i++)
         {
-            float3 matrixIndex      = Util.Unflatten2D(i, matrixWidth);
-            Buffer buffer           = GetBuffer(matrixIndex);
-            float3 worldPosition    = WorldPosition(matrixIndex);
+            float3      matrixIndex   = Util.Unflatten2D(i, matrixWidth);
+            MapBuffer   buffer        = GetBuffer(matrixIndex);
+            float3      worldPosition = (matrixIndex * cubeSize) + currentMatrixRoot;
 
             if(SquareInMatrix(worldPosition, previousMatrixRoot))
                 continue;
@@ -189,17 +201,17 @@ public class MapManagerSystem : ComponentSystem
             switch(buffer)
             {
                 //	Is inner buffer
-                case Buffer.INNER:
+                case MapBuffer.INNER:
                     entityManager.AddComponent(entity, typeof(Tags.InnerBuffer));
                     break;
 
                 //	Is outer buffer
-                case Buffer.OUTER:
+                case MapBuffer.OUTER:
                     entityManager.AddComponent(entity, typeof(Tags.OuterBuffer));
                     break;
 
                 //	Is edge buffer
-                case Buffer.EDGE:
+                case MapBuffer.EDGE:
                     entityManager.AddComponent(entity, typeof(Tags.EdgeBuffer));
                     break;
                 
@@ -210,53 +222,43 @@ public class MapManagerSystem : ComponentSystem
         }
     }
 
-    Buffer GetBuffer(float3 index)
+    MapBuffer GetBuffer(float3 index)
     {
-        if      (SquareInRing(index, 0)) return Buffer.EDGE;
-        else if (SquareInRing(index, 1)) return Buffer.OUTER;
-        else if (SquareInRing(index, 2)) return Buffer.INNER;
-        else return Buffer.NONE;
+        if      (SquareInRing(index, 0)) return MapBuffer.EDGE;
+        else if (SquareInRing(index, 1)) return MapBuffer.OUTER;
+        else if (SquareInRing(index, 2)) return MapBuffer.INNER;
+        else return MapBuffer.NONE;
     }
 
     bool SquareInRing(float3 index, int offset = 0)
 	{
         int arrayWidth = matrixWidth-1;
 
-		if(	index.x == offset || index.z == offset ||
+		if(	index.x == offset ||
+            index.z == offset ||
 			index.x ==  arrayWidth - offset ||
             index.z ==  arrayWidth - offset )
-		{
 			return true;
-		}
 		else
-        {
 			return false;
-        }
 	}
 
-    bool SquareInMatrix(float3 worldPosition, float3 matrixRootPosition)
+    bool SquareInMatrix(float3 worldPosition, float3 matrixRootPosition, int offset = 0)
 	{
         float3 index = (worldPosition - matrixRootPosition) / cubeSize;
         int arrayWidth = matrixWidth-1;
 
-		if(	index.x >= 0 && index.x <= arrayWidth &&
-			index.z >= 0 && index.z <= arrayWidth )
-		{
+		if(	index.x >= offset && index.x <= arrayWidth-offset &&
+			index.z >= offset && index.z <= arrayWidth-offset )
 			return true;
-		}
 		else
-        {
 			return false;
-        }
 	}
 
     float3 MatrixRoot()
     {
-        return new float3(
-            currentMapSquare.x - (matrixCenterOffset * cubeSize),
-            0,
-            currentMapSquare.z - (matrixCenterOffset * cubeSize)
-        );
+        int offset = matrixCenterOffset * cubeSize;
+        return new float3(currentMapSquare.x - offset, 0, currentMapSquare.z - offset);
     }
 
     float3 CurrentMapSquare()
@@ -265,25 +267,20 @@ public class MapManagerSystem : ComponentSystem
         return Util.VoxelOwner(playerPosition, cubeSize);
     }
 
-    static float3 MatrixIndex(float3 worldPosition)
+    static float3 IndexInCurrentMatrix(float3 worldPosition)
     {
-        return (worldPosition - matrixRoot) / cubeSize;
+        return (worldPosition - currentMatrixRoot) / cubeSize;
     }
-
-    float3 WorldPosition(float3 index)
-    {
-        return (index * cubeSize) + matrixRoot;
-    }
-
-    public static Entity GetMapSquareFromMatrix(float3 worldPosition)
-	{
-		float3 index = MatrixIndex(worldPosition);
-		return mapMatrix[Util.Flatten2D(index.x, index.z, matrixWidth)];
-	}
 
     void AddMapSquareToMatrix(Entity entity, float3 worldPosition)
 	{
-		float3 index = MatrixIndex(worldPosition);
+		float3 index = IndexInCurrentMatrix(worldPosition);
 		mapMatrix[Util.Flatten2D(index.x, index.z, matrixWidth)] = entity;
+	}
+
+    public static Entity GetMapSquareFromMatrix(float3 worldPosition)
+	{
+		float3 index = IndexInCurrentMatrix(worldPosition);
+		return mapMatrix[Util.Flatten2D(index.x, index.z, matrixWidth)];
 	}
 }
