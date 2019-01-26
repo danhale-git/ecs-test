@@ -10,50 +10,36 @@ using MyComponents;
 //	Get y buffer for mesh drawing based on adjacent top/bottom blocks
 [UpdateAfter(typeof(MapAdjacentSystem))]
 [UpdateAfter(typeof(MapUpdateSystem))]
-public class MapInnerBufferSystem : ComponentSystem
+public class MapDrawBufferSystem : ComponentSystem
 {
     EntityManager entityManager;
 
 	int cubeSize;
 
-	EntityArchetypeQuery drawBufferQuery;
-
-	ArchetypeChunkEntityType 						entityType;
-	ArchetypeChunkComponentType<MapSquare> 			mapSquareType;
-	ArchetypeChunkComponentType<AdjacentSquares> 	adjacentType;
+	ComponentGroup drawBufferGroup;
 
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
+		
 		cubeSize = TerrainSettings.cubeSize;
 
-		drawBufferQuery = new EntityArchetypeQuery
-		{
-			Any 	= Array.Empty<ComponentType>(),
-            None  	= new ComponentType[] { typeof(Tags.EdgeBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetDrawBuffer) }
+		EntityArchetypeQuery drawBufferQuery = new EntityArchetypeQuery{
+            None 	= new ComponentType[] { typeof(Tags.EdgeBuffer) },
+			All 	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetDrawBuffer) }
 		};
+		drawBufferGroup = GetComponentGroup(drawBufferQuery);
     }
 
     protected override void OnUpdate()
     {
-        entityType 		= GetArchetypeChunkEntityType();
-		mapSquareType 	= GetArchetypeChunkComponentType<MapSquare>();
-		adjacentType 	= GetArchetypeChunkComponentType<AdjacentSquares>();
-
-        NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-            drawBufferQuery,
-            Allocator.TempJob
-            );
-
-        if(chunks.Length == 0) chunks.Dispose();
-        else
-			BufferMeshDrawing(chunks);
-    }
-
-    void BufferMeshDrawing(NativeArray<ArchetypeChunk> chunks)
-    {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+
+		ArchetypeChunkEntityType 						entityType 		= GetArchetypeChunkEntityType();
+		ArchetypeChunkComponentType<MapSquare> 			mapSquareType 	= GetArchetypeChunkComponentType<MapSquare>();
+		ArchetypeChunkComponentType<AdjacentSquares> 	adjacentType 	= GetArchetypeChunkComponentType<AdjacentSquares>();
+
+        NativeArray<ArchetypeChunk> chunks = drawBufferGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
 		for(int c = 0; c < chunks.Length; c++)
 		{
@@ -65,7 +51,7 @@ public class MapInnerBufferSystem : ComponentSystem
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
-				Entity entity = entities[e];
+				Entity 			entity 			= entities[e];
 				AdjacentSquares adjacentSquares = adjacent[e];
 
                 //	Check top and bottom limits for drawing map square
