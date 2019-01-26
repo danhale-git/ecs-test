@@ -2,6 +2,7 @@
 using UnityEngine;
 using Unity.Mathematics;
 using MyComponents;
+using Unity.Collections;
 
 public static class Util
 {
@@ -102,6 +103,19 @@ public static class Util
 			new float3( 1,  0, -1), //  6  back right
 			new float3(-1,  0, -1)	//  7  back left
 		    };
+    }
+    public static NativeArray<float3> CardinalDirectionsNative()
+    {
+        NativeArray<float3> array = new NativeArray<float3>(8, Allocator.Temp);
+		array[0] = new float3( 1,  0,  0); //  0  right
+		array[1] = new float3(-1,  0,  0); //  1  left    
+		array[2] = new float3( 0,  0,  1); //  2  front
+		array[3] = new float3( 0,  0, -1); //  3  back
+		array[4] = new float3( 1,  0,  1); //  4  front right
+		array[5] = new float3(-1,  0,  1); //  5  front left
+		array[6] = new float3( 1,  0, -1); //  6  back right
+		array[7] = new float3(-1,  0, -1); //  7  back left
+        return array;
     }
     public static int DirectionToIndex(float3 direction)
     {
