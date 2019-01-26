@@ -16,7 +16,8 @@ public class MapManagerSystem : ComponentSystem
 
 	public static Entity playerEntity;
 
-    static NativeArray<Entity> mapMatrix;
+    static  NativeArray<Entity> mapMatrix;
+            NativeArray<int>    createdMatrix;
 
     static int cubeSize;
 
@@ -42,6 +43,8 @@ public class MapManagerSystem : ComponentSystem
         matrixWidth         = (TerrainSettings.viewDistance * 2) + 1;
         matrixCenterOffset  = TerrainSettings.viewDistance;
         matrixArrayLength   = (int)math.pow(matrixWidth, 2);
+
+        Debug.Log("Matrix width: "+matrixWidth+"\nMatrix array length: "+matrixArrayLength);
 
         mapSquareArchetype = entityManager.CreateArchetype(
             ComponentType.Create<Position>(),
@@ -78,7 +81,8 @@ public class MapManagerSystem : ComponentSystem
     {
         //  Reset matrix array
         if(mapMatrix.IsCreated) mapMatrix.Dispose();
-        mapMatrix = new NativeArray<Entity>(matrixArrayLength, Allocator.Persistent);
+        mapMatrix       = new NativeArray<Entity>(matrixArrayLength, Allocator.Persistent);
+        createdMatrix   = new NativeArray<int>(matrixArrayLength, Allocator.TempJob);
 
         //  Update current positions
         currentMapSquare    = CurrentMapSquare();
@@ -93,6 +97,8 @@ public class MapManagerSystem : ComponentSystem
 
         this.previousMapSquare = currentMapSquare;
         this.previousMatrixRoot = currentMatrixRoot;
+
+        createdMatrix.Dispose();
     }
 
     void CheckExistingSquares()
@@ -122,11 +128,9 @@ public class MapManagerSystem : ComponentSystem
                 //  Square already exists and is in current view radius
                 if(inCurrentRadius)
                 {
-                    if(inPreviousRadius)
-                    {
-                        UpdateBuffer(entity, GetBuffer(IndexInCurrentMatrix(position)), commandBuffer);
-                        AddMapSquareToMatrix(entity, position);
-                    }
+                    SquareInCurrentRadiusExists(entity, position);
+                    UpdateBuffer(entity, GetBuffer(IndexInCurrentMatrix(position)), commandBuffer);
+                    AddMapSquareToMatrix(entity, position);
                 }
 			}
 		}
@@ -183,12 +187,12 @@ public class MapManagerSystem : ComponentSystem
             MapBuffer   buffer        = GetBuffer(matrixIndex);
             float3      worldPosition = (matrixIndex * cubeSize) + currentMatrixRoot;
 
-            if(SquareInMatrix(worldPosition, previousMatrixRoot))
+            if(createdMatrix[i] == 1)
                 continue;
 
             Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 		    entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
-
+            
             mapMatrix[i] = entity;
 
             switch(buffer)
@@ -273,9 +277,21 @@ public class MapManagerSystem : ComponentSystem
 		mapMatrix[Util.Flatten2D(index.x, index.z, matrixWidth)] = entity;
 	}
 
+    void SquareInCurrentRadiusExists(Entity entity, float3 worldPosition)
+	{
+		float3 index = IndexInCurrentMatrix(worldPosition);
+		createdMatrix[Util.Flatten2D(index.x, index.z, matrixWidth)] = 1;
+	}
+
     public static Entity GetMapSquareFromMatrix(float3 worldPosition)
 	{
 		float3 index = IndexInCurrentMatrix(worldPosition);
-		return mapMatrix[Util.Flatten2D(index.x, index.z, matrixWidth)];
+		Entity entity = mapMatrix[Util.Flatten2D(index.x, index.z, matrixWidth)];
+        if(!World.Active.GetOrCreateManager<EntityManager>().Exists(entity))
+        {
+            Debug.Log("Matrix entity does not exist at "+index);
+            CustomDebugTools.MarkError(worldPosition);
+        }
+        return entity;
 	}
 }
