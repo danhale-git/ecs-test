@@ -13,7 +13,7 @@ public static class CustomDebugTools
     public static List<Dictionary<Entity, List<DebugLine>>> allLines = new List<Dictionary<Entity, List<DebugLine>>>()
     {
         new Dictionary<Entity, List<DebugLine>>(),  //  Horizontal Buffer
-        new Dictionary<Entity, List<DebugLine>>(),
+        new Dictionary<Entity, List<DebugLine>>(),  
         new Dictionary<Entity, List<DebugLine>>()
     };
 
@@ -59,6 +59,7 @@ public static class CustomDebugTools
         allLines[0][entity] = rect;
     }
 
+    //  allLines[1]
     public static void VerticalBufferDebug(Entity entity, MapSquare mapSquare)
     {
         EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
@@ -74,6 +75,24 @@ public static class CustomDebugTools
         );
 
         allLines[1][entity] = blockBufferRects;
+    }
+
+    //  allLines[2]
+    public static void MarkError(Entity entity)
+    {
+        EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
+
+        float3 pos = manager.GetComponentData<Position>(entity).Value;
+        List<DebugLine> errorCuboid = CreateBox(
+            new float3(pos.x, 0, pos.z),
+            cubeSize,
+            new Color(1, 0, 0),
+            TerrainSettings.terrainHeight+TerrainSettings.terrainStretch,
+            0,
+            noSides: false
+        );
+
+        allLines[2][entity] = errorCuboid;
     }
 
     static List<DebugLine> CreateBox(Vector3 position, float size, Color color, float top, float bottom, bool noSides = false, bool topOnly = false)
