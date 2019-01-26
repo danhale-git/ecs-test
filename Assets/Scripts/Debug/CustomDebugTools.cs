@@ -68,7 +68,7 @@ public static class CustomDebugTools
         List<DebugLine> blockBufferRects = CreateBox(
             new float3(pos.x, 0, pos.z),
             cubeSize * 0.99f,
-            new Color(1, 0.3f, 0f, 0.1f),
+            new Color(0.8f, 0.8f, 0.8f, 0.1f),
             mapSquare.topBlockBuffer,
             mapSquare.bottomBlockBuffer,
             noSides: false
@@ -93,6 +93,21 @@ public static class CustomDebugTools
         );
 
         allLines[2][entity] = errorCuboid;
+    }
+
+    //  allLines[2]
+    public static void MarkError(float3 position)
+    {
+        List<DebugLine> errorCuboid = CreateBox(
+            new float3(position.x, 0, position.z),
+            cubeSize,
+            new Color(1, 0, 0),
+            TerrainSettings.terrainHeight+TerrainSettings.terrainStretch,
+            0,
+            noSides: false
+        );
+
+        allLines[2][new Entity()] = errorCuboid;
     }
 
     static List<DebugLine> CreateBox(Vector3 position, float size, Color color, float top, float bottom, bool noSides = false, bool topOnly = false)
