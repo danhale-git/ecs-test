@@ -99,14 +99,14 @@ public class MapManagerSystem : ComponentSystem
 	{
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
-		ArchetypeChunkEntityType entityType	 = GetArchetypeChunkEntityType();
-		ArchetypeChunkComponentType<Position> positionType	= GetArchetypeChunkComponentType<Position>();
+		ArchetypeChunkEntityType                entityType	    = GetArchetypeChunkEntityType();
+		ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>();
 		
 		NativeArray<ArchetypeChunk> chunks = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);	
 
-		for(int d = 0; d < chunks.Length; d++)
+		for(int c = 0; c < chunks.Length; c++)
 		{
-			ArchetypeChunk chunk = chunks[d];
+			ArchetypeChunk chunk = chunks[c];
 
 			NativeArray<Entity> entities 	= chunk.GetNativeArray(entityType);
 			NativeArray<Position> positions = chunk.GetNativeArray(positionType);
