@@ -128,10 +128,6 @@ public class MapManagerSystem : ComponentSystem
                         AddMapSquareToMatrix(entity, position);
                     }
                 }
-                /*else
-                {
-                    DeleteSquare(entity, commandBuffer);
-                } */
 			}
 		}
 
@@ -176,11 +172,6 @@ public class MapManagerSystem : ComponentSystem
 				break;
 		}
 	}
-
-    /*void DeleteSquare(Entity entity, EntityCommandBuffer commandBuffer)
-    {
-        commandBuffer.DestroyEntity(entity);
-    } */
 
     void CreateNewSquares()
     {
