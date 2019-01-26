@@ -13,49 +13,35 @@ public class MapBlockDataSystem : ComponentSystem
 {
 	EntityManager entityManager;
 
-	int cubeSize;
+	int cubeSize;	
 
-	ArchetypeChunkEntityType 				entityType;
-	ArchetypeChunkComponentType<MapSquare>	mapSquareType;
-	ArchetypeChunkBufferType<Block> 		blocksType;
-	ArchetypeChunkBufferType<Topology> 		heightmapType;
-	
-
-	EntityArchetypeQuery mapSquareQuery;
+	ComponentGroup generateBlocksGroup;
 
 	protected override void OnCreateManager()
 	{
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
+		
 		cubeSize = TerrainSettings.cubeSize;
 
-		mapSquareQuery = new EntityArchetypeQuery
+		EntityArchetypeQuery mapSquareQuery = new EntityArchetypeQuery
 		{
 			Any 	= Array.Empty<ComponentType>(),
 			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateBlocks) }
 		};
+		generateBlocksGroup = GetComponentGroup(mapSquareQuery);
 	}
 
 	protected override void OnUpdate()
 	{
-		entityType 		= GetArchetypeChunkEntityType();
-		mapSquareType	= GetArchetypeChunkComponentType<MapSquare>();
-
-		blocksType 		= GetArchetypeChunkBufferType<Block>();
-        heightmapType = GetArchetypeChunkBufferType<Topology>();
-
-		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-			mapSquareQuery,
-			Allocator.TempJob
-			);
-
-		if(chunks.Length == 0) chunks.Dispose();
-		else GenerateBlockData(chunks);
-	}
-
-	void GenerateBlockData(NativeArray<ArchetypeChunk> chunks)
-	{
 		EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+
+		ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
+		ArchetypeChunkComponentType<MapSquare> 	mapSquareType	= GetArchetypeChunkComponentType<MapSquare>();
+		ArchetypeChunkBufferType<Block> 		blocksType 		= GetArchetypeChunkBufferType<Block>();
+        ArchetypeChunkBufferType<Topology> 		heightmapType 	= GetArchetypeChunkBufferType<Topology>();
+
+		NativeArray<ArchetypeChunk> chunks = generateBlocksGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
 		for(int c = 0; c < chunks.Length; c++)
 		{
