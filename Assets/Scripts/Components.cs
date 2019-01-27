@@ -136,6 +136,11 @@ namespace MyComponents
 	{
 		public Block block;
 	}
+	[InternalBufferCapacity(100)]
+	public struct CompletedChange : IBufferElementData
+	{
+		public Block block;
+	}
 
 	#endregion
 }
@@ -155,6 +160,8 @@ namespace Tags
 	public struct Redraw : IComponentData { }
 	public struct BufferChanged : IComponentData { }
 	public struct BlockChanged : IComponentData { }
+
+	public struct RemoveMapSquare : IComponentData { }
 
 	public struct InnerBuffer : IComponentData { }
 	public struct OuterBuffer : IComponentData { }	

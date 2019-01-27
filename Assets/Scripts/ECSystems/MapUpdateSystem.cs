@@ -54,6 +54,13 @@ public class MapUpdateSystem : ComponentSystem
                 DynamicBuffer<Block>            blocks          = blockBuffers[e];
                 DynamicBuffer<PendingChange>    pendingChanges  = blockChangeBuffers[e];
 
+                DynamicBuffer<CompletedChange> completedChanges;
+
+                if(entityManager.HasComponent<CompletedChange>(entity))
+                    completedChanges = entityManager.GetBuffer<CompletedChange>(entity);
+                else
+                    completedChanges = commandBuffer.AddBuffer<CompletedChange>(entity);
+
                 bool verticalBufferChanged = false;
 
                 for(int i = 0; i < pendingChanges.Length; i++)
@@ -76,10 +83,10 @@ public class MapUpdateSystem : ComponentSystem
 
                     //  Set new block data
                     blocks[index] = newBlock;
+                    completedChanges.Add(new CompletedChange { block = newBlock });
                 }
 
-                //  Save and clear pending changes
-                MapManagerSystem.SaveMapSquare(mapSquare, pendingChanges);
+                //  Clear pending changes
                 pendingChanges.Clear();
 
                 //  Square to update depends on whether or not buffer has changed
