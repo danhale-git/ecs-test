@@ -17,7 +17,6 @@ public class MapManagerSystem : ComponentSystem
 	public static Entity playerEntity;
 
     static  NativeArray<Entity> mapMatrix;
-            NativeArray<int>    createdMatrix;
 
     static int cubeSize;
 
@@ -82,7 +81,6 @@ public class MapManagerSystem : ComponentSystem
         //  Reset matrix array
         if(mapMatrix.IsCreated) mapMatrix.Dispose();
         mapMatrix       = new NativeArray<Entity>(matrixArrayLength, Allocator.Persistent);
-        createdMatrix   = new NativeArray<int>(matrixArrayLength, Allocator.TempJob);
 
         //  Update current positions
         currentMapSquare    = CurrentMapSquare();
@@ -91,19 +89,28 @@ public class MapManagerSystem : ComponentSystem
         //  Player moved to a different square
         if(!currentMapSquare.Equals(previousMapSquare))
         {
-            NativeList<Entity> squaresToRemove = CheckExistingSquares();
-            CreateNewSquares();
+            //  List of entities to remove
+            NativeList<Entity> squaresToRemove;
 
+            //  Matrix showing already created squares
+            NativeArray<int> doNotCreate;
+            
+            //  Check all map square entities, update and list for removal accordingly
+            CheckExistingSquares(out squaresToRemove, out doNotCreate);
+
+            //  Create non-existent map squares in view radius
+            CreateNewSquares(doNotCreate);
+
+            //  Action map square removal
             for(int i = 0; i < squaresToRemove.Length; i++)
                 RemoveMapSquare(squaresToRemove[i]);
 
             squaresToRemove.Dispose();
+            doNotCreate.Dispose();
         }
 
         this.previousMapSquare = currentMapSquare;
         this.previousMatrixRoot = currentMatrixRoot;
-
-        createdMatrix.Dispose();
     }
 
     float3 MatrixRoot()
@@ -118,7 +125,7 @@ public class MapManagerSystem : ComponentSystem
         return Util.VoxelOwner(playerPosition, cubeSize);
     }
 
-    NativeList<Entity> CheckExistingSquares()
+    void CheckExistingSquares(out NativeList<Entity> toRemove, out NativeArray<int> doNotCreate)
 	{
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
@@ -127,7 +134,8 @@ public class MapManagerSystem : ComponentSystem
 		
 		NativeArray<ArchetypeChunk> chunks = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);	
 
-        NativeList<Entity> toRemove = new NativeList<Entity>(Allocator.TempJob);
+        toRemove    = new NativeList<Entity>(Allocator.TempJob);
+        doNotCreate = new NativeArray<int>(matrixArrayLength, Allocator.TempJob);
 
         int squareCount = 0;
 
@@ -149,11 +157,13 @@ public class MapManagerSystem : ComponentSystem
                 //  Square already exists and is in current view radius
                 if(inCurrentRadius)
                 {
+                    //  Index in flattened matrix
 		            float3 index = IndexInCurrentMatrix(position);
                     int flatIndex = Util.Flatten2D(index.x, index.z, matrixWidth);
 
-                    mapMatrix[flatIndex]        = entity;
-                    createdMatrix[flatIndex]    = 1;
+                    //  Add map square in matrices
+                    mapMatrix[flatIndex]    = entity;
+                    doNotCreate[flatIndex]  = 1;
 
                     //  Update map square buffer type
                     UpdateBuffer(entity, GetBuffer(IndexInCurrentMatrix(position)), commandBuffer);
@@ -174,8 +184,6 @@ public class MapManagerSystem : ComponentSystem
 		commandBuffer.Dispose();
 
 		chunks.Dispose();
-
-        return toRemove;
 	}
 
     //	Check if buffer type needs updating
@@ -231,11 +239,11 @@ public class MapManagerSystem : ComponentSystem
         CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
 	}
 
-    void CreateNewSquares()
+    void CreateNewSquares(NativeArray<int> doNotCreate)
     {
         for(int i = 0; i < mapMatrix.Length; i++)
         {
-            if(createdMatrix[i] == 1)
+            if(doNotCreate[i] == 1)
                 continue;
 
             float3      matrixIndex   = Util.Unflatten2D(i, matrixWidth);
