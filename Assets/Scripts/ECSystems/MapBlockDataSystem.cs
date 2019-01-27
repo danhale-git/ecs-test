@@ -56,9 +56,8 @@ public class MapBlockDataSystem : ComponentSystem
 			{
 				Entity entity 						= entities[e];
 				DynamicBuffer<Block> blockBuffer 	= blockAccessor[e];
-                DynamicBuffer<Topology> heightmap		= heightmapAccessor[e];
-
-				MapSquare mapSquare = mapSquares[e];
+                DynamicBuffer<Topology> heightmap	= heightmapAccessor[e];
+				MapSquare mapSquare 				= mapSquares[e];
 
 				//	Resize buffer to size of (blocks in a cube) * (number of cubes)
 				blockBuffer.ResizeUninitialized(mapSquare.blockGenerationArrayLength);
