@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Transforms;
 using Unity.Rendering;
+using System.Collections.Generic;
 using MyComponents;
 
 [AlwaysUpdateSystem]
@@ -16,7 +17,10 @@ public class MapManagerSystem : ComponentSystem
 
 	public static Entity playerEntity;
 
-    static  NativeArray<Entity> mapMatrix;
+    static NativeArray<Entity> mapMatrix;
+
+    static Dictionary<float3, Block[][]> allAcres = new Dictionary<float3, Block[][]>();
+    const int acreSize = 16;
 
     static int cubeSize;
 
@@ -347,5 +351,72 @@ public class MapManagerSystem : ComponentSystem
 	{
 		float3 index = IndexInCurrentMatrix(worldPosition);
 		return mapMatrix[Util.Flatten2D(index.x, index.z, matrixWidth)];
+	}
+
+    public static void SaveMapSquare(MapSquare mapSquare, DynamicBuffer<PendingChange> changesBuffer)
+    {
+        int acreArrayLength = (int)math.pow(acreSize, 2);
+
+        //  Index of map square in acre matrix
+        float3 acrePosition = AcreRootPosition(mapSquare.position);
+        float3 squareIndex = (mapSquare.position - acrePosition) / cubeSize;
+
+        //  Get or create acre
+        Block[][] acre;
+        if(!allAcres.TryGetValue(acrePosition, out acre))
+        {
+            CustomDebugTools.IncrementDebugCount("Acres saved");
+            acre = new Block[acreArrayLength][];
+        }
+
+        //  Index of map square in flattened acre array
+        int flatIndex = Util.Flatten2D(squareIndex.x, squareIndex.z, acreSize);
+
+        List<Block> changes = new List<Block>();
+
+        //  Map square has existing changes
+        if(acre[flatIndex] != null)
+            changes.AddRange(acre[flatIndex]);
+        else
+            CustomDebugTools.IncrementDebugCount("Chunks saved");
+
+        for(int i = 0; i < changesBuffer.Length; i++)
+        {
+            changes.Add(changesBuffer[i].block);
+        }
+
+        //  Assign changes to acre and acre to all acres
+        acre[flatIndex] = changes.ToArray();
+        allAcres[acrePosition] = acre;
+    }
+
+    bool LoadMapSquareChanges(float3 squarePosition, out Block[] changes)
+    {
+        changes = new Block[0];
+         //  Index of map square in acre matrix
+        float3 acrePosition = AcreRootPosition(squarePosition);
+        float3 squareIndex = (squarePosition - acrePosition) / cubeSize;
+
+        Block[][] acre;
+        if(!allAcres.TryGetValue(acrePosition, out acre))
+            return false;
+
+        //  Index of map square in flattened acre array
+        int flatIndex = Util.Flatten2D(squareIndex.x, squareIndex.z, acreSize);
+
+        //  Map square has no changes
+        if(acre[flatIndex] == null)
+            return false;
+
+        changes = acre[flatIndex];
+        return true;
+    }
+
+    public static float3 AcreRootPosition(float3 position)
+	{
+        int divisor = acreSize * cubeSize;
+		int x = Mathf.FloorToInt(position.x / divisor);
+		int z = Mathf.FloorToInt(position.z / divisor);
+		return new float3(x*divisor, 0, z*divisor);
 	}
 }

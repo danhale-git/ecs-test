@@ -56,9 +56,6 @@ public class MapUpdateSystem : ComponentSystem
 
                 bool verticalBufferChanged = false;
 
-                //  List of changes used for saving/loading updated squares
-                DynamicBuffer<CompletedChange> completedChanges = GetOrCreateCompletedChanges(entity, commandBuffer);
-
                 for(int i = 0; i < pendingChanges.Length; i++)
                 {
                     Block newBlock = pendingChanges[i].block;
@@ -79,12 +76,11 @@ public class MapUpdateSystem : ComponentSystem
 
                     //  Set new block data
                     blocks[index] = newBlock;
-                    
-                    //  Store change for saving/loading and remove from pending
-                    completedChanges.Add(new CompletedChange { block = newBlock });
-
-                    pendingChanges.RemoveAt(i);
                 }
+
+                //  Save and clear pending changes
+                MapManagerSystem.SaveMapSquare(mapSquare, pendingChanges);
+                pendingChanges.Clear();
 
                 //  Square to update depends on whether or not buffer has changed
                 UpdateSquares(entity, verticalBufferChanged, commandBuffer);
@@ -97,18 +93,6 @@ public class MapUpdateSystem : ComponentSystem
 		commandBuffer.Dispose();
 
     	chunks.Dispose();
-    }
-
-    DynamicBuffer<CompletedChange> GetOrCreateCompletedChanges(Entity entity, EntityCommandBuffer commandBuffer)
-    {
-        DynamicBuffer<CompletedChange> changes;
-
-        if(!entityManager.HasComponent<CompletedChange>(entity))
-            changes = commandBuffer.AddBuffer<CompletedChange>(entity);
-        else
-            changes = entityManager.GetBuffer<CompletedChange>(entity);
-        
-        return changes;
     }
 
     bool CheckVerticalBounds(Block newBlock, Block oldBlock, MapSquare mapSquare, out MapSquare updateSquare)
