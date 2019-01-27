@@ -130,31 +130,6 @@ public class MapUpdateSystem : ComponentSystem
         return verticalBufferChanged;
     }
 
-    void RedrawSquare(Entity entity, EntityCommandBuffer commandBuffer)
-    {
-        //  Tags needed to redraw mesh. Skip if mesh is not drawn yet.
-        if(!entityManager.HasComponent<RenderMesh>(entity)) return;
-
-        if(!entityManager.HasComponent<Tags.Redraw>(entity))
-            commandBuffer.AddComponent<Tags.Redraw>(entity, new Tags.Redraw());
-
-        if(!entityManager.HasComponent<Tags.DrawMesh>(entity))
-            commandBuffer.AddComponent<Tags.DrawMesh>(entity, new Tags.DrawMesh());
-    }
-
-    void RecalculateVerticalBuffers(Entity entity, EntityCommandBuffer commandBuffer)
-    {
-        //  Tags needed to check buffers and resize block array
-        if(!entityManager.HasComponent<Tags.SetDrawBuffer>(entity))
-            commandBuffer.AddComponent<Tags.SetDrawBuffer>(entity, new Tags.SetDrawBuffer());
-
-        if(!entityManager.HasComponent<Tags.SetBlockBuffer>(entity))
-            commandBuffer.AddComponent<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
-
-        if(!entityManager.HasComponent<Tags.BufferChanged>(entity))
-            commandBuffer.AddComponent<Tags.BufferChanged>(entity, new Tags.BufferChanged());
-    }
-
     void UpdateSquares(Entity centerSquare, bool verticalBufferChanged, EntityCommandBuffer commandBuffer)
     {
         //  Find squares that need updating
@@ -199,5 +174,30 @@ public class MapUpdateSystem : ComponentSystem
         }
 
         entities.Dispose();
+    }
+
+    void RedrawSquare(Entity entity, EntityCommandBuffer commandBuffer)
+    {
+        //  Tags needed to redraw mesh. Skip if mesh is not drawn yet.
+        if(!entityManager.HasComponent<RenderMesh>(entity)) return;
+
+        if(!entityManager.HasComponent<Tags.Redraw>(entity))
+            commandBuffer.AddComponent<Tags.Redraw>(entity, new Tags.Redraw());
+
+        if(!entityManager.HasComponent<Tags.DrawMesh>(entity))
+            commandBuffer.AddComponent<Tags.DrawMesh>(entity, new Tags.DrawMesh());
+    }
+
+    void RecalculateVerticalBuffers(Entity entity, EntityCommandBuffer commandBuffer)
+    {
+        //  Tags needed to check buffers and resize block array
+        if(!entityManager.HasComponent<Tags.SetDrawBuffer>(entity))
+            commandBuffer.AddComponent<Tags.SetDrawBuffer>(entity, new Tags.SetDrawBuffer());
+
+        if(!entityManager.HasComponent<Tags.SetBlockBuffer>(entity))
+            commandBuffer.AddComponent<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
+
+        if(!entityManager.HasComponent<Tags.BufferChanged>(entity))
+            commandBuffer.AddComponent<Tags.BufferChanged>(entity, new Tags.BufferChanged());
     }
 }
