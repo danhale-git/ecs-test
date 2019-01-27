@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using Unity.Rendering;
 using MyComponents;
 
+[UpdateAfter(typeof(MapManagerSystem))]
 public class MapUpdateSystem : ComponentSystem
 {
     EntityManager entityManager;
