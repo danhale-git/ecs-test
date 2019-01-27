@@ -9,6 +9,17 @@ using MyComponents;
 
 public static class CustomDebugTools
 {
+    public static Dictionary<string, string> debugText = new Dictionary<string, string>();
+
+    public static void SetDebugText(string key, string value)
+    {
+        debugText[key] = value;
+    }
+    public static void SetDebugText(string key, int value)
+    {
+        debugText[key] = value.ToString();
+    }
+
     static Vector3[] cubeVectors = CubeVectors();
     public static List<Dictionary<Entity, List<DebugLine>>> allLines = new List<Dictionary<Entity, List<DebugLine>>>()
     {

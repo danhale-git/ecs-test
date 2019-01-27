@@ -2,9 +2,22 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Entities;
+using UnityEngine.UI;
 
 public class DebugMonoB : MonoBehaviour
 {
+    public Text debugPanelText;
+
+    void Update()
+    {
+        string newText = "";
+        foreach(KeyValuePair<string, string> kvp in CustomDebugTools.debugText)
+        {
+            newText += kvp.Key+": "+kvp.Value+"\n";
+        }
+
+        debugPanelText.text = newText;
+    }
 
     void OnDrawGizmos()
     {
