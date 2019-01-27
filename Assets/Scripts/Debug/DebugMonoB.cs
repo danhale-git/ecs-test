@@ -15,6 +15,10 @@ public class DebugMonoB : MonoBehaviour
         {
             newText += kvp.Key+": "+kvp.Value+"\n";
         }
+        foreach(KeyValuePair<string, int> kvp in CustomDebugTools.debugCounts)
+        {
+            newText += kvp.Key+": "+kvp.Value.ToString()+"\n";
+        }
 
         debugPanelText.text = newText;
     }

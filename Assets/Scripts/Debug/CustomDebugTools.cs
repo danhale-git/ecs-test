@@ -10,6 +10,7 @@ using MyComponents;
 public static class CustomDebugTools
 {
     public static Dictionary<string, string> debugText = new Dictionary<string, string>();
+    public static Dictionary<string, int> debugCounts = new Dictionary<string, int>();
 
     public static void SetDebugText(string key, string value)
     {
@@ -17,7 +18,13 @@ public static class CustomDebugTools
     }
     public static void SetDebugText(string key, int value)
     {
-        debugText[key] = value.ToString();
+        debugCounts[key] = value;
+    }
+    public static void IncrementDebugCount(string key)
+    {
+        int currenCount = 0;
+        debugCounts.TryGetValue(key, out currenCount);
+        debugCounts[key] = currenCount + 1;
     }
 
     static Vector3[] cubeVectors = CubeVectors();
