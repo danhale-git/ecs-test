@@ -17,19 +17,19 @@ public class MapManagerSystem : ComponentSystem
 
 	public static Entity playerEntity;
 
-    static NativeArray<Entity> mapMatrix;
+    NativeArray<Entity> mapMatrix;
 
-    static int cubeSize;
+    int cubeSize;
 
-    static  int matrixWidth;
-    static  int matrixArrayLength;
-            int matrixCenterOffset;
+    int matrixWidth;
+    int matrixArrayLength;
+    int matrixCenterOffset;
 
     float3 currentMapSquare;
     float3 previousMapSquare;
 
-    static  float3 currentMatrixRoot;
-            float3 previousMatrixRoot;
+    float3 currentMatrixRoot;
+    float3 previousMatrixRoot;
 
     EntityArchetype mapSquareArchetype;
 
@@ -339,12 +339,12 @@ public class MapManagerSystem : ComponentSystem
 			return false;
 	}
 
-    static float3 IndexInCurrentMatrix(float3 worldPosition)
+    float3 IndexInCurrentMatrix(float3 worldPosition)
     {
         return (worldPosition - currentMatrixRoot) / cubeSize;
     }
 
-    public static Entity GetMapSquareFromMatrix(float3 worldPosition)
+    public Entity GetMapSquareFromMatrix(float3 worldPosition)
 	{
 		float3 index = IndexInCurrentMatrix(worldPosition);
 		return mapMatrix[Util.Flatten2D(index.x, index.z, matrixWidth)];

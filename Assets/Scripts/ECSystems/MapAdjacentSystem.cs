@@ -33,6 +33,8 @@ public class MapAdjacentSystem : ComponentSystem
     {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
+		MapManagerSystem managerSystem = World.Active.GetOrCreateManager<MapManagerSystem>();
+
         ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
         ArchetypeChunkComponentType<Position> 	positionType 	= GetArchetypeChunkComponentType<Position>();
 
@@ -58,14 +60,14 @@ public class MapAdjacentSystem : ComponentSystem
 
 				//	Get adjacent map squares from matrix in MapManagerSystem
 				AdjacentSquares adjacent = new AdjacentSquares{
-					right 		= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[0]),
-					left 		= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[1]),
-					front 		= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[2]),
-					back 		= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[3]),
-					frontRight 	= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[4]),
-					frontLeft 	= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[5]),
-					backRight 	= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[6]),
-					backLeft 	= MapManagerSystem.GetMapSquareFromMatrix(position + adjacentPositions[7])
+					right 		= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[0]),
+					left 		= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[1]),
+					front 		= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[2]),
+					back 		= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[3]),
+					frontRight 	= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[4]),
+					frontLeft 	= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[5]),
+					backRight 	= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[6]),
+					backLeft 	= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[7])
 				};
 
 				if(entityManager.HasComponent<AdjacentSquares>(entity))
