@@ -9,9 +9,9 @@ public class MapSaveLoadSystem : ComponentSystem
 {
     EntityManager entityManager;
 
-	static int cubeSize;
+	int cubeSize;
 
-    static Dictionary<float3, Block[][]> allAcres = new Dictionary<float3, Block[][]>();
+    Dictionary<float3, Block[][]> allAcres = new Dictionary<float3, Block[][]>();
     const int acreSize = 16;
     ComponentGroup saveGroup;
 
@@ -22,7 +22,7 @@ public class MapSaveLoadSystem : ComponentSystem
 		cubeSize = TerrainSettings.cubeSize;
 
         EntityArchetypeQuery saveQuery = new EntityArchetypeQuery{
-            All = new ComponentType[] { typeof(MapSquare), typeof(Tags.RemoveMapSquare) }
+            All = new ComponentType[] { typeof(MapSquare), typeof(Tags.RemoveMapSquare), typeof(CompletedChange) }
         };
         saveGroup = GetComponentGroup(saveQuery);
     }
@@ -57,12 +57,12 @@ public class MapSaveLoadSystem : ComponentSystem
                 MapSquare                       mapSquare       = mapSquares[e];
                 DynamicBuffer<CompletedChange>  pendingChanges  = changeBuffers[e];
 
-                //  Save map square
+                SaveMapSquare(mapSquare, changeBuffers[e]);
             }
         }
     }
 
-    public static void SaveMapSquare(MapSquare mapSquare, DynamicBuffer<PendingChange> changesBuffer)
+    public void SaveMapSquare(MapSquare mapSquare, DynamicBuffer<CompletedChange> changesBuffer)
     {
         int acreArrayLength = (int)math.pow(acreSize, 2);
 
@@ -121,7 +121,7 @@ public class MapSaveLoadSystem : ComponentSystem
         return true;
     } */
 
-    public static float3 AcreRootPosition(float3 position)
+    public float3 AcreRootPosition(float3 position)
 	{
         int divisor = acreSize * cubeSize;
 		int x = (int)math.floor(position.x / divisor);
