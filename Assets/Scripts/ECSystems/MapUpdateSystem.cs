@@ -54,12 +54,7 @@ public class MapUpdateSystem : ComponentSystem
                 DynamicBuffer<Block>            blocks          = blockBuffers[e];
                 DynamicBuffer<PendingChange>    pendingChanges  = blockChangeBuffers[e];
 
-                DynamicBuffer<CompletedChange> completedChanges;
-
-                if(entityManager.HasComponent<CompletedChange>(entity))
-                    completedChanges = entityManager.GetBuffer<CompletedChange>(entity);
-                else
-                    completedChanges = commandBuffer.AddBuffer<CompletedChange>(entity);
+                DynamicBuffer<CompletedChange> completedChanges = GetOrCreateCompletedChangeBuffer(entity, commandBuffer);
 
                 bool verticalBufferChanged = false;
 
@@ -121,7 +116,7 @@ public class MapUpdateSystem : ComponentSystem
             if(newBlock.localPosition.y <= mapSquare.bottomBlock)
             {
                 verticalBufferChanged = true;
-                updateSquare.bottomBlock = (int)newBlock.localPosition.y - 5;
+                updateSquare.bottomBlock = (int)newBlock.localPosition.y - 1;
             }
         }
         //  Block changed from translucent to opaque
@@ -130,7 +125,7 @@ public class MapUpdateSystem : ComponentSystem
             if(newBlock.localPosition.y > mapSquare.topBlock)
             {
                 verticalBufferChanged = true;
-                updateSquare.topBlock = (int)newBlock.localPosition.y + 4;
+                updateSquare.topBlock = (int)newBlock.localPosition.y ;
             }
         }
 
@@ -206,5 +201,29 @@ public class MapUpdateSystem : ComponentSystem
 
         if(!entityManager.HasComponent<Tags.BufferChanged>(entity))
             commandBuffer.AddComponent<Tags.BufferChanged>(entity, new Tags.BufferChanged());
+    }
+
+    public static DynamicBuffer<PendingChange> GetOrCreatePendingChangeBuffer(Entity entity, EntityManager entityManager)
+    {
+        DynamicBuffer<PendingChange> changes;
+
+        if(!entityManager.HasComponent<PendingChange>(entity))
+            changes = entityManager.AddBuffer<PendingChange>(entity);
+        else
+            changes = entityManager.GetBuffer<PendingChange>(entity);
+
+        return changes;
+    }
+
+    DynamicBuffer<CompletedChange> GetOrCreateCompletedChangeBuffer(Entity entity, EntityCommandBuffer commandBuffer)
+    {
+        DynamicBuffer<CompletedChange> changes;
+
+        if(!entityManager.HasComponent<CompletedChange>(entity))
+            changes = commandBuffer.AddBuffer<CompletedChange>(entity);
+        else
+            changes = entityManager.GetBuffer<CompletedChange>(entity);
+
+        return changes;
     }
 }
