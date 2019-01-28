@@ -44,8 +44,6 @@ public class MapManagerSystem : ComponentSystem
         matrixCenterOffset  = TerrainSettings.viewDistance;
         matrixArrayLength   = (int)math.pow(matrixWidth, 2);
 
-        Debug.Log("Matrix width: "+matrixWidth+"\nMatrix array length: "+matrixArrayLength);
-
         mapSquareArchetype = entityManager.CreateArchetype(
             ComponentType.Create<Position>(),
             ComponentType.Create<RenderMeshComponent>(),
@@ -303,7 +301,7 @@ public class MapManagerSystem : ComponentSystem
         }
 
         cardinalDirections.Dispose();
-        entityManager.DestroyEntity(entity);
+        entityManager.AddComponent(entity, typeof(Tags.RemoveMapSquare));
     }
 
     MapBuffer GetBuffer(float3 index)
