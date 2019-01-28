@@ -1,4 +1,5 @@
-﻿using Unity.Entities;
+﻿using UnityEngine;
+using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Collections;
 using System.Collections.Generic;
@@ -11,9 +12,21 @@ public class MapSaveLoadSystem : ComponentSystem
 
 	int cubeSize;
 
-    Dictionary<float3, Block[][]> allAcres = new Dictionary<float3, Block[][]>();
+    Dictionary<float3, SavedMapSquare[]> allAcres = new Dictionary<float3, SavedMapSquare[]>();
+    Dictionary<float3, bool[]> mapSquareHasSavedChanges = new Dictionary<float3, bool[]>();
     const int acreSize = 16;
     ComponentGroup saveGroup;
+
+    struct SavedMapSquare
+    {
+        public MapSquare mapSquare;
+        public Block[] changes;
+        public SavedMapSquare(MapSquare mapSquare, Block[] changes)
+        {
+            this.mapSquare  = mapSquare;
+            this.changes    = changes;
+        }
+    }
 
 	protected override void OnCreateManager()
     {
@@ -60,6 +73,11 @@ public class MapSaveLoadSystem : ComponentSystem
                 SaveMapSquare(mapSquare, changeBuffers[e]);
             }
         }
+
+        commandBuffer.Playback(entityManager);
+        commandBuffer.Dispose();
+
+        chunks.Dispose();
     }
 
     public void SaveMapSquare(MapSquare mapSquare, DynamicBuffer<CompletedChange> changesBuffer)
@@ -69,34 +87,45 @@ public class MapSaveLoadSystem : ComponentSystem
         //  Index of map square in acre matrix
         float3 acrePosition = AcreRootPosition(mapSquare.position);
         float3 squareIndex = (mapSquare.position - acrePosition) / cubeSize;
+        int flatIndex = Util.Flatten2D(squareIndex.x, squareIndex.z, acreSize);
+        List<Block> changes = new List<Block>();
 
         //  Get or create acre
-        Block[][] acre;
+        SavedMapSquare[] acre;
         if(!allAcres.TryGetValue(acrePosition, out acre))
         {
             CustomDebugTools.IncrementDebugCount("Acres saved");
-            acre = new Block[acreArrayLength][];
+            acre                                    = new SavedMapSquare[acreArrayLength];
+            mapSquareHasSavedChanges[acrePosition]  = new bool[acreArrayLength];
+        }
+        else
+        {
+            if(mapSquareHasSavedChanges[acrePosition][flatIndex])
+                changes.AddRange(acre[flatIndex].changes);
         }
 
-        //  Index of map square in flattened acre array
-        int flatIndex = Util.Flatten2D(squareIndex.x, squareIndex.z, acreSize);
-
-        List<Block> changes = new List<Block>();
-
-        //  Map square has existing changes
-        if(acre[flatIndex] != null)
-            changes.AddRange(acre[flatIndex]);
-        else
-            CustomDebugTools.IncrementDebugCount("Chunks saved");
+        mapSquareHasSavedChanges[acrePosition][flatIndex] = true;
 
         for(int i = 0; i < changesBuffer.Length; i++)
-        {
             changes.Add(changesBuffer[i].block);
-        }
-
+        
         //  Assign changes to acre and acre to all acres
-        acre[flatIndex] = changes.ToArray();
+        acre[flatIndex] = new SavedMapSquare(mapSquare, changes.ToArray());
         allAcres[acrePosition] = acre;
+    }
+
+    void ApplyChanges(Entity entity, Block[] changes, EntityCommandBuffer commandBuffer)
+    {
+        DynamicBuffer<LoadedChange> appliedChanges = GetOrCreateLoadedChangeBuffer(entity, commandBuffer);
+
+        for(int i = 0; i < changes.Length; i++)
+        {
+            appliedChanges.Add(new LoadedChange { block = changes[i] });
+
+            int y = (int)changes[i].worldPosition.y;
+
+            
+        }
     }
 
     /*bool LoadMapSquareChanges(float3 squarePosition, out Block[] changes)
@@ -120,6 +149,18 @@ public class MapSaveLoadSystem : ComponentSystem
         changes = acre[flatIndex];
         return true;
     } */
+
+    DynamicBuffer<LoadedChange> GetOrCreateLoadedChangeBuffer(Entity entity, EntityCommandBuffer commandBuffer)
+    {
+        DynamicBuffer<LoadedChange> changes;
+
+        if(!entityManager.HasComponent<LoadedChange>(entity))
+            changes = commandBuffer.AddBuffer<LoadedChange>(entity);
+        else
+            changes = entityManager.GetBuffer<LoadedChange>(entity);
+
+        return changes;
+    }
 
     public float3 AcreRootPosition(float3 position)
 	{
