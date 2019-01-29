@@ -35,7 +35,7 @@ public class MapSaveLoadSystem : ComponentSystem
 		cubeSize = TerrainSettings.cubeSize;
 
         EntityArchetypeQuery saveQuery = new EntityArchetypeQuery{
-            All = new ComponentType[] { typeof(MapSquare), typeof(Tags.RemoveMapSquare), typeof(CompletedChange) }
+            All = new ComponentType[] { typeof(MapSquare), typeof(Tags.RemoveMapSquare), typeof(UnsavedChange) }
         };
         saveGroup = GetComponentGroup(saveQuery);
     }
@@ -52,13 +52,13 @@ public class MapSaveLoadSystem : ComponentSystem
         NativeArray<ArchetypeChunk> chunks          = saveGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
         ArchetypeChunkComponentType<MapSquare>      mapSquareType   = GetArchetypeChunkComponentType<MapSquare>();
-        ArchetypeChunkBufferType<CompletedChange>   changeType      = GetArchetypeChunkBufferType<CompletedChange>();
+        ArchetypeChunkBufferType<UnsavedChange>   changeType      = GetArchetypeChunkBufferType<UnsavedChange>();
     
         for(int c = 0; c < chunks.Length; c++)
         {
             NativeArray<Entity>             entities        = chunks[c].GetNativeArray(entityType);
             NativeArray<MapSquare>          mapSquares      = chunks[c].GetNativeArray(mapSquareType);
-            BufferAccessor<CompletedChange> changeBuffers   = chunks[c].GetBufferAccessor(changeType);
+            BufferAccessor<UnsavedChange> changeBuffers   = chunks[c].GetBufferAccessor(changeType);
 
             for(int e = 0; e < entities.Length; e++)
             {
@@ -74,7 +74,7 @@ public class MapSaveLoadSystem : ComponentSystem
         chunks.Dispose();
     }
 
-    public void SaveMapSquare(MapSquare mapSquare, DynamicBuffer<CompletedChange> changesBuffer)
+    public void SaveMapSquare(MapSquare mapSquare, DynamicBuffer<UnsavedChange> changesBuffer)
     {
         int     acreArrayLength         = (int)math.pow(acreSize, 2);
         float3  acrePosition            = AcreRootPosition(mapSquare.position);

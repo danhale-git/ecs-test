@@ -54,7 +54,7 @@ public class MapUpdateSystem : ComponentSystem
                 DynamicBuffer<Block>            blocks          = blockBuffers[e];
                 DynamicBuffer<PendingChange>    pendingChanges  = blockChangeBuffers[e];
 
-                DynamicBuffer<CompletedChange> completedChanges = GetOrCreateCompletedChangeBuffer(entity, commandBuffer);
+                DynamicBuffer<UnsavedChange> completedChanges = GetOrCreateCompletedChangeBuffer(entity, commandBuffer);
 
                 bool verticalBufferChanged = false;
 
@@ -78,7 +78,7 @@ public class MapUpdateSystem : ComponentSystem
 
                     //  Set new block data
                     blocks[index] = newBlock;
-                    completedChanges.Add(new CompletedChange { block = newBlock });
+                    completedChanges.Add(new UnsavedChange { block = newBlock });
                 }
 
                 //  Clear pending changes
@@ -215,14 +215,14 @@ public class MapUpdateSystem : ComponentSystem
         return changes;
     }
 
-    DynamicBuffer<CompletedChange> GetOrCreateCompletedChangeBuffer(Entity entity, EntityCommandBuffer commandBuffer)
+    DynamicBuffer<UnsavedChange> GetOrCreateCompletedChangeBuffer(Entity entity, EntityCommandBuffer commandBuffer)
     {
-        DynamicBuffer<CompletedChange> changes;
+        DynamicBuffer<UnsavedChange> changes;
 
-        if(!entityManager.HasComponent<CompletedChange>(entity))
-            changes = commandBuffer.AddBuffer<CompletedChange>(entity);
+        if(!entityManager.HasComponent<UnsavedChange>(entity))
+            changes = commandBuffer.AddBuffer<UnsavedChange>(entity);
         else
-            changes = entityManager.GetBuffer<CompletedChange>(entity);
+            changes = entityManager.GetBuffer<UnsavedChange>(entity);
 
         return changes;
     }

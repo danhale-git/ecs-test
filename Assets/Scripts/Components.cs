@@ -137,7 +137,7 @@ namespace MyComponents
 		public Block block;
 	}
 	[InternalBufferCapacity(100)]
-	public struct CompletedChange : IBufferElementData
+	public struct UnsavedChange : IBufferElementData
 	{
 		public Block block;
 	}
