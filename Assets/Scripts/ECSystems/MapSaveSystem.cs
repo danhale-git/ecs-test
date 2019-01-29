@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using MyComponents;
 
 [UpdateAfter(typeof(MapUpdateSystem))]
-public class MapSaveLoadSystem : ComponentSystem
+public class MapSaveSystem : ComponentSystem
 {
     EntityManager entityManager;
 
