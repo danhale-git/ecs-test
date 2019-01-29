@@ -12,16 +12,17 @@ public class MapSaveLoadSystem : ComponentSystem
 
 	int cubeSize;
 
-    Dictionary<float3, SavedMapSquare[]> allAcres = new Dictionary<float3, SavedMapSquare[]>();
-    Dictionary<float3, bool[]> mapSquareChanged = new Dictionary<float3, bool[]>();
-    const int acreSize = 16;
-    ComponentGroup saveGroup;
+    Dictionary<float3, SaveData[]>  allAcres            = new Dictionary<float3, SaveData[]>();
+    Dictionary<float3, bool[]>      mapSquareChanged    = new Dictionary<float3, bool[]>();
 
-    struct SavedMapSquare
+    const int       acreSize = 16;
+    ComponentGroup  saveGroup;
+
+    struct SaveData
     {
         public MapSquare mapSquare;
         public Block[] changes;
-        public SavedMapSquare(MapSquare mapSquare, Block[] changes)
+        public SaveData(MapSquare mapSquare, Block[] changes)
         {
             this.mapSquare  = mapSquare;
             this.changes    = changes;
@@ -48,8 +49,8 @@ public class MapSaveLoadSystem : ComponentSystem
     public void Save()
     {
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
-        ArchetypeChunkEntityType    entityType      = GetArchetypeChunkEntityType();
         NativeArray<ArchetypeChunk> chunks          = saveGroup.CreateArchetypeChunkArray(Allocator.TempJob);
+        ArchetypeChunkEntityType    entityType      = GetArchetypeChunkEntityType();
 
         ArchetypeChunkComponentType<MapSquare>      mapSquareType   = GetArchetypeChunkComponentType<MapSquare>();
         ArchetypeChunkBufferType<UnsavedChange>   changeType      = GetArchetypeChunkBufferType<UnsavedChange>();
@@ -58,7 +59,7 @@ public class MapSaveLoadSystem : ComponentSystem
         {
             NativeArray<Entity>             entities        = chunks[c].GetNativeArray(entityType);
             NativeArray<MapSquare>          mapSquares      = chunks[c].GetNativeArray(mapSquareType);
-            BufferAccessor<UnsavedChange> changeBuffers   = chunks[c].GetBufferAccessor(changeType);
+            BufferAccessor<UnsavedChange>   changeBuffers   = chunks[c].GetBufferAccessor(changeType);
 
             for(int e = 0; e < entities.Length; e++)
             {
@@ -82,14 +83,14 @@ public class MapSaveLoadSystem : ComponentSystem
         int     mapSquareIndex          = Util.Flatten2D(mapSquareMatrixIndex.x, mapSquareMatrixIndex.z, acreSize);
 
         List<Block>         changes = new List<Block>();
-        SavedMapSquare[]    acre;
+        SaveData[]    acre;
 
         if(!allAcres.TryGetValue(acrePosition, out acre))
         {
             CustomDebugTools.IncrementDebugCount("Acres saved");
             
             //  New acre, create dictionary entries
-            acre                  = new SavedMapSquare[acreArrayLength];
+            acre                  = new SaveData[acreArrayLength];
             mapSquareChanged[acrePosition]  = new bool[acreArrayLength];
         }
         else
@@ -106,46 +107,46 @@ public class MapSaveLoadSystem : ComponentSystem
         for(int i = 0; i < changesBuffer.Length; i++)
             changes.Add(changesBuffer[i].block);
         
-        //  Assign changes to acre and acre to all acres
-        acre[mapSquareIndex] = new SavedMapSquare(mapSquare, changes.ToArray());
-        allAcres[acrePosition] = acre;
+        //  Save map square to array
+        acre[mapSquareIndex]    = new SaveData(mapSquare, changes.ToArray());
+        //  Save map square array to acre
+        allAcres[acrePosition]  = acre;
     }
 
-    void ApplyChanges(Entity entity, Block[] changes, EntityCommandBuffer commandBuffer)
+    void ApplyChanges(Entity entity, SaveData data, EntityCommandBuffer commandBuffer)
     {
         DynamicBuffer<LoadedChange> appliedChanges = GetOrCreateLoadedChangeBuffer(entity, commandBuffer);
 
-        for(int i = 0; i < changes.Length; i++)
-        {
-            appliedChanges.Add(new LoadedChange { block = changes[i] });
+        //  Apply saved block changes
+        for(int i = 0; i < data.changes.Length; i++)
+            appliedChanges.Add(new LoadedChange { block = data.changes[i] });
 
-            int y = (int)changes[i].worldPosition.y;
-
-            
-        }
+        //  Apply saved map square
+        commandBuffer.SetComponent<MapSquare>(entity, data.mapSquare);
     }
 
-    /*bool LoadMapSquareChanges(float3 squarePosition, out Block[] changes)
+    bool LoadMapSquareChanges(float3 squarePosition, out SaveData data)
     {
-        changes = new Block[0];
+        data = new SaveData();
          //  Index of map square in acre matrix
-        float3 acrePosition = AcreRootPosition(squarePosition);
-        float3 squareIndex = (squarePosition - acrePosition) / cubeSize;
+        float3  acrePosition            = AcreRootPosition(squarePosition);
+        float3  mapSquareMatrixIndex    = (squarePosition - acrePosition) / cubeSize;
+        int     mapSquareIndex          = Util.Flatten2D(mapSquareMatrixIndex.x, mapSquareMatrixIndex.z, acreSize);
 
-        Block[][] acre;
+        SaveData[] acre;
+
+        //  Acre does not exist
         if(!allAcres.TryGetValue(acrePosition, out acre))
             return false;
 
-        //  Index of map square in flattened acre array
-        int flatIndex = Util.Flatten2D(squareIndex.x, squareIndex.z, acreSize);
-
         //  Map square has no changes
-        if(acre[flatIndex] == null)
+        if(mapSquareChanged[acrePosition][mapSquareIndex])
             return false;
 
-        changes = acre[flatIndex];
+        //  Map square has changes
+        data = acre[mapSquareIndex];
         return true;
-    } */
+    }
 
     DynamicBuffer<LoadedChange> GetOrCreateLoadedChangeBuffer(Entity entity, EntityCommandBuffer commandBuffer)
     {
