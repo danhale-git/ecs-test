@@ -53,6 +53,7 @@ public class MapManagerSystem : ComponentSystem
 
             ComponentType.Create<Tags.GenerateTerrain>(),
             ComponentType.Create<Tags.GetAdjacentSquares>(),
+            ComponentType.Create<Tags.LoadChanges>(),
             ComponentType.Create<Tags.SetDrawBuffer>(),
             ComponentType.Create<Tags.SetBlockBuffer>(),
             ComponentType.Create<Tags.GenerateBlocks>(),

@@ -76,6 +76,19 @@ public class MapBlockDataSystem : ComponentSystem
 				commandBuffer.RemoveComponent<Tags.GenerateBlocks>(entity);
 
 				blocks.Dispose();
+
+				//	Apply loaded changes
+				if(entityManager.HasComponent<LoadedChange>(entity))
+				{
+					DynamicBuffer<LoadedChange> loadedChanges = entityManager.GetBuffer<LoadedChange>(entity);
+
+					for(int i = 0; i < loadedChanges.Length; i++)
+					{
+						Block block = loadedChanges[i].block;
+						int index = Util.BlockIndex(block, mapSquare, cubeSize);
+						blockBuffer[index] = block;
+					}
+				}
 			}
 		}
 		

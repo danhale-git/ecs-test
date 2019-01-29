@@ -151,6 +151,7 @@ namespace Tags
 {
 	public struct GenerateTerrain : IComponentData { }
 	public struct GetAdjacentSquares : IComponentData { }
+	public struct LoadChanges : IComponentData { }
 	public struct SetDrawBuffer : IComponentData { }
 	public struct SetBlockBuffer : IComponentData { }
 	public struct GenerateBlocks : IComponentData { }
