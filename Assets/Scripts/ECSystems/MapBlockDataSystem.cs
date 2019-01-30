@@ -88,6 +88,8 @@ public class MapBlockDataSystem : ComponentSystem
 						int index = Util.BlockIndex(block, mapSquare, cubeSize);
 						blockBuffer[index] = block;
 					}
+
+					commandBuffer.RemoveComponent<LoadedChange>(entity);
 				}
 			}
 		}

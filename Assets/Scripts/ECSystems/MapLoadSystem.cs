@@ -53,10 +53,6 @@ public class MapLoadSystem : ComponentSystem
                     Debug.Log("found saved change");
                     CustomDebugTools.MarkError(entity, Color.green);
 
-                    Debug.Log(data.mapSquare);
-                    for(int i = 0; i < data.changes.Length; i++)
-                        Debug.Log(data.changes[i]);
-
                     ApplyChanges(entities[e], data, commandBuffer);
                 }
 
@@ -80,6 +76,9 @@ public class MapLoadSystem : ComponentSystem
 
         //  Apply saved map square
         commandBuffer.SetComponent<MapSquare>(entity, data.mapSquare);
+
+        commandBuffer.RemoveComponent<Tags.SetDrawBuffer>(entity);
+        commandBuffer.RemoveComponent<Tags.SetBlockBuffer>(entity);
     }
 
     bool LoadMapSquareChanges(float3 squarePosition, out MapSaveSystem.SaveData data)
@@ -99,6 +98,8 @@ public class MapLoadSystem : ComponentSystem
         //  Map square has no changes
         if(!mapSaveSystem.mapSquareChanged[acrePosition][mapSquareIndex])
             return false;
+
+        Debug.Log("loading from: "+ acrePosition+" with index: "+mapSquareIndex);        
 
         //  Map square has changes
         data = acre[mapSquareIndex];

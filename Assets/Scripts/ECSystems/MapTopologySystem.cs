@@ -58,7 +58,10 @@ public class MapTopologySystem : ComponentSystem
 
 			    //	Fill buffer with heightmap data and update map square highest/lowest block
 			    MapSquare mapSquareComponent = cliffTerrain.GenerateTopology(position, heightBuffer);
-			    entityManager.SetComponentData<MapSquare>(entity, mapSquareComponent);
+
+                //  If map square has been loaded it will already have the correct values
+                if(!entityManager.HasComponent<LoadedChange>(entity))
+			        entityManager.SetComponentData<MapSquare>(entity, mapSquareComponent);
 
                 //  Set draw buffer next
                 commandBuffer.RemoveComponent<Tags.GenerateTerrain>(entity);
