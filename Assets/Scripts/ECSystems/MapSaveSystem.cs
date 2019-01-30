@@ -15,8 +15,12 @@ public class MapSaveSystem : ComponentSystem
     public Dictionary<float3, SaveData[]>  allAcres            = new Dictionary<float3, SaveData[]>();
     public Dictionary<float3, bool[]>      mapSquareChanged    = new Dictionary<float3, bool[]>();
 
-    public const int       acreSize = 16;
-    ComponentGroup  saveGroup;
+    public const int acreSize = 16;
+
+    //  Initialise as different to all possible acre positions
+    float3 previousAcrePosition = new float3(acreSize, acreSize, acreSize) * 1.5f;
+
+    ComponentGroup saveGroup;
 
     public struct SaveData
     {
@@ -43,17 +47,12 @@ public class MapSaveSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        Save();
-    }
-
-    public void Save()
-    {
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
         NativeArray<ArchetypeChunk> chunks          = saveGroup.CreateArchetypeChunkArray(Allocator.TempJob);
-        ArchetypeChunkEntityType    entityType      = GetArchetypeChunkEntityType();
-
+       
+        ArchetypeChunkEntityType                    entityType      = GetArchetypeChunkEntityType();
         ArchetypeChunkComponentType<MapSquare>      mapSquareType   = GetArchetypeChunkComponentType<MapSquare>();
-        ArchetypeChunkBufferType<UnsavedChange>   changeType      = GetArchetypeChunkBufferType<UnsavedChange>();
+        ArchetypeChunkBufferType<UnsavedChange>     changeType      = GetArchetypeChunkBufferType<UnsavedChange>();
     
         for(int c = 0; c < chunks.Length; c++)
         {
@@ -63,8 +62,6 @@ public class MapSaveSystem : ComponentSystem
 
             for(int e = 0; e < entities.Length; e++)
             {
-                //Entity entity = entities[e];
-
                 SaveMapSquare(mapSquares[e], changeBuffers[e]);
             }
         }
@@ -83,37 +80,33 @@ public class MapSaveSystem : ComponentSystem
         int     mapSquareIndex          = Util.Flatten2D(mapSquareMatrixIndex.x, mapSquareMatrixIndex.z, acreSize);
 
         List<Block>         changes = new List<Block>();
-        SaveData[]    acre;
 
-        if(!allAcres.TryGetValue(acrePosition, out acre))
+        //  Acre has changed and doesn't exist
+        if(!acrePosition.Equals(previousAcrePosition) && !allAcres.ContainsKey(acrePosition))
         {
             CustomDebugTools.IncrementDebugCount("Acres saved");
             
             //  New acre, create dictionary entries
-            acre                  = new SaveData[acreArrayLength];
+            allAcres[acrePosition]          = new SaveData[acreArrayLength];
             mapSquareChanged[acrePosition]  = new bool[acreArrayLength];
         }
         else
         {
-            //  Existing acre, check map square for changes and add
+            //  Acre exists, add existing changes changes
             if(mapSquareChanged[acrePosition][mapSquareIndex])
-                changes.AddRange(acre[mapSquareIndex].changes);
+                changes.AddRange(allAcres[acrePosition][mapSquareIndex].changes);
         }
 
         //  This map square has been changed
         mapSquareChanged[acrePosition][mapSquareIndex] = true;
+        previousAcrePosition = acrePosition;
 
         //  Add new changes
         for(int i = 0; i < changesBuffer.Length; i++)
-        {
-            Debug.Log("new change added "+mapSquare.position);
             changes.Add(changesBuffer[i].block);
-        }
         
-        //  Save map square to array
-        acre[mapSquareIndex]    = new SaveData(mapSquare, changes.ToArray());
-        //  Save map square array to acre
-        allAcres[acrePosition]  = acre;
+        //  Save data to map square array in acre dictionary
+        allAcres[acrePosition][mapSquareIndex] = new SaveData(mapSquare, changes.ToArray());
     }
 
     public float3 AcreRootPosition(float3 position)
