@@ -96,7 +96,7 @@ public class MapBlockBufferSystem : ComponentSystem
 		updateSquare.drawArrayLength = drawHeight * (cubeSize * cubeSize);
 		updateSquare.drawIndexOffset = Util.Flatten(0, updateSquare.bottomDrawBuffer - updateSquare.bottomBlockBuffer, 0, cubeSize);
 		
-		CustomDebugTools.VerticalBufferDebug(entity, updateSquare);
+		CustomDebugTools.DrawBufferDebug(entity, updateSquare);
 
 		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
 	}
