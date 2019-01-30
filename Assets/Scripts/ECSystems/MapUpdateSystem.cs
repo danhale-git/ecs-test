@@ -10,6 +10,7 @@ using MyComponents;
 public class MapUpdateSystem : ComponentSystem
 {
     EntityManager entityManager;
+
 	int cubeSize;
 
     ComponentGroup updateGroup;
@@ -17,74 +18,65 @@ public class MapUpdateSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
+        
 		cubeSize = TerrainSettings.cubeSize;
 
         EntityArchetypeQuery updateQuery = new EntityArchetypeQuery{
             All = new ComponentType[]{ typeof(Tags.BlockChanged), typeof(PendingChange), typeof(MapSquare) }
         };
-
         updateGroup = GetComponentGroup(updateQuery);
     }
 
     protected override void OnUpdate()
     {
-        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
-
-        ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
-
+        EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
+        NativeArray<ArchetypeChunk> chunks          = updateGroup.CreateArchetypeChunkArray(Allocator.TempJob);
+       
+        ArchetypeChunkEntityType                entityType      = GetArchetypeChunkEntityType();
         ArchetypeChunkComponentType<MapSquare>  mapSquareType   = GetArchetypeChunkComponentType<MapSquare>();
         ArchetypeChunkBufferType<Block>         blockType       = GetArchetypeChunkBufferType<Block>();
         ArchetypeChunkBufferType<PendingChange> blockChangeType = GetArchetypeChunkBufferType<PendingChange>();
 
-        NativeArray<ArchetypeChunk> chunks = updateGroup.CreateArchetypeChunkArray(Allocator.TempJob);
-
         for(int c = 0; c < chunks.Length; c++)
         {
-            NativeArray<Entity> entities = chunks[c].GetNativeArray(entityType);
-
+            NativeArray<Entity>             entities            = chunks[c].GetNativeArray(entityType);
             NativeArray<MapSquare>          mapSquares          = chunks[c].GetNativeArray(mapSquareType);
             BufferAccessor<Block>           blockBuffers        = chunks[c].GetBufferAccessor(blockType);
             BufferAccessor<PendingChange>   blockChangeBuffers  = chunks[c].GetBufferAccessor(blockChangeType);
 
             for(int e = 0; e < entities.Length; e++)
             {
-                Entity entity = entities[e];
-
+                Entity                          entity          = entities[e];
                 MapSquare                       mapSquare       = mapSquares[e];
                 DynamicBuffer<Block>            blocks          = blockBuffers[e];
                 DynamicBuffer<PendingChange>    pendingChanges  = blockChangeBuffers[e];
 
-                DynamicBuffer<UnsavedChange> completedChanges = GetOrCreateCompletedChangeBuffer(entity, commandBuffer);
+                DynamicBuffer<UnsavedChange> unsavedChanges = GetOrCreateCompletedChangeBuffer(entity, commandBuffer);
 
                 bool verticalBufferChanged = false;
+                MapSquare updatedMapSquare = mapSquare;
 
                 for(int i = 0; i < pendingChanges.Length; i++)
                 {
-                    Block newBlock = pendingChanges[i].block;
-
-                    //  Get index of block in array
-                    int index = Util.BlockIndex(newBlock, mapSquare, cubeSize);
-
-                    Block oldBlock = blocks[index];
+                    Block   newBlock    = pendingChanges[i].block;
+                    int     index       = Util.BlockIndex(newBlock, mapSquare, cubeSize);
+                    Block   oldBlock    = blocks[index];
 
                     //  Check and update map square's highest/lowest visible block
-                    MapSquare updateMapSquare;
-                    bool buffersChanged = CheckVerticalBounds(newBlock, oldBlock, mapSquare, out updateMapSquare);
-                    if(buffersChanged)
-                    {
-                        mapSquares[e] = updateMapSquare;
-                        if(!verticalBufferChanged) verticalBufferChanged = true;
-                    }
+                    if(CheckVerticalBounds(newBlock, oldBlock, updatedMapSquare, out updatedMapSquare) && !verticalBufferChanged)
+                        verticalBufferChanged = true;
 
                     //  Set new block data
                     blocks[index] = newBlock;
-                    completedChanges.Add(new UnsavedChange { block = newBlock });
+                    unsavedChanges.Add(new UnsavedChange { block = newBlock });
                 }
+
+                if(verticalBufferChanged) mapSquares[e] = updatedMapSquare;
 
                 //  Clear pending changes
                 pendingChanges.Clear();
 
-                //  Square to update depends on whether or not buffer has changed
+                //  Update squares depending on whether or not buffer has changed
                 UpdateSquares(entity, verticalBufferChanged, commandBuffer);
 
                 commandBuffer.RemoveComponent<Tags.BlockChanged>(entity);
@@ -106,30 +98,20 @@ public class MapUpdateSystem : ComponentSystem
         bool becomeTranslucent  = (BlockTypes.translucent[oldBlock.type] == 0 && BlockTypes.translucent[newBlock.type] == 1);
         bool becomeOpaque       = (BlockTypes.translucent[oldBlock.type] == 1 && BlockTypes.translucent[newBlock.type] == 0);
 
-        //  Vertical buffer(s) need updating
-        bool verticalBufferChanged = false;
-
-        //  Block changed from opaque to translucent
-        if(becomeTranslucent)
+        //  Translucent block added below lowest block
+        if(becomeTranslucent && newBlock.localPosition.y <= mapSquare.bottomBlock)
         {
-            //  Bottom buffer has been exposed
-            if(newBlock.localPosition.y <= mapSquare.bottomBlock)
-            {
-                verticalBufferChanged = true;
-                updateSquare.bottomBlock = (int)newBlock.localPosition.y - 1;
-            }
+            updateSquare.bottomBlock = (int)newBlock.localPosition.y - 1 - 5;
+            return true;
         }
-        //  Block changed from translucent to opaque
-        if(becomeOpaque)
+        //  Solid block added above highest block
+        if(becomeOpaque && newBlock.localPosition.y > mapSquare.topBlock)
         {
-            if(newBlock.localPosition.y > mapSquare.topBlock)
-            {
-                verticalBufferChanged = true;
-                updateSquare.topBlock = (int)newBlock.localPosition.y ;
-            }
+            updateSquare.topBlock = (int)newBlock.localPosition.y + 5;
+            return true;
         }
 
-        return verticalBufferChanged;
+        return false;
     }
 
     void UpdateSquares(Entity centerSquare, bool verticalBufferChanged, EntityCommandBuffer commandBuffer)
