@@ -13,7 +13,7 @@ public class MapDrawBufferSystem : ComponentSystem
 {
     EntityManager entityManager;
 
-	int cubeSize;
+	int squareWidth;
 
 	ComponentGroup drawBufferGroup;
 
@@ -21,7 +21,7 @@ public class MapDrawBufferSystem : ComponentSystem
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
 		
-		cubeSize = TerrainSettings.mapSquareWidth;
+		squareWidth = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery drawBufferQuery = new EntityArchetypeQuery{
             None 	= new ComponentType[] { typeof(Tags.EdgeBuffer) },

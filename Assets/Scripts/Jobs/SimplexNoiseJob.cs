@@ -14,7 +14,7 @@ struct SimplexNoiseJob : IJobParallelFor
     public NativeArray<float> noiseMap;
 
     [ReadOnly] public float3 offset;
-    [ReadOnly] public int cubeSize;
+    [ReadOnly] public int squareWidth;
     [ReadOnly] public int seed;
     [ReadOnly] public float frequency;
     [ReadOnly] public JobUtil util;
@@ -23,7 +23,7 @@ struct SimplexNoiseJob : IJobParallelFor
     //  Fill flattened 2D array with noise matrix
     public void Execute(int i)
     {
-        float3 position = util.Unflatten2D(i, cubeSize) + offset;
+        float3 position = util.Unflatten2D(i, squareWidth) + offset;
 
         noiseMap[i] = noise.GetSimplex(position.x, position.z, seed, frequency);
     }

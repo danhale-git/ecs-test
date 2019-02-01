@@ -8,7 +8,7 @@ public static class TerrainSettings
 {
 	public static int mapSquareWidth = 12;
 	public static int viewDistance = 5;
-	//	Must always be at >= cubeSize
+	//	Must always be at >= squareWidth
 	public static int terrainHeight = 16;
 	public static int terrainStretch = 32;
 	public static int seed = 5678;

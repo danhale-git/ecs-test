@@ -19,7 +19,7 @@ public class MapManagerSystem : ComponentSystem
 
     NativeArray<Entity> mapMatrix;
 
-    int cubeSize;
+    int squareWidth;
 
     int matrixWidth;
     int matrixArrayLength;
@@ -38,7 +38,7 @@ public class MapManagerSystem : ComponentSystem
 	protected override void OnCreateManager()
     {
 		entityManager   = World.Active.GetOrCreateManager<EntityManager>();
-        cubeSize        = TerrainSettings.mapSquareWidth;
+        squareWidth        = TerrainSettings.mapSquareWidth;
 
         matrixWidth         = (TerrainSettings.viewDistance * 2) + 1;
         matrixCenterOffset  = TerrainSettings.viewDistance;
@@ -70,7 +70,7 @@ public class MapManagerSystem : ComponentSystem
     protected override void OnStartRunning()
     {
         //  Set previous square and matrix root position to != current
-        float3 offset = (new float3(100, 100, 100) * cubeSize);
+        float3 offset = (new float3(100, 100, 100) * squareWidth);
 
         previousMapSquare   = CurrentMapSquare()    + offset;
         previousMatrixRoot  = MatrixRoot()          + offset;
@@ -115,14 +115,14 @@ public class MapManagerSystem : ComponentSystem
 
     float3 MatrixRoot()
     {
-        int offset = matrixCenterOffset * cubeSize;
+        int offset = matrixCenterOffset * squareWidth;
         return new float3(currentMapSquare.x - offset, 0, currentMapSquare.z - offset);
     }
 
     float3 CurrentMapSquare()
     {
         float3 playerPosition = entityManager.GetComponentData<Position>(playerEntity).Value;
-        return Util.VoxelOwner(playerPosition, cubeSize);
+        return Util.VoxelOwner(playerPosition, squareWidth);
     }
 
     void CheckExistingSquares(out NativeList<Entity> toRemove, out NativeArray<int> doNotCreate)
@@ -248,7 +248,7 @@ public class MapManagerSystem : ComponentSystem
 
             float3      matrixIndex   = Util.Unflatten2D(i, matrixWidth);
             MapBuffer   buffer        = GetBuffer(matrixIndex);
-            float3      worldPosition = (matrixIndex * cubeSize) + currentMatrixRoot;
+            float3      worldPosition = (matrixIndex * squareWidth) + currentMatrixRoot;
 
             Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 		    entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
@@ -288,7 +288,7 @@ public class MapManagerSystem : ComponentSystem
         NativeArray<float3> cardinalDirections = Util.CardinalDirectionsNative();
         for(int i = 0; i < cardinalDirections.Length; i++)
         {
-            float3 adjacentPosition = position + (cardinalDirections[i] * cubeSize);
+            float3 adjacentPosition = position + (cardinalDirections[i] * squareWidth);
 
             //  Adjacent square is in active radius
             if(SquareInMatrix(adjacentPosition, currentMatrixRoot))
@@ -328,7 +328,7 @@ public class MapManagerSystem : ComponentSystem
 
     bool SquareInMatrix(float3 worldPosition, float3 matrixRootPosition, int offset = 0)
 	{
-        float3 index = (worldPosition - matrixRootPosition) / cubeSize;
+        float3 index = (worldPosition - matrixRootPosition) / squareWidth;
         int arrayWidth = matrixWidth-1;
 
 		if(	index.x >= offset && index.x <= arrayWidth-offset &&
@@ -340,7 +340,7 @@ public class MapManagerSystem : ComponentSystem
 
     float3 IndexInCurrentMatrix(float3 worldPosition)
     {
-        return (worldPosition - currentMatrixRoot) / cubeSize;
+        return (worldPosition - currentMatrixRoot) / squareWidth;
     }
 
     public Entity GetMapSquareFromMatrix(float3 worldPosition)

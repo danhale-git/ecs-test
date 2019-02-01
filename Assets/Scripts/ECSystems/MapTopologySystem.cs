@@ -12,7 +12,7 @@ using MyComponents;
 public class MapTopologySystem : ComponentSystem
 {
     EntityManager entityManager;
-    int cubeSize;
+    int squareWidth;
 
     ComponentGroup terrainGroup;
 
@@ -21,7 +21,7 @@ public class MapTopologySystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager   = World.Active.GetOrCreateManager<EntityManager>();
-        cubeSize        = TerrainSettings.mapSquareWidth;
+        squareWidth        = TerrainSettings.mapSquareWidth;
 
         EntityArchetypeQuery terrainQuery = new EntityArchetypeQuery{
             All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateTerrain) }
@@ -54,7 +54,7 @@ public class MapTopologySystem : ComponentSystem
 
                 //	Resize to Dynamic Buffer
                 DynamicBuffer<Topology> heightBuffer = entityManager.GetBuffer<Topology>(entity);
-			    heightBuffer.ResizeUninitialized((int)math.pow(cubeSize, 2));
+			    heightBuffer.ResizeUninitialized((int)math.pow(squareWidth, 2));
 
 			    //	Fill buffer with heightmap data and update map square highest/lowest block
 			    MapSquare mapSquareComponent = cliffTerrain.GenerateTopology(position, heightBuffer);

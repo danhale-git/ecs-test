@@ -11,7 +11,7 @@ public class MapSlopeSystem : ComponentSystem
 {
     EntityManager entityManager;
 
-    int cubeSize;
+    int squareWidth;
 
     ComponentGroup slopeGroup;
 
@@ -19,7 +19,7 @@ public class MapSlopeSystem : ComponentSystem
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
-        cubeSize = TerrainSettings.mapSquareWidth;
+        squareWidth = TerrainSettings.mapSquareWidth;
  
         //  Chunks that need blocks generating
         EntityArchetypeQuery slopeQuery = new EntityArchetypeQuery{
@@ -90,10 +90,10 @@ public class MapSlopeSystem : ComponentSystem
 			int height = heightMap[h].height;
 
 			//	2D position
-			float3 pos = Util.Unflatten2D(h, cubeSize);
+			float3 pos = Util.Unflatten2D(h, squareWidth);
 
 			//	3D position
-			int blockIndex = Util.Flatten(pos.x, height - mapSquare.bottomBlockBuffer, pos.z, cubeSize);
+			int blockIndex = Util.Flatten(pos.x, height - mapSquare.bottomBlockBuffer, pos.z, squareWidth);
 			Block block = blocks[blockIndex];
 
 			//	Block type is not sloped
@@ -110,16 +110,16 @@ public class MapSlopeSystem : ComponentSystem
 				int z = (int)(directions[d].z + pos.z);
 
 				//	Direction of the adjacent map square that owns the required block
-				float3 edge = Util.EdgeOverlap(new float3(x, 0, z), cubeSize);
+				float3 edge = Util.EdgeOverlap(new float3(x, 0, z), squareWidth);
 
 				int adjacentHeight;
 
 				//	Block is outside map square
 				if(	edge.x != 0 || edge.z != 0)
-					adjacentHeight = adjacentHeightMaps[Util.DirectionToIndex(edge)][Util.WrapAndFlatten2D(x, z, cubeSize)].height;
+					adjacentHeight = adjacentHeightMaps[Util.DirectionToIndex(edge)][Util.WrapAndFlatten2D(x, z, squareWidth)].height;
 				//	Block is inside map square
 				else
-					adjacentHeight = heightMap[Util.Flatten2D(x, z, cubeSize)].height;
+					adjacentHeight = heightMap[Util.Flatten2D(x, z, squareWidth)].height;
 
 				//	Height difference in blocks
 				int difference = adjacentHeight - height;

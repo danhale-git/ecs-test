@@ -13,14 +13,14 @@ public class MapAdjacentSystem : ComponentSystem
 {
     EntityManager entityManager;
 
-	int cubeSize;
+	int squareWidth;
 
 	ComponentGroup adjacentGroup;
 
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-		cubeSize = TerrainSettings.mapSquareWidth;
+		squareWidth = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery adjacentQuery = new EntityArchetypeQuery{
             None 	= new ComponentType[] { typeof(Tags.EdgeBuffer) },
@@ -44,7 +44,7 @@ public class MapAdjacentSystem : ComponentSystem
 		float3[] adjacentPositions = new float3[8];
 		float3[] directions = Util.CardinalDirections();
 		for(int i = 0; i < directions.Length; i++)
-			adjacentPositions[i] = directions[i] * cubeSize;
+			adjacentPositions[i] = directions[i] * squareWidth;
 
         for(int c = 0; c < chunks.Length; c++)
 		{

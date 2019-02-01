@@ -13,7 +13,7 @@ public class MapLoadSystem : ComponentSystem
 
     float3 previousAcrePosition = new float3(MapSaveSystem.acreSize, MapSaveSystem.acreSize, MapSaveSystem.acreSize) * 1.5f;
 
-    int cubeSize;
+    int squareWidth;
 
     ComponentGroup loadGroup;
 
@@ -22,7 +22,7 @@ public class MapLoadSystem : ComponentSystem
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
 		mapSaveSystem = World.Active.GetOrCreateManager<MapSaveSystem>();
 
-        cubeSize = TerrainSettings.mapSquareWidth;
+        squareWidth = TerrainSettings.mapSquareWidth;
 
         EntityArchetypeQuery loadQuery = new EntityArchetypeQuery{
             All = new ComponentType[] { typeof(MapSquare), typeof(Tags.LoadChanges) }
@@ -66,7 +66,7 @@ public class MapLoadSystem : ComponentSystem
         data = new MapSaveSystem.SaveData();
          //  Index of map square in acre matrix
         float3  acrePosition            = mapSaveSystem.AcreRootPosition(squarePosition);
-        float3  mapSquareMatrixIndex    = (squarePosition - acrePosition) / cubeSize;
+        float3  mapSquareMatrixIndex    = (squarePosition - acrePosition) / squareWidth;
         int     mapSquareIndex          = Util.Flatten2D(mapSquareMatrixIndex.x, mapSquareMatrixIndex.z, MapSaveSystem.acreSize);
 
         //  Acre does not exist

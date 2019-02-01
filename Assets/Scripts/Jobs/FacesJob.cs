@@ -22,7 +22,7 @@ struct FacesJob : IJobParallelFor
 
 	[ReadOnly] public NativeArray<int> adjacentLowestBlocks;
 
-	[ReadOnly] public int cubeSize;
+	[ReadOnly] public int squareWidth;
 	[ReadOnly] public NativeArray<float3> directions;	
 	[ReadOnly] public JobUtil util;
 
@@ -42,20 +42,20 @@ struct FacesJob : IJobParallelFor
 				(int)pos.y + (lowest - adjacentLowestBlocks[adjacentSquareIndex]),
 				(int)pos.z
 			),
-			cubeSize
+			squareWidth
 		);
 	}
 
 	Block GetBlock(float3 pos, MapSquare mapSquare)
 	{
-		float3 edge = Util.EdgeOverlap(pos, cubeSize);
+		float3 edge = Util.EdgeOverlap(pos, squareWidth);
 
 		if		(edge.x > 0) return right[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 0)];
 		else if	(edge.x < 0) return left [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 1)];
 		else if	(edge.z > 0) return front[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 2)];
 		else if	(edge.z < 0) return back [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 3)];
 		//if(edge.x == 0 && edge.y == 0)
-		else		    	return blocks[util.Flatten(pos.x, pos.y, pos.z, cubeSize)];
+		else		    	return blocks[util.Flatten(pos.x, pos.y, pos.z, squareWidth)];
 	}
 
 	public void Execute(int i)
@@ -66,7 +66,7 @@ struct FacesJob : IJobParallelFor
 		if(blocks[i].type == 0) return;
 
 		//	Local position in cube
-		float3 position = util.Unflatten(i, cubeSize);
+		float3 position = util.Unflatten(i, squareWidth);
 
 		Faces faces = new Faces();
 		faces.up 	= FaceExposed(position, new float3( 0,	1, 0), i);

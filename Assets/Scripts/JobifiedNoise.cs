@@ -5,21 +5,21 @@ using Unity.Collections;
 
 public class JobifiedNoise
 {
-    int cubeSize;
+    int squareWidth;
 
     public JobifiedNoise()
     {
-        cubeSize = TerrainSettings.mapSquareWidth;
+        squareWidth = TerrainSettings.mapSquareWidth;
     }
 
     public NativeArray<float> Simplex(float3 offset, float frequency = 0.01f)
     {
-        NativeArray<float> noiseMap = new NativeArray<float>((int)math.pow(cubeSize, 2), Allocator.TempJob);
+        NativeArray<float> noiseMap = new NativeArray<float>((int)math.pow(squareWidth, 2), Allocator.TempJob);
 
         SimplexNoiseJob simplexJob = new SimplexNoiseJob(){
             noiseMap 	= noiseMap,						//	Flattened 2D array of noise
 			offset 		= offset,						//	World position of this map square's local 0,0
-			cubeSize	= cubeSize,						//	Length of one side of a square/cube	
+			squareWidth	= squareWidth,						//	Length of one side of a square/cube	
             seed 		= TerrainSettings.seed,			//	Perlin noise seed
             frequency 	= frequency,	                //	Perlin noise frequency
 			util 		= new JobUtil(),				//	Utilities
@@ -34,12 +34,12 @@ public class JobifiedNoise
 
     public NativeArray<CellData> CellularDistanceToEdge(float3 position, float frequency = 0.01f)
     {
-        NativeArray<CellData> cellMap = new NativeArray<CellData>((int)math.pow(cubeSize, 2), Allocator.TempJob);
+        NativeArray<CellData> cellMap = new NativeArray<CellData>((int)math.pow(squareWidth, 2), Allocator.TempJob);
 
         WorleyNoiseJob cellJob = new WorleyNoiseJob(){
             cellMap 	= cellMap,						        //	Flattened 2D array of noise
 			offset 		= position,						        //	World position of this map square's local 0,0
-			cubeSize	= cubeSize,						        //	Length of one side of a square/cube	
+			squareWidth	= squareWidth,						        //	Length of one side of a square/cube	
             seed 		= TerrainSettings.seed,			        //	Perlin noise seed
             frequency 	= frequency,	        //	Perlin noise frequency
             perterbAmp  = TerrainSettings.cellGradientPeturb,   //  Gradient Peturb amount

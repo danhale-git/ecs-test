@@ -13,14 +13,14 @@ public class MapBlockBufferSystem : ComponentSystem
 {
     EntityManager entityManager;
 
-	int cubeSize;
+	int squareWidth;
 
 	ComponentGroup blockBufferGroup;
 
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-		cubeSize = TerrainSettings.mapSquareWidth;
+		squareWidth = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery blockBufferQuery = new EntityArchetypeQuery{
             None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
@@ -89,12 +89,12 @@ public class MapBlockBufferSystem : ComponentSystem
 
 		//	Calculate iteration length for block generation
 		int blockGenerationHeight = (updateSquare.topBlockBuffer - updateSquare.bottomBlockBuffer)+1;
-		updateSquare.blockGenerationArrayLength = blockGenerationHeight * (cubeSize*cubeSize);
+		updateSquare.blockGenerationArrayLength = blockGenerationHeight * (squareWidth*squareWidth);
 
 		//	Calculate iteration length and offset for mesh drawing
 		int drawHeight = (updateSquare.topDrawBuffer - updateSquare.bottomDrawBuffer)+1;
-		updateSquare.drawArrayLength = drawHeight * (cubeSize * cubeSize);
-		updateSquare.drawIndexOffset = Util.Flatten(0, updateSquare.bottomDrawBuffer - updateSquare.bottomBlockBuffer, 0, cubeSize);
+		updateSquare.drawArrayLength = drawHeight * (squareWidth * squareWidth);
+		updateSquare.drawIndexOffset = Util.Flatten(0, updateSquare.bottomDrawBuffer - updateSquare.bottomBlockBuffer, 0, squareWidth);
 		
 		//CustomDebugTools.DrawBufferDebug(entity, updateSquare);
 		CustomDebugTools.BlockBufferDebug(entity, updateSquare);

@@ -11,7 +11,7 @@ using MyComponents;
 public class CameraSystem : ComponentSystem
 {
     EntityManager entityManager;
-    int cubeSize;
+    int squareWidth;
 
     public static Entity playerEntity;
 
@@ -22,7 +22,7 @@ public class CameraSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        cubeSize = TerrainSettings.mapSquareWidth;
+        squareWidth = TerrainSettings.mapSquareWidth;
 
         camera = GameObject.FindObjectOfType<Camera>();
     }

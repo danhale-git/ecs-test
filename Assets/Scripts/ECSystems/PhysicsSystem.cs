@@ -11,7 +11,7 @@ using MyComponents;
 public class PhysicsSystem : ComponentSystem
 {
     EntityManager entityManager;
-    int cubeSize;
+    int squareWidth;
 
     EntityArchetypeQuery moveQuery;
     EntityArchetypeQuery mapSquareQuery;
@@ -23,7 +23,7 @@ public class PhysicsSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        cubeSize = TerrainSettings.mapSquareWidth;
+        squareWidth = TerrainSettings.mapSquareWidth;
 
         moveQuery = new EntityArchetypeQuery
         {
@@ -79,7 +79,7 @@ public class PhysicsSystem : ComponentSystem
 
                 //  Get vector describing next position's overlap from this map square
                 float3 currentSquarePosition = entityManager.GetComponentData<MapSquare>(physicsComponent.currentMapSquare).position;               
-                float3 overlapDirection = Util.EdgeOverlap(nextPosition - currentSquarePosition, cubeSize);
+                float3 overlapDirection = Util.EdgeOverlap(nextPosition - currentSquarePosition, squareWidth);
 
                 //  Next position is outside current map square
                 if(!overlapDirection.Equals(float3.zero))
@@ -92,8 +92,8 @@ public class PhysicsSystem : ComponentSystem
                 //TODO: proper physics system
                 //  Get height of current block
                 DynamicBuffer<Topology> heightMap = entityManager.GetBuffer<Topology>(physicsComponent.currentMapSquare);
-                float3 local = Util.LocalVoxel(nextPosition, cubeSize, true);
-                float yOffset = heightMap[Util.Flatten2D(local.x, local.z, cubeSize)].height;
+                float3 local = Util.LocalVoxel(nextPosition, squareWidth, true);
+                float yOffset = heightMap[Util.Flatten2D(local.x, local.z, squareWidth)].height;
 
                 //  Adjust for model size
                 yOffset += physics[e].size.y/2;

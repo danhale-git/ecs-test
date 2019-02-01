@@ -13,7 +13,7 @@ public class MapBufferChangeSystem : ComponentSystem
 {
 	EntityManager entityManager;
 
-	int cubeSize;
+	int squareWidth;
 
 	ArchetypeChunkEntityType 					entityType;
 	ArchetypeChunkComponentType<MapSquare>		mapSquareType;
@@ -25,7 +25,7 @@ public class MapBufferChangeSystem : ComponentSystem
 	protected override void OnCreateManager()
 	{
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
-		cubeSize = TerrainSettings.mapSquareWidth;
+		squareWidth = TerrainSettings.mapSquareWidth;
 
 		mapSquareQuery = new EntityArchetypeQuery
 		{
@@ -73,7 +73,7 @@ public class MapBufferChangeSystem : ComponentSystem
 
 				MapSquare mapSquare = entityManager.GetComponentData<MapSquare>(entity);
 
-				float sliceLength = math.pow(cubeSize, 2);
+				float sliceLength = math.pow(squareWidth, 2);
 
 				float bottomSliceCount 	= blockBuffer[0].localPosition.y - mapSquare.bottomBlockBuffer;
 				float topSliceCount 	= mapSquare.topBlockBuffer - blockBuffer[blockBuffer.Length-1].localPosition.y;
@@ -123,7 +123,7 @@ public class MapBufferChangeSystem : ComponentSystem
 			blocks = blocks,
 			mapSquare = mapSquare,
 			heightMap = heightMap,
-			cubeSize = cubeSize,
+			squareWidth = squareWidth,
 			util = new JobUtil(),
 			offset = offset
 		};

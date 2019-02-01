@@ -36,7 +36,7 @@ public static class CustomDebugTools
         new Dictionary<Entity, List<DebugLine>>()   //  Draw buffer
     };
 
-    public static int cubeSize = TerrainSettings.mapSquareWidth;
+    public static int squareWidth = TerrainSettings.mapSquareWidth;
     public struct DebugLine
     {
         public readonly Vector3 a, b;
@@ -67,7 +67,7 @@ public static class CustomDebugTools
         float3 pos = manager.GetComponentData<Position>(entity).Value;
         List<DebugLine> rect = CreateBox(
             new float3(pos.x, 0, pos.z),
-            cubeSize * 0.95f,
+            squareWidth * 0.95f,
             color,
             0,
             0,
@@ -86,7 +86,7 @@ public static class CustomDebugTools
         float3 pos = manager.GetComponentData<Position>(entity).Value;
         List<DebugLine> blockBufferRects = CreateBox(
             new float3(pos.x, 0, pos.z),
-            cubeSize * 0.99f,
+            squareWidth * 0.99f,
             new Color(0.8f, 0.8f, 0.8f, 0.1f),
             mapSquare.topBlockBuffer,
             mapSquare.bottomBlockBuffer,
@@ -103,7 +103,7 @@ public static class CustomDebugTools
         float3 pos = manager.GetComponentData<Position>(entity).Value;
         List<DebugLine> blockBufferRects = CreateBox(
             new float3(pos.x, 0, pos.z),
-            cubeSize * 0.99f,
+            squareWidth * 0.99f,
             new Color(0.8f, 0.8f, 0.8f, 0.1f),
             mapSquare.topDrawBuffer,
             mapSquare.bottomDrawBuffer,
@@ -122,7 +122,7 @@ public static class CustomDebugTools
         float3 pos = manager.GetComponentData<Position>(entity).Value;
         List<DebugLine> errorCuboid = CreateBox(
             new float3(pos.x, 0, pos.z),
-            cubeSize,
+            squareWidth,
             color,
             TerrainSettings.terrainHeight+TerrainSettings.terrainStretch,
             0,
@@ -139,7 +139,7 @@ public static class CustomDebugTools
 
         List<DebugLine> errorCuboid = CreateBox(
             new float3(position.x, 0, position.z),
-            cubeSize,
+            squareWidth,
             color,
             TerrainSettings.terrainHeight+TerrainSettings.terrainStretch,
             0,
@@ -156,8 +156,8 @@ public static class CustomDebugTools
         Vector3 bottomOffset = new Vector3(0, bottom, 0);
      
         Vector3[] v = new Vector3[cubeVectors.Length];
-        //  Offset to center cubes smaller than cubeSize
-        Vector3 offsetAll = position;// + (Vector3.one * ((cubeSize - size)/2));
+        //  Offset to center cubes smaller than squareWidth
+        Vector3 offsetAll = position;// + (Vector3.one * ((squareWidth - size)/2));
         for(int i = 0; i < cubeVectors.Length; i++)
         {
             //  Set size and offset

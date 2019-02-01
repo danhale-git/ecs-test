@@ -11,7 +11,7 @@ public class MapUpdateSystem : ComponentSystem
 {
     EntityManager entityManager;
 
-	int cubeSize;
+	int squareWidth;
 
     ComponentGroup updateGroup;
 
@@ -19,7 +19,7 @@ public class MapUpdateSystem : ComponentSystem
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         
-		cubeSize = TerrainSettings.mapSquareWidth;
+		squareWidth = TerrainSettings.mapSquareWidth;
 
         EntityArchetypeQuery updateQuery = new EntityArchetypeQuery{
             All = new ComponentType[]{ typeof(Tags.BlockChanged), typeof(PendingChange), typeof(MapSquare) }
@@ -59,7 +59,7 @@ public class MapUpdateSystem : ComponentSystem
                 for(int i = 0; i < pendingChanges.Length; i++)
                 {
                     Block   newBlock    = pendingChanges[i].block;
-                    int     index       = Util.BlockIndex(newBlock, mapSquare, cubeSize);
+                    int     index       = Util.BlockIndex(newBlock, mapSquare, squareWidth);
                     Block   oldBlock    = blocks[index];
 
                     //  Check and update map square's highest/lowest visible block

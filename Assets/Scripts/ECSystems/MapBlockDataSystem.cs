@@ -13,7 +13,7 @@ public class MapBlockDataSystem : ComponentSystem
 {
 	EntityManager entityManager;
 
-	int cubeSize;	
+	int squareWidth;	
 
 	ComponentGroup generateBlocksGroup;
 
@@ -21,7 +21,7 @@ public class MapBlockDataSystem : ComponentSystem
 	{
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 		
-		cubeSize = TerrainSettings.mapSquareWidth;
+		squareWidth = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery mapSquareQuery = new EntityArchetypeQuery
 		{
@@ -85,7 +85,7 @@ public class MapBlockDataSystem : ComponentSystem
 					for(int i = 0; i < loadedChanges.Length; i++)
 					{
 						Block block = loadedChanges[i].block;
-						int index = Util.BlockIndex(block, mapSquare, cubeSize);
+						int index = Util.BlockIndex(block, mapSquare, squareWidth);
 						blockBuffer[index] = block;
 					}
 
@@ -109,7 +109,7 @@ public class MapBlockDataSystem : ComponentSystem
 			blocks = blocks,
 			mapSquare = mapSquare,
 			heightMap = heightMap,
-			cubeSize = cubeSize,
+			squareWidth = squareWidth,
 			util = new JobUtil()
 		};
 		

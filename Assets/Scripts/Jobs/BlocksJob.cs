@@ -14,7 +14,7 @@ struct BlocksJob : IJobParallelFor
 	[ReadOnly] public MapSquare mapSquare;
 	[ReadOnly] public DynamicBuffer<Topology> heightMap;
 
-	[ReadOnly] public int cubeSize;
+	[ReadOnly] public int squareWidth;
 	[ReadOnly] public JobUtil util;
 	[ReadOnly] public int offset;
 
@@ -22,11 +22,11 @@ struct BlocksJob : IJobParallelFor
 	{
 		int index = i + offset;
 
-		float3 pos = util.Unflatten(index, cubeSize);
+		float3 pos = util.Unflatten(index, squareWidth);
 
 		float3 position = pos + new float3(0, mapSquare.bottomBlockBuffer, 0);
 
-		int hMapIndex = util.Flatten2D((int)position.x, (int)position.z, cubeSize);
+		int hMapIndex = util.Flatten2D((int)position.x, (int)position.z, squareWidth);
 		int type = 0;
 
 		if(position.y <= heightMap[hMapIndex].height)

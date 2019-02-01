@@ -10,7 +10,7 @@ public class MapSaveSystem : ComponentSystem
 {
     EntityManager entityManager;
 
-	int cubeSize;
+	int squareWidth;
 
     public Dictionary<float3, SaveData[]>  allAcres            = new Dictionary<float3, SaveData[]>();
     public Dictionary<float3, bool[]>      mapSquareChanged    = new Dictionary<float3, bool[]>();
@@ -37,7 +37,7 @@ public class MapSaveSystem : ComponentSystem
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
-		cubeSize = TerrainSettings.mapSquareWidth;
+		squareWidth = TerrainSettings.mapSquareWidth;
 
         EntityArchetypeQuery saveQuery = new EntityArchetypeQuery{
             All = new ComponentType[] { typeof(MapSquare), typeof(Tags.RemoveMapSquare), typeof(UnsavedChange) }
@@ -76,7 +76,7 @@ public class MapSaveSystem : ComponentSystem
     {
         int     acreArrayLength         = (int)math.pow(acreSize, 2);
         float3  acrePosition            = AcreRootPosition(mapSquare.position);
-        float3  mapSquareMatrixIndex    = (mapSquare.position - acrePosition) / cubeSize;
+        float3  mapSquareMatrixIndex    = (mapSquare.position - acrePosition) / squareWidth;
         int     mapSquareIndex          = Util.Flatten2D(mapSquareMatrixIndex.x, mapSquareMatrixIndex.z, acreSize);
 
         List<Block>         changes = new List<Block>();
@@ -111,7 +111,7 @@ public class MapSaveSystem : ComponentSystem
 
     public float3 AcreRootPosition(float3 position)
 	{
-        int divisor = acreSize * cubeSize;
+        int divisor = acreSize * squareWidth;
 		int x = (int)math.floor(position.x / divisor);
 		int z = (int)math.floor(position.z / divisor);
 		return new float3(x*divisor, 0, z*divisor);

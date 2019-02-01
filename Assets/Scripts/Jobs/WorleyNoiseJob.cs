@@ -14,7 +14,7 @@ struct WorleyNoiseJob : IJobParallelFor
     public NativeArray<CellData> cellMap;
 
     [ReadOnly] public float3 offset;
-    [ReadOnly] public int cubeSize;
+    [ReadOnly] public int squareWidth;
     [ReadOnly] public int seed;
     [ReadOnly] public float frequency;
 	[ReadOnly] public float perterbAmp;
@@ -24,7 +24,7 @@ struct WorleyNoiseJob : IJobParallelFor
     //  Fill flattened 2D array with noise matrix
     public void Execute(int i)
     {
-        float3 position = util.Unflatten2D(i, cubeSize) + offset;
+        float3 position = util.Unflatten2D(i, squareWidth) + offset;
 
         cellMap[i] = noise.GetEdgeData(position.x, position.z, seed, frequency, perterbAmp);
     }

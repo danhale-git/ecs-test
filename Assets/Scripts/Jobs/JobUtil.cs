@@ -76,19 +76,19 @@ public struct JobUtil
         return Flatten(WrapBlockIndex(position, chunkSize), chunkSize);
     }
 
-    public float3 EdgeOverlap(float3 localPosition, int cubeSize)
+    public float3 EdgeOverlap(float3 localPosition, int squareWidth)
     {
         return new float3(
-					localPosition.x == cubeSize ? 1 : localPosition.x < 0 ? -1 : 0,
+					localPosition.x == squareWidth ? 1 : localPosition.x < 0 ? -1 : 0,
 					0,
-					localPosition.z == cubeSize ? 1 : localPosition.z < 0 ? -1 : 0
+					localPosition.z == squareWidth ? 1 : localPosition.z < 0 ? -1 : 0
 					); 
     }
 
-    public float3 VoxelOwner(float3 position, int cubeSize)
+    public float3 VoxelOwner(float3 position, int squareWidth)
 	{
-		int x = (int)math.floor(position.x / cubeSize);
-		int z = (int)math.floor(position.z / cubeSize);
-		return new float3(x*cubeSize, 0, z*cubeSize);
+		int x = (int)math.floor(position.x / squareWidth);
+		int z = (int)math.floor(position.z / squareWidth);
+		return new float3(x*squareWidth, 0, z*squareWidth);
 	}
 }

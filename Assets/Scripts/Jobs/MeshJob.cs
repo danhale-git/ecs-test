@@ -22,7 +22,7 @@ struct MeshJob : IJobParallelFor
 	[ReadOnly] public NativeArray<Faces> faces;
 
 	[ReadOnly] public JobUtil util;
-	[ReadOnly] public int cubeSize;
+	[ReadOnly] public int squareWidth;
 
 	[ReadOnly] public CubeVertices baseVerts;
 
@@ -35,7 +35,7 @@ struct MeshJob : IJobParallelFor
 		if(faces[i].count == 0) return;
 
 		//	Get block position for vertex offset
-		float3 positionInMesh = util.Unflatten(i, cubeSize);
+		float3 positionInMesh = util.Unflatten(i, squareWidth);
 
 		//	Current local indices
 		int vertIndex = 0;

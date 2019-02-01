@@ -75,16 +75,16 @@ public static class Util
         );
     }
 
-    public static Vector3 VoxelOwner(Vector3 position, int cubeSize)
+    public static Vector3 VoxelOwner(Vector3 position, int squareWidth)
 	{
-		int x = Mathf.FloorToInt(position.x / cubeSize);
-		int z = Mathf.FloorToInt(position.z / cubeSize);
-		return new Vector3(x*cubeSize, 0, z*cubeSize);
+		int x = Mathf.FloorToInt(position.x / squareWidth);
+		int z = Mathf.FloorToInt(position.z / squareWidth);
+		return new Vector3(x*squareWidth, 0, z*squareWidth);
 	}
 
-    public static Vector3 LocalVoxel(Vector3 position, int cubeSize, bool debug = false)
+    public static Vector3 LocalVoxel(Vector3 position, int squareWidth, bool debug = false)
 	{
-		float3 ownerWorldPosition = VoxelOwner(position, cubeSize);
+		float3 ownerWorldPosition = VoxelOwner(position, squareWidth);
         return Float3Floor(position) - ownerWorldPosition;
 	}
 
@@ -153,13 +153,13 @@ public static class Util
 		return System.Math.Round(value, decimalPlaces);
 	}
 
-    public static float3 EdgeOverlap(float3 localPosition, int cubeSize)
+    public static float3 EdgeOverlap(float3 localPosition, int squareWidth)
     {
         float3 floor = Float3Floor(localPosition);
         return new float3(
-					floor.x == cubeSize ? 1 : floor.x < 0 ? -1 : 0,
+					floor.x == squareWidth ? 1 : floor.x < 0 ? -1 : 0,
 					0,
-					floor.z == cubeSize ? 1 : floor.z < 0 ? -1 : 0
+					floor.z == squareWidth ? 1 : floor.z < 0 ? -1 : 0
 					); 
     }
 
@@ -182,14 +182,14 @@ public static class Util
         return new float3(x, y, z);
     }
 
-    public static int BlockIndex(float3 voxelWorldPosition, MapSquare mapSquare, int cubeSize)
+    public static int BlockIndex(float3 voxelWorldPosition, MapSquare mapSquare, int squareWidth)
     {
         float3 voxel = voxelWorldPosition - mapSquare.position;
-        return Util.Flatten(voxel.x, voxel.y - mapSquare.bottomBlockBuffer, voxel.z, cubeSize);
+        return Util.Flatten(voxel.x, voxel.y - mapSquare.bottomBlockBuffer, voxel.z, squareWidth);
     }
-    public static int BlockIndex(Block block, MapSquare mapSquare, int cubeSize)
+    public static int BlockIndex(Block block, MapSquare mapSquare, int squareWidth)
     {
         float3 voxel = block.localPosition;
-        return Util.Flatten(voxel.x, voxel.y - mapSquare.bottomBlockBuffer, voxel.z, cubeSize);
+        return Util.Flatten(voxel.x, voxel.y - mapSquare.bottomBlockBuffer, voxel.z, squareWidth);
     }
 }

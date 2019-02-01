@@ -20,7 +20,7 @@ public class MapMeshSystem : ComponentSystem
 
 	EntityManager entityManager;
 
-	int cubeSize;
+	int squareWidth;
 	int cubeArrayLength;
 
 	//public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
@@ -48,8 +48,8 @@ public class MapMeshSystem : ComponentSystem
 	{
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
-		cubeSize = TerrainSettings.mapSquareWidth;
-		cubeArrayLength = (int)math.pow(cubeSize, 3);
+		squareWidth = TerrainSettings.mapSquareWidth;
+		cubeArrayLength = (int)math.pow(squareWidth, 3);
 
 		squareQuery = new EntityArchetypeQuery{
 			Any 	= Array.Empty<ComponentType>(),
@@ -124,7 +124,7 @@ public class MapMeshSystem : ComponentSystem
 				faces.Dispose();
 
 				//DEBUG
-      			//CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.5f), 40, 50);
+      			//CustomDebugTools.SetMapSquareHighlight(entity, squareWidth, new Color(1, 1, 1, 0.5f), 40, 50);
 			}
 		}
 		commandBuffer.Playback(entityManager);
@@ -157,7 +157,7 @@ public class MapMeshSystem : ComponentSystem
 
 			adjacentLowestBlocks = adjacentOffsets,
 			
-			cubeSize 	= cubeSize,
+			squareWidth 	= squareWidth,
 			directions 	= directions, 
 			util 		= new JobUtil()
 			};
@@ -235,7 +235,7 @@ public class MapMeshSystem : ComponentSystem
 			faces 		= faces,
 
 			util 		= new JobUtil(),
-			cubeSize 	= cubeSize,
+			squareWidth 	= squareWidth,
 
 			baseVerts 	= new CubeVertices(true)
 		};

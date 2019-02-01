@@ -13,7 +13,7 @@ using MyComponents;
 public class PlayerInputSystem : ComponentSystem
 {
     EntityManager entityManager;
-    int cubeSize;
+    int squareWidth;
 
     public static Entity playerEntity;
     Camera camera;
@@ -21,7 +21,7 @@ public class PlayerInputSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        cubeSize = TerrainSettings.mapSquareWidth;
+        squareWidth = TerrainSettings.mapSquareWidth;
 
         camera = GameObject.FindObjectOfType<Camera>();
     }
@@ -95,7 +95,7 @@ public class PlayerInputSystem : ComponentSystem
         hit = new VoxelRayHit();
 
         //  Map square at origin
-        float3 previousVoxelOwnerPosition = Util.VoxelOwner(ray.origin, cubeSize);
+        float3 previousVoxelOwnerPosition = Util.VoxelOwner(ray.origin, squareWidth);
 
         Entity                  entity;
         MapSquare               mapSquare;
@@ -179,7 +179,7 @@ public class PlayerInputSystem : ComponentSystem
                 }
             }
 
-            float3 nextVoxelOwnerPosition = Util.VoxelOwner(voxel, cubeSize);
+            float3 nextVoxelOwnerPosition = Util.VoxelOwner(voxel, squareWidth);
 
             //  Voxel is in a different map square
             if(!previousVoxelOwnerPosition.Equals(nextVoxelOwnerPosition))
@@ -197,7 +197,7 @@ public class PlayerInputSystem : ComponentSystem
             }
 
             //  Index in Dynamic Buffer
-            int index = Util.BlockIndex(voxel, mapSquare, cubeSize);
+            int index = Util.BlockIndex(voxel, mapSquare, squareWidth);
 
             //  Outside map square's generated bounds (no block data)
             if(index >= blocks.Length || index < 0)
@@ -209,7 +209,7 @@ public class PlayerInputSystem : ComponentSystem
                 if(i == 0 || previousVoxel.Equals(float3.zero))
                     throw new Exception("Hit on try "+(i+1)+" with previous hit at "+previousVoxel);
 
-                int previousIndex = Util.BlockIndex(previousVoxel, previousMapSquare, cubeSize);
+                int previousIndex = Util.BlockIndex(previousVoxel, previousMapSquare, squareWidth);
 
                 hit = new VoxelRayHit(index, entity, blocks[index], blocks[previousIndex], previousEntity);
                 return true;
