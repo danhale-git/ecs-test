@@ -25,7 +25,6 @@ public class MapLoadSystem : ComponentSystem
         cubeSize = TerrainSettings.cubeSize;
 
         EntityArchetypeQuery loadQuery = new EntityArchetypeQuery{
-            None = new ComponentType[] { },
             All = new ComponentType[] { typeof(MapSquare), typeof(Tags.LoadChanges) }
         };
         loadGroup = GetComponentGroup(loadQuery);
@@ -33,12 +32,11 @@ public class MapLoadSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+        EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
+        NativeArray<ArchetypeChunk> chunks          = loadGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
-        ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
-        ArchetypeChunkComponentType<Position> positionType = GetArchetypeChunkComponentType<Position>();
-
-        NativeArray<ArchetypeChunk> chunks = loadGroup.CreateArchetypeChunkArray(Allocator.TempJob);
+        ArchetypeChunkEntityType                entityType      = GetArchetypeChunkEntityType();
+        ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>();
 
         for(int c = 0; c < chunks.Length; c++)
         {
@@ -51,12 +49,7 @@ public class MapLoadSystem : ComponentSystem
 
                 MapSaveSystem.SaveData data;
                 if(LoadMapSquareChanges(positions[e].Value, out data))
-                {
-                    Debug.Log("found saved change");
-                    CustomDebugTools.MarkError(entity, Color.green);
-
                     ApplyChanges(entities[e], data, commandBuffer);
-                }
 
                 commandBuffer.RemoveComponent<Tags.LoadChanges>(entity);
             }
@@ -66,21 +59,6 @@ public class MapLoadSystem : ComponentSystem
         commandBuffer.Dispose();
 
         chunks.Dispose();
-    }
-
-    void ApplyChanges(Entity entity, MapSaveSystem.SaveData data, EntityCommandBuffer commandBuffer)
-    {
-        DynamicBuffer<LoadedChange> appliedChanges = GetOrCreateLoadedChangeBuffer(entity, commandBuffer);
-
-        //  Apply saved block changes
-        for(int i = 0; i < data.changes.Length; i++)
-            appliedChanges.Add(new LoadedChange { block = data.changes[i] });
-
-        //  Apply saved map square
-        commandBuffer.SetComponent<MapSquare>(entity, data.mapSquare);
-
-        commandBuffer.RemoveComponent<Tags.SetDrawBuffer>(entity);
-        commandBuffer.RemoveComponent<Tags.SetBlockBuffer>(entity);
     }
 
     bool LoadMapSquareChanges(float3 squarePosition, out MapSaveSystem.SaveData data)
@@ -106,15 +84,26 @@ public class MapLoadSystem : ComponentSystem
         return true;
     }
 
+    void ApplyChanges(Entity entity, MapSaveSystem.SaveData data, EntityCommandBuffer commandBuffer)
+    {
+        DynamicBuffer<LoadedChange> appliedChanges = GetOrCreateLoadedChangeBuffer(entity, commandBuffer);
+
+        //  Apply saved block changes
+        for(int i = 0; i < data.changes.Length; i++)
+            appliedChanges.Add(new LoadedChange { block = data.changes[i] });
+
+        //  Apply saved map square
+        commandBuffer.SetComponent<MapSquare>(entity, data.mapSquare);
+
+        commandBuffer.RemoveComponent<Tags.SetDrawBuffer>(entity);
+        commandBuffer.RemoveComponent<Tags.SetBlockBuffer>(entity);
+    }
+
     DynamicBuffer<LoadedChange> GetOrCreateLoadedChangeBuffer(Entity entity, EntityCommandBuffer commandBuffer)
     {
-        DynamicBuffer<LoadedChange> changes;
-
         if(!entityManager.HasComponent<LoadedChange>(entity))
-            changes = commandBuffer.AddBuffer<LoadedChange>(entity);
+            return commandBuffer.AddBuffer<LoadedChange>(entity);
         else
-            changes = entityManager.GetBuffer<LoadedChange>(entity);
-
-        return changes;
+            return entityManager.GetBuffer<LoadedChange>(entity);
     }
 }
