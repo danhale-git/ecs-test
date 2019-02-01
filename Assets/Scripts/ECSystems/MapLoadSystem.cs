@@ -11,6 +11,8 @@ public class MapLoadSystem : ComponentSystem
     EntityManager entityManager;
     MapSaveSystem mapSaveSystem;
 
+    float3 previousAcrePosition = new float3(MapSaveSystem.acreSize, MapSaveSystem.acreSize, MapSaveSystem.acreSize) * 1.5f;
+
     int cubeSize;
 
     ComponentGroup loadGroup;
@@ -89,20 +91,18 @@ public class MapLoadSystem : ComponentSystem
         float3  mapSquareMatrixIndex    = (squarePosition - acrePosition) / cubeSize;
         int     mapSquareIndex          = Util.Flatten2D(mapSquareMatrixIndex.x, mapSquareMatrixIndex.z, MapSaveSystem.acreSize);
 
-        MapSaveSystem.SaveData[] acre;
-
         //  Acre does not exist
-        if(!mapSaveSystem.allAcres.TryGetValue(acrePosition, out acre))
+        if(!acrePosition.Equals(previousAcrePosition) && !mapSaveSystem.allAcres.ContainsKey(acrePosition))
             return false;
 
         //  Map square has no changes
         if(!mapSaveSystem.mapSquareChanged[acrePosition][mapSquareIndex])
             return false;
 
-        Debug.Log("loading from: "+ acrePosition+" with index: "+mapSquareIndex);        
+        previousAcrePosition = acrePosition;
 
         //  Map square has changes
-        data = acre[mapSquareIndex];
+        data = mapSaveSystem.allAcres[acrePosition][mapSquareIndex];
         return true;
     }
 
