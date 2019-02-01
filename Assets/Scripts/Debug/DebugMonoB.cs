@@ -1,41 +1,52 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Entities;
+using UnityEngine.UI;
 
 public class DebugMonoB : MonoBehaviour
 {
-    public bool cubes = true;
-    void Awake()
+    public Text debugPanelText;
+
+    void Update()
     {
-        CustomDebugTools.lines.Clear();
+        string newText = "";
+        foreach(KeyValuePair<string, string> kvp in CustomDebugTools.debugText)
+        {
+            newText += kvp.Key+": "+kvp.Value+"\n";
+        }
+        foreach(KeyValuePair<string, int> kvp in CustomDebugTools.debugCounts)
+        {
+            newText += kvp.Key+": "+kvp.Value.ToString()+"\n";
+        }
+
+        debugPanelText.text = newText;
     }
 
     void OnDrawGizmos()
     {
         if(!Application.isPlaying) return;
-        foreach(CustomDebugTools.DebugLine line in CustomDebugTools.lines)
-		{
-			Gizmos.color = line.c;
-			Gizmos.DrawLine(line.a, line.b);
-		}
 
-        foreach(KeyValuePair<Vector3, List<CustomDebugTools.DebugLine>> kvp in CustomDebugTools.blockHighlights)
-        {
-            if(!cubes) break;
-            foreach(CustomDebugTools.DebugLine line in kvp.Value)
-            {
-                Gizmos.color = line.c;
-                Gizmos.DrawLine(line.a, line.b);
-            }
-        }
+        EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
 
-        foreach(KeyValuePair<Vector3, List<CustomDebugTools.DebugLine>> kvp in CustomDebugTools.squareHighlights)
+        for(int i = 0; i < CustomDebugTools.allLines.Count; i++)
         {
-            foreach(CustomDebugTools.DebugLine line in kvp.Value)
+            Dictionary<Entity, List<CustomDebugTools.DebugLine>> dict = CustomDebugTools.allLines[i];
+            Dictionary<Entity, List<CustomDebugTools.DebugLine>> dictCopy = new Dictionary<Entity, List<CustomDebugTools.DebugLine>>();
+            foreach(KeyValuePair<Entity, List<CustomDebugTools.DebugLine>> kvp in dict)
             {
-                Gizmos.color = line.c;
-                Gizmos.DrawLine(line.a, line.b);
+                if(manager.Exists(kvp.Key))
+                {
+                    dictCopy.Add(kvp.Key, kvp.Value);
+                    foreach(CustomDebugTools.DebugLine line in kvp.Value)
+                    {
+                        Gizmos.color = line.c;
+                        Gizmos.DrawLine(line.a, line.b);
+                    }
+                }
             }
+
+            CustomDebugTools.allLines[i] = dictCopy;
         }
     }
 }

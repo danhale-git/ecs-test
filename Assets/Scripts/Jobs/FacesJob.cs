@@ -50,12 +50,6 @@ struct FacesJob : IJobParallelFor
 	{
 		float3 edge = Util.EdgeOverlap(pos, cubeSize);
 
-		if((edge.x > 0) && AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 0)<0)
-		{
-			Debug.Log(mapSquare.bottomBlockBuffer+" - "+adjacentLowestBlocks[0]);
-			CustomDebugTools.SetBlockHighlight(mapSquare.position, Color.red);
-		}
-
 		if		(edge.x > 0) return right[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 0)];
 		else if	(edge.x < 0) return left [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 1)];
 		else if	(edge.z > 0) return front[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 2)];

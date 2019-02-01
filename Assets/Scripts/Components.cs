@@ -132,7 +132,12 @@ namespace MyComponents
 		public Block block;
 	}
 	[InternalBufferCapacity(100)]
-	public struct CompletedChange : IBufferElementData
+	public struct LoadedChange : IBufferElementData
+	{
+		public Block block;
+	}
+	[InternalBufferCapacity(100)]
+	public struct UnsavedChange : IBufferElementData
 	{
 		public Block block;
 	}
@@ -146,6 +151,7 @@ namespace Tags
 {
 	public struct GenerateTerrain : IComponentData { }
 	public struct GetAdjacentSquares : IComponentData { }
+	public struct LoadChanges : IComponentData { }
 	public struct SetDrawBuffer : IComponentData { }
 	public struct SetBlockBuffer : IComponentData { }
 	public struct GenerateBlocks : IComponentData { }
@@ -155,6 +161,8 @@ namespace Tags
 	public struct Redraw : IComponentData { }
 	public struct BufferChanged : IComponentData { }
 	public struct BlockChanged : IComponentData { }
+
+	public struct RemoveMapSquare : IComponentData { }
 
 	public struct InnerBuffer : IComponentData { }
 	public struct OuterBuffer : IComponentData { }	

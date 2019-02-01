@@ -8,69 +8,51 @@ using Unity.Transforms;
 using MyComponents;
 
 //	Get y buffer for block generation based on adjacent drawing buffer, calculate array lengths and offsets for block and mesh generation
-[UpdateAfter(typeof(MapInnerBufferSystem))]
-public class MapOuterBufferSystem : ComponentSystem
+[UpdateAfter(typeof(MapDrawBufferSystem))]
+public class MapBlockBufferSystem : ComponentSystem
 {
     EntityManager entityManager;
 
 	int cubeSize;
 
-	EntityArchetypeQuery blockBufferQuery;
-
-	ArchetypeChunkEntityType 						entityType;
-    ArchetypeChunkComponentType<Position> 			positionType;
-	ArchetypeChunkComponentType<MapSquare> 			mapSquareType;
-	ArchetypeChunkComponentType<AdjacentSquares> 	adjacentType;
+	ComponentGroup blockBufferGroup;
 
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
 		cubeSize = TerrainSettings.cubeSize;
 
-		blockBufferQuery = new EntityArchetypeQuery
-		{
-			Any 	= Array.Empty<ComponentType>(),
+		EntityArchetypeQuery blockBufferQuery = new EntityArchetypeQuery{
             None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetBlockBuffer) }
 		};
+		blockBufferGroup = GetComponentGroup(blockBufferQuery);
     }
 
     protected override void OnUpdate()
     {
-        entityType 		= GetArchetypeChunkEntityType();
-        positionType 	= GetArchetypeChunkComponentType<Position>();
-		mapSquareType 	= GetArchetypeChunkComponentType<MapSquare>();
-		adjacentType 	= GetArchetypeChunkComponentType<AdjacentSquares>();
-
-        NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-            blockBufferQuery,
-            Allocator.TempJob
-            );
-
-        if(chunks.Length == 0) chunks.Dispose();
-        else
-			BufferBlockGeneration(chunks);
-    }
-
-    void BufferBlockGeneration(NativeArray<ArchetypeChunk> chunks)
-    {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+
+        ArchetypeChunkEntityType 						entityType 		= GetArchetypeChunkEntityType();
+		ArchetypeChunkComponentType<MapSquare> 			mapSquareType 	= GetArchetypeChunkComponentType<MapSquare>();
+		ArchetypeChunkComponentType<AdjacentSquares> 	adjacentType 	= GetArchetypeChunkComponentType<AdjacentSquares>();
+
+        NativeArray<ArchetypeChunk> chunks = blockBufferGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
 		for(int c = 0; c < chunks.Length; c++)
 		{
 			ArchetypeChunk chunk = chunks[c];
 
-			NativeArray<Entity> 	entities    	= chunk.GetNativeArray(entityType);
-            NativeArray<Position> 	positions 		= chunk.GetNativeArray(positionType);
-			NativeArray<MapSquare> 	mapSquares 		= chunk.GetNativeArray(mapSquareType);
-			NativeArray<AdjacentSquares> adjacent 	= chunk.GetNativeArray(adjacentType);
+			NativeArray<Entity> 			entities    = chunk.GetNativeArray(entityType);
+			NativeArray<MapSquare> 			mapSquares 	= chunk.GetNativeArray(mapSquareType);
+			NativeArray<AdjacentSquares> 	adjacent 	= chunk.GetNativeArray(adjacentType);
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity = entities[e];
 
                 //  Get adjacent map square entities
-				BlockBuffer(entity, positions[e], mapSquares[e], adjacent[e], commandBuffer);
+				BlockBuffer(entity, mapSquares[e], adjacent[e], commandBuffer);
 
 				//  Set block buffer next
                 commandBuffer.RemoveComponent<Tags.SetBlockBuffer>(entity);
@@ -83,7 +65,7 @@ public class MapOuterBufferSystem : ComponentSystem
     	chunks.Dispose();
     }
 
-	void BlockBuffer(Entity entity, Position position, MapSquare mapSquare, AdjacentSquares adjacent, EntityCommandBuffer commandBuffer)
+	void BlockBuffer(Entity entity, MapSquare mapSquare, AdjacentSquares adjacent, EntityCommandBuffer commandBuffer)
 	{
 		int topBuffer 		= mapSquare.topBlock;
 		int bottomBuffer 	= mapSquare.bottomBlock;
@@ -114,9 +96,8 @@ public class MapOuterBufferSystem : ComponentSystem
 		updateSquare.drawArrayLength = drawHeight * (cubeSize * cubeSize);
 		updateSquare.drawIndexOffset = Util.Flatten(0, updateSquare.bottomDrawBuffer - updateSquare.bottomBlockBuffer, 0, cubeSize);
 		
-		//DEBUG
-		CustomDebugTools.SetMapSquareHighlight(entity, cubeSize, new Color(1, 1, 1, 0.2f), updateSquare.topBlockBuffer, updateSquare.bottomBlockBuffer);
-		//CustomDebugTools.MapSquareBufferDebug(entity);
+		//CustomDebugTools.DrawBufferDebug(entity, updateSquare);
+		CustomDebugTools.BlockBufferDebug(entity, updateSquare);
 
 		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
 	}

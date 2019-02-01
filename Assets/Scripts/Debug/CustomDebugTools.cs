@@ -9,10 +9,33 @@ using MyComponents;
 
 public static class CustomDebugTools
 {
+    public static Dictionary<string, string> debugText = new Dictionary<string, string>();
+    public static Dictionary<string, int> debugCounts = new Dictionary<string, int>();
+
+    public static void SetDebugText(string key, string value)
+    {
+        debugText[key] = value;
+    }
+    public static void SetDebugText(string key, int value)
+    {
+        debugCounts[key] = value;
+    }
+    public static void IncrementDebugCount(string key)
+    {
+        int currenCount = 0;
+        debugCounts.TryGetValue(key, out currenCount);
+        debugCounts[key] = currenCount + 1;
+    }
+
     static Vector3[] cubeVectors = CubeVectors();
-    public static List<DebugLine> lines = new List<DebugLine>();
-    public static Dictionary<Vector3, List<DebugLine>> squareHighlights = new Dictionary<Vector3, List<DebugLine>>();
-    public static Dictionary<Vector3, List<DebugLine>> blockHighlights = new Dictionary<Vector3, List<DebugLine>>();
+    public static List<Dictionary<Entity, List<DebugLine>>> allLines = new List<Dictionary<Entity, List<DebugLine>>>()
+    {
+        new Dictionary<Entity, List<DebugLine>>(),  //  Horizontal Buffer
+        new Dictionary<Entity, List<DebugLine>>(),  //  Block buffer
+        new Dictionary<Entity, List<DebugLine>>(),  //  Mark error
+        new Dictionary<Entity, List<DebugLine>>()   //  Draw buffer
+    };
+
     public static int cubeSize = TerrainSettings.cubeSize;
     public struct DebugLine
     {
@@ -26,61 +49,107 @@ public static class CustomDebugTools
         }
     }
 
-    public static void MapBufferDebug(Entity mapSquareEntity)
+    //  allLines[0]
+    public static void HorizontalBufferDebug(Entity entity, int buffer)
     {
         EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
 
-        //  Get position and offset to square corner
-        Vector3 pos = (Vector3)manager.GetComponentData<Position>(mapSquareEntity).Value - (Vector3.one / 2);
-        Vector3 position = new Vector3(pos.x, -0.5f, pos.z);
+        Color color;
 
-        MapSquare mapSquare = manager.GetComponentData<MapSquare>(mapSquareEntity);
+        switch(buffer)
+        {
+            case 1: color = new Color(1, 0, 0, 0.2f); break;
+            case 2: color = new Color(0, 1, 0, 0.2f); break;
+            case 3: color = new Color(0, 0, 1, 0.2f); break;
+            default: return;
+        }
 
-        if(manager.HasComponent<Tags.InnerBuffer>(mapSquareEntity))
-            squareHighlights[position]  = CreateBox(position, cubeSize - 0.5f, new Color(1, 0, 0, 0.2f), mapSquare.topBlockBuffer, mapSquare.bottomBlockBuffer, noSides: true);
-        else if(manager.HasComponent<Tags.OuterBuffer>(mapSquareEntity))
-            squareHighlights[position]  = CreateBox(position, cubeSize - 0.5f, new Color(0, 1, 0, 0.2f), mapSquare.topBlockBuffer, mapSquare.bottomBlockBuffer, noSides: true);
-        else if(manager.HasComponent<Tags.EdgeBuffer>(mapSquareEntity))
-            squareHighlights[position]  = CreateBox(position, cubeSize - 0.5f, new Color(0, 0, 1, 0.2f), mapSquare.topBlockBuffer, mapSquare.bottomBlockBuffer, noSides: true);
-        else
-            if(squareHighlights.ContainsKey(position)) squareHighlights.Remove(position);
-        
+        float3 pos = manager.GetComponentData<Position>(entity).Value;
+        List<DebugLine> rect = CreateBox(
+            new float3(pos.x, 0, pos.z),
+            cubeSize * 0.95f,
+            color,
+            0,
+            0,
+            noSides: true,
+            topOnly: true
+        );
+
+        allLines[0][entity] = rect;
     }
 
-    public static void MapSquareBufferDebug(Entity mapSquareEntity)
+    //  allLines[1]
+    public static void BlockBufferDebug(Entity entity, MapSquare mapSquare)
     {
-
         EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
 
-        //  Get position and offset to square corner
-        Vector3 pos = (Vector3)manager.GetComponentData<Position>(mapSquareEntity).Value - (Vector3.one / 2);
-        Vector3 position = new Vector3(pos.x, -0.5f, pos.z);
+        float3 pos = manager.GetComponentData<Position>(entity).Value;
+        List<DebugLine> blockBufferRects = CreateBox(
+            new float3(pos.x, 0, pos.z),
+            cubeSize * 0.99f,
+            new Color(0.8f, 0.8f, 0.8f, 0.1f),
+            mapSquare.topBlockBuffer,
+            mapSquare.bottomBlockBuffer,
+            noSides: false
+        );
 
-        MapSquare mapSquare = manager.GetComponentData<MapSquare>(mapSquareEntity);
-
-        squareHighlights[position+Vector3.one]      = CreateBox(position, cubeSize - 0.5f, new Color(1, 0, 0.5f, 0.2f), mapSquare.topDrawBuffer, mapSquare.bottomDrawBuffer, noSides: false);
-        squareHighlights[position+(Vector3.one*2)]  = CreateBox(position, cubeSize - 0.5f, new Color(0, 1, 0.5f, 0.2f), mapSquare.topBlockBuffer, mapSquare.bottomBlockBuffer, noSides: true);
+        allLines[1][entity] = blockBufferRects;
     }
-
-    public static void SetMapSquareHighlight(Entity mapSquareEntity, int size, Color color, int top, int bottom)
+    //  allLines[3]
+    public static void DrawBufferDebug(Entity entity, MapSquare mapSquare)
     {
-
         EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
 
-        //  Get position and offset to square corner
-        Vector3 pos = (Vector3)manager.GetComponentData<Position>(mapSquareEntity).Value - (Vector3.one / 2);
-        Vector3 position = new Vector3(pos.x, -0.5f, pos.z);
+        float3 pos = manager.GetComponentData<Position>(entity).Value;
+        List<DebugLine> blockBufferRects = CreateBox(
+            new float3(pos.x, 0, pos.z),
+            cubeSize * 0.99f,
+            new Color(0.8f, 0.8f, 0.8f, 0.1f),
+            mapSquare.topDrawBuffer,
+            mapSquare.bottomDrawBuffer,
+            noSides: false
+        );
 
-        squareHighlights[position] = CreateBox(position, size, color, top, bottom);
+        allLines[3][entity] = blockBufferRects;
     }
 
-    public static void SetBlockHighlight(Vector3 position, Color color)
+    //  allLines[2]
+    public static void MarkError(Entity entity, Color color)
     {
-        blockHighlights[position] = CreateBox(position, 1, color, position.y+1, position.y);
-        
+        if(color == null) color = Color.red;
+        EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
+
+        float3 pos = manager.GetComponentData<Position>(entity).Value;
+        List<DebugLine> errorCuboid = CreateBox(
+            new float3(pos.x, 0, pos.z),
+            cubeSize,
+            color,
+            TerrainSettings.terrainHeight+TerrainSettings.terrainStretch,
+            0,
+            noSides: false
+        );
+
+        allLines[2][entity] = errorCuboid;
     }
 
-    static List<DebugLine> CreateBox(Vector3 position, float size, Color color, float top, float bottom, bool noSides = false)
+    //  allLines[2]
+    public static void MarkError(float3 position, Color color)
+    {
+        EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
+
+        List<DebugLine> errorCuboid = CreateBox(
+            new float3(position.x, 0, position.z),
+            cubeSize,
+            color,
+            TerrainSettings.terrainHeight+TerrainSettings.terrainStretch,
+            0,
+            noSides: false
+        );
+
+        allLines[2][manager.CreateEntity()] = errorCuboid;
+    }
+
+    static List<DebugLine> CreateBox(Vector3 position, float size, Color color, float top, float bottom, bool noSides = false, bool topOnly = false)
     {
         //  Adjust height for generated/non generated squares
         Vector3 topOffset = new Vector3(0, top, 0);
@@ -88,7 +157,7 @@ public static class CustomDebugTools
      
         Vector3[] v = new Vector3[cubeVectors.Length];
         //  Offset to center cubes smaller than cubeSize
-        Vector3 offsetAll = position + (Vector3.one * ((cubeSize - size)/2));
+        Vector3 offsetAll = position;// + (Vector3.one * ((cubeSize - size)/2));
         for(int i = 0; i < cubeVectors.Length; i++)
         {
             //  Set size and offset
@@ -103,6 +172,8 @@ public static class CustomDebugTools
         lines.Add(new DebugLine(v[5] + topOffset, v[7] + topOffset, color));
         lines.Add(new DebugLine(v[4] + topOffset, v[7] + topOffset, color));
         lines.Add(new DebugLine(v[5] + topOffset, v[6] + topOffset, color));
+
+        if(topOnly) return lines;
 
         //  Bottom square
         lines.Add(new DebugLine(v[0] + bottomOffset, v[2] + bottomOffset, color));

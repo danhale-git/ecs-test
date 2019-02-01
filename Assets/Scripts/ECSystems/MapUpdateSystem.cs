@@ -6,9 +6,11 @@ using Unity.Mathematics;
 using Unity.Rendering;
 using MyComponents;
 
+[UpdateAfter(typeof(MapManagerSystem))]
 public class MapUpdateSystem : ComponentSystem
 {
     EntityManager entityManager;
+
 	int cubeSize;
 
     ComponentGroup updateGroup;
@@ -16,76 +18,65 @@ public class MapUpdateSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
+        
 		cubeSize = TerrainSettings.cubeSize;
 
         EntityArchetypeQuery updateQuery = new EntityArchetypeQuery{
             All = new ComponentType[]{ typeof(Tags.BlockChanged), typeof(PendingChange), typeof(MapSquare) }
         };
-
         updateGroup = GetComponentGroup(updateQuery);
     }
 
     protected override void OnUpdate()
     {
-        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
-
-        ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
-
+        EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
+        NativeArray<ArchetypeChunk> chunks          = updateGroup.CreateArchetypeChunkArray(Allocator.TempJob);
+       
+        ArchetypeChunkEntityType                entityType      = GetArchetypeChunkEntityType();
         ArchetypeChunkComponentType<MapSquare>  mapSquareType   = GetArchetypeChunkComponentType<MapSquare>();
         ArchetypeChunkBufferType<Block>         blockType       = GetArchetypeChunkBufferType<Block>();
         ArchetypeChunkBufferType<PendingChange> blockChangeType = GetArchetypeChunkBufferType<PendingChange>();
 
-        NativeArray<ArchetypeChunk> chunks = updateGroup.CreateArchetypeChunkArray(Allocator.TempJob);
-
         for(int c = 0; c < chunks.Length; c++)
         {
-            NativeArray<Entity> entities = chunks[c].GetNativeArray(entityType);
-
+            NativeArray<Entity>             entities            = chunks[c].GetNativeArray(entityType);
             NativeArray<MapSquare>          mapSquares          = chunks[c].GetNativeArray(mapSquareType);
             BufferAccessor<Block>           blockBuffers        = chunks[c].GetBufferAccessor(blockType);
             BufferAccessor<PendingChange>   blockChangeBuffers  = chunks[c].GetBufferAccessor(blockChangeType);
 
             for(int e = 0; e < entities.Length; e++)
             {
-                Entity entity = entities[e];
-
+                Entity                          entity          = entities[e];
                 MapSquare                       mapSquare       = mapSquares[e];
                 DynamicBuffer<Block>            blocks          = blockBuffers[e];
                 DynamicBuffer<PendingChange>    pendingChanges  = blockChangeBuffers[e];
 
-                bool verticalBufferChanged = false;
+                DynamicBuffer<UnsavedChange> unsavedChanges = GetOrCreateCompletedChangeBuffer(entity, commandBuffer);
 
-                //  List of changes used for saving/loading updated squares
-                DynamicBuffer<CompletedChange> completedChanges = GetOrCreateCompletedChanges(entity, commandBuffer);
+                bool verticalBufferChanged = false;
+                MapSquare updatedMapSquare = mapSquare;
 
                 for(int i = 0; i < pendingChanges.Length; i++)
                 {
-                    Block newBlock = pendingChanges[i].block;
-
-                    //  Get index of block in array
-                    int index = Util.BlockIndex(newBlock, mapSquare, cubeSize);
-
-                    Block oldBlock = blocks[index];
+                    Block   newBlock    = pendingChanges[i].block;
+                    int     index       = Util.BlockIndex(newBlock, mapSquare, cubeSize);
+                    Block   oldBlock    = blocks[index];
 
                     //  Check and update map square's highest/lowest visible block
-                    MapSquare updateMapSquare;
-                    bool buffersChanged = CheckVerticalBounds(newBlock, oldBlock, mapSquare, out updateMapSquare);
-                    if(buffersChanged)
-                    {
-                        mapSquares[e] = updateMapSquare;
-                        if(!verticalBufferChanged) verticalBufferChanged = true;
-                    }
+                    if(CheckVerticalBounds(newBlock, oldBlock, updatedMapSquare, out updatedMapSquare) && !verticalBufferChanged)
+                        verticalBufferChanged = true;
 
                     //  Set new block data
                     blocks[index] = newBlock;
-                    
-                    //  Store change for saving/loading and remove from pending
-                    completedChanges.Add(new CompletedChange { block = newBlock });
-
-                    pendingChanges.RemoveAt(i);
+                    unsavedChanges.Add(new UnsavedChange { block = newBlock });
                 }
 
-                //  Square to update depends on whether or not buffer has changed
+                if(verticalBufferChanged) mapSquares[e] = updatedMapSquare;
+
+                //  Clear pending changes
+                pendingChanges.Clear();
+
+                //  Update squares depending on whether or not buffer has changed
                 UpdateSquares(entity, verticalBufferChanged, commandBuffer);
 
                 commandBuffer.RemoveComponent<Tags.BlockChanged>(entity);
@@ -98,18 +89,6 @@ public class MapUpdateSystem : ComponentSystem
     	chunks.Dispose();
     }
 
-    DynamicBuffer<CompletedChange> GetOrCreateCompletedChanges(Entity entity, EntityCommandBuffer commandBuffer)
-    {
-        DynamicBuffer<CompletedChange> changes;
-
-        if(!entityManager.HasComponent<CompletedChange>(entity))
-            changes = commandBuffer.AddBuffer<CompletedChange>(entity);
-        else
-            changes = entityManager.GetBuffer<CompletedChange>(entity);
-        
-        return changes;
-    }
-
     bool CheckVerticalBounds(Block newBlock, Block oldBlock, MapSquare mapSquare, out MapSquare updateSquare)
     {
         //  Update MapSquare component
@@ -119,55 +98,20 @@ public class MapUpdateSystem : ComponentSystem
         bool becomeTranslucent  = (BlockTypes.translucent[oldBlock.type] == 0 && BlockTypes.translucent[newBlock.type] == 1);
         bool becomeOpaque       = (BlockTypes.translucent[oldBlock.type] == 1 && BlockTypes.translucent[newBlock.type] == 0);
 
-        //  Vertical buffer(s) need updating
-        bool verticalBufferChanged = false;
-
-        //  Block changed from opaque to translucent
-        if(becomeTranslucent)
+        //  Translucent block added below lowest block
+        if(becomeTranslucent && newBlock.localPosition.y <= mapSquare.bottomBlock)
         {
-            //  Bottom buffer has been exposed
-            if(newBlock.localPosition.y <= mapSquare.bottomBlock)
-            {
-                verticalBufferChanged = true;
-                updateSquare.bottomBlock = (int)newBlock.localPosition.y - 5;
-            }
+            updateSquare.bottomBlock = (int)newBlock.localPosition.y - 1 - 5;
+            return true;
         }
-        //  Block changed from translucent to opaque
-        if(becomeOpaque)
+        //  Solid block added above highest block
+        if(becomeOpaque && newBlock.localPosition.y > mapSquare.topBlock)
         {
-            if(newBlock.localPosition.y > mapSquare.topBlock)
-            {
-                verticalBufferChanged = true;
-                updateSquare.topBlock = (int)newBlock.localPosition.y + 4;
-            }
+            updateSquare.topBlock = (int)newBlock.localPosition.y + 5;
+            return true;
         }
 
-        return verticalBufferChanged;
-    }
-
-    void RedrawSquare(Entity entity, EntityCommandBuffer commandBuffer)
-    {
-        //  Tags needed to redraw mesh. Skip if mesh is not drawn yet.
-        if(!entityManager.HasComponent<RenderMesh>(entity)) return;
-
-        if(!entityManager.HasComponent<Tags.Redraw>(entity))
-            commandBuffer.AddComponent<Tags.Redraw>(entity, new Tags.Redraw());
-
-        if(!entityManager.HasComponent<Tags.DrawMesh>(entity))
-            commandBuffer.AddComponent<Tags.DrawMesh>(entity, new Tags.DrawMesh());
-    }
-
-    void RecalculateVerticalBuffers(Entity entity, EntityCommandBuffer commandBuffer)
-    {
-        //  Tags needed to check buffers and resize block array
-        if(!entityManager.HasComponent<Tags.SetDrawBuffer>(entity))
-            commandBuffer.AddComponent<Tags.SetDrawBuffer>(entity, new Tags.SetDrawBuffer());
-
-        if(!entityManager.HasComponent<Tags.SetBlockBuffer>(entity))
-            commandBuffer.AddComponent<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
-
-        if(!entityManager.HasComponent<Tags.BufferChanged>(entity))
-            commandBuffer.AddComponent<Tags.BufferChanged>(entity, new Tags.BufferChanged());
+        return false;
     }
 
     void UpdateSquares(Entity centerSquare, bool verticalBufferChanged, EntityCommandBuffer commandBuffer)
@@ -214,5 +158,54 @@ public class MapUpdateSystem : ComponentSystem
         }
 
         entities.Dispose();
+    }
+
+    void RedrawSquare(Entity entity, EntityCommandBuffer commandBuffer)
+    {
+        //  Tags needed to redraw mesh. Skip if mesh is not drawn yet.
+        if(!entityManager.HasComponent<RenderMesh>(entity)) return;
+
+        if(!entityManager.HasComponent<Tags.Redraw>(entity))
+            commandBuffer.AddComponent<Tags.Redraw>(entity, new Tags.Redraw());
+
+        if(!entityManager.HasComponent<Tags.DrawMesh>(entity))
+            commandBuffer.AddComponent<Tags.DrawMesh>(entity, new Tags.DrawMesh());
+    }
+
+    void RecalculateVerticalBuffers(Entity entity, EntityCommandBuffer commandBuffer)
+    {
+        //  Tags needed to check buffers and resize block array
+        if(!entityManager.HasComponent<Tags.SetDrawBuffer>(entity))
+            commandBuffer.AddComponent<Tags.SetDrawBuffer>(entity, new Tags.SetDrawBuffer());
+
+        if(!entityManager.HasComponent<Tags.SetBlockBuffer>(entity))
+            commandBuffer.AddComponent<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
+
+        if(!entityManager.HasComponent<Tags.BufferChanged>(entity))
+            commandBuffer.AddComponent<Tags.BufferChanged>(entity, new Tags.BufferChanged());
+    }
+
+    public static DynamicBuffer<PendingChange> GetOrCreatePendingChangeBuffer(Entity entity, EntityManager entityManager)
+    {
+        DynamicBuffer<PendingChange> changes;
+
+        if(!entityManager.HasComponent<PendingChange>(entity))
+            changes = entityManager.AddBuffer<PendingChange>(entity);
+        else
+            changes = entityManager.GetBuffer<PendingChange>(entity);
+
+        return changes;
+    }
+
+    DynamicBuffer<UnsavedChange> GetOrCreateCompletedChangeBuffer(Entity entity, EntityCommandBuffer commandBuffer)
+    {
+        DynamicBuffer<UnsavedChange> changes;
+
+        if(!entityManager.HasComponent<UnsavedChange>(entity))
+            changes = commandBuffer.AddBuffer<UnsavedChange>(entity);
+        else
+            changes = entityManager.GetBuffer<UnsavedChange>(entity);
+
+        return changes;
     }
 }

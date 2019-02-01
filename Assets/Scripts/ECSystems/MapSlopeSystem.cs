@@ -10,49 +10,35 @@ using MyComponents;
 public class MapSlopeSystem : ComponentSystem
 {
     EntityManager entityManager;
+
     int cubeSize;
 
-    EntityArchetypeQuery query;
-
-    ArchetypeChunkEntityType                entityType;
-    ArchetypeChunkComponentType<MapSquare>	squareType;
-	ArchetypeChunkBufferType<Block> 		blocksType;
-	ArchetypeChunkBufferType<Topology> 		heightType;
+    ComponentGroup slopeGroup;
 
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
+
         cubeSize = TerrainSettings.cubeSize;
  
         //  Chunks that need blocks generating
-        query = new EntityArchetypeQuery
-        {
-            Any     = Array.Empty<ComponentType>(),
+        EntityArchetypeQuery slopeQuery = new EntityArchetypeQuery{
             None    = new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
             All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.SetSlopes) }
         };
+		slopeGroup = GetComponentGroup(slopeQuery);
     }
 
     protected override void OnUpdate()
     {
-        entityType = GetArchetypeChunkEntityType();
-        squareType = GetArchetypeChunkComponentType<MapSquare>();
-		blocksType = GetArchetypeChunkBufferType<Block>();
-        heightType = GetArchetypeChunkBufferType<Topology>();
-
-        NativeArray<ArchetypeChunk> chunks;
-        chunks = entityManager.CreateArchetypeChunkArray(
-            query,
-            Allocator.TempJob
-            );
-
-        if(chunks.Length == 0) chunks.Dispose();
-        else DoSomething(chunks);
-    }
-
-    void DoSomething(NativeArray<ArchetypeChunk> chunks)
-    {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+
+		ArchetypeChunkEntityType                entityType = GetArchetypeChunkEntityType();;
+    	ArchetypeChunkComponentType<MapSquare>	squareType = GetArchetypeChunkComponentType<MapSquare>();;
+		ArchetypeChunkBufferType<Block> 		blocksType = GetArchetypeChunkBufferType<Block>();;
+		ArchetypeChunkBufferType<Topology> 		heightType = GetArchetypeChunkBufferType<Topology>();;
+
+		NativeArray<ArchetypeChunk> chunks = slopeGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
         for(int c = 0; c < chunks.Length; c++)
         {
@@ -91,7 +77,6 @@ public class MapSlopeSystem : ComponentSystem
         commandBuffer.Dispose();
 
         chunks.Dispose();
-
     }
 
     //	Generate list of Y offsets for top 4 cube vertices

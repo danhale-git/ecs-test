@@ -70,7 +70,7 @@ public class PlayerInputSystem : ComponentSystem
     void ChangeBlock(int type, Block block, Entity owner)
     {
         block.type = type;
-        GetOrCreatePendingChangeBuffer(owner).Add(new PendingChange { block = block });
+        MapUpdateSystem.GetOrCreatePendingChangeBuffer(owner, entityManager).Add(new PendingChange { block = block });
         entityManager.AddComponent(owner, typeof(Tags.BlockChanged));
     }
 
@@ -220,18 +220,6 @@ public class PlayerInputSystem : ComponentSystem
             previousMapSquare = mapSquare;
         }
         throw new Exception("Ray traversed 1000 voxels without finding anything");
-    }
-
-    DynamicBuffer<PendingChange> GetOrCreatePendingChangeBuffer(Entity entity)
-    {
-        DynamicBuffer<PendingChange> changes;
-
-        if(!entityManager.HasComponent<PendingChange>(entity))
-            changes = entityManager.AddBuffer<PendingChange>(entity);
-        else
-            changes = entityManager.GetBuffer<PendingChange>(entity);
-
-        return changes;
     }
 
     bool GetBlockOwner(float3 currentMapSquarePostion, out Entity owner)

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;//DEBUG
 using UnityEngine;
 using Unity.Jobs;
 using Unity.Entities;
@@ -23,13 +22,10 @@ public class MapAdjacentSystem : ComponentSystem
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
 		cubeSize = TerrainSettings.cubeSize;
 
-		EntityArchetypeQuery adjacentQuery = new EntityArchetypeQuery
-		{
-			Any 	= Array.Empty<ComponentType>(),
-            None  	= new ComponentType[] { typeof(Tags.EdgeBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GetAdjacentSquares) }
+		EntityArchetypeQuery adjacentQuery = new EntityArchetypeQuery{
+            None 	= new ComponentType[] { typeof(Tags.EdgeBuffer) },
+			All 	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GetAdjacentSquares) }
 		};
-
 		adjacentGroup = GetComponentGroup(adjacentQuery);
     }
 
@@ -37,11 +33,14 @@ public class MapAdjacentSystem : ComponentSystem
     {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
+		MapManagerSystem managerSystem = World.Active.GetOrCreateManager<MapManagerSystem>();
+
         ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
         ArchetypeChunkComponentType<Position> 	positionType 	= GetArchetypeChunkComponentType<Position>();
 
         NativeArray<ArchetypeChunk> chunks = adjacentGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
+		//	Map square position offsets in 8 cardinal directions
 		float3[] adjacentPositions = new float3[8];
 		float3[] directions = Util.CardinalDirections();
 		for(int i = 0; i < directions.Length; i++)
@@ -56,21 +55,25 @@ public class MapAdjacentSystem : ComponentSystem
 	
 			for(int e = 0; e < entities.Length; e++)
 			{
-				Entity entity = entities[e];
+				Entity entity 	= entities[e];
 				float3 position = positions[e].Value;
 
+				//	Get adjacent map squares from matrix in MapManagerSystem
 				AdjacentSquares adjacent = new AdjacentSquares{
-					right 		= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[0]),
-					left 		= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[1]),
-					front 		= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[2]),
-					back 		= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[3]),
-					frontRight 	= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[4]),
-					frontLeft 	= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[5]),
-					backRight 	= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[6]),
-					backLeft 	= MapCreateSystem.GetMapSquareFromMatrix(position + adjacentPositions[7])
+					right 		= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[0]),
+					left 		= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[1]),
+					front 		= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[2]),
+					back 		= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[3]),
+					frontRight 	= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[4]),
+					frontLeft 	= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[5]),
+					backRight 	= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[6]),
+					backLeft 	= managerSystem.GetMapSquareFromMatrix(position + adjacentPositions[7])
 				};
 
-				commandBuffer.AddComponent<AdjacentSquares>(entity, adjacent);
+				if(entityManager.HasComponent<AdjacentSquares>(entity))
+					commandBuffer.SetComponent<AdjacentSquares>(entity, adjacent);
+				else
+					commandBuffer.AddComponent<AdjacentSquares>(entity, adjacent);
 
                 commandBuffer.RemoveComponent<Tags.GetAdjacentSquares>(entity);
             }

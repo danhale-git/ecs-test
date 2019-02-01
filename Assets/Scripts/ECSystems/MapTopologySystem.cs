@@ -8,7 +8,7 @@ using Unity.Transforms;
 using MyComponents;
 
 //  Generate 2D terrain data from coherent noise
-[UpdateAfter(typeof(MapCreateSystem))]
+[UpdateAfter(typeof(MapRemoveSystem))]
 public class MapTopologySystem : ComponentSystem
 {
     EntityManager entityManager;
@@ -26,7 +26,6 @@ public class MapTopologySystem : ComponentSystem
         EntityArchetypeQuery terrainQuery = new EntityArchetypeQuery{
             All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateTerrain) }
         };
-
         terrainGroup = GetComponentGroup(terrainQuery);
 
         cliffTerrain = new CliffTerrainGenerator(5, 10);
@@ -36,8 +35,8 @@ public class MapTopologySystem : ComponentSystem
     {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 
-        ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
-        ArchetypeChunkComponentType<Position> positionType = GetArchetypeChunkComponentType<Position>();
+        ArchetypeChunkEntityType                entityType      = GetArchetypeChunkEntityType();
+        ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>();
 
         NativeArray<ArchetypeChunk> chunks = terrainGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
@@ -59,7 +58,10 @@ public class MapTopologySystem : ComponentSystem
 
 			    //	Fill buffer with heightmap data and update map square highest/lowest block
 			    MapSquare mapSquareComponent = cliffTerrain.GenerateTopology(position, heightBuffer);
-			    entityManager.SetComponentData<MapSquare>(entity, mapSquareComponent);
+
+                //  If map square has been loaded it will already have the correct values
+                if(!entityManager.HasComponent<LoadedChange>(entity))
+			        entityManager.SetComponentData<MapSquare>(entity, mapSquareComponent);
 
                 //  Set draw buffer next
                 commandBuffer.RemoveComponent<Tags.GenerateTerrain>(entity);
