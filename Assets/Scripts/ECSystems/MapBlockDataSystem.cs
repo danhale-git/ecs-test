@@ -21,7 +21,7 @@ public class MapBlockDataSystem : ComponentSystem
 	{
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 		
-		cubeSize = TerrainSettings.cubeSize;
+		cubeSize = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery mapSquareQuery = new EntityArchetypeQuery
 		{

@@ -48,7 +48,7 @@ public class MapMeshSystem : ComponentSystem
 	{
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
-		cubeSize = TerrainSettings.cubeSize;
+		cubeSize = TerrainSettings.mapSquareWidth;
 		cubeArrayLength = (int)math.pow(cubeSize, 3);
 
 		squareQuery = new EntityArchetypeQuery{

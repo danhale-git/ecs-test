@@ -25,7 +25,7 @@ public class MapBufferChangeSystem : ComponentSystem
 	protected override void OnCreateManager()
 	{
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
-		cubeSize = TerrainSettings.cubeSize;
+		cubeSize = TerrainSettings.mapSquareWidth;
 
 		mapSquareQuery = new EntityArchetypeQuery
 		{

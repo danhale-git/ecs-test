@@ -38,7 +38,7 @@ public class MapManagerSystem : ComponentSystem
 	protected override void OnCreateManager()
     {
 		entityManager   = World.Active.GetOrCreateManager<EntityManager>();
-        cubeSize        = TerrainSettings.cubeSize;
+        cubeSize        = TerrainSettings.mapSquareWidth;
 
         matrixWidth         = (TerrainSettings.viewDistance * 2) + 1;
         matrixCenterOffset  = TerrainSettings.viewDistance;

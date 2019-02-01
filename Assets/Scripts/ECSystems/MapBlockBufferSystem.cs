@@ -20,7 +20,7 @@ public class MapBlockBufferSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-		cubeSize = TerrainSettings.cubeSize;
+		cubeSize = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery blockBufferQuery = new EntityArchetypeQuery{
             None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },

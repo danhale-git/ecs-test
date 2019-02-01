@@ -22,7 +22,7 @@ public class MapLoadSystem : ComponentSystem
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
 		mapSaveSystem = World.Active.GetOrCreateManager<MapSaveSystem>();
 
-        cubeSize = TerrainSettings.cubeSize;
+        cubeSize = TerrainSettings.mapSquareWidth;
 
         EntityArchetypeQuery loadQuery = new EntityArchetypeQuery{
             All = new ComponentType[] { typeof(MapSquare), typeof(Tags.LoadChanges) }

@@ -19,7 +19,7 @@ public class MapSlopeSystem : ComponentSystem
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
-        cubeSize = TerrainSettings.cubeSize;
+        cubeSize = TerrainSettings.mapSquareWidth;
  
         //  Chunks that need blocks generating
         EntityArchetypeQuery slopeQuery = new EntityArchetypeQuery{

@@ -23,7 +23,7 @@ public class PhysicsSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        cubeSize = TerrainSettings.cubeSize;
+        cubeSize = TerrainSettings.mapSquareWidth;
 
         moveQuery = new EntityArchetypeQuery
         {

@@ -15,7 +15,7 @@ public class MapRemoveSystem : ComponentSystem
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
-        cubeSize = TerrainSettings.cubeSize;
+        cubeSize = TerrainSettings.mapSquareWidth;
 
         EntityArchetypeQuery removeQuery = new EntityArchetypeQuery{
             All = new ComponentType[] { typeof(MapSquare), typeof(Tags.RemoveMapSquare) }

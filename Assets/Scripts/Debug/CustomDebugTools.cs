@@ -36,7 +36,7 @@ public static class CustomDebugTools
         new Dictionary<Entity, List<DebugLine>>()   //  Draw buffer
     };
 
-    public static int cubeSize = TerrainSettings.cubeSize;
+    public static int cubeSize = TerrainSettings.mapSquareWidth;
     public struct DebugLine
     {
         public readonly Vector3 a, b;

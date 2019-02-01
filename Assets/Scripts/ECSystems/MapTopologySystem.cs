@@ -21,7 +21,7 @@ public class MapTopologySystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager   = World.Active.GetOrCreateManager<EntityManager>();
-        cubeSize        = TerrainSettings.cubeSize;
+        cubeSize        = TerrainSettings.mapSquareWidth;
 
         EntityArchetypeQuery terrainQuery = new EntityArchetypeQuery{
             All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateTerrain) }

@@ -9,7 +9,7 @@ public class JobifiedNoise
 
     public JobifiedNoise()
     {
-        cubeSize = TerrainSettings.cubeSize;
+        cubeSize = TerrainSettings.mapSquareWidth;
     }
 
     public NativeArray<float> Simplex(float3 offset, float frequency = 0.01f)

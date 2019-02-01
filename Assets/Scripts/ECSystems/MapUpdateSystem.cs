@@ -19,7 +19,7 @@ public class MapUpdateSystem : ComponentSystem
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         
-		cubeSize = TerrainSettings.cubeSize;
+		cubeSize = TerrainSettings.mapSquareWidth;
 
         EntityArchetypeQuery updateQuery = new EntityArchetypeQuery{
             All = new ComponentType[]{ typeof(Tags.BlockChanged), typeof(PendingChange), typeof(MapSquare) }
