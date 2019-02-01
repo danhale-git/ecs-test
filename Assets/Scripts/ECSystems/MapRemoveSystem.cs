@@ -25,11 +25,11 @@ public class MapRemoveSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+        EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
+        NativeArray<ArchetypeChunk> chunks          = removeGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
         ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
 
-        NativeArray<ArchetypeChunk> chunks = removeGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
         for(int c = 0; c < chunks.Length; c++)
         {
