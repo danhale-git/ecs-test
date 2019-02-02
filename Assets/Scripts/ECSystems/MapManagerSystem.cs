@@ -76,6 +76,11 @@ public class MapManagerSystem : ComponentSystem
         previousMatrixRoot  = MatrixRoot()          + offset;
     }
 
+    protected override void OnDestroyManager()
+    {
+        if (mapMatrix.IsCreated) mapMatrix.Dispose ();
+    }
+
     protected override void OnUpdate()
     {
         //  Reset matrix array
