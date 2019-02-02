@@ -8,7 +8,8 @@ using Unity.Transforms;
 using MyComponents;
 
 //	Get y buffer for mesh drawing based on adjacent top/bottom blocks
-[UpdateAfter(typeof(MapAdjacentSystem))]
+[UpdateAfter(typeof(UpdateGroups.NewMapSquareUpdateGroup))]
+[UpdateAfter(typeof(MapUpdateSystem))]
 public class MapDrawBufferSystem : ComponentSystem
 {
     EntityManager entityManager;
