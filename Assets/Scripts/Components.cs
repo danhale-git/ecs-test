@@ -172,3 +172,9 @@ namespace Tags
 }
 
 #endregion
+
+namespace UpdateGroups
+{
+	[UpdateAfter(typeof(MapManagerSystem))]
+	public class NewMapSquareUpdateGroup { }
+}
