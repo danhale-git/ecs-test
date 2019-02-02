@@ -2,7 +2,7 @@
 using Unity.Collections;
 using MyComponents;
 
-[UpdateAfter(typeof(MapLoadSystem))]
+[UpdateAfter(typeof(MapSaveSystem))]
 public class MapRemoveSystem : ComponentSystem
 {
     EntityManager entityManager;

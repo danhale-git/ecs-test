@@ -5,7 +5,7 @@ using Unity.Collections;
 using System.Collections.Generic;
 using MyComponents;
 
-[UpdateAfter(typeof(MapUpdateSystem))]
+[UpdateAfter(typeof(MapManagerSystem))]
 public class MapSaveSystem : ComponentSystem
 {
     EntityManager entityManager;
