@@ -31,14 +31,13 @@ public class MapSlopeSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+        EntityCommandBuffer 		commandBuffer 	= new EntityCommandBuffer(Allocator.Temp);
+		NativeArray<ArchetypeChunk> chunks 			= slopeGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
 		ArchetypeChunkEntityType                entityType = GetArchetypeChunkEntityType();;
     	ArchetypeChunkComponentType<MapSquare>	squareType = GetArchetypeChunkComponentType<MapSquare>();;
 		ArchetypeChunkBufferType<Block> 		blocksType = GetArchetypeChunkBufferType<Block>();;
 		ArchetypeChunkBufferType<Topology> 		heightType = GetArchetypeChunkBufferType<Topology>();;
-
-		NativeArray<ArchetypeChunk> chunks = slopeGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
         for(int c = 0; c < chunks.Length; c++)
         {
@@ -82,9 +81,8 @@ public class MapSlopeSystem : ComponentSystem
     //	Generate list of Y offsets for top 4 cube vertices
 	void GetSlopes(MapSquare mapSquare, DynamicBuffer<Block> blocks, NativeArray<Topology> heightMap, DynamicBuffer<Topology>[] adjacentHeightMaps)
 	{
-
-		//int slopeCount = 0;
 		float3[] directions = Util.CardinalDirections();
+
 		for(int h = 0; h < heightMap.Length; h++)
 		{
 			int height = heightMap[h].height;
@@ -92,7 +90,6 @@ public class MapSlopeSystem : ComponentSystem
 			//	2D position
 			float3 pos = Util.Unflatten2D(h, squareWidth);
 
-			//	3D position
 			int blockIndex = Util.Flatten(pos.x, height - mapSquare.bottomBlockBuffer, pos.z, squareWidth);
 			Block block = blocks[blockIndex];
 
@@ -101,9 +98,9 @@ public class MapSlopeSystem : ComponentSystem
 
 			//	Height differences for all adjacent positions
 			float[] differences = new float[directions.Length];
-
 			int heightDifferenceCount = 0;
 
+			//	Get height differences
 			for(int d = 0; d < directions.Length; d++)
 			{
 				int x = (int)(directions[d].x + pos.x);
@@ -129,10 +126,10 @@ public class MapSlopeSystem : ComponentSystem
 				differences[d] = difference;
 			}
 
-			//	Terrain is not sloped
+			//	Block is not sloped
 			if(heightDifferenceCount == 0) continue;
 			
-			//	Get vertex offsets (-1 to 1) for top vertices of cube required for slope.
+			//	Get vertex offsets (-1 to 1) for top vertices of block
 			float frontRight	= GetVertexOffset(differences[0], differences[2], differences[4]);	//	front right
 			float backRight		= GetVertexOffset(differences[0], differences[3], differences[6]);	//	back right
 			float frontLeft		= GetVertexOffset(differences[1], differences[2], differences[5]);	//	front left
@@ -148,7 +145,7 @@ public class MapSlopeSystem : ComponentSystem
 			SlopeType slopeType = 0;
 			SlopeFacing slopeFacing = 0;
 
-			//	Check slope type and facing axis
+			//	One vertex lowered, inner corner
 			if(changedVertexCount == 1 && (frontLeft != 0 || backRight != 0))
 			{
 				slopeType = SlopeType.INNERCORNER;	//	NWSE
@@ -159,28 +156,30 @@ public class MapSlopeSystem : ComponentSystem
 				slopeType = SlopeType.INNERCORNER;	//	SWNE
 				slopeFacing = SlopeFacing.SWNE;
 			}
+			//	Two opposite vertices lowered, outer corner
 			else if(frontRight < 0 && backLeft < 0)
 			{
-				slopeType = SlopeType.OUTERCORNER;
+				slopeType = SlopeType.OUTERCORNER;	//	NWSE
 				slopeFacing = SlopeFacing.NWSE;
 			}
 			else if(frontLeft < 0 && backRight < 0)
 			{
-				slopeType = SlopeType.OUTERCORNER;
+				slopeType = SlopeType.OUTERCORNER;	//	SWNE
 				slopeFacing = SlopeFacing.SWNE;
 			}
+			//	Not outer but two vertices lowered, flat slope
 			else if(backLeft + backRight + frontLeft + frontRight == -2)
 			{
 				slopeType = SlopeType.FLAT;
 				//	Don't need slope facing for flat slopes, only for corners
 			}
         
-			block.frontRightSlope = frontRight;
-			block.backRightSlope = backRight;
-			block.frontLeftSlope = frontLeft;
-			block.backLeftSlope = backLeft;
-			block.slopeType = slopeType;
-			block.slopeFacing = slopeFacing;
+			block.frontRightSlope 	= frontRight;
+			block.backRightSlope 	= backRight;
+			block.frontLeftSlope 	= frontLeft;
+			block.backLeftSlope 	= backLeft;
+			block.slopeType 		= slopeType;
+			block.slopeFacing 		= slopeFacing;
 
 			blocks[blockIndex] = block;
 		}
@@ -188,9 +187,9 @@ public class MapSlopeSystem : ComponentSystem
 
     float GetVertexOffset(float adjacent1, float adjacent2, float diagonal)
 	{
-		bool anyAboveOne = (adjacent1 > 1 || adjacent2 > 1 || diagonal > 1);
-		bool bothAdjacentAboveZero = (adjacent1 > 0 && adjacent2 > 0);
-		bool anyAdjacentAboveZero = (adjacent1 > 0 || adjacent2 > 0);
+		bool anyAboveOne 			= (adjacent1 > 1 || adjacent2 > 1 || diagonal > 1);
+		bool bothAdjacentAboveZero 	= (adjacent1 > 0 && adjacent2 > 0);
+		bool anyAdjacentAboveZero 	= (adjacent1 > 0 || adjacent2 > 0);
 
 		//	Vert up
 		//if(bothAdjacentAboveZero && anyAboveOne) return 1;
