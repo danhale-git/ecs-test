@@ -51,11 +51,10 @@ public class MapBufferChangeSystem : ComponentSystem
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
-				Entity entity 						= entities[e];
-				DynamicBuffer<Block> blockBuffer 	= blockAccessor[e];
+				Entity 					entity		= entities[e];
+				MapSquare 				mapSquare	= mapSquares[e];
+				DynamicBuffer<Block> 	blockBuffer = blockAccessor[e];
                 DynamicBuffer<Topology> heightmap	= heightmapAccessor[e];
-
-				MapSquare mapSquare = entityManager.GetComponentData<MapSquare>(entity);
 
 				//	Length of one horizontal slice from the 3D array when flattened
 				float sliceLength = math.pow(squareWidth, 2);
