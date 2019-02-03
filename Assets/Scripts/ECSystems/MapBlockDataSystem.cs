@@ -45,10 +45,10 @@ public class MapBlockDataSystem : ComponentSystem
 		{
 			ArchetypeChunk chunk = chunks[c];
 
-			NativeArray<Entity> entities 				= chunk.GetNativeArray(entityType);
-			NativeArray<MapSquare> mapSquares			= chunk.GetNativeArray(mapSquareType);
-			BufferAccessor<Block> blockAccessor 		= chunk.GetBufferAccessor(blocksType);
-            BufferAccessor<Topology> heightmapAccessor 	= chunk.GetBufferAccessor(heightmapType);
+			NativeArray<Entity> 		entities 			= chunk.GetNativeArray(entityType);
+			NativeArray<MapSquare> 		mapSquares			= chunk.GetNativeArray(mapSquareType);
+			BufferAccessor<Block> 		blockAccessor 		= chunk.GetBufferAccessor(blocksType);
+            BufferAccessor<Topology> 	heightmapAccessor 	= chunk.GetBufferAccessor(heightmapType);
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
