@@ -18,23 +18,23 @@ public class PlayerInputSystem : ComponentSystem
     public static Entity playerEntity;
     Camera camera;
     Entity cursorCube;
+    Entity cursorCubeDebug1;
+    Entity cursorCubeDebug2;
 
     struct VoxelRayHit
     {
         readonly public Entity hitBlockOwner, faceBlockOwner;
         readonly public Block hitBlock, faceBlock;
-        readonly public float3 hitWorldPosition;/*, faceWorldPosition ;*/
-        //readonly public float3 normal;
-        public VoxelRayHit(Entity hitBlockOwner, Block hitBlock, Block faceHitBlock, Entity faceBlockOwner, float3 hitWorldPosition/*, float3 faceWorldPosition */)
+        readonly public float3 normal;
+        readonly public float3 worldPosition;
+        public VoxelRayHit(Entity hitBlockOwner, Block hitBlock, Entity faceBlockOwner, Block faceBlock, float3 normal, float3 worldPosition)
         {
             this.hitBlockOwner      = hitBlockOwner;
             this.hitBlock           = hitBlock;
-            this.faceBlock          = faceHitBlock;
             this.faceBlockOwner     = faceBlockOwner;
-            this.hitWorldPosition   = hitWorldPosition;
-            //this.faceWorldPosition  = faceWorldPosition;
-
-            //normal = faceWorldPosition - hitWorldPosition;
+            this.faceBlock          = faceBlock;
+            this.normal             = normal;
+            this.worldPosition      = worldPosition;
         }
     }
 
@@ -45,18 +45,21 @@ public class PlayerInputSystem : ComponentSystem
 
         camera = GameObject.FindObjectOfType<Camera>();
 
-        CreateCursorCube();
+        cursorCube = CreateCursorCube(0.8f, Color.white);
+        cursorCubeDebug1 = CreateCursorCube(0.2f, Color.red);
+        cursorCubeDebug1 = CreateCursorCube(0.2f, Color.green);
     }
 
-    void CreateCursorCube()
+    Entity CreateCursorCube(float scale, Color color)
     {
          EntityArchetype cursorCubeArchetype = entityManager.CreateArchetype(
             ComponentType.Create<Position>(),
             ComponentType.Create<RenderMeshComponent>()
 		);
 
-        cursorCube = entityManager.CreateEntity(cursorCubeArchetype);
-        CursorCubeMesh(cursorCube);
+        Entity cube = entityManager.CreateEntity(cursorCubeArchetype);
+        CursorCubeMesh(cube, scale, color);
+        return cube;
     }
 
     Block previousBlock;
@@ -74,8 +77,11 @@ public class PlayerInputSystem : ComponentSystem
         if(targetingBlock)
         {
             //float3 world = hit
-            Position newPosition = new Position{ Value = hit.hitWorldPosition };
+            Position newPosition = new Position{ Value = hit.worldPosition + (hit.normal / 5) };
             entityManager.SetComponentData<Position>(cursorCube, newPosition);
+
+            Position debugPos1 = new Position{ Value = hit.worldPosition + hit.normal };
+            entityManager.SetComponentData<Position>(cursorCubeDebug1, debugPos1);
         }
 
         if(Input.GetButtonDown("Fire1")/* && targetingBlock */)
@@ -130,16 +136,16 @@ public class PlayerInputSystem : ComponentSystem
         //  Map square at origin
         float3 previousVoxelOwnerPosition = Util.VoxelOwner(ray.origin, squareWidth);
 
-        Entity                  entity;
+        Entity                  currentOwner;
         MapSquare               mapSquare;
         DynamicBuffer<Block>    blocks;
 
         //  Origin entity does not exist
-        if(!GetBlockOwner(previousVoxelOwnerPosition, out entity))
+        if(!GetBlockOwner(previousVoxelOwnerPosition, out currentOwner))
             throw new Exception("Camera is in non-existent map square");
 
-        mapSquare   = entityManager.GetComponentData<MapSquare>(entity);
-        blocks      = entityManager.GetBuffer<Block>(entity);       
+        mapSquare   = entityManager.GetComponentData<MapSquare>(currentOwner);
+        blocks      = entityManager.GetBuffer<Block>(currentOwner);       
 
         //  Round to closest (up or down) for accurate results
         float3 origin = Util.Float3Round(ray.origin);
@@ -174,10 +180,8 @@ public class PlayerInputSystem : ComponentSystem
         exz = az - ax;
         ezy = ay - az;
 
-        float3 previousVoxel = float3.zero;
-        Entity previousEntity = entity;
-        MapSquare previousMapSquare = mapSquare;
-        Block previousBlock = new Block();
+        Block previousBlock     = new Block();
+        Entity previousOwner    = currentOwner;
 
         //  Traverse voxels
         for(int i = 0; i < 1000; i++)
@@ -219,14 +223,14 @@ public class PlayerInputSystem : ComponentSystem
             if(!previousVoxelOwnerPosition.Equals(nextVoxelOwnerPosition))
             {
                 //  Update current map square
-                if(!GetBlockOwner(nextVoxelOwnerPosition, out entity))
+                if(!GetBlockOwner(nextVoxelOwnerPosition, out currentOwner))
                     continue;
 
-                mapSquare   = entityManager.GetComponentData<MapSquare>(entity);
-                blocks      = entityManager.GetBuffer<Block>(entity);
+                mapSquare   = entityManager.GetComponentData<MapSquare>(currentOwner);
+                blocks      = entityManager.GetBuffer<Block>(currentOwner);
 
                 //  Hit the edge of the drawn map
-                if(entityManager.HasComponent<Tags.InnerBuffer>(entity))
+                if(entityManager.HasComponent<Tags.InnerBuffer>(currentOwner))
                     return false;
             }
 
@@ -237,34 +241,35 @@ public class PlayerInputSystem : ComponentSystem
             if(index >= blocks.Length || index < 0)
                 continue;
 
+            Block block = blocks[index];
+
             //  Found a non-air block
             if(blocks[index].type != 0)
             {
-                if(i == 0 || previousVoxel.Equals(float3.zero))
-                    throw new Exception("Hit on try "+(i+1)+" with previous hit at "+previousVoxel);
-
-                int previousIndex = Util.BlockIndex(previousVoxel, previousMapSquare, squareWidth);
+                float3 hitWorld = block.localPosition + mapSquare.position;
+                float3 faceWorld = previousBlock.localPosition + entityManager.GetComponentData<MapSquare>(previousOwner).position;
 
                 hit = new VoxelRayHit(
-                    entity,
-                    blocks[index],
-                    blocks[previousIndex],
-                    previousEntity,
-                    mapSquare.position + blocks[index].localPosition
+                    currentOwner,
+                    block,
+                    previousOwner,
+                    previousBlock,
+                    faceWorld - hitWorld,
+                    hitWorld
                 );
+
                 return true;
             }
-
-            previousVoxel = voxel;
-            previousEntity = entity;
-            previousMapSquare = mapSquare;
+            
+            previousOwner = currentOwner;
+            previousBlock = block;
             previousVoxelOwnerPosition = nextVoxelOwnerPosition;
         }
         throw new Exception("Ray traversed 1000 voxels without finding anything");
     }
 
     //	Vertices for normal cube
-	void CursorCubeMesh(Entity cubeEntity)
+	void CursorCubeMesh(Entity cubeEntity, float scale, Color color)
 	{	
         CubeVertices baseVerts = new CubeVertices(true);
 
@@ -272,30 +277,30 @@ public class PlayerInputSystem : ComponentSystem
 
         int[] triangles = new int[36];
 
-        vertices[0]  = baseVerts[5] * 0.8f;
-        vertices[1]  = baseVerts[6] * 0.8f;
-        vertices[2]  = baseVerts[2] * 0.8f;
-        vertices[3]  = baseVerts[1] * 0.8f;
-        vertices[4]  = baseVerts[7] * 0.8f;
-        vertices[5]  = baseVerts[4] * 0.8f;
-        vertices[6]  = baseVerts[0] * 0.8f;
-        vertices[7]  = baseVerts[3] * 0.8f;
-        vertices[8]  = baseVerts[4] * 0.8f;
-        vertices[9]  = baseVerts[5] * 0.8f;
-        vertices[10] = baseVerts[1] * 0.8f;
-        vertices[11] = baseVerts[0] * 0.8f;
-        vertices[12] = baseVerts[6] * 0.8f;
-        vertices[13] = baseVerts[7] * 0.8f;
-        vertices[14] = baseVerts[3] * 0.8f;
-        vertices[15] = baseVerts[2] * 0.8f;
-        vertices[16] = baseVerts[7] * 0.8f;
-        vertices[17] = baseVerts[6] * 0.8f;
-        vertices[18] = baseVerts[5] * 0.8f;
-        vertices[19] = baseVerts[4] * 0.8f;
-        vertices[20] = baseVerts[0] * 0.8f;
-        vertices[21] = baseVerts[1] * 0.8f;
-        vertices[22] = baseVerts[2] * 0.8f;
-        vertices[23] = baseVerts[3] * 0.8f;
+        vertices[0]  = baseVerts[5] * scale;
+        vertices[1]  = baseVerts[6] * scale;
+        vertices[2]  = baseVerts[2] * scale;
+        vertices[3]  = baseVerts[1] * scale;
+        vertices[4]  = baseVerts[7] * scale;
+        vertices[5]  = baseVerts[4] * scale;
+        vertices[6]  = baseVerts[0] * scale;
+        vertices[7]  = baseVerts[3] * scale;
+        vertices[8]  = baseVerts[4] * scale;
+        vertices[9]  = baseVerts[5] * scale;
+        vertices[10] = baseVerts[1] * scale;
+        vertices[11] = baseVerts[0] * scale;
+        vertices[12] = baseVerts[6] * scale;
+        vertices[13] = baseVerts[7] * scale;
+        vertices[14] = baseVerts[3] * scale;
+        vertices[15] = baseVerts[2] * scale;
+        vertices[16] = baseVerts[7] * scale;
+        vertices[17] = baseVerts[6] * scale;
+        vertices[18] = baseVerts[5] * scale;
+        vertices[19] = baseVerts[4] * scale;
+        vertices[20] = baseVerts[0] * scale;
+        vertices[21] = baseVerts[1] * scale;
+        vertices[22] = baseVerts[2] * scale;
+        vertices[23] = baseVerts[3] * scale;
 
         int index = 0;
         int vertIndex = 0;
@@ -316,7 +321,7 @@ public class PlayerInputSystem : ComponentSystem
         
         for(int i = 0; i < 24; i++)
         {
-            colors[i] = new Color(1, 1, 1, 0.2f);
+            colors[i] = color;
         }
 
         Mesh mesh 		= new Mesh();
