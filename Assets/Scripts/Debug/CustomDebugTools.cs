@@ -28,13 +28,14 @@ public static class CustomDebugTools
     }
 
     static Vector3[] cubeVectors = CubeVectors();
-    public static List<Dictionary<Entity, List<DebugLine>>> allLines = new List<Dictionary<Entity, List<DebugLine>>>()
+    public static List<Dictionary<Entity, List<DebugLine>>> mapSquareLines = new List<Dictionary<Entity, List<DebugLine>>>()
     {
         new Dictionary<Entity, List<DebugLine>>(),  //  Horizontal Buffer
         new Dictionary<Entity, List<DebugLine>>(),  //  Block buffer
         new Dictionary<Entity, List<DebugLine>>(),  //  Mark error
         new Dictionary<Entity, List<DebugLine>>()   //  Draw buffer
     };
+    public static List<DebugLine> lines = new List<DebugLine>();
 
     public static int squareWidth = TerrainSettings.mapSquareWidth;
     public struct DebugLine
@@ -75,7 +76,7 @@ public static class CustomDebugTools
             topOnly: true
         );
 
-        allLines[0][entity] = rect;
+        mapSquareLines[0][entity] = rect;
     }
 
     //  allLines[1]
@@ -93,7 +94,7 @@ public static class CustomDebugTools
             noSides: false
         );
 
-        allLines[1][entity] = blockBufferRects;
+        mapSquareLines[1][entity] = blockBufferRects;
     }
     //  allLines[3]
     public static void DrawBufferDebug(Entity entity, MapSquare mapSquare)
@@ -110,7 +111,7 @@ public static class CustomDebugTools
             noSides: false
         );
 
-        allLines[3][entity] = blockBufferRects;
+        mapSquareLines[3][entity] = blockBufferRects;
     }
 
     //  allLines[2]
@@ -129,7 +130,7 @@ public static class CustomDebugTools
             noSides: false
         );
 
-        allLines[2][entity] = errorCuboid;
+        mapSquareLines[2][entity] = errorCuboid;
     }
 
     //  allLines[2]
@@ -146,7 +147,12 @@ public static class CustomDebugTools
             noSides: false
         );
 
-        allLines[2][manager.CreateEntity()] = errorCuboid;
+        mapSquareLines[2][manager.CreateEntity()] = errorCuboid;
+    }
+
+    public static void Line(float3 start, float3 end, Color color)
+    {
+        lines.Add(new DebugLine(start, end, color));
     }
 
     static List<DebugLine> CreateBox(Vector3 position, float size, Color color, float top, float bottom, bool noSides = false, bool topOnly = false)

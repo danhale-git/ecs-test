@@ -29,9 +29,9 @@ public class DebugMonoB : MonoBehaviour
 
         EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
 
-        for(int i = 0; i < CustomDebugTools.allLines.Count; i++)
+        for(int i = 0; i < CustomDebugTools.mapSquareLines.Count; i++)
         {
-            Dictionary<Entity, List<CustomDebugTools.DebugLine>> dict = CustomDebugTools.allLines[i];
+            Dictionary<Entity, List<CustomDebugTools.DebugLine>> dict = CustomDebugTools.mapSquareLines[i];
             Dictionary<Entity, List<CustomDebugTools.DebugLine>> dictCopy = new Dictionary<Entity, List<CustomDebugTools.DebugLine>>();
             foreach(KeyValuePair<Entity, List<CustomDebugTools.DebugLine>> kvp in dict)
             {
@@ -46,7 +46,13 @@ public class DebugMonoB : MonoBehaviour
                 }
             }
 
-            CustomDebugTools.allLines[i] = dictCopy;
+            CustomDebugTools.mapSquareLines[i] = dictCopy;
+        }
+
+        foreach(CustomDebugTools.DebugLine line in CustomDebugTools.lines)
+        {
+            Gizmos.color = line.c;
+            Gizmos.DrawLine(line.a, line.b);
         }
     }
 }
