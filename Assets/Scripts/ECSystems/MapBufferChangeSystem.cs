@@ -7,7 +7,7 @@ using Unity.Transforms;
 using UnityEngine;
 using MyComponents;
 
-//	Generate 3D block data from 2D terrain data
+//	Increase size of block data array and fill gaps
 [UpdateAfter(typeof(MapBlockBufferSystem))]
 public class MapBufferChangeSystem : ComponentSystem
 {
@@ -15,46 +15,30 @@ public class MapBufferChangeSystem : ComponentSystem
 
 	int squareWidth;
 
-	ArchetypeChunkEntityType 					entityType;
-	ArchetypeChunkComponentType<MapSquare>		mapSquareType;
-	ArchetypeChunkBufferType<Block> 			blocksType;
-	ArchetypeChunkBufferType<Topology> 		heightmapType;	
-
-	EntityArchetypeQuery mapSquareQuery;
+	ComponentGroup bufferChangedGroup;
 
 	protected override void OnCreateManager()
 	{
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
+
 		squareWidth = TerrainSettings.mapSquareWidth;
 
-		mapSquareQuery = new EntityArchetypeQuery
-		{
-			Any 	= Array.Empty<ComponentType>(),
+		EntityArchetypeQuery mapSquareQuery = new EntityArchetypeQuery{
 			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.BufferChanged) }
 		};
+		bufferChangedGroup = GetComponentGroup(mapSquareQuery);
 	}
 
 	protected override void OnUpdate()
 	{
-		entityType 		= GetArchetypeChunkEntityType();
-		mapSquareType	= GetArchetypeChunkComponentType<MapSquare>();
+		EntityCommandBuffer 		commandBuffer 	= new EntityCommandBuffer(Allocator.Temp);
+		NativeArray<ArchetypeChunk> chunks 			= bufferChangedGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
-		blocksType 		= GetArchetypeChunkBufferType<Block>();
-        heightmapType 	= GetArchetypeChunkBufferType<Topology>();
-
-		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-			mapSquareQuery,
-			Allocator.TempJob
-			);
-
-		if(chunks.Length == 0) chunks.Dispose();
-		else UpdateBuffers(chunks);
-	}
-
-	void UpdateBuffers(NativeArray<ArchetypeChunk> chunks)
-	{
-		EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+		ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
+		ArchetypeChunkComponentType<MapSquare> 	mapSquareType	= GetArchetypeChunkComponentType<MapSquare>();
+		ArchetypeChunkBufferType<Block> 		blocksType 		= GetArchetypeChunkBufferType<Block>();
+        ArchetypeChunkBufferType<Topology> 		heightmapType 	= GetArchetypeChunkBufferType<Topology>();
 
 		for(int c = 0; c < chunks.Length; c++)
 		{
@@ -69,42 +53,52 @@ public class MapBufferChangeSystem : ComponentSystem
 			{
 				Entity entity 						= entities[e];
 				DynamicBuffer<Block> blockBuffer 	= blockAccessor[e];
-                DynamicBuffer<Topology> heightmap		= heightmapAccessor[e];
+                DynamicBuffer<Topology> heightmap	= heightmapAccessor[e];
 
 				MapSquare mapSquare = entityManager.GetComponentData<MapSquare>(entity);
 
+				//	Length of one horizontal slice from the 3D array when flattened
 				float sliceLength = math.pow(squareWidth, 2);
 
-				float bottomSliceCount 	= blockBuffer[0].localPosition.y - mapSquare.bottomBlockBuffer;
-				float topSliceCount 	= mapSquare.topBlockBuffer - blockBuffer[blockBuffer.Length-1].localPosition.y;
-
+				//	Current array of blocks
 				NativeArray<Block> oldBlocks = new NativeArray<Block>(blockBuffer.Length, Allocator.TempJob);
 				oldBlocks.CopyFrom(blockBuffer.AsNativeArray());
 
+				//	Reset map square entity's block buffer at new length
 				DynamicBuffer<Block> newBuffer = commandBuffer.SetBuffer<Block>(entity);
 				newBuffer.ResizeUninitialized(mapSquare.blockGenerationArrayLength);
 
-				int bottomOffset 	= (int)	(bottomSliceCount	* sliceLength);
-				int topOffset		= (int)	(topSliceCount		* sliceLength);
-				int topStart		= 		(bottomOffset + oldBlocks.Length);
+				//	Number of additional array slices added at top and bottom
+				float bottomSliceCount 	= blockBuffer[0].localPosition.y - mapSquare.bottomBlockBuffer;
+				float topSliceCount 	= mapSquare.topBlockBuffer - blockBuffer[blockBuffer.Length-1].localPosition.y;
 
-				NativeArray<Block> prepend = GetBlocks(mapSquare, heightmap, bottomOffset);
+				//	Indices at which bottom and top additions start and finish
+				int	bottomStart		= 0;
+				int bottomOffset 	= (int)	(bottomSliceCount * sliceLength);
+				int topStart		= 		(bottomOffset + oldBlocks.Length);
+				int topOffset		= (int)	(topSliceCount	* sliceLength);
+
+				//	Block data for bottom and top additions
+				NativeArray<Block> prepend = GetBlocks(mapSquare, heightmap, bottomOffset, bottomStart);
 				NativeArray<Block> append = GetBlocks(mapSquare, heightmap, topOffset, topStart);
 
+				//	Add blocks to bottom of array
 				for(int i = 0; i < bottomOffset; i++)
-					newBuffer[i] 				= prepend[i];//GetBlock(i, mapSquare, heightmap);
+					newBuffer[i] 				= prepend[i];
 
+				//	Add existing block data
 				for(int i = 0; i < oldBlocks.Length; i++)
 					newBuffer[i+bottomOffset] 	= oldBlocks[i];
 
+				//	Add blocks to top of array
 				for(int i = 0; i < topOffset; i++)
-					newBuffer[i + topStart] 	= append[i];//GetBlock(index, mapSquare, heightmap);
+					newBuffer[i + topStart] 	= append[i];
 
 				commandBuffer.RemoveComponent<Tags.BufferChanged>(entity);
 
 				prepend.Dispose();
-				append.Dispose(); 
 				oldBlocks.Dispose();
+				append.Dispose(); 
 			}
 		}
 		
@@ -114,7 +108,7 @@ public class MapBufferChangeSystem : ComponentSystem
 		chunks.Dispose();
 	}
 
-	NativeArray<Block> GetBlocks(MapSquare mapSquare, DynamicBuffer<Topology> heightMap, int arrayLength, int offset = 0)
+	NativeArray<Block> GetBlocks(MapSquare mapSquare, DynamicBuffer<Topology> heightMap, int arrayLength, int offset)
 	{
 		//	Block data for all cubes in the map square
 		var blocks = new NativeArray<Block>(arrayLength, Allocator.TempJob);
