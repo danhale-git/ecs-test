@@ -176,10 +176,10 @@ public class MapSlopeSystem : ComponentSystem
 
 			BlockSlope slope = new BlockSlope();
         
-			slope.frontRightSlope 	= frontRight;
-			slope.backRightSlope 	= backRight;
-			slope.frontLeftSlope 	= frontLeft;
-			slope.backLeftSlope 	= backLeft;
+			slope.frontRightSlope 	= (sbyte)frontRight;
+			slope.backRightSlope 	= (sbyte)backRight;
+			slope.frontLeftSlope 	= (sbyte)frontLeft;
+			slope.backLeftSlope 	= (sbyte)backLeft;
 			slope.slopeType 		= slopeType;
 			slope.slopeFacing 		= slopeFacing;
 

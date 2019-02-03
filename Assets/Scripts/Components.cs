@@ -111,10 +111,10 @@ namespace MyComponents
 
 	public struct BlockSlope
 	{
-		public float frontRightSlope;
-		public float backRightSlope;
-		public float frontLeftSlope;
-		public float backLeftSlope;
+		public sbyte frontRightSlope;
+		public sbyte backRightSlope;
+		public sbyte frontLeftSlope;
+		public sbyte backLeftSlope;
 
 		public SlopeType slopeType;
 		public SlopeFacing slopeFacing;
