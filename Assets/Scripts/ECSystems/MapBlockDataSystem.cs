@@ -23,9 +23,7 @@ public class MapBlockDataSystem : ComponentSystem
 		
 		squareWidth = TerrainSettings.mapSquareWidth;
 
-		EntityArchetypeQuery mapSquareQuery = new EntityArchetypeQuery
-		{
-			Any 	= Array.Empty<ComponentType>(),
+		EntityArchetypeQuery mapSquareQuery = new EntityArchetypeQuery{
 			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateBlocks) }
 		};
@@ -55,9 +53,9 @@ public class MapBlockDataSystem : ComponentSystem
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity 						= entities[e];
+				MapSquare mapSquare 				= mapSquares[e];
 				DynamicBuffer<Block> blockBuffer 	= blockAccessor[e];
                 DynamicBuffer<Topology> heightmap	= heightmapAccessor[e];
-				MapSquare mapSquare 				= mapSquares[e];
 
 				//	Resize buffer to size of (blocks in a cube) * (number of cubes)
 				blockBuffer.ResizeUninitialized(mapSquare.blockGenerationArrayLength);
@@ -66,7 +64,7 @@ public class MapBlockDataSystem : ComponentSystem
 				NativeArray<Block> blocks = GetBlocks(
 					mapSquares[e],
 					heightmap
-					);
+				);
 
 				//	Fill buffer
 				for(int b = 0; b < blocks.Length; b++)
