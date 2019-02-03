@@ -84,8 +84,6 @@ public class MapSaveSystem : ComponentSystem
         //  Acre has changed and doesn't exist
         if(!acrePosition.Equals(previousAcrePosition) && !allAcres.ContainsKey(acrePosition))
         {
-            CustomDebugTools.IncrementDebugCount("Acres saved");
-            
             //  New acre, create dictionary entries
             allAcres[acrePosition]          = new SaveData[acreArrayLength];
             mapSquareChanged[acrePosition]  = new bool[acreArrayLength];

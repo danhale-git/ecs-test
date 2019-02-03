@@ -132,13 +132,12 @@ public class MapManagerSystem : ComponentSystem
 
     void CheckExistingSquares(out NativeList<Entity> toRemove, out NativeArray<int> doNotCreate)
 	{
-        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+        EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
+		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);	
 
 		ArchetypeChunkEntityType                entityType	    = GetArchetypeChunkEntityType();
 		ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>();
 		
-		NativeArray<ArchetypeChunk> chunks = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);	
-
         toRemove    = new NativeList<Entity>(Allocator.TempJob);
         doNotCreate = new NativeArray<int>(matrixArrayLength, Allocator.TempJob);
 
@@ -153,7 +152,7 @@ public class MapManagerSystem : ComponentSystem
 
 			for(int e = 0; e < entities.Length; e++)
 			{
-				Entity entity = entities[e];
+				Entity entity   = entities[e];
 				float3 position = positions[e].Value;
 
                 bool inPreviousRadius   = SquareInMatrix(position, previousMatrixRoot);
@@ -163,8 +162,8 @@ public class MapManagerSystem : ComponentSystem
                 if(inCurrentRadius)
                 {
                     //  Index in flattened matrix
-		            float3 index = IndexInCurrentMatrix(position);
-                    int flatIndex = Util.Flatten2D(index.x, index.z, matrixWidth);
+		            float3 index    = IndexInCurrentMatrix(position);
+                    int flatIndex   = Util.Flatten2D(index.x, index.z, matrixWidth);
 
                     //  Add map square in matrices
                     mapMatrix[flatIndex]    = entity;

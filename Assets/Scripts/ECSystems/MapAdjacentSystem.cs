@@ -12,6 +12,7 @@ using MyComponents;
 public class MapAdjacentSystem : ComponentSystem
 {
     EntityManager entityManager;
+	MapManagerSystem managerSystem;
 
 	int squareWidth;
 
@@ -20,6 +21,8 @@ public class MapAdjacentSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
+		managerSystem = World.Active.GetOrCreateManager<MapManagerSystem>();
+
 		squareWidth = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery adjacentQuery = new EntityArchetypeQuery{
@@ -31,14 +34,11 @@ public class MapAdjacentSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
-
-		MapManagerSystem managerSystem = World.Active.GetOrCreateManager<MapManagerSystem>();
+        EntityCommandBuffer 		commandBuffer 	= new EntityCommandBuffer(Allocator.Temp);
+        NativeArray<ArchetypeChunk> chunks 			= adjacentGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
         ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
         ArchetypeChunkComponentType<Position> 	positionType 	= GetArchetypeChunkComponentType<Position>();
-
-        NativeArray<ArchetypeChunk> chunks = adjacentGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
 		//	Map square position offsets in 8 cardinal directions
 		float3[] adjacentPositions = new float3[8];

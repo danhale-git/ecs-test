@@ -113,12 +113,12 @@ public class MapBufferChangeSystem : ComponentSystem
 		var blocks = new NativeArray<Block>(arrayLength, Allocator.TempJob);
 
 		BlocksJob job = new BlocksJob{
-			blocks = blocks,
-			mapSquare = mapSquare,
-			heightMap = heightMap,
+			blocks 		= blocks,
+			mapSquare 	= mapSquare,
+			heightMap 	= heightMap,
 			squareWidth = squareWidth,
-			util = new JobUtil(),
-			offset = offset
+			util 		= new JobUtil(),
+			offset 		= offset
 		};
 		
 		job.Schedule(arrayLength, 1).Complete(); 

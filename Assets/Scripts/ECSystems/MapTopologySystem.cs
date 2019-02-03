@@ -12,6 +12,7 @@ using MyComponents;
 public class MapTopologySystem : ComponentSystem
 {
     EntityManager entityManager;
+
     int squareWidth;
 
     ComponentGroup terrainGroup;
@@ -21,7 +22,8 @@ public class MapTopologySystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager   = World.Active.GetOrCreateManager<EntityManager>();
-        squareWidth        = TerrainSettings.mapSquareWidth;
+        
+        squareWidth     = TerrainSettings.mapSquareWidth;
 
         EntityArchetypeQuery terrainQuery = new EntityArchetypeQuery{
             All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateTerrain) }
@@ -33,12 +35,11 @@ public class MapTopologySystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+        EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
+        NativeArray<ArchetypeChunk> chunks          = terrainGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
         ArchetypeChunkEntityType                entityType      = GetArchetypeChunkEntityType();
         ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>();
-
-        NativeArray<ArchetypeChunk> chunks = terrainGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
         for(int c = 0; c < chunks.Length; c++)
         {

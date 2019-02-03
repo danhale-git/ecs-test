@@ -31,13 +31,12 @@ public class MapBlockBufferSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+        EntityCommandBuffer 		commandBuffer 	= new EntityCommandBuffer(Allocator.Temp);
+        NativeArray<ArchetypeChunk> chunks 			= blockBufferGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
         ArchetypeChunkEntityType 						entityType 		= GetArchetypeChunkEntityType();
 		ArchetypeChunkComponentType<MapSquare> 			mapSquareType 	= GetArchetypeChunkComponentType<MapSquare>();
 		ArchetypeChunkComponentType<AdjacentSquares> 	adjacentType 	= GetArchetypeChunkComponentType<AdjacentSquares>();
-
-        NativeArray<ArchetypeChunk> chunks = blockBufferGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
 		for(int c = 0; c < chunks.Length; c++)
 		{

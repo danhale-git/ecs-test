@@ -32,14 +32,13 @@ public class MapBlockDataSystem : ComponentSystem
 
 	protected override void OnUpdate()
 	{
-		EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+		EntityCommandBuffer 		commandBuffer 	= new EntityCommandBuffer(Allocator.Temp);
+		NativeArray<ArchetypeChunk> chunks 			= generateBlocksGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
 		ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
 		ArchetypeChunkComponentType<MapSquare> 	mapSquareType	= GetArchetypeChunkComponentType<MapSquare>();
 		ArchetypeChunkBufferType<Block> 		blocksType 		= GetArchetypeChunkBufferType<Block>();
         ArchetypeChunkBufferType<Topology> 		heightmapType 	= GetArchetypeChunkBufferType<Topology>();
-
-		NativeArray<ArchetypeChunk> chunks = generateBlocksGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
 		for(int c = 0; c < chunks.Length; c++)
 		{
@@ -104,11 +103,11 @@ public class MapBlockDataSystem : ComponentSystem
 		var blocks = new NativeArray<Block>(mapSquare.blockDataArrayLength, Allocator.TempJob);
 
 		BlocksJob job = new BlocksJob{
-			blocks = blocks,
-			mapSquare = mapSquare,
-			heightMap = heightMap,
+			blocks		= blocks,
+			mapSquare 	= mapSquare,
+			heightMap 	= heightMap,
 			squareWidth = squareWidth,
-			util = new JobUtil()
+			util 		= new JobUtil()
 		};
 		
 		job.Schedule(mapSquare.blockDataArrayLength, 1).Complete(); 

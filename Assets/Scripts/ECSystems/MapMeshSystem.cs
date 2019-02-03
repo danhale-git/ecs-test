@@ -54,8 +54,8 @@ public class MapMeshSystem : ComponentSystem
 	//	Query for meshes that need drawing
 	protected override void OnUpdate()
 	{
-		EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
-		NativeArray<ArchetypeChunk> chunks = meshGroup.CreateArchetypeChunkArray(Allocator.TempJob);
+		EntityCommandBuffer 		commandBuffer 	= new EntityCommandBuffer(Allocator.Temp);
+		NativeArray<ArchetypeChunk> chunks 			= meshGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
 		ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
 		ArchetypeChunkComponentType<MapSquare> 	squareType		= GetArchetypeChunkComponentType<MapSquare>();

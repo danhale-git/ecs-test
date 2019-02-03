@@ -30,16 +30,13 @@ public class MapRemoveSystem : ComponentSystem
 
         ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
 
-
         for(int c = 0; c < chunks.Length; c++)
         {
             NativeArray<Entity> entities = chunks[c].GetNativeArray(entityType);
 
             for(int e = 0; e < entities.Length; e++)
             {
-                Entity entity = entities[e];
-
-                commandBuffer.DestroyEntity(entity);
+                commandBuffer.DestroyEntity(entities[e]);
             }
         }
 
