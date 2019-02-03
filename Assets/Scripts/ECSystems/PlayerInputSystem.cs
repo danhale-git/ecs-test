@@ -21,18 +21,20 @@ public class PlayerInputSystem : ComponentSystem
 
     struct VoxelRayHit
     {
-        readonly public int blockIndex;
-        readonly public Entity blockOwner, faceBlockOwner;
-        readonly public Block hitBlock, faceHitBlock;
-        readonly public float3 worldPosition;
-        public VoxelRayHit(int blockIndex, Entity blockOwner, Block hitBlock, Block faceHitBlock, Entity faceBlockOwner, float3 worldPosition)
+        readonly public Entity hitBlockOwner, faceBlockOwner;
+        readonly public Block hitBlock, faceBlock;
+        readonly public float3 hitWorldPosition;/*, faceWorldPosition ;*/
+        //readonly public float3 normal;
+        public VoxelRayHit(Entity hitBlockOwner, Block hitBlock, Block faceHitBlock, Entity faceBlockOwner, float3 hitWorldPosition/*, float3 faceWorldPosition */)
         {
-            this.blockIndex         = blockIndex;
-            this.blockOwner         = blockOwner;
+            this.hitBlockOwner      = hitBlockOwner;
             this.hitBlock           = hitBlock;
-            this.faceHitBlock       = faceHitBlock;
+            this.faceBlock          = faceHitBlock;
             this.faceBlockOwner     = faceBlockOwner;
-            this.worldPosition      = worldPosition;
+            this.hitWorldPosition   = hitWorldPosition;
+            //this.faceWorldPosition  = faceWorldPosition;
+
+            //normal = faceWorldPosition - hitWorldPosition;
         }
     }
 
@@ -71,19 +73,20 @@ public class PlayerInputSystem : ComponentSystem
 
         if(targetingBlock)
         {
-            Position newPosition = new Position{ Value = hit.worldPosition };
+            //float3 world = hit
+            Position newPosition = new Position{ Value = hit.hitWorldPosition };
             entityManager.SetComponentData<Position>(cursorCube, newPosition);
         }
 
         if(Input.GetButtonDown("Fire1")/* && targetingBlock */)
         {
             if(targetingBlock)
-                ChangeBlock(0, hit.hitBlock, hit.blockOwner);
+                ChangeBlock(0, hit.hitBlock, hit.hitBlockOwner);
         }
         else if(Input.GetButtonDown("Fire2")/* && targetingBlock */)
         {
             if(targetingBlock)
-                ChangeBlock(1, hit.faceHitBlock, hit.faceBlockOwner);
+                ChangeBlock(1, hit.faceBlock, hit.faceBlockOwner);
         }
     }
 
@@ -174,6 +177,7 @@ public class PlayerInputSystem : ComponentSystem
         float3 previousVoxel = float3.zero;
         Entity previousEntity = entity;
         MapSquare previousMapSquare = mapSquare;
+        Block previousBlock = new Block();
 
         //  Traverse voxels
         for(int i = 0; i < 1000; i++)
@@ -241,13 +245,20 @@ public class PlayerInputSystem : ComponentSystem
 
                 int previousIndex = Util.BlockIndex(previousVoxel, previousMapSquare, squareWidth);
 
-                hit = new VoxelRayHit(index, entity, blocks[index], blocks[previousIndex], previousEntity, mapSquare.position + blocks[index].localPosition);
+                hit = new VoxelRayHit(
+                    entity,
+                    blocks[index],
+                    blocks[previousIndex],
+                    previousEntity,
+                    mapSquare.position + blocks[index].localPosition
+                );
                 return true;
             }
 
             previousVoxel = voxel;
             previousEntity = entity;
             previousMapSquare = mapSquare;
+            previousVoxelOwnerPosition = nextVoxelOwnerPosition;
         }
         throw new Exception("Ray traversed 1000 voxels without finding anything");
     }
@@ -261,30 +272,30 @@ public class PlayerInputSystem : ComponentSystem
 
         int[] triangles = new int[36];
 
-        vertices[0]  = baseVerts[5] * 1.2f;
-        vertices[1]  = baseVerts[6] * 1.2f;
-        vertices[2]  = baseVerts[2] * 1.2f;
-        vertices[3]  = baseVerts[1] * 1.2f;
-        vertices[4]  = baseVerts[7] * 1.2f;
-        vertices[5]  = baseVerts[4] * 1.2f;
-        vertices[6]  = baseVerts[0] * 1.2f;
-        vertices[7]  = baseVerts[3] * 1.2f;
-        vertices[8]  = baseVerts[4] * 1.2f;
-        vertices[9]  = baseVerts[5] * 1.2f;
-        vertices[10] = baseVerts[1] * 1.2f;
-        vertices[11] = baseVerts[0] * 1.2f;
-        vertices[12] = baseVerts[6] * 1.2f;
-        vertices[13] = baseVerts[7] * 1.2f;
-        vertices[14] = baseVerts[3] * 1.2f;
-        vertices[15] = baseVerts[2] * 1.2f;
-        vertices[16] = baseVerts[7] * 1.2f;
-        vertices[17] = baseVerts[6] * 1.2f;
-        vertices[18] = baseVerts[5] * 1.2f;
-        vertices[19] = baseVerts[4] * 1.2f;
-        vertices[20] = baseVerts[0] * 1.2f;
-        vertices[21] = baseVerts[1] * 1.2f;
-        vertices[22] = baseVerts[2] * 1.2f;
-        vertices[23] = baseVerts[3] * 1.2f;
+        vertices[0]  = baseVerts[5] * 0.8f;
+        vertices[1]  = baseVerts[6] * 0.8f;
+        vertices[2]  = baseVerts[2] * 0.8f;
+        vertices[3]  = baseVerts[1] * 0.8f;
+        vertices[4]  = baseVerts[7] * 0.8f;
+        vertices[5]  = baseVerts[4] * 0.8f;
+        vertices[6]  = baseVerts[0] * 0.8f;
+        vertices[7]  = baseVerts[3] * 0.8f;
+        vertices[8]  = baseVerts[4] * 0.8f;
+        vertices[9]  = baseVerts[5] * 0.8f;
+        vertices[10] = baseVerts[1] * 0.8f;
+        vertices[11] = baseVerts[0] * 0.8f;
+        vertices[12] = baseVerts[6] * 0.8f;
+        vertices[13] = baseVerts[7] * 0.8f;
+        vertices[14] = baseVerts[3] * 0.8f;
+        vertices[15] = baseVerts[2] * 0.8f;
+        vertices[16] = baseVerts[7] * 0.8f;
+        vertices[17] = baseVerts[6] * 0.8f;
+        vertices[18] = baseVerts[5] * 0.8f;
+        vertices[19] = baseVerts[4] * 0.8f;
+        vertices[20] = baseVerts[0] * 0.8f;
+        vertices[21] = baseVerts[1] * 0.8f;
+        vertices[22] = baseVerts[2] * 0.8f;
+        vertices[23] = baseVerts[3] * 0.8f;
 
         int index = 0;
         int vertIndex = 0;
