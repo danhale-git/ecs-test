@@ -83,10 +83,6 @@ public class MapManagerSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        //  Reset matrix array
-        if(mapMatrix.IsCreated) mapMatrix.Dispose();
-        mapMatrix       = new NativeArray<Entity>(matrixArrayLength, Allocator.Persistent);
-
         //  Update current positions
         currentMapSquare    = CurrentMapSquare();
         currentMatrixRoot          = MatrixRoot();
@@ -94,6 +90,10 @@ public class MapManagerSystem : ComponentSystem
         //  Player moved to a different square
         if(!currentMapSquare.Equals(previousMapSquare))
         {
+            //  Reset matrix array
+            if(mapMatrix.IsCreated) mapMatrix.Dispose();
+            mapMatrix       = new NativeArray<Entity>(matrixArrayLength, Allocator.Persistent);
+
             //  List of entities to remove
             NativeList<Entity> squaresToRemove;
 
