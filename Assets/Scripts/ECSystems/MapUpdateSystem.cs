@@ -21,7 +21,7 @@ public class MapUpdateSystem : ComponentSystem
 		squareWidth = TerrainSettings.mapSquareWidth;
 
         EntityArchetypeQuery updateQuery = new EntityArchetypeQuery{
-            All = new ComponentType[]{ typeof(Tags.BlockChanged), typeof(PendingChange), typeof(MapSquare) }
+            All = new ComponentType[]{ typeof(PendingChange), typeof(MapSquare) }
         };
         updateGroup = GetComponentGroup(updateQuery);
     }
@@ -73,12 +73,10 @@ public class MapUpdateSystem : ComponentSystem
                 if(verticalBufferChanged) mapSquares[e] = updatedMapSquare;
 
                 //  Clear pending changes
-                pendingChanges.Clear();
+                commandBuffer.RemoveComponent<PendingChange>(entity);
 
                 //  Update squares depending on whether or not buffer has changed
                 UpdateSquares(entity, verticalBufferChanged, commandBuffer);
-
-                commandBuffer.RemoveComponent<Tags.BlockChanged>(entity);
             }
         }
 

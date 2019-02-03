@@ -165,7 +165,6 @@ namespace Tags
 	
 	public struct Redraw : IComponentData { }
 	public struct BufferChanged : IComponentData { }
-	public struct BlockChanged : IComponentData { }
 
 	public struct RemoveMapSquare : IComponentData { }
 

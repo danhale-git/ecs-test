@@ -71,7 +71,6 @@ public class PlayerInputSystem : ComponentSystem
     {
         block.type = type;
         MapUpdateSystem.GetOrCreatePendingChangeBuffer(owner, entityManager).Add(new PendingChange { block = block });
-        entityManager.AddComponent(owner, typeof(Tags.BlockChanged));
     }
 
     struct VoxelRayHit
