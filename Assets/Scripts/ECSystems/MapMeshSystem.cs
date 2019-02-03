@@ -204,7 +204,7 @@ public class MapMeshSystem : ComponentSystem
 					}
 				} 
 				//	Slopes always need two extra verts
-				if(blocks[i].slopeType != SlopeType.NOTSLOPED) vertCount += 2;
+				if(blocks[i].isSloped > 0) vertCount += 2;
 
 				faceCount += count;
 			}

@@ -16,7 +16,7 @@ public static class BlockTypes
 		1,
 		1,
 		1,
-		0
+		1
 	};
 
 	public static readonly int[] translucent = new int[]

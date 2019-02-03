@@ -53,7 +53,7 @@ struct MeshJob : IJobParallelFor
 			if(exposure == 0) continue;
 
 			//	Top face of sloped block
-			if(f == 4 && block.slopeType != SlopeType.NOTSLOPED)
+			if(f == 4 && block.isSloped > 0)
 			{
 				DrawSlope(triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, ref triIndex, ref vertIndex);
 				continue;
@@ -91,7 +91,7 @@ struct MeshJob : IJobParallelFor
 
 	void DrawHalfFace(int face, int triOffset, int vertOffset, Block block, float3 position, Faces.Exp exposure, ref int triIndex, ref int vertIndex)
 	{
-		HalfVertices(vertOffset, face, position, block, exposure);
+		HalfVertices(vertOffset, face, position, block.slope, exposure);
 		HalfTriangles(triOffset, vertOffset, face,  exposure);
 		vertIndex 	+= 3;
 		triIndex 	+= 3;
@@ -99,9 +99,9 @@ struct MeshJob : IJobParallelFor
 
 	void DrawSlope(int triOffset, int vertOffset, Block block, float3 position, ref int triIndex, ref int vertIndex)
 	{
-		SlopedTriangles(triOffset, vertOffset, block);
+		SlopedTriangles(triOffset, vertOffset, block.slope);
 		triIndex += 6;
-		SlopedVertices(vertOffset, position, block);
+		SlopedVertices(vertOffset, position, block.slope);
 		vertIndex += 6;
 	}
 
@@ -165,25 +165,25 @@ struct MeshJob : IJobParallelFor
 	//	Vertices for sloped top face
 	//	Add two extra verts to enable hard
 	//	edges on the mesh
-	void SlopedVertices(int index, float3 position, Block block)
+	void SlopedVertices(int index, float3 position, BlockSlope slope)
 	{
-		switch(block.slopeFacing)
+		switch(slope.slopeFacing)
 		{
 			case SlopeFacing.NWSE:
-				vertices[index+0] = baseVerts[7]+new float3(0, block.backLeftSlope, 0)+position;	//	back Left
+				vertices[index+0] = baseVerts[7]+new float3(0, slope.backLeftSlope, 0)+position;	//	back Left
 				vertices[index+1] = vertices[index+0];
-				vertices[index+2] = baseVerts[6]+new float3(0, block.backRightSlope, 0)+position;	//	back Right
-				vertices[index+3] = baseVerts[5]+new float3(0, block.frontRightSlope, 0)+position;	//	front Right
+				vertices[index+2] = baseVerts[6]+new float3(0, slope.backRightSlope, 0)+position;	//	back Right
+				vertices[index+3] = baseVerts[5]+new float3(0, slope.frontRightSlope, 0)+position;	//	front Right
 				vertices[index+4] = vertices[index+3];
-				vertices[index+5] = baseVerts[4]+new float3(0, block.frontLeftSlope, 0)+position;	//	front Left
+				vertices[index+5] = baseVerts[4]+new float3(0, slope.frontLeftSlope, 0)+position;	//	front Left
 				break;
 
 			case SlopeFacing.SWNE:
-				vertices[index+0] = baseVerts[7]+new float3(0, block.backLeftSlope, 0)+position;	//	back Left
-				vertices[index+1] = baseVerts[6]+new float3(0, block.backRightSlope, 0)+position;	//	back Right
+				vertices[index+0] = baseVerts[7]+new float3(0, slope.backLeftSlope, 0)+position;	//	back Left
+				vertices[index+1] = baseVerts[6]+new float3(0, slope.backRightSlope, 0)+position;	//	back Right
 				vertices[index+2] = vertices[index+1];
-				vertices[index+3] = baseVerts[5]+new float3(0, block.frontRightSlope, 0)+position;	//	front Right
-				vertices[index+4] = baseVerts[4]+new float3(0, block.frontLeftSlope, 0)+position;	//	front Left
+				vertices[index+3] = baseVerts[5]+new float3(0, slope.frontRightSlope, 0)+position;	//	front Right
+				vertices[index+4] = baseVerts[4]+new float3(0, slope.frontLeftSlope, 0)+position;	//	front Left
 				vertices[index+5] = vertices[index+4];
 				break;
 		}
@@ -192,9 +192,9 @@ struct MeshJob : IJobParallelFor
 	//	Triangles for sloped top face
 	//	align so rect division always bisects
 	//	slope direction, for hard slope edges
-	void SlopedTriangles(int index, int vertIndex, Block block)
+	void SlopedTriangles(int index, int vertIndex, BlockSlope slope)
 	{
-		switch(block.slopeFacing)
+		switch(slope.slopeFacing)
 		{
 			case SlopeFacing.NWSE:
 				triangles[index+0] = 3 + vertIndex; 
@@ -217,9 +217,9 @@ struct MeshJob : IJobParallelFor
 	}
 
 	//	Vertices for half face, one triangle arranged to fill above/below two slop vertices
-	void HalfVertices(int index, int side, float3 position, Block block, Faces.Exp exposure)
+	void HalfVertices(int index, int side, float3 position, BlockSlope slope, Faces.Exp exposure)
 	{
-		float2 slope = block.GetSlopeVerts(side);
+		float2 slopeVerts = slope.GetSlopeVerts(side);
 		FaceVertices face = baseVerts.FaceVertices(side);
 
 		float3 thirdVertex = float3.zero;
@@ -228,8 +228,8 @@ struct MeshJob : IJobParallelFor
 		if(exposure == Faces.Exp.HALFOUT)
 		{
 			//	Top left or right face vertex
-			if(slope.x < 0) thirdVertex = face[1];
-			else if(slope.y < 0) thirdVertex = face[0];
+			if(slopeVerts.x < 0) thirdVertex = face[1];
+			else if(slopeVerts.y < 0) thirdVertex = face[0];
 
 			//	Bottom two face vertices
 			vertices[index+0] = position + face[2];
@@ -239,8 +239,8 @@ struct MeshJob : IJobParallelFor
 		else if(exposure == Faces.Exp.HALFIN)
 		{
 			//	Bottom left or right face vertex
-			if(slope.x < 0) thirdVertex = face[2];
-			else if(slope.y < 0) thirdVertex = face[3];
+			if(slopeVerts.x < 0) thirdVertex = face[2];
+			else if(slopeVerts.y < 0) thirdVertex = face[3];
 
 			//	Top two face vertices
 			vertices[index+0] = position + face[0];

@@ -80,14 +80,14 @@ struct FacesJob : IJobParallelFor
 			int exposed = BlockTypes.translucent[adjacentBlock.type];
 
 			//	Not a slope
-			if(blocks[i].slopeType == 0)
+			if(blocks[i].isSloped == 0)
 			{
 				faces[d] = exposed > 0 ? (int)Faces.Exp.FULL : (int)Faces.Exp.HIDDEN;
 				continue;
 			}
 			else
 			{
-				float2 slopeVerts = blocks[i].GetSlopeVerts(d);
+				float2 slopeVerts = blocks[i].slope.GetSlopeVerts(d);
 
 				if(slopeVerts.x + slopeVerts.y == -2)
 					faces[d] = (int)Faces.Exp.HIDDEN;
@@ -98,7 +98,7 @@ struct FacesJob : IJobParallelFor
 				{
 					if(exposed > 0)
 						faces[d] = (int)Faces.Exp.HALFOUT;
-					else if(adjacentBlock.slopeType == SlopeType.NOTSLOPED)
+					else if(adjacentBlock.slope.slopeType == SlopeType.NOTSLOPED)
 						faces[d] = (int)Faces.Exp.HALFIN;
 				}
 			}

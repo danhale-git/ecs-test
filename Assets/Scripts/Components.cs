@@ -105,6 +105,12 @@ namespace MyComponents
 		public float3 localPosition;
 		public float3 worldPosition;
 
+		public byte isSloped;
+		public BlockSlope slope;
+	}
+
+	public struct BlockSlope
+	{
 		public float frontRightSlope;
 		public float backRightSlope;
 		public float frontLeftSlope;

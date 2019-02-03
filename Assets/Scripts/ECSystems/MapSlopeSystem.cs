@@ -173,14 +173,18 @@ public class MapSlopeSystem : ComponentSystem
 				slopeType = SlopeType.FLAT;
 				//	Don't need slope facing for flat slopes, only for corners
 			}
-        
-			block.frontRightSlope 	= frontRight;
-			block.backRightSlope 	= backRight;
-			block.frontLeftSlope 	= frontLeft;
-			block.backLeftSlope 	= backLeft;
-			block.slopeType 		= slopeType;
-			block.slopeFacing 		= slopeFacing;
 
+			BlockSlope slope = new BlockSlope();
+        
+			slope.frontRightSlope 	= frontRight;
+			slope.backRightSlope 	= backRight;
+			slope.frontLeftSlope 	= frontLeft;
+			slope.backLeftSlope 	= backLeft;
+			slope.slopeType 		= slopeType;
+			slope.slopeFacing 		= slopeFacing;
+
+			block.isSloped = 1;
+			block.slope = slope;
 			blocks[blockIndex] = block;
 		}
 	}
