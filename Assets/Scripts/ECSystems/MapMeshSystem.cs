@@ -13,6 +13,7 @@ using UnityEditor;
 //	Generate 3D mesh from block data
 [UpdateAfter(typeof(MapSlopeSystem))]
 [UpdateAfter(typeof(MapBufferChangeSystem))]
+[UpdateBefore(typeof(EndFrameTransformSystem))]
 public class MapMeshSystem : ComponentSystem
 {
 	//	Parralel job batch size
@@ -112,7 +113,7 @@ public class MapMeshSystem : ComponentSystem
 						redraw,
 						GetMesh(squares[e], faces, blockAccessor[e], counts),
 						entity,
-						commandBuffer);
+						commandBuffer);					
 					
 					SetPosition(entity, squares[e], positions[e].Value, commandBuffer);
 				}
