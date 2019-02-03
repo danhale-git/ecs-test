@@ -122,9 +122,6 @@ public class MapMeshSystem : ComponentSystem
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 				
 				faces.Dispose();
-
-				//DEBUG
-      			//CustomDebugTools.SetMapSquareHighlight(entity, squareWidth, new Color(1, 1, 1, 0.5f), 40, 50);
 			}
 		}
 		commandBuffer.Playback(entityManager);
@@ -157,7 +154,7 @@ public class MapMeshSystem : ComponentSystem
 
 			adjacentLowestBlocks = adjacentOffsets,
 			
-			squareWidth 	= squareWidth,
+			squareWidth = squareWidth,
 			directions 	= directions, 
 			util 		= new JobUtil()
 			};
@@ -168,9 +165,9 @@ public class MapMeshSystem : ComponentSystem
 		adjacentOffsets.Dispose();
 
 		//	Count vertices and triangles	
-		int faceCount = 0;
-		int vertCount = 0;
-		int triCount = 0;
+		int faceCount 	= 0;
+		int vertCount 	= 0;
+		int triCount 	= 0;
 		for(int i = 0; i < exposedFaces.Length; i++)
 		{
 			int count = exposedFaces[i].count;
@@ -179,9 +176,9 @@ public class MapMeshSystem : ComponentSystem
 				Faces blockFaces = exposedFaces[i];
 
 				//	Starting indices in mesh arrays
-				blockFaces.faceIndex = faceCount;
-				blockFaces.vertIndex = vertCount;
-				blockFaces.triIndex = triCount;
+				blockFaces.faceIndex 	= faceCount;
+				blockFaces.vertIndex 	= vertCount;
+				blockFaces.triIndex 	= triCount;
 
 				exposedFaces[i] = blockFaces;
 
@@ -229,13 +226,13 @@ public class MapMeshSystem : ComponentSystem
 			triangles 	= triangles,
 			colors 		= colors,
 
-			mapSquare = mapSquare,
+			mapSquare 	= mapSquare,
 
 			blocks 		= blocks,
 			faces 		= faces,
 
 			util 		= new JobUtil(),
-			squareWidth 	= squareWidth,
+			squareWidth = squareWidth,
 
 			baseVerts 	= new CubeVertices(true)
 		};

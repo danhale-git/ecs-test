@@ -54,7 +54,6 @@ struct FacesJob : IJobParallelFor
 		else if	(edge.x < 0) return left [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 1)];
 		else if	(edge.z > 0) return front[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 2)];
 		else if	(edge.z < 0) return back [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 3)];
-		//if(edge.x == 0 && edge.y == 0)
 		else		    	return blocks[util.Flatten(pos.x, pos.y, pos.z, squareWidth)];
 	}
 
