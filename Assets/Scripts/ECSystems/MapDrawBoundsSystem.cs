@@ -10,7 +10,7 @@ using MyComponents;
 //	Get y buffer for mesh drawing based on adjacent top/bottom blocks
 [UpdateAfter(typeof(UpdateGroups.NewMapSquareUpdateGroup))]
 [UpdateAfter(typeof(MapUpdateSystem))]
-public class MapDrawBufferSystem : ComponentSystem
+public class MapDrawBoundsSystem : ComponentSystem
 {
     EntityManager entityManager;
 
