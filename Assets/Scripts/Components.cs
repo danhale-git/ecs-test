@@ -32,15 +32,15 @@ namespace MyComponents
 		public int topBlock;
 		public int bottomBlock;
 
-		public int topDrawBuffer;
-		public int bottomDrawBuffer;
+		public int topDrawBounds;
+		public int bottomDrawBounds;
 
 		public int topBlockBuffer;
 		public int bottomBlockBuffer;
 
-		public int blockGenerationArrayLength;
+		public int blockDrawArrayLength;
+		public int blockDataArrayLength;
 
-		public int drawArrayLength;
 		public int drawIndexOffset;
 	}
 

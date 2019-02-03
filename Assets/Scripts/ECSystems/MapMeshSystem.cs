@@ -140,7 +140,7 @@ public class MapMeshSystem : ComponentSystem
 			util 		= new JobUtil()
 		};
 		
-		job.Schedule(mapSquare.drawArrayLength, batchSize).Complete();
+		job.Schedule(mapSquare.blockDrawArrayLength, batchSize).Complete();
 
 		directions.Dispose();
 		adjacentOffsets.Dispose();
@@ -219,7 +219,7 @@ public class MapMeshSystem : ComponentSystem
 		};
 
 		//	Run job
-		job.Schedule(mapSquare.drawArrayLength, batchSize).Complete();
+		job.Schedule(mapSquare.blockDrawArrayLength, batchSize).Complete();
 
 		//	Convert vertices and colors from float3/float4 to Vector3/Color
 		Vector3[] verticesArray = new Vector3[vertices.Length];

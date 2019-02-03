@@ -87,8 +87,8 @@ public class MapDrawBoundsSystem : ComponentSystem
 
 		MapSquare updateSquare = mapSquare;
 
-		updateSquare.topDrawBuffer		= topBuffer;
-		updateSquare.bottomDrawBuffer	= bottomBuffer;	
+		updateSquare.topDrawBounds		= topBuffer;
+		updateSquare.bottomDrawBounds	= bottomBuffer;	
 
 		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
 	}

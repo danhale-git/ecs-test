@@ -58,7 +58,7 @@ public class MapBlockDataSystem : ComponentSystem
                 DynamicBuffer<Topology> heightmap	= heightmapAccessor[e];
 
 				//	Resize buffer to size of (blocks in a cube) * (number of cubes)
-				blockBuffer.ResizeUninitialized(mapSquare.blockGenerationArrayLength);
+				blockBuffer.ResizeUninitialized(mapSquare.blockDataArrayLength);
 
 				//	Generate block data from height map
 				NativeArray<Block> blocks = GetBlocks(
@@ -101,7 +101,7 @@ public class MapBlockDataSystem : ComponentSystem
 	NativeArray<Block> GetBlocks(MapSquare mapSquare, DynamicBuffer<Topology> heightMap)
 	{
 		//	Block data for all cubes in the map square
-		var blocks = new NativeArray<Block>(mapSquare.blockGenerationArrayLength, Allocator.TempJob);
+		var blocks = new NativeArray<Block>(mapSquare.blockDataArrayLength, Allocator.TempJob);
 
 		BlocksJob job = new BlocksJob{
 			blocks = blocks,
@@ -111,7 +111,7 @@ public class MapBlockDataSystem : ComponentSystem
 			util = new JobUtil()
 		};
 		
-		job.Schedule(mapSquare.blockGenerationArrayLength, 1).Complete(); 
+		job.Schedule(mapSquare.blockDataArrayLength, 1).Complete(); 
 
 		return blocks;
 	}

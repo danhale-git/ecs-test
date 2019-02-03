@@ -65,7 +65,7 @@ public class MapBufferChangeSystem : ComponentSystem
 
 				//	Reset map square entity's block buffer at new length
 				DynamicBuffer<Block> newBuffer = commandBuffer.SetBuffer<Block>(entity);
-				newBuffer.ResizeUninitialized(mapSquare.blockGenerationArrayLength);
+				newBuffer.ResizeUninitialized(mapSquare.blockDataArrayLength);
 
 				//	Number of additional array slices added at top and bottom
 				float bottomSliceCount 	= blockBuffer[0].localPosition.y - mapSquare.bottomBlockBuffer;

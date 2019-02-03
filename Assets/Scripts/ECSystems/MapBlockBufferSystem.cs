@@ -74,8 +74,8 @@ public class MapBlockBufferSystem : ComponentSystem
 		for(int i = 0; i < 4; i++)
 		{
 			MapSquare adjacentSquare = entityManager.GetComponentData<MapSquare>(adjacent[i]);
-			int adjacentTop 	= adjacentSquare.topDrawBuffer;
-			int adjacentBottom 	= adjacentSquare.bottomDrawBuffer;
+			int adjacentTop 	= adjacentSquare.topDrawBounds;
+			int adjacentBottom 	= adjacentSquare.bottomDrawBounds;
 
 			if(adjacentTop > topBuffer) topBuffer = adjacentTop;
 			if(adjacentBottom < bottomBuffer) bottomBuffer = adjacentBottom;
@@ -89,12 +89,12 @@ public class MapBlockBufferSystem : ComponentSystem
 
 		//	Calculate iteration length for block generation
 		int blockGenerationHeight = (updateSquare.topBlockBuffer - updateSquare.bottomBlockBuffer)+1;
-		updateSquare.blockGenerationArrayLength = blockGenerationHeight * (squareWidth*squareWidth);
+		updateSquare.blockDataArrayLength = blockGenerationHeight * (squareWidth*squareWidth);
 
 		//	Calculate iteration length and offset for mesh drawing
-		int drawHeight = (updateSquare.topDrawBuffer - updateSquare.bottomDrawBuffer)+1;
-		updateSquare.drawArrayLength = drawHeight * (squareWidth * squareWidth);
-		updateSquare.drawIndexOffset = Util.Flatten(0, updateSquare.bottomDrawBuffer - updateSquare.bottomBlockBuffer, 0, squareWidth);
+		int drawHeight = (updateSquare.topDrawBounds - updateSquare.bottomDrawBounds)+1;
+		updateSquare.blockDrawArrayLength = drawHeight * (squareWidth * squareWidth);
+		updateSquare.drawIndexOffset = Util.Flatten(0, updateSquare.bottomDrawBounds - updateSquare.bottomBlockBuffer, 0, squareWidth);
 		
 		//CustomDebugTools.DrawBufferDebug(entity, updateSquare);
 		CustomDebugTools.BlockBufferDebug(entity, updateSquare);

@@ -105,8 +105,8 @@ public static class CustomDebugTools
             new float3(pos.x, 0, pos.z),
             squareWidth * 0.99f,
             new Color(0.8f, 0.8f, 0.8f, 0.1f),
-            mapSquare.topDrawBuffer,
-            mapSquare.bottomDrawBuffer,
+            mapSquare.topDrawBounds,
+            mapSquare.bottomDrawBounds,
             noSides: false
         );
 
