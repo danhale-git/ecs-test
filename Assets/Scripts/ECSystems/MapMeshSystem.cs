@@ -22,17 +22,10 @@ public class MapMeshSystem : ComponentSystem
 	EntityManager entityManager;
 
 	int squareWidth;
-	int cubeArrayLength;
 
-	//public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/TestMaterial.mat");
+	ComponentGroup meshGroup;
+
 	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ShaderGraphTest.mat");
-
-	ArchetypeChunkEntityType 				entityType;
-	ArchetypeChunkComponentType<MapSquare>	squareType;
-	ArchetypeChunkComponentType<Position>	positionType;
-	ArchetypeChunkBufferType<Block> 		blocksType;
-
-	EntityArchetypeQuery squareQuery;
 
 	struct FaceCounts
 	{
@@ -50,37 +43,24 @@ public class MapMeshSystem : ComponentSystem
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
 		squareWidth = TerrainSettings.mapSquareWidth;
-		cubeArrayLength = (int)math.pow(squareWidth, 3);
 
-		squareQuery = new EntityArchetypeQuery{
-			Any 	= Array.Empty<ComponentType>(),
+		EntityArchetypeQuery squareQuery = new EntityArchetypeQuery{
 			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer), typeof(Tags.InnerBuffer) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.DrawMesh) }
-			};
+		};
+		meshGroup = GetComponentGroup(squareQuery);
 	}
 
 	//	Query for meshes that need drawing
 	protected override void OnUpdate()
 	{
-		entityType 		= GetArchetypeChunkEntityType();
-		squareType		= GetArchetypeChunkComponentType<MapSquare>();
-		positionType	= GetArchetypeChunkComponentType<Position>();
-		blocksType 		= GetArchetypeChunkBufferType<Block>();
-
-		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-			squareQuery,
-			Allocator.TempJob
-			);
-
-		if(chunks.Length == 0) chunks.Dispose();
-		else DrawMesh(chunks);
-			
-	}
-
-	//	Generate mesh and apply to entity
-	void DrawMesh(NativeArray<ArchetypeChunk> chunks)
-	{
 		EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+		NativeArray<ArchetypeChunk> chunks = meshGroup.CreateArchetypeChunkArray(Allocator.TempJob);
+
+		ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
+		ArchetypeChunkComponentType<MapSquare> 	squareType		= GetArchetypeChunkComponentType<MapSquare>();
+		ArchetypeChunkComponentType<Position> 	positionType	= GetArchetypeChunkComponentType<Position>();
+		ArchetypeChunkBufferType<Block> 		blocksType 		= GetArchetypeChunkBufferType<Block>();
 
 		for(int c = 0; c < chunks.Length; c++)
 		{
@@ -106,7 +86,7 @@ public class MapMeshSystem : ComponentSystem
 
 				bool redraw = entityManager.HasComponent<Tags.Redraw>(entity);
 
-				//	Create mesh entity if any faces are exposed and adjust position
+				//	If any faces are exposed, generate mesh and update entity Position component
 				if(counts.faceCount != 0)
 				{
 					SetMeshComponent(
@@ -134,18 +114,18 @@ public class MapMeshSystem : ComponentSystem
 	//	Generate structs with int values showing face exposure for each block
 	NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, DynamicBuffer<Block> blocks, AdjacentSquares adjacentSquares, out FaceCounts counts)
 	{
-		var exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
+		NativeArray<Faces> exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
 
 		NativeArray<float3> directions = new NativeArray<float3>(8, Allocator.TempJob);
 		directions.CopyFrom(Util.CardinalDirections());
 
 		NativeArray<int> adjacentOffsets = new NativeArray<int>(8, Allocator.TempJob);
-			for(int i = 0; i < 8; i++)
-				adjacentOffsets[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).bottomBlockBuffer;
+		for(int i = 0; i < 8; i++)
+			adjacentOffsets[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).bottomBlockBuffer;
 		
-		var job = new FacesJob(){
-			exposedFaces = exposedFaces,
-			mapSquare = mapSquare,
+		FacesJob job = new FacesJob(){
+			exposedFaces 	= exposedFaces,
+			mapSquare 		= mapSquare,
 
 			blocks 	= blocks.AsNativeArray(),
 			right 	= entityManager.GetBuffer<Block>(adjacentSquares[0]).AsNativeArray(),
@@ -158,7 +138,7 @@ public class MapMeshSystem : ComponentSystem
 			squareWidth = squareWidth,
 			directions 	= directions, 
 			util 		= new JobUtil()
-			};
+		};
 		
 		job.Schedule(mapSquare.drawArrayLength, batchSize).Complete();
 
@@ -190,8 +170,8 @@ public class MapMeshSystem : ComponentSystem
 						case Faces.Exp.HIDDEN: break;
 
 						case Faces.Exp.FULL:
-							vertCount += 4;
-							triCount  += 6;
+							vertCount 	+= 4;
+							triCount  	+= 6;
 							break;
 
 						case Faces.Exp.HALFOUT:
@@ -243,20 +223,13 @@ public class MapMeshSystem : ComponentSystem
 
 		//	Convert vertices and colors from float3/float4 to Vector3/Color
 		Vector3[] verticesArray = new Vector3[vertices.Length];
-		Vector3[] normalsArray = new Vector3[vertices.Length];
-		Color[] colorsArray = new Color[colors.Length];
+		Vector3[] normalsArray 	= new Vector3[vertices.Length];
+		Color[] colorsArray 	= new Color[colors.Length];
 		for(int i = 0; i < vertices.Length; i++)
 		{
-			verticesArray[i] = vertices[i];
-			normalsArray[i] = normals[i];
-
-			colorsArray[i] = new Color
-				(
-					colors[i].x,
-					colors[i].y,
-					colors[i].z,
-					colors[i].w
-				);
+			verticesArray[i] 	= vertices[i];
+			normalsArray[i] 	= normals[i];
+			colorsArray[i] 		= new Color(colors[i].x, colors[i].y, colors[i].z, colors[i].w);
 		}
 
 		//	Tri native array to array
@@ -265,8 +238,8 @@ public class MapMeshSystem : ComponentSystem
 		
 		vertices.Dispose();
 		normals.Dispose();
-		triangles.Dispose();
 		colors.Dispose();
+		triangles.Dispose();
 
 		return MakeMesh(verticesArray, normalsArray, trianglesArray, colorsArray);
 	}
@@ -279,7 +252,6 @@ public class MapMeshSystem : ComponentSystem
 		mesh.colors 	= colors;
 		mesh.SetTriangles(triangles, 0);
 
-		//UnityEditor.MeshUtility.Optimize(mesh);
 		mesh.RecalculateNormals();
 
 		return mesh;
