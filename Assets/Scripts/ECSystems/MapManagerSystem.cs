@@ -352,4 +352,18 @@ public class MapManagerSystem : ComponentSystem
 		float3 index = IndexInCurrentMatrix(worldPosition);
 		return mapMatrix[Util.Flatten2D(index.x, index.z, matrixWidth)];
 	}
+
+    public bool TryGetMapSquareFromMatrix(float3 worldPosition, out Entity entity)
+	{
+        float3 localPosition = worldPosition - currentMatrixRoot;
+        if(!Util.EdgeOverlap(localPosition, matrixWidth).Equals(float3.zero))
+        {
+            entity = new Entity();
+            return false;
+        }
+
+		float3 index = IndexInCurrentMatrix(worldPosition);
+		entity = mapMatrix[Util.Flatten2D(index.x, index.z, matrixWidth)];
+        return true;
+	}
 }

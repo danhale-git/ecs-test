@@ -13,6 +13,7 @@ using MyComponents;
 public class PlayerInputSystem : ComponentSystem
 {
     EntityManager entityManager;
+    MapManagerSystem managerSystem;
     int squareWidth;
 
     public static Entity playerEntity;
@@ -41,6 +42,8 @@ public class PlayerInputSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
+        managerSystem = World.Active.GetOrCreateManager<MapManagerSystem>();
+
         squareWidth = TerrainSettings.mapSquareWidth;
 
         camera = GameObject.FindObjectOfType<Camera>();
@@ -48,18 +51,6 @@ public class PlayerInputSystem : ComponentSystem
         cursorCube = CreateCursorCube(0.8f, Color.white);
         cursorCubeDebug1 = CreateCursorCube(0.2f, Color.red);
         cursorCubeDebug1 = CreateCursorCube(0.2f, Color.green);
-    }
-
-    Entity CreateCursorCube(float scale, Color color)
-    {
-         EntityArchetype cursorCubeArchetype = entityManager.CreateArchetype(
-            ComponentType.Create<Position>(),
-            ComponentType.Create<RenderMeshComponent>()
-		);
-
-        Entity cube = entityManager.CreateEntity(cursorCubeArchetype);
-        CursorCubeMesh(cube, scale, color);
-        return cube;
     }
 
     Block previousBlock;
@@ -126,68 +117,49 @@ public class PlayerInputSystem : ComponentSystem
         MapUpdateSystem.GetOrCreatePendingChangeBuffer(owner, entityManager).Add(new PendingChange { block = block });
     }
 
-    
-
     //  Return list of voxel positions hit by ray from eye to dir
     bool VoxelRay(Ray ray, out VoxelRayHit hit)
     {
         hit = new VoxelRayHit();
 
-        //  Map square at origin
+        Entity currentOwner;
         float3 previousVoxelOwnerPosition = Util.VoxelOwner(ray.origin, squareWidth);
 
-        Entity                  currentOwner;
-        MapSquare               mapSquare;
-        DynamicBuffer<Block>    blocks;
-
         //  Origin entity does not exist
-        if(!GetBlockOwner(previousVoxelOwnerPosition, out currentOwner))
+        if(!managerSystem.TryGetMapSquareFromMatrix(previousVoxelOwnerPosition, out currentOwner))
             throw new Exception("Camera is in non-existent map square");
 
-        mapSquare   = entityManager.GetComponentData<MapSquare>(currentOwner);
-        blocks      = entityManager.GetBuffer<Block>(currentOwner);       
-
-        //  Round to closest (up or down) for accurate results
-        float3 origin = Util.Float3Round(ray.origin);
-
-        int x, y, z;
-        int deltaX, deltaY, deltaZ;
-
-        x = (int)math.round(ray.origin.x);
-        y = (int)math.round(ray.origin.y);
-        z = (int)math.round(ray.origin.z);
-
-        deltaX = (int)math.floor(ray.direction.x * 50);
-        deltaY = (int)math.floor(ray.direction.y * 50);
-        deltaZ = (int)math.floor(ray.direction.z * 50);
-
-        int stepX, stepY, stepZ, ax, ay, az, bx, by, bz;
-        int exy, exz, ezy;
-
-        stepX = (int)math.sign(deltaX);
-        stepY = (int)math.sign(deltaY);
-        stepZ = (int)math.sign(deltaZ);
-
-        ax = math.abs(deltaX);
-        ay = math.abs(deltaY);
-        az = math.abs(deltaZ);
-
-        bx = 2 * ax;
-        by = 2 * ay;
-        bz = 2 * az;
-
-        exy = ay - ax;
-        exz = az - ax;
-        ezy = ay - az;
+        MapSquare               mapSquare = entityManager.GetComponentData<MapSquare>(currentOwner);
+        DynamicBuffer<Block>    blocks = entityManager.GetBuffer<Block>(currentOwner);
 
         Block previousBlock     = new Block();
         Entity previousOwner    = currentOwner;
+
+        float x = ray.origin.x;
+        float y = ray.origin.y;
+        float z = ray.origin.z;
+
+        float stepX = math.sign(ray.direction.x);
+        float stepY = math.sign(ray.direction.y);
+        float stepZ = math.sign(ray.direction.z);
+
+        float ax = math.abs(ray.direction.x);
+        float ay = math.abs(ray.direction.y);
+        float az = math.abs(ray.direction.z);
+
+        float bx = 2 * ax;
+        float by = 2 * ay;
+        float bz = 2 * az;
+
+        float exy = ay - ax;
+        float exz = az - ax;
+        float ezy = ay - az;
 
         //  Traverse voxels
         for(int i = 0; i < 1000; i++)
         {
             //  Current voxel
-            float3 voxel = new float3(x, y, z);
+            float3 voxel = new float3((int)math.round(x), (int)math.round(y), (int)math.round(z));
 
             //  March ray to next voxel
             if (exy < 0)
@@ -195,12 +167,14 @@ public class PlayerInputSystem : ComponentSystem
                 if (exz < 0)
                 {
                     x += stepX;
-                    exy += by; exz += bz;
+                    exy += by;
+                    exz += bz;
                 }
                 else
                 {
                     z += stepZ;
-                    exz -= bx; ezy += by;
+                    exz -= bx;
+                    ezy += by;
                 }
             }
             else
@@ -208,12 +182,14 @@ public class PlayerInputSystem : ComponentSystem
                 if (ezy < 0)
                 {
                     z += stepZ;
-                    exz -= bx; ezy += by;
+                    exz -= bx;
+                    ezy += by;
                 }
                 else
                 {
                     y += stepY;
-                    exy -= bx; ezy -= bz;
+                    exy -= bx;
+                    ezy -= bz;
                 }
             }
 
@@ -223,7 +199,7 @@ public class PlayerInputSystem : ComponentSystem
             if(!previousVoxelOwnerPosition.Equals(nextVoxelOwnerPosition))
             {
                 //  Update current map square
-                if(!GetBlockOwner(nextVoxelOwnerPosition, out currentOwner))
+                if(!managerSystem.TryGetMapSquareFromMatrix(nextVoxelOwnerPosition, out currentOwner))
                     continue;
 
                 mapSquare   = entityManager.GetComponentData<MapSquare>(currentOwner);
@@ -266,6 +242,18 @@ public class PlayerInputSystem : ComponentSystem
             previousVoxelOwnerPosition = nextVoxelOwnerPosition;
         }
         throw new Exception("Ray traversed 1000 voxels without finding anything");
+    }
+
+    Entity CreateCursorCube(float scale, Color color)
+    {
+         EntityArchetype cursorCubeArchetype = entityManager.CreateArchetype(
+            ComponentType.Create<Position>(),
+            ComponentType.Create<RenderMeshComponent>()
+		);
+
+        Entity cube = entityManager.CreateEntity(cursorCubeArchetype);
+        CursorCubeMesh(cube, scale, color);
+        return cube;
     }
 
     //	Vertices for normal cube
@@ -337,30 +325,4 @@ public class PlayerInputSystem : ComponentSystem
 
 		entityManager.AddSharedComponentData(cubeEntity, renderer);
 	}
-
-
-
-    bool GetBlockOwner(float3 currentMapSquarePostion, out Entity owner)
-    {
-        NativeArray<Entity> entities = entityManager.GetAllEntities(Allocator.TempJob);
-        
-        for(int i = 0; i< entities.Length; i++)
-        {
-            if(!entityManager.HasComponent<MapSquare>(entities[i]))
-                continue;
-
-            float3 othereMapSquarePosition = entityManager.GetComponentData<MapSquare>(entities[i]).position;
-
-            if(othereMapSquarePosition.Equals(currentMapSquarePostion))
-            {
-                Entity entity = entities[i];
-                entities.Dispose();
-                owner = entity;
-                return true;
-            }
-        }
-        entities.Dispose();
-        owner = Entity.Null;
-        return false;
-    }
 }
