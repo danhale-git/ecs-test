@@ -34,10 +34,10 @@ public class MapSlopeSystem : ComponentSystem
         EntityCommandBuffer 		commandBuffer 	= new EntityCommandBuffer(Allocator.Temp);
 		NativeArray<ArchetypeChunk> chunks 			= slopeGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
-		ArchetypeChunkEntityType                entityType = GetArchetypeChunkEntityType();;
-    	ArchetypeChunkComponentType<MapSquare>	squareType = GetArchetypeChunkComponentType<MapSquare>();;
-		ArchetypeChunkBufferType<Block> 		blocksType = GetArchetypeChunkBufferType<Block>();;
-		ArchetypeChunkBufferType<Topology> 		heightType = GetArchetypeChunkBufferType<Topology>();;
+		ArchetypeChunkEntityType                entityType = GetArchetypeChunkEntityType();
+    	ArchetypeChunkComponentType<MapSquare>	squareType = GetArchetypeChunkComponentType<MapSquare>(true);
+		ArchetypeChunkBufferType<Block> 		blocksType = GetArchetypeChunkBufferType<Block>();
+		ArchetypeChunkBufferType<Topology> 		heightType = GetArchetypeChunkBufferType<Topology>(true);
 
         for(int c = 0; c < chunks.Length; c++)
         {

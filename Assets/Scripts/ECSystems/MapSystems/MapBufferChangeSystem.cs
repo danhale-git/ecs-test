@@ -36,18 +36,18 @@ public class MapBufferChangeSystem : ComponentSystem
 		NativeArray<ArchetypeChunk> chunks 			= bufferChangedGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
 		ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
-		ArchetypeChunkComponentType<MapSquare> 	mapSquareType	= GetArchetypeChunkComponentType<MapSquare>();
+		ArchetypeChunkComponentType<MapSquare> 	mapSquareType	= GetArchetypeChunkComponentType<MapSquare>(true);
 		ArchetypeChunkBufferType<Block> 		blocksType 		= GetArchetypeChunkBufferType<Block>();
-        ArchetypeChunkBufferType<Topology> 		heightmapType 	= GetArchetypeChunkBufferType<Topology>();
+        ArchetypeChunkBufferType<Topology> 		heightmapType 	= GetArchetypeChunkBufferType<Topology>(true);
 
 		for(int c = 0; c < chunks.Length; c++)
 		{
 			ArchetypeChunk chunk = chunks[c];
 
-			NativeArray<Entity> entities 				= chunk.GetNativeArray(entityType);
-			NativeArray<MapSquare> mapSquares			= chunk.GetNativeArray(mapSquareType);
-			BufferAccessor<Block> blockAccessor 		= chunk.GetBufferAccessor(blocksType);
-            BufferAccessor<Topology> heightmapAccessor 	= chunk.GetBufferAccessor(heightmapType);
+			NativeArray<Entity> 		entities			= chunk.GetNativeArray(entityType);
+			NativeArray<MapSquare> 		mapSquares			= chunk.GetNativeArray(mapSquareType);
+			BufferAccessor<Block> 		blockAccessor 		= chunk.GetBufferAccessor(blocksType);
+            BufferAccessor<Topology> 	heightmapAccessor 	= chunk.GetBufferAccessor(heightmapType);
 			
 			for(int e = 0; e < entities.Length; e++)
 			{

@@ -58,9 +58,9 @@ public class MapMeshSystem : ComponentSystem
 		NativeArray<ArchetypeChunk> chunks 			= meshGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
 		ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
-		ArchetypeChunkComponentType<MapSquare> 	squareType		= GetArchetypeChunkComponentType<MapSquare>();
-		ArchetypeChunkComponentType<Position> 	positionType	= GetArchetypeChunkComponentType<Position>();
-		ArchetypeChunkBufferType<Block> 		blocksType 		= GetArchetypeChunkBufferType<Block>();
+		ArchetypeChunkComponentType<MapSquare> 	squareType		= GetArchetypeChunkComponentType<MapSquare>(true);
+		ArchetypeChunkComponentType<Position> 	positionType	= GetArchetypeChunkComponentType<Position>(true);
+		ArchetypeChunkBufferType<Block> 		blocksType 		= GetArchetypeChunkBufferType<Block>(true);
 
 		for(int c = 0; c < chunks.Length; c++)
 		{

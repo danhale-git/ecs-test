@@ -36,9 +36,9 @@ public class MapBlockDataSystem : ComponentSystem
 		NativeArray<ArchetypeChunk> chunks 			= generateBlocksGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
 		ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
-		ArchetypeChunkComponentType<MapSquare> 	mapSquareType	= GetArchetypeChunkComponentType<MapSquare>();
+		ArchetypeChunkComponentType<MapSquare> 	mapSquareType	= GetArchetypeChunkComponentType<MapSquare>(true);
 		ArchetypeChunkBufferType<Block> 		blocksType 		= GetArchetypeChunkBufferType<Block>();
-        ArchetypeChunkBufferType<Topology> 		heightmapType 	= GetArchetypeChunkBufferType<Topology>();
+        ArchetypeChunkBufferType<Topology> 		heightmapType 	= GetArchetypeChunkBufferType<Topology>(true);
 
 		for(int c = 0; c < chunks.Length; c++)
 		{

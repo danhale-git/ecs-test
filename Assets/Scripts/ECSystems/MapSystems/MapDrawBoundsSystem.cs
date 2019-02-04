@@ -37,8 +37,8 @@ public class MapDrawBoundsSystem : ComponentSystem
         NativeArray<ArchetypeChunk> chunks 			= drawBufferGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
 		ArchetypeChunkEntityType 						entityType 		= GetArchetypeChunkEntityType();
-		ArchetypeChunkComponentType<MapSquare> 			mapSquareType 	= GetArchetypeChunkComponentType<MapSquare>();
-		ArchetypeChunkComponentType<AdjacentSquares> 	adjacentType 	= GetArchetypeChunkComponentType<AdjacentSquares>();
+		ArchetypeChunkComponentType<MapSquare> 			mapSquareType 	= GetArchetypeChunkComponentType<MapSquare>(true);
+		ArchetypeChunkComponentType<AdjacentSquares> 	adjacentType 	= GetArchetypeChunkComponentType<AdjacentSquares>(true);
 
 		for(int c = 0; c < chunks.Length; c++)
 		{

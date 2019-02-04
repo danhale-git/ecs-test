@@ -136,7 +136,7 @@ public class MapManagerSystem : ComponentSystem
 		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);	
 
 		ArchetypeChunkEntityType                entityType	    = GetArchetypeChunkEntityType();
-		ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>();
+		ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>(true);
 		
         toRemove    = new NativeList<Entity>(Allocator.TempJob);
         doNotCreate = new NativeArray<int>(matrixArrayLength, Allocator.TempJob);

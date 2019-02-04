@@ -51,8 +51,8 @@ public class MapSaveSystem : ComponentSystem
         NativeArray<ArchetypeChunk> chunks          = saveGroup.CreateArchetypeChunkArray(Allocator.TempJob);
        
         ArchetypeChunkEntityType                    entityType      = GetArchetypeChunkEntityType();
-        ArchetypeChunkComponentType<MapSquare>      mapSquareType   = GetArchetypeChunkComponentType<MapSquare>();
-        ArchetypeChunkBufferType<UnsavedChange>     changeType      = GetArchetypeChunkBufferType<UnsavedChange>();
+        ArchetypeChunkComponentType<MapSquare>      mapSquareType   = GetArchetypeChunkComponentType<MapSquare>(true);
+        ArchetypeChunkBufferType<UnsavedChange>     changeType      = GetArchetypeChunkBufferType<UnsavedChange>(true);
     
         for(int c = 0; c < chunks.Length; c++)
         {
