@@ -46,13 +46,12 @@ struct MeshJob : IJobParallelFor
 		int triOffset = faces[i].triIndex;
 
 		//	Vertices and Triangles for exposed sides
-
 		for(int f = 0; f < 6; f++)
 		{
 			int exposure = faces[i][f];
 			if(exposure == 0) continue;
 
-			//	Top face of sloped block
+			//	Top face and block is sloped
 			if(f == 4 && block.isSloped > 0)
 			{
 				DrawSlope(triIndex+triOffset, vertIndex+vertOffset, block, positionInMesh, ref triIndex, ref vertIndex);
@@ -81,6 +80,7 @@ struct MeshJob : IJobParallelFor
 		} 
 	}
 
+	//	Normal face
 	void DrawFace(int face, int triOffset, int vertOffset, Block block, float3 position, ref int triIndex, ref int vertIndex)
 	{
 		Triangles(triOffset, vertOffset);
@@ -89,6 +89,7 @@ struct MeshJob : IJobParallelFor
 		vertIndex +=  4;
 	}
 
+	//	Half face for the edge of sloped blocks
 	void DrawHalfFace(int face, int triOffset, int vertOffset, Block block, float3 position, Faces.Exp exposure, ref int triIndex, ref int vertIndex)
 	{
 		HalfVertices(vertOffset, face, position, block.slope, exposure);
@@ -97,6 +98,7 @@ struct MeshJob : IJobParallelFor
 		triIndex 	+= 3;
 	}
 
+	//	Top face of a sloped block
 	void DrawSlope(int triOffset, int vertOffset, Block block, float3 position, ref int triIndex, ref int vertIndex)
 	{
 		SlopedTriangles(triOffset, vertOffset, block.slope);
@@ -216,7 +218,7 @@ struct MeshJob : IJobParallelFor
 		}
 	}
 
-	//	Vertices for half face, one triangle arranged to fill above/below two slop vertices
+	//	Vertices for half face, one triangle arranged to fill above/below two slope vertices
 	void HalfVertices(int index, int side, float3 position, BlockSlope slope, Faces.Exp exposure)
 	{
 		float2 slopeVerts = slope.GetSlopeVerts(side);
@@ -224,7 +226,7 @@ struct MeshJob : IJobParallelFor
 
 		float3 thirdVertex = float3.zero;
 
-		//	Half covering below slope
+		//	Half face below slope
 		if(exposure == Faces.Exp.HALFOUT)
 		{
 			//	Top left or right face vertex
@@ -235,7 +237,7 @@ struct MeshJob : IJobParallelFor
 			vertices[index+0] = position + face[2];
 			vertices[index+1] = position + face[3];
 		}
-		//	Half covering above slope
+		//	Half face above slope
 		else if(exposure == Faces.Exp.HALFIN)
 		{
 			//	Bottom left or right face vertex
@@ -324,50 +326,42 @@ public struct CubeVertices
 
 	public FaceVertices FaceVertices(int side)
 	{
-		FaceVertices verts;
-
 		switch(side)
 		{
 			case 0:	//	Right
-				verts = new FaceVertices(
+				return new FaceVertices(
 					v5 = new float3( 	 0.5f,  0.5f,	 0.5f ),	//	right top front;
 					v6 = new float3( 	 0.5f,  0.5f,	-0.5f ),	//	right top back;
 					v1 = new float3( 	 0.5f, -0.5f,	 0.5f ),	//	right bottom front;
 					v2 = new float3( 	 0.5f, -0.5f,	-0.5f )		//	right bottom back;
 				);
-				break;
 
 			case 1:	//	Left
-				verts = new FaceVertices(
+				return new FaceVertices(
 					v4 = new float3( 	-0.5f,  0.5f,	 0.5f ),	//	left top front;
 					v7 = new float3( 	-0.5f,  0.5f,	-0.5f ),	//	left top back;
 					v0 = new float3( 	-0.5f, -0.5f,	 0.5f ),	//	left bottom front;
 					v3 = new float3( 	-0.5f, -0.5f,	-0.5f ) 	//	left bottom back;
 				);
-				break;
 
 			case 2:	//	Front
-				verts = new FaceVertices(
+				return new FaceVertices(
 					v5 = new float3( 	 0.5f,  0.5f,	 0.5f ),	//	right top front;
 					v4 = new float3( 	-0.5f,  0.5f,	 0.5f ),	//	left top front;
 					v1 = new float3( 	 0.5f, -0.5f,	 0.5f ),	//	right bottom front;
 					v0 = new float3( 	-0.5f, -0.5f,	 0.5f )		//	left bottom front;
 				);
-				break;
 
 			case 3:	//	Back
-				verts = new FaceVertices(
+				return new FaceVertices(
 					v6 = new float3( 	 0.5f,  0.5f,	-0.5f ),	//	right top back;
 					v7 = new float3( 	-0.5f,  0.5f,	-0.5f ),	//	left top back;
 					v2 = new float3( 	 0.5f, -0.5f,	-0.5f ),	//	right bottom back;
 					v3 = new float3( 	-0.5f, -0.5f,	-0.5f ) 	//	left bottom back;
 				);
-				break;
 			default: throw new System.ArgumentOutOfRangeException("Index out of range 3: " + side);
 		}
-		return verts;
 	}
-
 
 	public float3 this[int vert]
 	{
