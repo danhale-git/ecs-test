@@ -229,28 +229,25 @@ struct MeshJob : IJobParallelFor
 		//	Half face below slope
 		if(exposure == Faces.Exp.HALFOUT)
 		{
-			//	Top left or right face vertex
-			if(slopeVerts.x < 0) thirdVertex = face[1];
-			else if(slopeVerts.y < 0) thirdVertex = face[0];
-
 			//	Bottom two face vertices
-			vertices[index+0] = position + face[2];
-			vertices[index+1] = position + face[3];
+			vertices[index+0] = position + face[3];
+			vertices[index+1] = position + face[2];
+
+			//	Top left or right face vertex
+			if		(slopeVerts.x < 0) vertices[index+2] = face[1];
+			else if	(slopeVerts.y < 0) vertices[index+2] = face[0];
 		}
 		//	Half face above slope
 		else if(exposure == Faces.Exp.HALFIN)
 		{
-			//	Bottom left or right face vertex
-			if(slopeVerts.x < 0) thirdVertex = face[2];
-			else if(slopeVerts.y < 0) thirdVertex = face[3];
-
 			//	Top two face vertices
 			vertices[index+0] = position + face[0];
 			vertices[index+1] = position + face[1];
-		}
 
-		//	Assign third vertex
-		vertices[index+2] = position + thirdVertex;
+			//	Bottom left or right face vertex
+			if		(slopeVerts.x < 0) vertices[index+2] = face[2];
+			else if	(slopeVerts.y < 0) vertices[index+2] = face[3];
+		}
 	}
 
 	//	Triangles for half face, flipped depending which side of the block
@@ -258,14 +255,15 @@ struct MeshJob : IJobParallelFor
 	{
 		switch(side)
 		{
-			case 0:
-			case 3:
+			case 1:
+			case 2:
 				triangles[index+0] = 0 + vertIndex; 
 				triangles[index+1] = 1 + vertIndex; 
 				triangles[index+2] = 2 + vertIndex;
-				break;
-			case 1:
-			case 2:
+				break; 
+
+			case 0:
+			case 3:
 				triangles[index+0] = 2 + vertIndex; 
 				triangles[index+1] = 1 + vertIndex; 
 				triangles[index+2] = 0 + vertIndex;
