@@ -161,6 +161,7 @@ namespace MyComponents
 
 namespace Tags
 {
+	public struct GenerateCells : IComponentData { }
 	public struct GenerateTerrain : IComponentData { }
 	public struct GetAdjacentSquares : IComponentData { }
 	public struct LoadChanges : IComponentData { }
@@ -186,6 +187,6 @@ namespace Tags
 
 namespace UpdateGroups
 {
-	[UpdateAfter(typeof(MapManagerSystem))]
+	[UpdateAfter(typeof(MapCellSystem))]
 	public class NewMapSquareUpdateGroup { }
 }

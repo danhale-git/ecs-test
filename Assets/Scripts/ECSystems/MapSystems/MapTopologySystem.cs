@@ -60,22 +60,16 @@ public class MapTopologySystem : ComponentSystem
                 float3 position = positions[e].Value;
 
                 DynamicBuffer<CellProfile> cellBuffer = entityManager.GetBuffer<CellProfile>(entity);
-			    cellBuffer.ResizeUninitialized((int)math.pow(squareWidth, 2));
 
                 DynamicBuffer<Topology> heightBuffer = entityManager.GetBuffer<Topology>(entity);
 			    heightBuffer.ResizeUninitialized((int)math.pow(squareWidth, 2));
-
-                NativeArray<CellProfile> cellMap = jobifiedNoise.CellularDistanceToEdge(position, TerrainSettings.cellFrequency);
-
-                for(int i = 0; i < cellBuffer.Length; i++)
-                    cellBuffer[i] = cellMap[i];
 
                 int highestBlock = 0;
                 int lowestBlock = 0;
 
                 for(int i = 0; i < heightBuffer.Length; i++)
                 {
-                    Topology heightComponent = GetCellHeight(cellMap[i]);
+                    Topology heightComponent = GetHeight(cellBuffer[i]);
 
                     if(heightComponent.height > highestBlock)
                         highestBlock = heightComponent.height;
@@ -86,10 +80,10 @@ public class MapTopologySystem : ComponentSystem
                 }
 
                 MapSquare mapSquareComponent = new MapSquare{
-                    position = new float3(position.x, 0, position.z),
+                    position    = new float3(position.x, 0, position.z),
                     topBlock    = highestBlock,
                     bottomBlock	= lowestBlock
-                    }; 
+                }; 
 
                 //  If map square has been loaded it will already have the correct values
                 if(!entityManager.HasComponent<LoadedChange>(entity))
@@ -97,8 +91,6 @@ public class MapTopologySystem : ComponentSystem
 
                 //  Set draw buffer next
                 commandBuffer.RemoveComponent<Tags.GenerateTerrain>(entity);
-
-                cellMap.Dispose();
             }
         }
 
@@ -108,7 +100,7 @@ public class MapTopologySystem : ComponentSystem
         chunks.Dispose();
     }
 
-    Topology GetCellHeight(CellProfile cell)
+    Topology GetHeight(CellProfile cell)
     {
         int height = terrainHeight;
         TerrainTypes type = 0;
