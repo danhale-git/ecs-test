@@ -125,7 +125,7 @@ public static class CustomDebugTools
             new float3(pos.x, 0, pos.z),
             squareWidth,
             color,
-            TerrainSettings.terrainHeight+TerrainSettings.terrainStretch,
+            TerrainSettings.terrainHeight,
             0,
             noSides: false
         );
@@ -142,7 +142,7 @@ public static class CustomDebugTools
             new float3(position.x, 0, position.z),
             squareWidth,
             color,
-            TerrainSettings.terrainHeight+TerrainSettings.terrainStretch,
+            TerrainSettings.terrainHeight,
             0,
             noSides: false
         );

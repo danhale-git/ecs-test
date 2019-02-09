@@ -15,9 +15,13 @@ public class MapTopologySystem : ComponentSystem
 
     int squareWidth;
 
+    int levelHeight = 5;
+    float cliffDepth = 0.05f;
+    int levelCount = 5;
+
     ComponentGroup terrainGroup;
 
-    CliffTerrainGenerator cliffTerrain;
+    JobifiedNoise jobifiedNoise;
 
     protected override void OnCreateManager()
     {
@@ -30,7 +34,7 @@ public class MapTopologySystem : ComponentSystem
         };
         terrainGroup = GetComponentGroup(terrainQuery);
 
-        cliffTerrain = new CliffTerrainGenerator(5, 10);
+        jobifiedNoise = new JobifiedNoise();
     }
 
     protected override void OnUpdate()
@@ -53,12 +57,37 @@ public class MapTopologySystem : ComponentSystem
                 Entity entity   = entities[e];
                 float3 position = positions[e].Value;
 
-                //	Resize to Dynamic Buffer
+                DynamicBuffer<CellProfile> cellBuffer = entityManager.GetBuffer<CellProfile>(entity);
+			    cellBuffer.ResizeUninitialized((int)math.pow(squareWidth, 2));
+
                 DynamicBuffer<Topology> heightBuffer = entityManager.GetBuffer<Topology>(entity);
 			    heightBuffer.ResizeUninitialized((int)math.pow(squareWidth, 2));
 
-			    //	Fill buffer with heightmap data and update map square highest/lowest block
-			    MapSquare mapSquareComponent = cliffTerrain.GenerateTopology(position, heightBuffer);
+                NativeArray<CellProfile> cellMap = jobifiedNoise.CellularDistanceToEdge(position, TerrainSettings.cellFrequency);
+
+                for(int i = 0; i < cellBuffer.Length; i++)
+                    cellBuffer[i] = cellMap[i];
+
+                int highestBlock = 0;
+                int lowestBlock = 0;
+
+                for(int i = 0; i < heightBuffer.Length; i++)
+                {
+                    Topology heightComponent = GetCellHeight(cellMap[i]);
+
+                    if(heightComponent.height > highestBlock)
+                        highestBlock = heightComponent.height;
+                    if(heightComponent.height < lowestBlock)
+                        lowestBlock = heightComponent.height;
+
+                    heightBuffer[i] = heightComponent;
+                }
+
+                MapSquare mapSquareComponent = new MapSquare{
+                    position = new float3(position.x, 0, position.z),
+                    topBlock    = highestBlock,
+                    bottomBlock	= lowestBlock
+                    }; 
 
                 //  If map square has been loaded it will already have the correct values
                 if(!entityManager.HasComponent<LoadedChange>(entity))
@@ -66,6 +95,8 @@ public class MapTopologySystem : ComponentSystem
 
                 //  Set draw buffer next
                 commandBuffer.RemoveComponent<Tags.GenerateTerrain>(entity);
+
+                cellMap.Dispose();
             }
         }
 
@@ -73,5 +104,49 @@ public class MapTopologySystem : ComponentSystem
         commandBuffer.Dispose();
 
         chunks.Dispose();
+    }
+
+    Topology GetCellHeight(CellProfile cell)
+    {
+        int height = TerrainSettings.terrainHeight;
+        TerrainTypes type = 0;
+
+        float cellValue = cell.currentCellValue;
+        float adjacentValue = cell.adjacentCellValue;
+
+        float increment = 1.0f / levelCount;
+
+        float cellHeight = math.lerp(0, levelCount, cellValue) * levelHeight;
+        float adjacentHeight = math.lerp(0, levelCount, adjacentValue) * levelHeight;
+        
+        //  Close to the edge between two cells of different heights = cliff
+        if(cell.distance2Edge < cliffDepth*2 && cellHeight != adjacentHeight)
+        {
+            type = TerrainTypes.CLIFF;            
+        
+            //  Closer to the edge between cells, interpolate
+            //  between cell heigts for smooth transition
+            if(cell.distance2Edge < cliffDepth) 
+            {
+                float halfway = (cellHeight + adjacentHeight) / 2;
+                float interpolator = Mathf.InverseLerp(0, cliffDepth, cell.distance2Edge);
+
+                //  Interpolate towards midpoint using distance from midpoint
+                height += (int)math.lerp(halfway, cellHeight, interpolator);
+            }
+            else
+                height += (int)cellHeight;
+        }
+        //  If not cliff then grass
+        else
+        {
+            type = TerrainTypes.GRASS;
+            height += (int)cellHeight;
+        }
+
+        return new Topology{
+            height = height,
+            type = type
+        };
     }
 }

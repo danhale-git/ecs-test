@@ -3,6 +3,7 @@ using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Burst;
+using MyComponents;
 
 //[BurstCompile]
 struct WorleyNoiseJob : IJobParallelFor
@@ -11,7 +12,7 @@ struct WorleyNoiseJob : IJobParallelFor
     
     #endregion
     
-    public NativeArray<CellData> cellMap;
+    public NativeArray<CellProfile> cellMap;
 
     [ReadOnly] public float3 offset;
     [ReadOnly] public int squareWidth;
@@ -88,7 +89,7 @@ struct WorleyNoiseGenerator
 		CELL_2D.Dispose();
 	}
 
-    public CellData GetEdgeData(float x, float y, int m_seed, float m_frequency, float perterbAmp)
+    public CellProfile GetEdgeData(float x, float y, int m_seed, float m_frequency, float perterbAmp)
 	{
 		if(perterbAmp > 0)SingleGradientPerturb(m_seed, perterbAmp, m_frequency, ref x, ref y);
 
@@ -186,10 +187,14 @@ struct WorleyNoiseGenerator
 		}
 		if(adjacentEdgeDistance == 999999) adjacentEdgeDistance = 0;
 		
+		CellProfile cell = new MyComponents.CellProfile();
+		
+		cell.currentCellValue = currentCellValue;
+		cell.distance2Edge = adjacentEdgeDistance;
+		cell.adjacentCellValue = adjacentCellValue;
+
 		//	Data for use in terrain generation
-		return new CellData(	currentCellValue,
-								adjacentEdgeDistance,
-								adjacentCellValue);
+		return cell;
 	}
 
     float ValCoord2D(int seed, int x, int y)
@@ -233,15 +238,8 @@ struct WorleyNoiseGenerator
 
 		float xs, ys;
 		
-		//Interp.Linear:
-		xs = xf - x0;
-		ys = yf - y0;
-		//Interp.Hermite:
-		//xs = InterpHermiteFunc(xf - x0);
-		//ys = InterpHermiteFunc(yf - y0);
-		//Interp.Quintic:
-		//xs = InterpQuinticFunc(xf - x0);
-		//ys = InterpQuinticFunc(yf - y0);
+		xs = InterpQuinticFunc(xf - x0);
+		ys = InterpQuinticFunc(yf - y0);
 
 		float2 vec0 = CELL_2D[Hash2D(seed, x0, y0) & 255];
 		float2 vec1 = CELL_2D[Hash2D(seed, x1, y0) & 255];
@@ -255,19 +253,9 @@ struct WorleyNoiseGenerator
 		float lx1x = math.lerp(vec0.x, vec1.x, xs);
 		float ly1x = math.lerp(vec0.y, vec1.y, xs);
 
-		x += math.lerp(lx0x, lx1x, ys) * perturbAmp;
-		y += math.lerp(ly0x, ly1x, ys) * perturbAmp;
+		x += Lerp(lx0x, lx1x, ys) * perturbAmp;
+		y += Lerp(ly0x, ly1x, ys) * perturbAmp;
 	}
-	float InterpHermiteFunc(float t) { return t * t * (3 - 2 * t); }
-}
-
-public struct CellData
-{
-    public readonly float currentCellValue, distance2Edge, adjacentCellValue;
-    public CellData(float currentCellValue, float distance2Edge, float adjacentCellValue)
-    {
-        this.currentCellValue = currentCellValue;
-        this.distance2Edge = distance2Edge;
-        this.adjacentCellValue = adjacentCellValue;
-    }
+	private static float InterpQuinticFunc(float t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+	float Lerp(float a, float b, float t) { return a + t * (b - a); }
 }

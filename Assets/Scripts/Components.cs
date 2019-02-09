@@ -52,6 +52,12 @@ namespace MyComponents
 		public TerrainTypes type;
 	}
 
+	[InternalBufferCapacity(0)]
+	public struct CellProfile : IBufferElementData
+	{
+		public float currentCellValue, distance2Edge, adjacentCellValue;
+	}
+
 	public struct AdjacentSquares : IComponentData
 	{
 		public Entity right;
