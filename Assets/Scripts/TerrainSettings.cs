@@ -7,7 +7,7 @@ public enum TerrainTypes { DIRT, GRASS, CLIFF }
 public static class TerrainSettings
 {
 	public static int mapSquareWidth = 12;
-	public static int viewDistance = 3;
+	public static int viewDistance = 5;
 
 	//	Must always be at >= squareWidth
 	public static int terrainHeight = 16;

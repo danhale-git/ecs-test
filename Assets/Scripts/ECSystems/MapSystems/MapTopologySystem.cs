@@ -18,6 +18,7 @@ public class MapTopologySystem : ComponentSystem
     int levelHeight = 5;
     float cliffDepth = 0.05f;
     int levelCount = 5;
+    int terrainHeight;
 
     ComponentGroup terrainGroup;
 
@@ -28,6 +29,7 @@ public class MapTopologySystem : ComponentSystem
         entityManager   = World.Active.GetOrCreateManager<EntityManager>();
         
         squareWidth     = TerrainSettings.mapSquareWidth;
+        terrainHeight   = TerrainSettings.terrainHeight;
 
         EntityArchetypeQuery terrainQuery = new EntityArchetypeQuery{
             All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateTerrain) }
@@ -108,7 +110,7 @@ public class MapTopologySystem : ComponentSystem
 
     Topology GetCellHeight(CellProfile cell)
     {
-        int height = TerrainSettings.terrainHeight;
+        int height = terrainHeight;
         TerrainTypes type = 0;
 
         float cellValue = cell.currentCellValue;
