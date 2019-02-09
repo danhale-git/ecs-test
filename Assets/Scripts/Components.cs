@@ -47,6 +47,7 @@ namespace MyComponents
 	[InternalBufferCapacity(0)]
 	public struct Topology : IBufferElementData
 	{
+		public float noise;
 		public int height;
 		public TerrainTypes type;
 	}
