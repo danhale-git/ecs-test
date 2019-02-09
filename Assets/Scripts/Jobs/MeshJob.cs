@@ -234,8 +234,8 @@ struct MeshJob : IJobParallelFor
 			vertices[index+1] = position + face[2];
 
 			//	Top left or right face vertex
-			if		(slopeVerts.x < 0) vertices[index+2] = face[1];
-			else if	(slopeVerts.y < 0) vertices[index+2] = face[0];
+			if		(slopeVerts.x < 0) vertices[index+2] = position + face[1];
+			else if	(slopeVerts.y < 0) vertices[index+2] = position + face[0];
 		}
 		//	Half face above slope
 		else if(exposure == Faces.Exp.HALFIN)
@@ -245,8 +245,8 @@ struct MeshJob : IJobParallelFor
 			vertices[index+1] = position + face[1];
 
 			//	Bottom left or right face vertex
-			if		(slopeVerts.x < 0) vertices[index+2] = face[2];
-			else if	(slopeVerts.y < 0) vertices[index+2] = face[3];
+			if		(slopeVerts.x < 0) vertices[index+2] = position + face[2];
+			else if	(slopeVerts.y < 0) vertices[index+2] = position + face[3];
 		}
 	}
 
