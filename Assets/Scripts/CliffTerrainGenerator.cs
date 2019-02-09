@@ -16,7 +16,6 @@ public class CliffTerrainGenerator
     float levelFrequency;
 
     float cliffDepth;
-    float cliffBleed;
 
     public CliffTerrainGenerator(int levelCount, int levelHeight)
     {
@@ -25,7 +24,6 @@ public class CliffTerrainGenerator
 
         this.levelFrequency = 0.01f;
         cliffDepth = 0.05f;
-        cliffBleed = 0.025f;
     }
 
     Topology GetCellHeight(CellData cell)
