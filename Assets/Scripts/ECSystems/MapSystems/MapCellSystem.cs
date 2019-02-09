@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Transforms;
+using System.Collections.Generic;
 using MyComponents;
 
 [UpdateAfter(typeof(MapManagerSystem))]
@@ -55,8 +56,23 @@ public class MapCellSystem : ComponentSystem
                 NativeArray<CellProfile> cellMap = jobifiedNoise.CellularDistanceToEdge(position, TerrainSettings.cellFrequency);
 
                 cellBuffer.AddRange(cellMap);
-
                 cellMap.Dispose();
+
+                Dictionary<float, int> cellCounts = new Dictionary<float, int>();
+
+                for(int i = 0; i < cellBuffer.Length; i++)
+                {
+                    float currentCellValue = cellBuffer[i].currentCellValue;
+
+                    int currentCount;
+
+                    if(cellCounts.TryGetValue(currentCellValue, out currentCount))
+                    {
+                        cellCounts[currentCellValue] = currentCount+1;
+                    }
+                    else
+                        cellCounts.Add(currentCellValue, 1);                                      
+                }
 
                 commandBuffer.RemoveComponent<Tags.GenerateCells>(entity);
             }
