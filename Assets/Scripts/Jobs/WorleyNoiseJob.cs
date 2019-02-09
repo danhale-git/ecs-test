@@ -161,7 +161,7 @@ struct WorleyNoiseGenerator
 
 		//	Current cell
 		float currentCellValue = To01(ValCoord2D(m_seed, xc0, yc0));
-		int currentBiome = TerrainSettings.BiomeIndex(currentCellValue);
+		int currentBiome = Biome.Index(currentCellValue);
 
 		//	Final closest adjacent cell values
 		float adjacentEdgeDistance = 999999;
@@ -175,7 +175,7 @@ struct WorleyNoiseGenerator
 			if(dist2Edge < adjacentEdgeDistance)
 			{
 				float otherCellValue = To01(ValCoord2D(m_seed, otherX[i], otherY[i]));
-				int otherBiome = TerrainSettings.BiomeIndex(otherCellValue);
+				int otherBiome = Biome.Index(otherCellValue);
 
 				///	Assign as final value if not current biome
 				if(otherBiome != currentBiome)
