@@ -107,7 +107,7 @@ public class MapTopologySystem : ComponentSystem
 
     Topology GetHeight(CellProfile cell, int3 worldPosition)
     {
-        int height = terrainHeight;
+        float height = terrainHeight;
         TerrainTypes type = 0;
 
         float cellValue = cell.currentCellValue;
@@ -117,7 +117,10 @@ public class MapTopologySystem : ComponentSystem
 
         float cellHeight = math.lerp(0, levelCount, cellValue) * levelHeight;
         float adjacentHeight = math.lerp(0, levelCount, adjacentValue) * levelHeight;
-        
+
+        cellHeight += biomes.AddNoise(cell.currentCellValue, worldPosition.x, worldPosition.z);
+        adjacentHeight += biomes.AddNoise(cell.adjacentCellValue, worldPosition.x, worldPosition.z);
+
         //  Close to the edge between two cells of different heights = cliff
         if(cell.distance2Edge < cliffDepth*2 && cellHeight != adjacentHeight)
         {
@@ -128,25 +131,31 @@ public class MapTopologySystem : ComponentSystem
             if(cell.distance2Edge < cliffDepth) 
             {
                 float halfway = (cellHeight + adjacentHeight) / 2;
-                float interpolator = Mathf.InverseLerp(0, cliffDepth, cell.distance2Edge);
+                float interpolator = math.unlerp(0, cliffDepth, cell.distance2Edge);
 
                 //  Interpolate towards midpoint using distance from midpoint
-                height += (int)math.lerp(halfway, cellHeight, interpolator);
+                height += math.lerp(halfway, cellHeight, interpolator);
             }
             else
-                height += (int)cellHeight;
+            {
+                height += cellHeight;
+            }
+
+            float cliffDetailInterp = math.unlerp(cliffDepth*2, 0, cell.distance2Edge);
+            float cliffDetail = math.lerp(0, biomes.CliffDetail(worldPosition.x, worldPosition.z), cliffDetailInterp);
+            height += cliffDetail;
         }
         //  If not cliff then grass
         else
         {
+
             type = TerrainTypes.GRASS;
-            height += (int)cellHeight;
-            //height *= biomes.AddNoise(cell.currentCellValue, worldPosition.x, worldPosition.z);
+            height += cellHeight;
         }
 
 
         return new Topology{
-            height = height,
+            height = (int)height,
             type = type
         };
     }

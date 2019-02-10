@@ -2,12 +2,16 @@
 
 public class BiomeUtility
 {
+    Cliff cliff;
+
     Hills hills;
-    Flat flat;
+    Flats flat;
     public BiomeUtility()
     {
+        cliff = new Cliff(new FastNoise());
+
         hills = new Hills(new FastNoise());
-        flat = new Flat(new FastNoise());
+        flat = new Flats(new FastNoise());
     }
 
     public static int Index(float cellNoise)
@@ -33,6 +37,11 @@ public class BiomeUtility
             default: throw new System.Exception("Unknown biome index.");
         }
     }
+
+    public float CliffDetail(int x, int z)
+    {
+        return cliff.AddHeight(x, z);
+    }
 }
 
 public interface Biome
@@ -47,28 +56,49 @@ public struct Hills : Biome
     {
         this.noise = noise;
 
-        this.noise.SetFrequency(0.01f);
+        this.noise.SetFrequency(0.005f);
         this.noise.SetFractalOctaves(5);
         this.noise.SetNoiseType(FastNoise.NoiseType.SimplexFractal);
     }
 
     public float AddHeight(int x, int z)
     {
-        return noise.GetNoise01(x, z);
+        return noise.GetNoise01(x, z) * 20;
     }    
 }
 
-public struct Flat : Biome
+public struct Flats : Biome
 {
     FastNoise noise;
-    public Flat(FastNoise noise)
+    public Flats(FastNoise noise)
     {
         this.noise = noise;
+
+        this.noise.SetFrequency(0.001f);
+        this.noise.SetFractalOctaves(5);
+        this.noise.SetNoiseType(FastNoise.NoiseType.SimplexFractal);
     }
 
     public float AddHeight(int x, int z)
     {
-        return 0;
+        return noise.GetNoise01(x, z) * 5;
+    }     
+}
+
+public struct Cliff : Biome
+{
+    FastNoise noise;
+    public Cliff(FastNoise noise)
+    {
+       this.noise = noise;
+
+        this.noise.SetFrequency(0.05f);
+        this.noise.SetNoiseType(FastNoise.NoiseType.Simplex);
+    }
+
+    public float AddHeight(int x, int z)
+    {
+        return (noise.GetNoise01(x, z) * 8) - 4;
     }    
 }
 
