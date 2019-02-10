@@ -24,6 +24,8 @@ public class MapTopologySystem : ComponentSystem
 
     JobifiedNoise jobifiedNoise;
 
+    BiomeUtility biomes;
+
     protected override void OnCreateManager()
     {
         entityManager   = World.Active.GetOrCreateManager<EntityManager>();
@@ -37,6 +39,8 @@ public class MapTopologySystem : ComponentSystem
         terrainGroup = GetComponentGroup(terrainQuery);
 
         jobifiedNoise = new JobifiedNoise();
+
+        biomes = new BiomeUtility();
     }
 
     protected override void OnUpdate()
@@ -69,7 +73,8 @@ public class MapTopologySystem : ComponentSystem
 
                 for(int i = 0; i < heightBuffer.Length; i++)
                 {
-                    Topology heightComponent = GetHeight(cellBuffer[i]);
+                    int3 worldPosition = (int3)(position + Util.Unflatten2D(i, squareWidth));
+                    Topology heightComponent = GetHeight(cellBuffer[i], worldPosition);
 
                     if(heightComponent.height > highestBlock)
                         highestBlock = heightComponent.height;
@@ -100,7 +105,7 @@ public class MapTopologySystem : ComponentSystem
         chunks.Dispose();
     }
 
-    Topology GetHeight(CellProfile cell)
+    Topology GetHeight(CellProfile cell, int3 worldPosition)
     {
         int height = terrainHeight;
         TerrainTypes type = 0;
@@ -136,7 +141,9 @@ public class MapTopologySystem : ComponentSystem
         {
             type = TerrainTypes.GRASS;
             height += (int)cellHeight;
+            //height *= biomes.AddNoise(cell.currentCellValue, worldPosition.x, worldPosition.z);
         }
+
 
         return new Topology{
             height = height,

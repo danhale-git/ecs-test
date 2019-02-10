@@ -1,17 +1,13 @@
 ﻿using UnityEngine;
 
-public class Biome
+public class BiomeUtility
 {
-    protected FastNoise noise;
-
-    public Biome()
+    Hills hills;
+    Flat flat;
+    public BiomeUtility()
     {
-        noise = new FastNoise();
-    }
-
-    public virtual float AddHeight(int x, int z)
-    {
-        return 0;
+        hills = new Hills(new FastNoise());
+        flat = new Flat(new FastNoise());
     }
 
     public static int Index(float cellNoise)
@@ -22,39 +18,57 @@ public class Biome
             return 1;
     }
 
-    public static Biome Select(int index)
+    public float AddNoise(float cellNoise, int x, int z)
     {
-        switch(index)
+        return AddNoise(Index(cellNoise), x, z);
+    }
+
+    public float AddNoise(int biomeIndex, int x, int z)
+    {
+        switch(biomeIndex)
         {
-            case 0:     return new Hills();
-            case 1:     return new Flat();
-            
-            default: throw new System.Exception("unknown biome selector");
+            case 0: return hills.AddHeight(x, z);
+            case 1: return flat.AddHeight(x, z);
+
+            default: throw new System.Exception("Unknown biome index.");
         }
     }
 }
 
-public class Hills : Biome
+public interface Biome
 {
-    public Hills() : base()
+    float AddHeight(int x, int z);
+}
+
+public struct Hills : Biome
+{
+    FastNoise noise;
+    public Hills(FastNoise noise)
     {
-        noise.SetFrequency(0.01f);
-        noise.SetFractalOctaves(5);
-        noise.SetNoiseType(FastNoise.NoiseType.SimplexFractal);
+        this.noise = noise;
+
+        this.noise.SetFrequency(0.01f);
+        this.noise.SetFractalOctaves(5);
+        this.noise.SetNoiseType(FastNoise.NoiseType.SimplexFractal);
     }
 
-    public override float AddHeight(int x, int z)
+    public float AddHeight(int x, int z)
     {
         return noise.GetNoise01(x, z);
-    }
+    }    
 }
 
-public class Flat : Biome
+public struct Flat : Biome
 {
-    public Flat() : base() { }
-
-    public override float AddHeight(int x, int z)
+    FastNoise noise;
+    public Flat(FastNoise noise)
     {
-        return 1;
+        this.noise = noise;
     }
+
+    public float AddHeight(int x, int z)
+    {
+        return 0;
+    }    
 }
+
