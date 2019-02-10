@@ -17,6 +17,8 @@ public class MapCellSystem : ComponentSystem
 
     JobifiedNoise jobifiedNoise;
 
+    public Dictionary<float, Entity> cells; 
+
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
@@ -60,18 +62,25 @@ public class MapCellSystem : ComponentSystem
 
                 Dictionary<float, int> cellCounts = new Dictionary<float, int>();
 
+                float previousCellValue = 0;
+
                 for(int i = 0; i < cellBuffer.Length; i++)
                 {
                     float currentCellValue = cellBuffer[i].currentCellValue;
 
+                    if(currentCellValue == previousCellValue)
+                    {
+                        continue;
+                    }
+
                     int currentCount;
 
                     if(cellCounts.TryGetValue(currentCellValue, out currentCount))
-                    {
                         cellCounts[currentCellValue] = currentCount+1;
-                    }
                     else
-                        cellCounts.Add(currentCellValue, 1);                                      
+                        cellCounts.Add(currentCellValue, 1);
+
+                    previousCellValue = currentCellValue;                                    
                 }
 
                 commandBuffer.RemoveComponent<Tags.GenerateCells>(entity);
@@ -82,5 +91,12 @@ public class MapCellSystem : ComponentSystem
         commandBuffer.Dispose();
 
         chunks.Dispose();
+    }
+
+    void NewCell(float cellValue)
+    {
+        if(cells.ContainsKey(cellValue)) return;
+
+        //  Create cell entity
     }
 }
