@@ -33,25 +33,25 @@ public class JobifiedNoise
         return noiseMap;
     }
 
-    public NativeArray<CellProfile> CellularDistanceToEdge(float3 position, float frequency = 0.01f)
+    public NativeArray<WorleyNoise> CellularDistanceToEdge(float3 position, float frequency = 0.01f)
     {
-        NativeArray<CellProfile> cellMap = new NativeArray<CellProfile>((int)math.pow(squareWidth, 2), Allocator.TempJob);
+        NativeArray<WorleyNoise> worleyNoiseMap = new NativeArray<WorleyNoise>((int)math.pow(squareWidth, 2), Allocator.TempJob);
 
         WorleyNoiseJob cellJob = new WorleyNoiseJob(){
-            cellMap 	= cellMap,						        //	Flattened 2D array of noise
-			offset 		= position,						        //	World position of this map square's local 0,0
-			squareWidth	= squareWidth,						        //	Length of one side of a square/cube	
-            seed 		= TerrainSettings.seed,			        //	Perlin noise seed
-            frequency 	= frequency,	        //	Perlin noise frequency
-            perterbAmp  = TerrainSettings.cellEdgeSmoothing,   //  Gradient Peturb amount
-			util 		= new JobUtil(),				        //	Utilities
-            noise 		= new WorleyNoiseGenerator(0)	        //	FastNoise.GetSimplex adapted for Jobs
+            worleyNoiseMap 	= worleyNoiseMap,						//	Flattened 2D array of noise
+			offset 		    = position,						        //	World position of this map square's local 0,0
+			squareWidth	    = squareWidth,						    //	Length of one side of a square/cube	
+            seed 		    = TerrainSettings.seed,			        //	Perlin noise seed
+            frequency 	    = frequency,	                        //	Perlin noise frequency
+            perterbAmp      = TerrainSettings.cellEdgeSmoothing,    //  Gradient Peturb amount
+			util 		    = new JobUtil(),				        //	Utilities
+            noise 		    = new WorleyNoiseGenerator(0)	        //	FastNoise.GetSimplex adapted for Jobs
             };
 
-        cellJob.Schedule(cellMap.Length, 16).Complete();
+        cellJob.Schedule(worleyNoiseMap.Length, 16).Complete();
 
         cellJob.noise.Dispose();
 
-        return cellMap;
+        return worleyNoiseMap;
     }
 }

@@ -50,13 +50,13 @@ public class MapCellSystem : ComponentSystem
                 Entity entity   = entities[e];
                 float3 position = positions[e].Value;
 
-                DynamicBuffer<CellProfile> cellBuffer = entityManager.GetBuffer<CellProfile>(entity);
-			    cellBuffer.ResizeUninitialized(0);
+                DynamicBuffer<WorleyNoise> worleyNoiseBuffer = entityManager.GetBuffer<WorleyNoise>(entity);
+			    worleyNoiseBuffer.ResizeUninitialized(0);
 
-                NativeArray<CellProfile> cellMap = jobifiedNoise.CellularDistanceToEdge(position, TerrainSettings.cellFrequency);
+                NativeArray<WorleyNoise> worleyNoiseMap = jobifiedNoise.CellularDistanceToEdge(position, TerrainSettings.cellFrequency);
 
-                cellBuffer.AddRange(cellMap);
-                cellMap.Dispose();
+                worleyNoiseBuffer.AddRange(worleyNoiseMap);
+                worleyNoiseMap.Dispose();
 
                 commandBuffer.RemoveComponent<Tags.GenerateCells>(entity);
             }

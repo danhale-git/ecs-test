@@ -12,7 +12,7 @@ struct WorleyNoiseJob : IJobParallelFor
     
     #endregion
     
-    public NativeArray<CellProfile> cellMap;
+    public NativeArray<WorleyNoise> worleyNoiseMap;
 
     [ReadOnly] public float3 offset;
     [ReadOnly] public int squareWidth;
@@ -27,7 +27,7 @@ struct WorleyNoiseJob : IJobParallelFor
     {
         float3 position = util.Unflatten2D(i, squareWidth) + offset;
 
-        cellMap[i] = noise.GetEdgeData(position.x, position.z, seed, frequency, perterbAmp);
+        worleyNoiseMap[i] = noise.GetEdgeData(position.x, position.z, seed, frequency, perterbAmp);
     }
 }
 
@@ -89,7 +89,7 @@ struct WorleyNoiseGenerator
 		CELL_2D.Dispose();
 	}
 
-    public CellProfile GetEdgeData(float x, float y, int m_seed, float m_frequency, float perterbAmp)
+    public WorleyNoise GetEdgeData(float x, float y, int m_seed, float m_frequency, float perterbAmp)
 	{
 		if(perterbAmp > 0)SingleGradientPerturb(m_seed, perterbAmp, m_frequency, ref x, ref y);
 
@@ -187,7 +187,7 @@ struct WorleyNoiseGenerator
 		}
 		if(adjacentEdgeDistance == 999999) adjacentEdgeDistance = 0;
 		
-		CellProfile cell = new MyComponents.CellProfile();
+		WorleyNoise cell = new MyComponents.WorleyNoise();
 		
 		cell.currentCellValue = currentCellValue;
 		cell.distance2Edge = adjacentEdgeDistance;

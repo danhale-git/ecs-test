@@ -48,7 +48,7 @@ public class MapManagerSystem : ComponentSystem
             ComponentType.Create<Position>(),
             ComponentType.Create<RenderMeshComponent>(),
             ComponentType.Create<MapSquare>(),
-            ComponentType.Create<CellProfile>(),
+            ComponentType.Create<WorleyNoise>(),
             ComponentType.Create<Topology>(),
             ComponentType.Create<Block>(),
 

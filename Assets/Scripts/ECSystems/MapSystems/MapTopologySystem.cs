@@ -63,7 +63,7 @@ public class MapTopologySystem : ComponentSystem
                 Entity entity   = entities[e];
                 float3 position = positions[e].Value;
 
-                DynamicBuffer<CellProfile> cellBuffer = entityManager.GetBuffer<CellProfile>(entity);
+                DynamicBuffer<WorleyNoise> cellBuffer = entityManager.GetBuffer<WorleyNoise>(entity);
 
                 DynamicBuffer<Topology> heightBuffer = entityManager.GetBuffer<Topology>(entity);
 			    heightBuffer.ResizeUninitialized((int)math.pow(squareWidth, 2));
@@ -105,7 +105,7 @@ public class MapTopologySystem : ComponentSystem
         chunks.Dispose();
     }
 
-    Topology GetHeight(CellProfile cell, int3 worldPosition)
+    Topology GetHeight(WorleyNoise cell, int3 worldPosition)
     {
         float height = terrainHeight;
         TerrainTypes type = 0;

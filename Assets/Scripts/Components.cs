@@ -53,7 +53,7 @@ namespace MyComponents
 	}
 
 	[InternalBufferCapacity(0)]
-	public struct CellProfile : IBufferElementData
+	public struct WorleyNoise : IBufferElementData
 	{
 		public float currentCellValue, distance2Edge, adjacentCellValue;
 	}

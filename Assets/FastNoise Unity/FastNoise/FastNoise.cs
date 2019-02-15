@@ -2055,7 +2055,7 @@ public class FastNoise
 	}
 
 	//	Get all cellular noise data for pixel
-	public MyComponents.CellProfile GetCellProfile(FN_DECIMAL x, FN_DECIMAL y)
+	public MyComponents.WorleyNoise GetCellProfile(FN_DECIMAL x, FN_DECIMAL y)
 	{
 		x *= m_frequency;
 		y *= m_frequency;
@@ -2146,7 +2146,7 @@ public class FastNoise
 				}
 			}
 		}
-		MyComponents.CellProfile cell = new MyComponents.CellProfile();
+		MyComponents.WorleyNoise cell = new MyComponents.WorleyNoise();
 		
 		cell.currentCellValue = currentCellValue;
 		cell.distance2Edge = adjacentEdgeDistance;
