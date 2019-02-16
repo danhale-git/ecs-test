@@ -106,7 +106,7 @@ namespace MyComponents
 		public NativeArray<int> GetLowestBlocks(Allocator label)
 		{
 			EntityManager entityManager = World.Active.GetOrCreateManager<EntityManager>();
-			
+
 			NativeArray<int> lowestBlocks = new NativeArray<int>(8, label);
 			for(int i = 0; i < 8; i++)
 			{
@@ -201,6 +201,6 @@ namespace Tags
 
 namespace UpdateGroups
 {
-	[UpdateAfter(typeof(MapCellSystem))]
+	[UpdateAfter(typeof(MapManagerSystem))]
 	public class NewMapSquareUpdateGroup { }
 }
