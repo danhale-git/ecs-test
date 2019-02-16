@@ -89,7 +89,7 @@ public class MapMeshSystem : ComponentSystem
 				//	If any faces are exposed, generate mesh and update entity Position component
 				if(counts.faceCount != 0)
 				{
-					Mesh mapSquareMesh = GetMesh(squares[e], faces, blockAccessor[e], counts);
+					Mesh mapSquareMesh = GetMesh(entity, squares[e], faces, blockAccessor[e], counts);
 
 					SetMeshComponent(
 						redraw,
@@ -196,13 +196,16 @@ public class MapMeshSystem : ComponentSystem
 		return new FaceCounts(faceCount, vertCount, triCount);
 	}
 
-	Mesh GetMesh(MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, FaceCounts counts)
+	Mesh GetMesh(Entity entity/*DEBUG */, MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, FaceCounts counts)
 	{
 		//	Determine vertex and triangle arrays using face count
 		NativeArray<float3> vertices 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
 		NativeArray<float3> normals 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
 		NativeArray<int> 	triangles 	= new NativeArray<int>	 (counts.triCount, Allocator.TempJob);
 		NativeArray<float4> colors 		= new NativeArray<float4>(counts.vertCount, Allocator.TempJob);
+
+		//	DEBUG
+		DynamicBuffer<WorleyNoise> worleyNoise = entityManager.GetBuffer<WorleyNoise>(entity);
 
 		MeshJob job = new MeshJob(){
 			vertices 	= vertices,
@@ -211,6 +214,7 @@ public class MapMeshSystem : ComponentSystem
 			colors 		= colors,
 
 			mapSquare = mapSquare,
+			worleyNoise = worleyNoise,
 
 			blocks 	= blocks,
 			faces 	= faces,
