@@ -19,6 +19,7 @@ struct WorleyNoiseJob : IJobParallelFor
     [ReadOnly] public int seed;
     [ReadOnly] public float frequency;
 	[ReadOnly] public float perterbAmp;
+	[ReadOnly] public float cellularJitter;
     [ReadOnly] public JobUtil util;
     [ReadOnly] public WorleyNoiseGenerator noise;
 
@@ -27,7 +28,7 @@ struct WorleyNoiseJob : IJobParallelFor
     {
         float3 position = util.Unflatten2D(i, squareWidth) + offset;
 
-        worleyNoiseMap[i] = noise.GetEdgeData(position.x, position.z, seed, frequency, perterbAmp);
+        worleyNoiseMap[i] = noise.GetEdgeData(position.x, position.z, seed, frequency, perterbAmp, cellularJitter);
     }
 }
 
@@ -35,7 +36,6 @@ struct WorleyNoiseGenerator
 {
     int X_PRIME;
 	int Y_PRIME;
-    float m_cellularJitter;
 
     NativeArray<float2> CELL_2D;
 
@@ -80,8 +80,6 @@ struct WorleyNoiseGenerator
 
 		X_PRIME = 1619;
 		Y_PRIME = 31337;
-
-		m_cellularJitter = 0.45f;
 	}
 
 	public void Dispose()
@@ -89,7 +87,7 @@ struct WorleyNoiseGenerator
 		CELL_2D.Dispose();
 	}
 
-    public WorleyNoise GetEdgeData(float x, float y, int m_seed, float m_frequency, float perterbAmp)
+    public WorleyNoise GetEdgeData(float x, float y, int m_seed, float m_frequency, float perterbAmp, float cellularJitter)
 	{
 		if(perterbAmp > 0)SingleGradientPerturb(m_seed, perterbAmp, m_frequency, ref x, ref y);
 
@@ -113,14 +111,19 @@ struct WorleyNoiseGenerator
 		float[] otherDist = { 999999, 999999, 999999, 999999, 999999, 999999, 999999, 999999, 999999 };
 		int indexCount = 0;
 
+		float3 currentCellPosition = float3.zero;
+
 		for (int xi = xr - 1; xi <= xr + 1; xi++)
 				{
 					for (int yi = yr - 1; yi <= yr + 1; yi++)
 					{
 						float2 vec = CELL_2D[Hash2D(m_seed, xi, yi) & 255];
 
-						float vecX = xi - x + vec.x * m_cellularJitter;
-						float vecY = yi - y + vec.y * m_cellularJitter;
+						float vecX = xi - x + vec.x * cellularJitter;
+						float vecY = yi - y + vec.y * cellularJitter;
+
+						float cellX = xi + vec.x * cellularJitter;
+						float cellY = yi + vec.y * cellularJitter;
 
 						//	Natural distance function
 						//float newDistance = (math.abs(vecX) + math.abs(vecY)) + (vecX * vecX + vecY * vecY);
@@ -149,6 +152,8 @@ struct WorleyNoiseGenerator
 							distance[0] = newDistance;
 							xc0 = xi;
 							yc0 = yi;
+
+							currentCellPosition = new float3(cellX, 0, cellY) / m_frequency;
 						}
 
 						//	Store all adjacent cells
@@ -192,6 +197,7 @@ struct WorleyNoiseGenerator
 		cell.currentCellValue = currentCellValue;
 		cell.distance2Edge = adjacentEdgeDistance;
 		cell.adjacentCellValue = adjacentCellValue;
+		cell.currentCellPosition = currentCellPosition;
 
 		//	Data for use in terrain generation
 		return cell;

@@ -15,6 +15,7 @@ public static class TerrainSettings
 
 	public static float cellFrequency = 0.02f;
 	public static float cellEdgeSmoothing = 10.0f;
+	public static float cellularJitter = 0.15f;
 
 	public static int BiomeIndex(float noise)
 	{
