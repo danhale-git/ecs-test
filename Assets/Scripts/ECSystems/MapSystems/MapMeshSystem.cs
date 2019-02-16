@@ -75,7 +75,8 @@ public class MapMeshSystem : ComponentSystem
 			BufferAccessor<Block> 			blockAccessor 	= chunk.GetBufferAccessor(blocksType);
 
 			//	Iterate over map square entities
-			for(int e = 0; e < entities.Length; e++)
+			//for(int e = 0; e < entities.Length; e++)
+			for(int e = 0; e < 1; e++)
 			{
 				Entity entity = entities[e];
 
