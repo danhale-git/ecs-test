@@ -14,6 +14,7 @@ public class MapManagerSystem : ComponentSystem
 	enum MapBuffer { NONE, INNER, OUTER, EDGE }
     
     EntityManager entityManager;
+    TagUtil tags;
 
 	public static Entity playerEntity;
 
@@ -37,6 +38,7 @@ public class MapManagerSystem : ComponentSystem
 	protected override void OnCreateManager()
     {
 		entityManager   = World.Active.GetOrCreateManager<EntityManager>();
+        tags = new TagUtil(entityManager);
         squareWidth     = TerrainSettings.mapSquareWidth;
 
         matrixWidth         = (TerrainSettings.viewDistance * 2) + 1;
@@ -106,15 +108,11 @@ public class MapManagerSystem : ComponentSystem
             //  Matrix showing already created squares
             NativeArray<int> doNotCreate;
             
-            //  Check all map square entities, update and list for removal accordingly
-            CheckExistingSquares(out squaresToRemove, out doNotCreate);
+            CheckAndUpdateSquares(out squaresToRemove, out doNotCreate);
 
-            //  Create non-existent map squares in view radius
             CreateNewSquares(doNotCreate);
-
-            //  Action map square removal
-            for(int i = 0; i < squaresToRemove.Length; i++)
-                RemoveMapSquare(squaresToRemove[i]);
+            
+            RemoveMapSquares(squaresToRemove);
 
             squaresToRemove.Dispose();
             doNotCreate.Dispose();
@@ -136,7 +134,7 @@ public class MapManagerSystem : ComponentSystem
         return Util.VoxelOwner(playerPosition, squareWidth);
     }
 
-    void CheckExistingSquares(out NativeList<Entity> toRemove, out NativeArray<int> doNotCreate)
+    void CheckAndUpdateSquares(out NativeList<Entity> toRemove, out NativeArray<int> doNotCreate)
 	{
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
 		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);	
@@ -195,53 +193,31 @@ public class MapManagerSystem : ComponentSystem
 		chunks.Dispose();
 	}
 
-    //	Check if buffer type needs updating
 	void UpdateBuffer(Entity entity, MapBuffer buffer, EntityCommandBuffer commandBuffer)
 	{
 		switch(buffer)
 		{
 			//	Outer/None buffer changed to inner buffer
 			case MapBuffer.INNER:
-				if(entityManager.HasComponent<Tags.OuterBuffer>(entity))
-				{
-					commandBuffer.RemoveComponent<Tags.OuterBuffer>(entity);
-					commandBuffer.AddComponent<Tags.InnerBuffer>(entity, new Tags.InnerBuffer());
-				}
-                else if(!entityManager.HasComponent<Tags.InnerBuffer>(entity))
-                {
-					commandBuffer.AddComponent<Tags.InnerBuffer>(entity, new Tags.InnerBuffer());
-                }
+                if(!tags.TryReplaceTag<Tags.OuterBuffer, Tags.InnerBuffer>(entity, commandBuffer))
+                    tags.TryAddTag<Tags.InnerBuffer>(entity, commandBuffer);
 				break;
 
 			//	Edge/Inner buffer changed to outer buffer
 			case MapBuffer.OUTER:
-				if(entityManager.HasComponent<Tags.EdgeBuffer>(entity))
-				{
-					commandBuffer.RemoveComponent<Tags.EdgeBuffer>(entity);
-					commandBuffer.AddComponent<Tags.OuterBuffer>(entity, new Tags.OuterBuffer());
-				}
-                else if(entityManager.HasComponent<Tags.InnerBuffer>(entity))
-				{
-					commandBuffer.RemoveComponent<Tags.InnerBuffer>(entity);
-					commandBuffer.AddComponent<Tags.OuterBuffer>(entity, new Tags.OuterBuffer());
-				}
+                if(!tags.TryReplaceTag<Tags.EdgeBuffer, Tags.OuterBuffer>(entity, commandBuffer))
+                    tags.TryReplaceTag<Tags.InnerBuffer, Tags.OuterBuffer>(entity, commandBuffer);
 				break;
 
 			//	Outer buffer changed to edge buffer
 			case MapBuffer.EDGE:
-                if(entityManager.HasComponent<Tags.OuterBuffer>(entity))
-				{
-					commandBuffer.RemoveComponent<Tags.OuterBuffer>(entity);
-					commandBuffer.AddComponent<Tags.EdgeBuffer>(entity, new Tags.EdgeBuffer());
-				}
+                tags.TryReplaceTag<Tags.OuterBuffer, Tags.EdgeBuffer>(entity, commandBuffer);
                 break;
 			
 			//	Not a buffer
 			default:
-				if(entityManager.HasComponent<Tags.EdgeBuffer>(entity))
-					commandBuffer.RemoveComponent<Tags.EdgeBuffer>(entity);
-				if(entityManager.HasComponent<Tags.InnerBuffer>(entity))
-					commandBuffer.RemoveComponent<Tags.InnerBuffer>(entity);
+                tags.TryRemoveTag<Tags.EdgeBuffer>(entity, commandBuffer);
+                tags.TryRemoveTag<Tags.InnerBuffer>(entity, commandBuffer);
 				break;
 		}
 
@@ -259,51 +235,35 @@ public class MapManagerSystem : ComponentSystem
             MapBuffer   buffer          = GetBuffer(matrixPosition);
             float3      worldPosition   = mapMatrix.MatrixToWorldPosition(matrixPosition);
 
-            Entity entity = entityManager.CreateEntity(mapSquareArchetype);
-		    entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
+            Entity entity = CreateMapSquareAtPosition(worldPosition);
 
-            GetWorleyNoise(entity, worldPosition);
+            GenerateWorleyNoise(entity, worldPosition);
             
             mapMatrix.SetItem(entity, i);
 
-            switch(buffer)
-            {
-                //	Is inner buffer
-                case MapBuffer.INNER:
-                    entityManager.AddComponent(entity, typeof(Tags.InnerBuffer));
-                    break;
-
-                //	Is outer buffer
-                case MapBuffer.OUTER:
-                    entityManager.AddComponent(entity, typeof(Tags.OuterBuffer));
-                    break;
-
-                //	Is edge buffer
-                case MapBuffer.EDGE:
-                    entityManager.AddComponent(entity, typeof(Tags.EdgeBuffer));
-                    break;
-                
-                //	Is not a buffer
-                default:
-                    break;
-            }
-
-            CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
+            SetBuffer(entity, buffer);
         }
     }
 
-    void GetWorleyNoise(Entity entity, float3 position)
+    Entity CreateMapSquareAtPosition(float3 worldPosition)
+    {
+        Entity entity = entityManager.CreateEntity(mapSquareArchetype);
+		entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
+        return entity;
+    }
+
+    void GenerateWorleyNoise(Entity entity, float3 position)
     {
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = entityManager.GetBuffer<WorleyNoise>(entity);
         worleyNoiseBuffer.ResizeUninitialized(0);
 
-        NativeArray<WorleyNoise> worleyNoiseMap = CellularDistanceToEdge(position, TerrainSettings.cellFrequency);
+        NativeArray<WorleyNoise> worleyNoiseMap = RunWorleyNoiseJob(position, TerrainSettings.cellFrequency);
 
         worleyNoiseBuffer.AddRange(worleyNoiseMap);
         worleyNoiseMap.Dispose();
     }
 
-    NativeArray<WorleyNoise> CellularDistanceToEdge(float3 position, float frequency = 0.01f)
+    NativeArray<WorleyNoise> RunWorleyNoiseJob(float3 position, float frequency = 0.01f)
     {
         NativeArray<WorleyNoise> worleyNoiseMap = new NativeArray<WorleyNoise>((int)math.pow(squareWidth, 2), Allocator.TempJob);
 
@@ -325,14 +285,45 @@ public class MapManagerSystem : ComponentSystem
         return worleyNoiseMap;
     }
 
-    void RemoveMapSquare(Entity entity)
+    void SetBuffer(Entity entity, MapBuffer buffer)
     {
-        float3 position = entityManager.GetComponentData<Position>(entity).Value;
+        switch(buffer)
+        {
+            //	Is inner buffer
+            case MapBuffer.INNER:
+                tags.AddTag<Tags.InnerBuffer>(entity);
+                break;
 
-        UpdateNeighbouringSquares(position);
-        
-        entityManager.AddComponent(entity, typeof(Tags.RemoveMapSquare));
+            //	Is outer buffer
+            case MapBuffer.OUTER:
+                tags.AddTag<Tags.OuterBuffer>(entity);
+                break;
+
+            //	Is edge buffer
+            case MapBuffer.EDGE:
+                tags.AddTag<Tags.EdgeBuffer>(entity);
+                break;
+            
+            //	Is not a buffer
+            default:
+                break;
+        }
+
+        CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
     }
+
+    void RemoveMapSquares(NativeList<Entity> squaresToRemove)
+    {
+        for(int i = 0; i < squaresToRemove.Length; i++)
+        {
+            Entity entity = squaresToRemove[i];
+
+            UpdateNeighbouringSquares(entityManager.GetComponentData<Position>(entity).Value);
+            
+            entityManager.AddComponent(entity, typeof(Tags.RemoveMapSquare));
+        }
+    }
+
     void UpdateNeighbouringSquares(float3 centerSquarePosition)
     {
         NativeArray<float3> neighbourDirections = Util.CardinalDirections(Allocator.Temp);
@@ -341,18 +332,44 @@ public class MapManagerSystem : ComponentSystem
 
         neighbourDirections.Dispose();
     }
+
     void UpdateAdjacentSquares(float3 mapSquarePosition)
     {
-        //  Adjacent square is in active radius
         if(mapMatrix.PositionInWorldBounds(mapSquarePosition))
         {
             Entity adjacent = mapMatrix.GetFromWorldPosition(mapSquarePosition);
 
-            //  Update AdjacentSquares component when out of Edge buffer   
-            if(!entityManager.HasComponent<Tags.GetAdjacentSquares>(adjacent))
-                entityManager.AddComponent(adjacent, typeof(Tags.GetAdjacentSquares));
+            tags.TryAddTag<Tags.GetAdjacentSquares>(adjacent);
         }
     }
+
+    /*void TryAddComponent<T>(Entity entity) where T : struct, IComponentData
+    {
+        if(!entityManager.HasComponent<T>(entity))
+            entityManager.AddComponent(entity, typeof(T));
+    }
+    void TryAddComponent<T>(Entity entity, EntityCommandBuffer commandBuffer) where T : struct, IComponentData
+    {
+        if(!entityManager.HasComponent<T>(entity))
+            commandBuffer.AddComponent<T>(entity, new T());
+    }
+    void TryRemoveComponent<T>(Entity entity, EntityCommandBuffer commandBuffer) where T : struct, IComponentData
+    {
+        if(entityManager.HasComponent<T>(entity))
+            commandBuffer.RemoveComponent<T>(entity);
+    }
+    bool TryReplaceComponent<TRemove, TAdd>(Entity entity, EntityCommandBuffer commandBuffer)
+    where TRemove : struct, IComponentData
+    where TAdd : struct, IComponentData
+    {
+        if(entityManager.HasComponent<TRemove>(entity))
+        {
+            commandBuffer.RemoveComponent<TRemove>(entity);
+            commandBuffer.AddComponent<TAdd>(entity, new TAdd());
+            return true;
+        }
+        else return false;
+    } */
 
     MapBuffer GetBuffer(float3 index)
     {
