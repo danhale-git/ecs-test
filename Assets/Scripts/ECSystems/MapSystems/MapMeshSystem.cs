@@ -57,32 +57,31 @@ public class MapMeshSystem : ComponentSystem
 		EntityCommandBuffer 		commandBuffer 	= new EntityCommandBuffer(Allocator.Temp);
 		NativeArray<ArchetypeChunk> chunks 			= meshGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
-		ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
-		ArchetypeChunkComponentType<MapSquare> 	squareType		= GetArchetypeChunkComponentType<MapSquare>(true);
-		ArchetypeChunkComponentType<Position> 	positionType	= GetArchetypeChunkComponentType<Position>(true);
-		ArchetypeChunkBufferType<Block> 		blocksType 		= GetArchetypeChunkBufferType<Block>(true);
+		ArchetypeChunkEntityType 						entityType 		= GetArchetypeChunkEntityType();
+		ArchetypeChunkComponentType<MapSquare> 			squareType		= GetArchetypeChunkComponentType<MapSquare>(true);
+		ArchetypeChunkComponentType<Position> 			positionType	= GetArchetypeChunkComponentType<Position>(true);
+		ArchetypeChunkComponentType<AdjacentSquares>	adjacentType	= GetArchetypeChunkComponentType<AdjacentSquares>(true);
+		ArchetypeChunkBufferType<Block> 				blocksType 		= GetArchetypeChunkBufferType<Block>(true);
 
 		for(int c = 0; c < chunks.Length; c++)
 		{
 			ArchetypeChunk chunk = chunks[c];
 
 			//	Get chunk data
-			NativeArray<Entity> 	entities 		= chunk.GetNativeArray(entityType);
-			NativeArray<MapSquare>	squares			= chunk.GetNativeArray(squareType);
-			NativeArray<Position>	positions		= chunk.GetNativeArray(positionType);
-			BufferAccessor<Block> 	blockAccessor 	= chunk.GetBufferAccessor(blocksType);
+			NativeArray<Entity> 			entities 		= chunk.GetNativeArray(entityType);
+			NativeArray<MapSquare>			squares			= chunk.GetNativeArray(squareType);
+			NativeArray<Position>			positions		= chunk.GetNativeArray(positionType);
+			NativeArray<AdjacentSquares>	adjacentSquares	= chunk.GetNativeArray(adjacentType);
+			BufferAccessor<Block> 			blockAccessor 	= chunk.GetBufferAccessor(blocksType);
 
 			//	Iterate over map square entities
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity = entities[e];
 
-				//	List of adjacent square entities
-				AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(entity);
-
 				//	Check block face exposure and count mesh arrays
 				FaceCounts counts;
-				NativeArray<Faces> faces = CheckBlockFaces(squares[e], blockAccessor[e], adjacentSquares, out counts);
+				NativeArray<Faces> faces = CheckBlockFaces(squares[e], blockAccessor[e], adjacentSquares[e], out counts);
 
 				bool redraw = entityManager.HasComponent<Tags.Redraw>(entity);
 
