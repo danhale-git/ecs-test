@@ -83,27 +83,27 @@ public class MapManagerSystem : ComponentSystem
     {
         currentMapSquare = CurrentMapSquare();
 
-        if(!currentMapSquare.Equals(previousMapSquare))
-        {
-            mapMatrix.ReInitialise(Allocator.Persistent);
+        if(currentMapSquare.Equals(previousMapSquare))
+            return;
 
-            mapMatrix.rootPosition = MapMatrixRootPosition();
+        mapMatrix.ReInitialise(Allocator.Persistent);
 
-            NativeList<Entity> squaresToRemove;
+        mapMatrix.rootPosition = MapMatrixRootPosition();
 
-            NativeArray<int> alreadyExists;
-            
-            CheckAndUpdateMapSquares(out squaresToRemove, out alreadyExists);
+        NativeList<Entity> squaresToRemove;
 
-            CreateMapSquares(alreadyExists);
-            
-            RemoveMapSquares(squaresToRemove);
+        NativeArray<int> alreadyExists;
+        
+        CheckAndUpdateMapSquares(out squaresToRemove, out alreadyExists);
 
-            squaresToRemove.Dispose();
-            alreadyExists.Dispose();
-        }
+        CreateMapSquares(alreadyExists);
+        
+        RemoveMapSquares(squaresToRemove);
 
-        this.previousMapSquare = currentMapSquare;
+        squaresToRemove.Dispose();
+        alreadyExists.Dispose();
+
+        previousMapSquare = currentMapSquare;
     }
 
     float3 MapMatrixRootPosition()
