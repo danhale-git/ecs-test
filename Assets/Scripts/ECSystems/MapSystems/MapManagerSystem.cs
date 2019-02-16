@@ -291,7 +291,7 @@ public class MapManagerSystem : ComponentSystem
     {
         float3 position = entityManager.GetComponentData<Position>(entity).Value;
 
-        NativeArray<float3> cardinalDirections = Util.CardinalDirectionsNative();
+        NativeArray<float3> cardinalDirections = Util.CardinalDirections(Allocator.TempJob);
         for(int i = 0; i < cardinalDirections.Length; i++)
         {
             float3 adjacentPosition = position + (cardinalDirections[i] * squareWidth);

@@ -104,9 +104,9 @@ public static class Util
 			new float3(-1,  0, -1)	//  7  back left
 		    };
     }
-    public static NativeArray<float3> CardinalDirectionsNative()
+    public static NativeArray<float3> CardinalDirections(Allocator label)
     {
-        NativeArray<float3> array = new NativeArray<float3>(8, Allocator.Temp);
+        NativeArray<float3> array = new NativeArray<float3>(8, label);
 		array[0] = new float3( 1,  0,  0); //  0  right
 		array[1] = new float3(-1,  0,  0); //  1  left    
 		array[2] = new float3( 0,  0,  1); //  2  front
