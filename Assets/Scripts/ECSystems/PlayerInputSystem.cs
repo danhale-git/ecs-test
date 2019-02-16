@@ -127,6 +127,7 @@ public class PlayerInputSystem : ComponentSystem
         DynamicBuffer<WorleyNoise> noise = entityManager.GetBuffer<WorleyNoise>(owner);
         WorleyNoise centerNoise = noise[Util.Flatten2D(new float3(squareWidth/2, 0, squareWidth/2), squareWidth)];
         Debug.Log(centerNoise.currentCellPosition);
+        Debug.Log(centerNoise.currentCellIndex);
 
         for(int y = 0; y < 10; y++)
         {

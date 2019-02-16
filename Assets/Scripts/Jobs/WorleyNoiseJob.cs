@@ -112,6 +112,7 @@ struct WorleyNoiseGenerator
 		int indexCount = 0;
 
 		float3 currentCellPosition = float3.zero;
+		int2 currentCellIndex = int2.zero;
 
 		for (int xi = xr - 1; xi <= xr + 1; xi++)
 				{
@@ -154,6 +155,7 @@ struct WorleyNoiseGenerator
 							yc0 = yi;
 
 							currentCellPosition = new float3(cellX, 0, cellY) / m_frequency;
+							currentCellIndex = new int2(xi, yi);
 						}
 
 						//	Store all adjacent cells
@@ -198,6 +200,7 @@ struct WorleyNoiseGenerator
 		cell.distance2Edge = adjacentEdgeDistance;
 		cell.adjacentCellValue = adjacentCellValue;
 		cell.currentCellPosition = currentCellPosition;
+		cell.currentCellIndex = currentCellIndex;
 
 		//	Data for use in terrain generation
 		return cell;

@@ -57,6 +57,7 @@ namespace MyComponents
 	public struct WorleyNoise : IBufferElementData
 	{
 		public float3 currentCellPosition;
+		public int2 currentCellIndex;
 		public float currentCellValue, distance2Edge, adjacentCellValue;
 	}
 
