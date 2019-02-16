@@ -177,7 +177,7 @@ public class MapManagerSystem : ComponentSystem
         commandBuffer.Playback(entityManager);
 		commandBuffer.Dispose();
 
-		chunks.Dispose();
+		chunks.Dispose();//
 	}
 
 	void UpdateBuffer(Entity entity, MapBuffer buffer, EntityCommandBuffer commandBuffer)
