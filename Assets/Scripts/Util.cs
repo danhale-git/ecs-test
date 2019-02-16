@@ -39,6 +39,10 @@ public static class Util
     {
         return ((int)z * size) + (int)x;
     }
+    public static int Flatten2D(float3 xyz, int size)
+    {
+        return ((int)xyz.z * size) + (int)xyz.x;
+    }
 
     public static float To01(float value)
 	{
