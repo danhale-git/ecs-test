@@ -1,5 +1,6 @@
 ﻿using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Collections;
 
 namespace MyComponents
 {
@@ -100,6 +101,19 @@ namespace MyComponents
 			else if(dir.x ==  1 && dir.y == 0 && dir.z == -1) return backRight;
 			else if(dir.x == -1 && dir.y == 0 && dir.z == -1) return backLeft;
 			else throw new System.ArgumentOutOfRangeException("Index out of range 7: " + dir);
+		}
+
+		public NativeArray<int> GetLowestBlocks(Allocator label)
+		{
+			EntityManager entityManager = World.Active.GetOrCreateManager<EntityManager>();
+			
+			NativeArray<int> lowestBlocks = new NativeArray<int>(8, label);
+			for(int i = 0; i < 8; i++)
+			{
+				MapSquare adjacentSquare = entityManager.GetComponentData<MapSquare>(this[i]);
+				lowestBlocks[i] = adjacentSquare.bottomBlockBuffer;
+			}
+			return lowestBlocks;
 		}
 	}
 

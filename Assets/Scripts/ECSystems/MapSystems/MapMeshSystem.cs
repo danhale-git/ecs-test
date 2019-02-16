@@ -88,9 +88,11 @@ public class MapMeshSystem : ComponentSystem
 				//	If any faces are exposed, generate mesh and update entity Position component
 				if(counts.faceCount != 0)
 				{
+					Mesh mapSquareMesh = GetMesh(squares[e], faces, blockAccessor[e], counts);
+
 					SetMeshComponent(
 						redraw,
-						GetMesh(squares[e], faces, blockAccessor[e], counts),
+						mapSquareMesh,
 						entity,
 						commandBuffer);					
 					
@@ -115,12 +117,9 @@ public class MapMeshSystem : ComponentSystem
 	{
 		NativeArray<Faces> exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
 
-		NativeArray<float3> directions = new NativeArray<float3>(8, Allocator.TempJob);
-		directions.CopyFrom(Util.CardinalDirections());
+		NativeArray<float3> directions = Util.CardinalDirections(Allocator.TempJob);
 
-		NativeArray<int> adjacentOffsets = new NativeArray<int>(8, Allocator.TempJob);
-		for(int i = 0; i < 8; i++)
-			adjacentOffsets[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).bottomBlockBuffer;
+		NativeArray<int> adjacentLowestBlocks = adjacentSquares.GetLowestBlocks(Allocator.TempJob);
 		
 		FacesJob job = new FacesJob(){
 			exposedFaces 	= exposedFaces,
@@ -132,7 +131,7 @@ public class MapMeshSystem : ComponentSystem
 			front 	= entityManager.GetBuffer<Block>(adjacentSquares[2]).AsNativeArray(),
 			back 	= entityManager.GetBuffer<Block>(adjacentSquares[3]).AsNativeArray(),
 
-			adjacentLowestBlocks = adjacentOffsets,
+			adjacentLowestBlocks = adjacentLowestBlocks,
 			
 			squareWidth = squareWidth,
 			directions 	= directions, 
@@ -142,8 +141,14 @@ public class MapMeshSystem : ComponentSystem
 		job.Schedule(mapSquare.blockDrawArrayLength, batchSize).Complete();
 
 		directions.Dispose();
-		adjacentOffsets.Dispose();
+		adjacentLowestBlocks.Dispose();
 
+		counts = CountExposedFaces(blocks, exposedFaces);
+		return exposedFaces;
+	}
+
+	FaceCounts CountExposedFaces(DynamicBuffer<Block> blocks, NativeArray<Faces> exposedFaces)
+	{
 		//	Count vertices and triangles	
 		int faceCount 	= 0;
 		int vertCount 	= 0;
@@ -187,9 +192,7 @@ public class MapMeshSystem : ComponentSystem
 			}
 		}
 
-		counts = new FaceCounts(faceCount, vertCount, triCount);
-
-		return exposedFaces;
+		return new FaceCounts(faceCount, vertCount, triCount);
 	}
 
 	Mesh GetMesh(MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, FaceCounts counts)
@@ -197,7 +200,7 @@ public class MapMeshSystem : ComponentSystem
 		//	Determine vertex and triangle arrays using face count
 		NativeArray<float3> vertices 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
 		NativeArray<float3> normals 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
-		NativeArray<int> triangles 		= new NativeArray<int>	 (counts.triCount, Allocator.TempJob);
+		NativeArray<int> 	triangles 	= new NativeArray<int>	 (counts.triCount, Allocator.TempJob);
 		NativeArray<float4> colors 		= new NativeArray<float4>(counts.vertCount, Allocator.TempJob);
 
 		MeshJob job = new MeshJob(){
@@ -206,15 +209,15 @@ public class MapMeshSystem : ComponentSystem
 			triangles 	= triangles,
 			colors 		= colors,
 
-			mapSquare 	= mapSquare,
+			mapSquare = mapSquare,
 
-			blocks 		= blocks,
-			faces 		= faces,
+			blocks 	= blocks,
+			faces 	= faces,
 
 			util 		= new JobUtil(),
 			squareWidth = squareWidth,
 
-			baseVerts 	= new CubeVertices(true)
+			baseVerts = new CubeVertices(true)
 		};
 
 		//	Run job
