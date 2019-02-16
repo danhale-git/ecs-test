@@ -1,13 +1,13 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 
-struct Matrix<T> where T : struct
+public struct Matrix<T> where T : struct
 {
-    float3 rootPosition;
+    public float3 rootPosition;
     int itemWorldSize;
 
     NativeArray<T> matrix;
-    int width;
+    public int width;
 
     public Matrix(float3 rootPosition, int itemWorldSize, int width, Allocator label)
     {
@@ -17,26 +17,40 @@ struct Matrix<T> where T : struct
         this.width = width;
     }
     
+    public bool IsCreated()
+    {
+        return matrix.IsCreated;
+    }
     public void Dispose()
     {
         matrix.Dispose();
     }
+    public void Create(Allocator label)
+    {
+        matrix = new NativeArray<T>((int)math.pow(width, 2), label);
+    }
+    public int Length()
+    {
+        return matrix.Length;
+    }
 
-    public void Add(T item, int index)
+    public void SetItem(T item, int index)
     {
         matrix[index] = item;
     }
-
-    public void AddFromWorldPosition(T item, float3 worldPosition)
+    public T GetItem(int index)
     {
-        int index = Util.Flatten2D(WorldToMatrixPosition(worldPosition), width);
-        Add(item, index);
+        return matrix[index];
     }
 
+    public void SetItemFromWorldPosition(T item, float3 worldPosition)
+    {
+        int index = WorldPositionToIndex(worldPosition);
+        SetItem(item, index);
+    }
     public T GetFromWorldPosition(float3 worldPosition)
     {
-        float3 index = WorldToMatrixPosition(worldPosition);
-		return matrix[Util.Flatten2D(index.x, index.z, width)];
+		return matrix[WorldPositionToIndex(worldPosition)];
     }
 
     public bool TryGetFromWorldPosition(float3 worldPosition, out T item)
@@ -53,7 +67,7 @@ struct Matrix<T> where T : struct
         return true;
 	}
 
-    bool PositionInMatrixWorldBounds(float3 worldPosition, float3 matrixRootPosition, int offset = 0)
+    public bool PositionInWorldBounds(float3 worldPosition, float3 matrixRootPosition, int offset = 0)
 	{
         float3 index = (worldPosition - matrixRootPosition) / itemWorldSize;
         int arrayWidth = width-1;
@@ -64,8 +78,19 @@ struct Matrix<T> where T : struct
 		else
 			return false;
 	}
+    public bool PositionInWorldBounds(float3 worldPosition, int offset = 0)
+	{
+        float3 index = (worldPosition - rootPosition) / itemWorldSize;
+        int arrayWidth = width-1;
 
-    public bool SquareInRing(float3 index, int offset = 0)
+		if(	index.x >= offset && index.x <= arrayWidth-offset &&
+			index.z >= offset && index.z <= arrayWidth-offset )
+			return true;
+		else
+			return false;
+	}
+
+    public bool PositionIsInRing(float3 index, int offset = 0)
 	{
         int arrayWidth = width-1;
 
@@ -78,8 +103,20 @@ struct Matrix<T> where T : struct
 			return false;
 	}
 
-    float3 WorldToMatrixPosition(float3 worldPosition)
+    public float3 WorldToMatrixPosition(float3 worldPosition)
     {
         return (worldPosition - rootPosition) / itemWorldSize;
+    }
+    public float3 MatrixToWorldPosition(float3 matrixPosition)
+    {
+        return (matrixPosition * itemWorldSize) + rootPosition;
+    }
+    public int WorldPositionToIndex(float3 worldPosition)
+    {
+        return Util.Flatten2D(WorldToMatrixPosition(worldPosition), width);
+    }
+    public float3 IndexToPosition(int index)
+    {
+        return Util.Unflatten2D(index, width);
     }
 }
