@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+﻿/*using UnityEngine;
 using Unity.Jobs;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -330,4 +330,4 @@ public class MapCellMarchingSystem : ComponentSystem
             tags.TryAddTag<Tags.GetAdjacentSquares>(adjacent);
         }
     }
-}
+} */
