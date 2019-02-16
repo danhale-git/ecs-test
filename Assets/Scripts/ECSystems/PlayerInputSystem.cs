@@ -78,7 +78,14 @@ public class PlayerInputSystem : ComponentSystem
         if(Input.GetButtonDown("Fire1")/* && targetingBlock */)
         {
             if(targetingBlock)
-                ChangeBlock(0, hit.hitBlock, hit.hitBlockOwner);
+            {
+                if(Input.GetKey(KeyCode.LeftShift))
+                {
+                    DebugBlock(1, hit.hitBlock, hit.hitBlockOwner);
+                }
+                else
+                    ChangeBlock(0, hit.hitBlock, hit.hitBlockOwner);
+            }
         }
         else if(Input.GetButtonDown("Fire2")/* && targetingBlock */)
         {
@@ -115,6 +122,17 @@ public class PlayerInputSystem : ComponentSystem
     {
         block.debug = debug;
         MapUpdateSystem.GetOrCreatePendingChangeBuffer(owner, entityManager).Add(new PendingChange { block = block });
+
+        //  //  //
+        DynamicBuffer<WorleyNoise> noise = entityManager.GetBuffer<WorleyNoise>(owner);
+        WorleyNoise centerNoise = noise[Util.Flatten2D(new float3(squareWidth/2, 0, squareWidth/2), squareWidth)];
+        Debug.Log(centerNoise.currentCellPosition);
+
+        for(int y = 0; y < 10; y++)
+        {
+            float3 position = centerNoise.currentCellPosition + new float3(0, 50 + y, 0);
+            CustomDebugTools.Cube(Color.red, position);
+        }
     }
 
     //  Return list of voxel positions hit by ray from eye to dir
