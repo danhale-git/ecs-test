@@ -17,6 +17,7 @@ struct MeshJob : IJobParallelFor
 	[NativeDisableParallelForRestriction] public NativeArray<float4> colors;
 
 	[ReadOnly] public MapSquare mapSquare;
+	[ReadOnly] public DynamicBuffer<WorleyNoise> worleyNoise;
 	
 	[ReadOnly] public DynamicBuffer<Block> blocks;
 	[ReadOnly] public NativeArray<Faces> faces;
@@ -74,10 +75,17 @@ struct MeshJob : IJobParallelFor
 			}
 		}
 
-		for(int v = 0; v < vertIndex; v++)
+		/*for(int v = 0; v < vertIndex; v++)
 		{
 			colors[v+vertOffset] = BlockTypes.color[blocks[i].type];
-		} 
+		} */
+		//DEBUG
+		int worleyIndex = util.Flatten2D(positionInMesh.x, positionInMesh.z, squareWidth);
+		float3 color = worleyNoise[worleyIndex].distance2Edge;
+		for(int v = 0; v < vertIndex; v++)
+		{
+			colors[v+vertOffset] = new float4(color.x, color.y, color.z, 1);
+		}
 	}
 
 	//	Normal face
