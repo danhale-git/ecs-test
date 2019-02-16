@@ -17,18 +17,15 @@ public struct Matrix<T> where T : struct
         this.width = width;
     }
     
-    public bool IsCreated()
-    {
-        return matrix.IsCreated;
-    }
     public void Dispose()
     {
-        matrix.Dispose();
+        if(matrix.IsCreated)matrix.Dispose();
     }
-    public void Create(Allocator label)
+    public void ReInitialise(Allocator label)
     {
-        matrix = new NativeArray<T>((int)math.pow(width, 2), label);
-    }
+        if(matrix.IsCreated) Dispose();
+        matrix = new NativeArray<T>((int)math.pow(width, 2), label);        
+    }    
     public int Length()
     {
         return matrix.Length;
@@ -48,12 +45,12 @@ public struct Matrix<T> where T : struct
         int index = WorldPositionToIndex(worldPosition);
         SetItem(item, index);
     }
-    public T GetFromWorldPosition(float3 worldPosition)
+    public T GetItemFromWorldPosition(float3 worldPosition)
     {
 		return matrix[WorldPositionToIndex(worldPosition)];
     }
 
-    public bool TryGetFromWorldPosition(float3 worldPosition, out T item)
+    public bool TryGetItemFromWorldPosition(float3 worldPosition, out T item)
 	{
         float3 localPosition = worldPosition - rootPosition;
         if(!Util.EdgeOverlap(localPosition, width).Equals(float3.zero))
@@ -67,17 +64,6 @@ public struct Matrix<T> where T : struct
         return true;
 	}
 
-    public bool PositionInWorldBounds(float3 worldPosition, float3 matrixRootPosition, int offset = 0)
-	{
-        float3 index = (worldPosition - matrixRootPosition) / itemWorldSize;
-        int arrayWidth = width-1;
-
-		if(	index.x >= offset && index.x <= arrayWidth-offset &&
-			index.z >= offset && index.z <= arrayWidth-offset )
-			return true;
-		else
-			return false;
-	}
     public bool PositionInWorldBounds(float3 worldPosition, int offset = 0)
 	{
         float3 index = (worldPosition - rootPosition) / itemWorldSize;

@@ -16,34 +16,23 @@ public class MapManagerSystem : ComponentSystem
     EntityManager entityManager;
     TagUtil tags;
 
+    int squareWidth;
+
 	public static Entity playerEntity;
 
     public Matrix<Entity> mapMatrix;
 
-    int squareWidth;
-
-    int matrixWidth;
-    int matrixArrayLength;
-    int matrixCenterOffset;
-
     float3 currentMapSquare;
     float3 previousMapSquare;
 
-    float3 previousMatrixRoot;
-
     EntityArchetype mapSquareArchetype;
-
     ComponentGroup allSquaresGroup;
 
 	protected override void OnCreateManager()
     {
-		entityManager   = World.Active.GetOrCreateManager<EntityManager>();
+		entityManager = World.Active.GetOrCreateManager<EntityManager>();
         tags = new TagUtil(entityManager);
-        squareWidth     = TerrainSettings.mapSquareWidth;
-
-        matrixWidth         = (TerrainSettings.viewDistance * 2) + 1;
-        matrixCenterOffset  = TerrainSettings.viewDistance;
-        matrixArrayLength   = (int)math.pow(matrixWidth, 2);
+        squareWidth = TerrainSettings.mapSquareWidth;
 
         mapSquareArchetype = entityManager.CreateArchetype(
             ComponentType.Create<Position>(),
@@ -71,14 +60,14 @@ public class MapManagerSystem : ComponentSystem
 
     protected override void OnStartRunning()
     {
-        //  Set previous square and matrix root position to != current
+        //  Initialise previous square as different to starting square
         float3 offset = (new float3(100, 100, 100) * squareWidth);
+        previousMapSquare = CurrentMapSquare() + offset;
 
-        previousMapSquare   = CurrentMapSquare()    + offset;
-        previousMatrixRoot  = MatrixRoot()          + offset;
+        int matrixWidth = (TerrainSettings.viewDistance * 2) + 1;
 
         mapMatrix = new Matrix<Entity>(
-            MatrixRoot(),
+            MapMatrixRootPosition(),
             squareWidth,
             matrixWidth,
             Allocator.Persistent
@@ -96,35 +85,30 @@ public class MapManagerSystem : ComponentSystem
 
         if(!currentMapSquare.Equals(previousMapSquare))
         {
-            //  Reset matrix array
-            if(mapMatrix.IsCreated()) mapMatrix.Dispose();
-            mapMatrix.Create(Allocator.Persistent);
+            mapMatrix.ReInitialise(Allocator.Persistent);
 
-            mapMatrix.rootPosition = MatrixRoot();
+            mapMatrix.rootPosition = MapMatrixRootPosition();
 
-            //  List of entities to remove
             NativeList<Entity> squaresToRemove;
 
-            //  Matrix showing already created squares
-            NativeArray<int> doNotCreate;
+            NativeArray<int> alreadyExists;
             
-            CheckAndUpdateSquares(out squaresToRemove, out doNotCreate);
+            CheckAndUpdateMapSquares(out squaresToRemove, out alreadyExists);
 
-            CreateNewSquares(doNotCreate);
+            CreateMapSquares(alreadyExists);
             
             RemoveMapSquares(squaresToRemove);
 
             squaresToRemove.Dispose();
-            doNotCreate.Dispose();
+            alreadyExists.Dispose();
         }
 
         this.previousMapSquare = currentMapSquare;
-        this.previousMatrixRoot = mapMatrix.rootPosition;
     }
 
-    float3 MatrixRoot()
+    float3 MapMatrixRootPosition()
     {
-        int offset = matrixCenterOffset * squareWidth;
+        int offset = TerrainSettings.viewDistance * squareWidth;
         return new float3(currentMapSquare.x - offset, 0, currentMapSquare.z - offset);
     }
 
@@ -134,7 +118,15 @@ public class MapManagerSystem : ComponentSystem
         return Util.VoxelOwner(playerPosition, squareWidth);
     }
 
-    void CheckAndUpdateSquares(out NativeList<Entity> toRemove, out NativeArray<int> doNotCreate)
+    MapBuffer GetBuffer(float3 index)
+    {
+        if      (mapMatrix.PositionIsInRing(index, 0)) return MapBuffer.EDGE;
+        else if (mapMatrix.PositionIsInRing(index, 1)) return MapBuffer.OUTER;
+        else if (mapMatrix.PositionIsInRing(index, 2)) return MapBuffer.INNER;
+        else return MapBuffer.NONE;
+    }
+
+    void CheckAndUpdateMapSquares(out NativeList<Entity> toRemove, out NativeArray<int> alreadyExists)
 	{
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
 		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);	
@@ -143,7 +135,7 @@ public class MapManagerSystem : ComponentSystem
 		ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>(true);
 		
         toRemove    = new NativeList<Entity>(Allocator.TempJob);
-        doNotCreate = new NativeArray<int>(matrixArrayLength, Allocator.TempJob);
+        alreadyExists = new NativeArray<int>(mapMatrix.Length(), Allocator.TempJob);
 
         int squareCount = 0;
 
@@ -159,27 +151,22 @@ public class MapManagerSystem : ComponentSystem
 				Entity entity   = entities[e];
 				float3 position = positions[e].Value;
 
-                bool inPreviousRadius   = mapMatrix.PositionInWorldBounds(position, previousMatrixRoot);
                 bool inCurrentRadius    = mapMatrix.PositionInWorldBounds(position);
 
-                //  Square already exists and is in current view radius
                 if(inCurrentRadius)
                 {
-                    //  Index in flattened matrix
-                    int flatIndex   = mapMatrix.WorldPositionToIndex(position);
+                    int matrixIndex = mapMatrix.WorldPositionToIndex(position);
 
-                    //  Add map square in matrices
-                    mapMatrix.SetItem(entity, flatIndex);
-                    doNotCreate[flatIndex]  = 1;
+                    mapMatrix.SetItem(entity, matrixIndex);
+                    alreadyExists[matrixIndex]  = 1;
 
-                    //  Update map square buffer type
-                    UpdateBuffer(entity, GetBuffer(mapMatrix.WorldToMatrixPosition(position)), commandBuffer);
+                    MapBuffer buffer = GetBuffer(mapMatrix.WorldToMatrixPosition(position));
+                    UpdateBuffer(entity, buffer, commandBuffer);
 
                     squareCount++;
                 }
                 else
                 {
-                    //  Delete map square
                     toRemove.Add(entity);
                 }
 			}
@@ -224,7 +211,7 @@ public class MapManagerSystem : ComponentSystem
         CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
 	}
 
-    void CreateNewSquares(NativeArray<int> doNotCreate)
+    void CreateMapSquares(NativeArray<int> doNotCreate)
     {
         for(int i = 0; i < mapMatrix.Length(); i++)
         {
@@ -337,45 +324,9 @@ public class MapManagerSystem : ComponentSystem
     {
         if(mapMatrix.PositionInWorldBounds(mapSquarePosition))
         {
-            Entity adjacent = mapMatrix.GetFromWorldPosition(mapSquarePosition);
+            Entity adjacent = mapMatrix.GetItemFromWorldPosition(mapSquarePosition);
 
             tags.TryAddTag<Tags.GetAdjacentSquares>(adjacent);
         }
-    }
-
-    /*void TryAddComponent<T>(Entity entity) where T : struct, IComponentData
-    {
-        if(!entityManager.HasComponent<T>(entity))
-            entityManager.AddComponent(entity, typeof(T));
-    }
-    void TryAddComponent<T>(Entity entity, EntityCommandBuffer commandBuffer) where T : struct, IComponentData
-    {
-        if(!entityManager.HasComponent<T>(entity))
-            commandBuffer.AddComponent<T>(entity, new T());
-    }
-    void TryRemoveComponent<T>(Entity entity, EntityCommandBuffer commandBuffer) where T : struct, IComponentData
-    {
-        if(entityManager.HasComponent<T>(entity))
-            commandBuffer.RemoveComponent<T>(entity);
-    }
-    bool TryReplaceComponent<TRemove, TAdd>(Entity entity, EntityCommandBuffer commandBuffer)
-    where TRemove : struct, IComponentData
-    where TAdd : struct, IComponentData
-    {
-        if(entityManager.HasComponent<TRemove>(entity))
-        {
-            commandBuffer.RemoveComponent<TRemove>(entity);
-            commandBuffer.AddComponent<TAdd>(entity, new TAdd());
-            return true;
-        }
-        else return false;
-    } */
-
-    MapBuffer GetBuffer(float3 index)
-    {
-        if      (mapMatrix.PositionIsInRing(index, 0)) return MapBuffer.EDGE;
-        else if (mapMatrix.PositionIsInRing(index, 1)) return MapBuffer.OUTER;
-        else if (mapMatrix.PositionIsInRing(index, 2)) return MapBuffer.INNER;
-        else return MapBuffer.NONE;
     }
 }
