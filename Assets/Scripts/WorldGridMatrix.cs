@@ -4,20 +4,20 @@ using Unity.Collections;
 public struct WorldGridMatrix<T> where T : struct
 {
     public float3 rootPosition;
-    int itemWorldSize;
+    public int itemWorldSize;
 
-    NativeArray<T> matrix;
+    public NativeArray<T> matrix;
     public int width;
-    Allocator label;
+    public Allocator label;
 
-    public WorldGridMatrix(float3 rootPosition, int itemWorldSize, int width, Allocator label)
+    /*public WorldGridMatrix(float3 rootPosition, int itemWorldSize, int width, Allocator label)
     {
         this.rootPosition = rootPosition;
         this.itemWorldSize = itemWorldSize;
         matrix = new NativeArray<T>((int)math.pow(width, 2), label);
         this.width = width;
         this.label = label;
-    }
+    } */
     
     public void Dispose()
     {
@@ -66,7 +66,6 @@ public struct WorldGridMatrix<T> where T : struct
 	{
         if(!WorldPositionIsInMatrix(worldPosition))
         {
-            CheckAndAdjustBounds(WorldToMatrixPosition(worldPosition));
             item = new T();
             return false;
         }
@@ -145,9 +144,11 @@ public struct WorldGridMatrix<T> where T : struct
 
         float3 positionInMatrix = WorldToMatrixPosition(worldPosition);
 
+        int oldWith = width;
+
         float3 rootPositionChange = CheckAndAdjustBounds(positionInMatrix);
 
-        NativeArray<T> newMatrix = CreateNewMatrix(rootPositionChange);
+        NativeArray<T> newMatrix = CreateNewMatrix(rootPositionChange, oldWith);
 
         matrix.Dispose();
         matrix = newMatrix;
@@ -175,21 +176,21 @@ public struct WorldGridMatrix<T> where T : struct
         return rootPositionChange;
     }
 
-    NativeArray<T> CreateNewMatrix(float3 rootPositionChange)
+    NativeArray<T> CreateNewMatrix(float3 rootPositionChange, int oldWidth)
     {
         NativeArray<T> newMatrix = new NativeArray<T>((int)math.pow(width, 2), label);
         float3 positionOffset = rootPositionChange * -1;
 
-        AddOldMatrixWithOffset(positionOffset, newMatrix);
+        AddOldMatrixWithOffset(positionOffset, oldWidth, newMatrix);
 
         return newMatrix;
     }
 
-    void AddOldMatrixWithOffset(float3 positionChange, NativeArray<T> newMatrix)
+    void AddOldMatrixWithOffset(float3 positionChange, int oldWidth, NativeArray<T> newMatrix)
     {
         for(int i = 0; i < matrix.Length; i++)
         {
-            float3 oldMatrixPosition = IndexToMatrixPosition(i);
+            float3 oldMatrixPosition = Util.Unflatten2D(i, oldWidth);
             float3 newMatrixPosition = oldMatrixPosition + positionChange;
 
             int newMatrixIndex = Util.Flatten2D(newMatrixPosition, width);

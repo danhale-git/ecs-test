@@ -65,14 +65,25 @@ public class MapManagerSystem : ComponentSystem
         float3 offset = (new float3(100, 100, 100) * squareWidth);
         previousMapSquare = CurrentMapSquare() + offset;
 
-        int matrixWidth = (TerrainSettings.viewDistance * 2) + 1;
+        int matrixWidth = 1;
 
-        mapMatrix = new WorldGridMatrix<Entity>(
-            MapMatrixRootPosition(),
-            squareWidth,
-            matrixWidth,
-            Allocator.Persistent
-        );
+        mapMatrix = new WorldGridMatrix<Entity>{
+            rootPosition = MapMatrixRootPosition(),
+            itemWorldSize = squareWidth,
+            width = matrixWidth,
+            label = Allocator.Persistent
+        };
+
+        float3 currentSquare = CurrentMapSquare();
+        mapMatrix.ReInitialise(currentSquare);
+        DynamicBuffer<UniqueWorleyCells> cellsToDiscover = entityManager.GetBuffer<UniqueWorleyCells>(NewMapSquare(currentSquare));
+        NativeArray<float3> startPoints = new NativeArray<float3>(cellsToDiscover.Length, Allocator.TempJob);
+        for(int i = 0; i < startPoints.Length; i++)
+        {
+            startPoints[i] = currentSquare;
+        }
+
+        DiscoverNearbyCells(currentSquare, startPoints, cellsToDiscover.AsNativeArray());
     }
 
     protected override void OnDestroyManager()
@@ -80,7 +91,7 @@ public class MapManagerSystem : ComponentSystem
         mapMatrix.Dispose();
     }
 
-    protected override void OnUpdate()
+    /*protected override void OnUpdate()
     {
         currentMapSquare = CurrentMapSquare();
 
@@ -103,6 +114,11 @@ public class MapManagerSystem : ComponentSystem
         alreadyExists.Dispose();
 
         previousMapSquare = currentMapSquare;
+    } */
+
+    protected override void OnUpdate()
+    {
+
     }
 
     float3 MapMatrixRootPosition()
@@ -217,7 +233,59 @@ public class MapManagerSystem : ComponentSystem
         CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
 	}
 
-    /*void NewMapSquare(float3 worldPosition)
+    void DiscoverNearbyCells(float3 playerPosition, NativeArray<float3> startSquares, NativeArray<UniqueWorleyCells> cellsToExpore)
+    {
+        for(int c = 0; c < cellsToExpore.Length; c++)
+        {
+            //  Cell and corresponding starting square position
+            UniqueWorleyCells cell = cellsToExpore[c];
+            float3 startSquare = startSquares[c];
+
+            //  Check if cell out of range
+            float3 difference = cell.position - playerPosition;
+            if(math.sign(difference.x) > 70 || math.sign(difference.z) > 70)
+                continue;
+
+            //  Initialise positionsTpCheck with starting position
+            NativeList<float3> positionsToCheck = new NativeList<float3>(Allocator.TempJob);
+            positionsToCheck.Add(startSquare);
+
+            int safety = 0;
+            while(safety < 100)
+            {
+                safety++;
+
+                if(positionsToCheck.Length == 0) break;
+
+                for(int p = 0; p < positionsToCheck.Length; p++)
+                {
+                    float3 currentPosition = positionsToCheck[p];
+                    NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
+                    for(int i = 0; i < 4; i++)
+                    {
+                        float3 checkPosition = currentPosition + (directions[i] * squareWidth);
+
+                        Entity entity;
+
+                        if(!mapMatrix.TryGetItemFromWorldPosition(checkPosition, out entity))
+                        {
+                            entity = NewMapSquare(checkPosition);
+                            DynamicBuffer<UniqueWorleyCells> uniqueCells = entityManager.GetBuffer<UniqueWorleyCells>(entity);
+
+                            //  Contains only this cell type
+                            if(uniqueCells.Length == 1 && uniqueCells[0].value == cell.value)
+                                positionsToCheck.Add(checkPosition);
+
+                            //  Add extra discovered cells
+                            //  SetItemAndResizeIfNeeded/CheckAndResizeMatrix needs debugging!
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Entity NewMapSquare(float3 worldPosition)
     {
         float3      matrixPosition  = mapMatrix.WorldToMatrixPosition(worldPosition);
         MapBuffer   buffer          = GetBuffer(matrixPosition);
@@ -227,19 +295,17 @@ public class MapManagerSystem : ComponentSystem
 
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = GenerateWorleyNoise(entity, worldPosition);
 
-        DynamicBuffer<UniqueWorleyCells> worleyCellSet = GetWorleySet(entity, worleyNoiseBuffer);
+        DynamicBuffer<UniqueWorleyCells> uniqueWorleyCells = GetWorleySet(entity, worleyNoiseBuffer);
         
-        mapMatrix.SetItem(entity, matrixIndex);
+        mapMatrix.SetItemAndResizeIfNeeded(entity, worldPosition);
 
         SetMapBuffer(entity, buffer);
+        Debug.Log(buffer);
+
+        return entity;
     }
 
-    void ExploreNearbyCells()
-    {
-        
-    } */
-
-    void CreateMapSquares(NativeArray<int> alreadyExists)
+    /*void CreateMapSquares(NativeArray<int> alreadyExists)
     {
         for(int i = 0; i < mapMatrix.Length(); i++)
         {
@@ -265,7 +331,7 @@ public class MapManagerSystem : ComponentSystem
         mapMatrix.SetItem(entity, matrixIndex);
 
         SetMapBuffer(entity, buffer);
-    }
+    }  */
 
     Entity CreateMapSquareAtPosition(float3 worldPosition)
     {
