@@ -65,7 +65,7 @@ namespace MyComponents
 		public float currentCellValue, distance2Edge, adjacentCellValue;
 	}
 	[InternalBufferCapacity(10)]
-	public struct WorleyCellSet : IBufferElementData
+	public struct UniqueWorleyCells : IBufferElementData
 	{
 		public float value;
 		public int2 index;

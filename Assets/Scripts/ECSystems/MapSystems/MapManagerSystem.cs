@@ -39,7 +39,7 @@ public class MapManagerSystem : ComponentSystem
             ComponentType.Create<RenderMeshComponent>(),
             ComponentType.Create<MapSquare>(),
             ComponentType.Create<WorleyNoise>(),
-            ComponentType.Create<WorleyCellSet>(),
+            ComponentType.Create<UniqueWorleyCells>(),
             ComponentType.Create<Topology>(),
             ComponentType.Create<Block>(),
 
@@ -217,6 +217,28 @@ public class MapManagerSystem : ComponentSystem
         CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
 	}
 
+    /*void NewMapSquare(float3 worldPosition)
+    {
+        float3      matrixPosition  = mapMatrix.WorldToMatrixPosition(worldPosition);
+        MapBuffer   buffer          = GetBuffer(matrixPosition);
+        int matrixIndex = mapMatrix.MatrixPositionToIndex(matrixPosition);
+
+        Entity entity = CreateMapSquareAtPosition(worldPosition);
+
+        DynamicBuffer<WorleyNoise> worleyNoiseBuffer = GenerateWorleyNoise(entity, worldPosition);
+
+        DynamicBuffer<UniqueWorleyCells> worleyCellSet = GetWorleySet(entity, worleyNoiseBuffer);
+        
+        mapMatrix.SetItem(entity, matrixIndex);
+
+        SetMapBuffer(entity, buffer);
+    }
+
+    void ExploreNearbyCells()
+    {
+        
+    } */
+
     void CreateMapSquares(NativeArray<int> alreadyExists)
     {
         for(int i = 0; i < mapMatrix.Length(); i++)
@@ -236,7 +258,9 @@ public class MapManagerSystem : ComponentSystem
 
         Entity entity = CreateMapSquareAtPosition(worldPosition);
 
-        GenerateWorleyNoise(entity, worldPosition);
+        DynamicBuffer<WorleyNoise> worleyNoiseBuffer = GenerateWorleyNoise(entity, worldPosition);
+
+        DynamicBuffer<UniqueWorleyCells> worleyCellSet = GetWorleySet(entity, worleyNoiseBuffer);
         
         mapMatrix.SetItem(entity, matrixIndex);
 
@@ -250,18 +274,16 @@ public class MapManagerSystem : ComponentSystem
         return entity;
     }
 
-    void GenerateWorleyNoise(Entity entity, float3 position)
+    DynamicBuffer<WorleyNoise> GenerateWorleyNoise(Entity entity, float3 position)
     {
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = entityManager.GetBuffer<WorleyNoise>(entity);
         worleyNoiseBuffer.ResizeUninitialized(0);
-        DynamicBuffer<WorleyCellSet> cellValueSetBuffer = entityManager.GetBuffer<WorleyCellSet>(entity);
-        cellValueSetBuffer.ResizeUninitialized(0);
-
+        
         NativeArray<WorleyNoise> worleyNoiseMap = GetWorleyNoiseMap(position);
         worleyNoiseBuffer.AddRange(worleyNoiseMap);
         worleyNoiseMap.Dispose();
     
-        GetWorleySet(cellValueSetBuffer, worleyNoiseBuffer);
+        return worleyNoiseBuffer;
     }
 
     NativeArray<WorleyNoise> GetWorleyNoiseMap(float3 position)
@@ -287,42 +309,46 @@ public class MapManagerSystem : ComponentSystem
         return worleyNoiseMap;
     }
 
-    void GetWorleySet(DynamicBuffer<WorleyCellSet> cellSetBuffer,  DynamicBuffer<WorleyNoise> worleyNoiseBuffer)
+    DynamicBuffer<UniqueWorleyCells> GetWorleySet(Entity entity, DynamicBuffer<WorleyNoise> worleyNoiseBuffer)
     {
         NativeArray<WorleyNoise> sortedWorleyNoise = SortedWorleyNoise(worleyNoiseBuffer);
 
-        int setIndex = 0;
-        AddCellToSet(cellSetBuffer, sortedWorleyNoise[0]);
+        DynamicBuffer<UniqueWorleyCells> uniqueCellsBuffer = entityManager.GetBuffer<UniqueWorleyCells>(entity);
+        uniqueCellsBuffer.ResizeUninitialized(0);
+
+        int index = 0;
+        AddCellToSet(uniqueCellsBuffer, sortedWorleyNoise[0]);
         for(int i = 1; i < sortedWorleyNoise.Length; i++)
         {
-            if(sortedWorleyNoise[i].currentCellValue != cellSetBuffer[setIndex].value)
+            if(sortedWorleyNoise[i].currentCellValue != uniqueCellsBuffer[index].value)
             {
-                setIndex++;
-                AddCellToSet(cellSetBuffer, sortedWorleyNoise[i]);
+                index++;
+                AddCellToSet(uniqueCellsBuffer, sortedWorleyNoise[i]);
             }
         }
 
         sortedWorleyNoise.Dispose();
+        return uniqueCellsBuffer;
     }
 
     NativeArray<WorleyNoise> SortedWorleyNoise(DynamicBuffer<WorleyNoise> worleyNoiseBuffer)
     {
-        NativeArray<WorleyNoise> cellValues = new NativeArray<WorleyNoise>(worleyNoiseBuffer.Length, Allocator.Temp);
-        for(int i = 0; i < cellValues.Length; i++)
-            cellValues[i] = worleyNoiseBuffer[i];
+        NativeArray<WorleyNoise> sortedWorleyNoise = new NativeArray<WorleyNoise>(worleyNoiseBuffer.Length, Allocator.Temp);
+        for(int i = 0; i < sortedWorleyNoise.Length; i++)
+            sortedWorleyNoise[i] = worleyNoiseBuffer[i];
 
-        cellValues.Sort();        
-        return cellValues;
+        sortedWorleyNoise.Sort();        
+        return sortedWorleyNoise;
     }
     
-    void AddCellToSet(DynamicBuffer<WorleyCellSet> cellSet, WorleyNoise worleyNoise)
+    void AddCellToSet(DynamicBuffer<UniqueWorleyCells> uniqueCells, WorleyNoise worleyNoise)
     {
-        WorleyCellSet setItem = new WorleyCellSet {
+        UniqueWorleyCells setItem = new UniqueWorleyCells {
             value = worleyNoise.currentCellValue,
             index = worleyNoise.currentCellIndex,
             position = worleyNoise.currentCellPosition
         };
-        cellSet.Add(setItem);
+        uniqueCells.Add(setItem);
     }
 
     void SetMapBuffer(Entity entity, MapBuffer buffer)
