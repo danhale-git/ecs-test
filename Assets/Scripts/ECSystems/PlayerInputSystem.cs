@@ -126,14 +126,21 @@ public class PlayerInputSystem : ComponentSystem
         //  //  //
         DynamicBuffer<WorleyNoise> noise = entityManager.GetBuffer<WorleyNoise>(owner);
         WorleyNoise centerNoise = noise[Util.Flatten2D(new float3(squareWidth/2, 0, squareWidth/2), squareWidth)];
-        Debug.Log(centerNoise.currentCellPosition);
-        Debug.Log(centerNoise.currentCellIndex);
+        //Debug.Log(centerNoise.currentCellPosition);
+        //Debug.Log(centerNoise.currentCellIndex);
 
         for(int y = 0; y < 10; y++)
         {
             float3 position = centerNoise.currentCellPosition + new float3(0, 50 + y, 0);
             CustomDebugTools.Cube(Color.red, position);
         }
+
+        DynamicBuffer<WorleyCellValueSet> cellSet = entityManager.GetBuffer<WorleyCellValueSet>(owner);
+        for(int i = 0; i < cellSet.Length; i++)
+        {
+            Debug.Log(cellSet[i].value);
+        }
+        Debug.Log("-----");
     }
 
     //  Return list of voxel positions hit by ray from eye to dir
