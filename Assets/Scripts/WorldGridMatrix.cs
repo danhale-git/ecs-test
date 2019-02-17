@@ -21,10 +21,12 @@ public struct WorldGridMatrix<T> where T : struct
     {
         if(matrix.IsCreated)matrix.Dispose();
     }
-    public void ReInitialise(Allocator label)
+    public void ReInitialise(float3 newRootPosition, Allocator label)
     {
         if(matrix.IsCreated) Dispose();
-        matrix = new NativeArray<T>((int)math.pow(width, 2), label);        
+        matrix = new NativeArray<T>((int)math.pow(width, 2), label);      
+
+        rootPosition = newRootPosition;
     }    
     public int Length()
     {

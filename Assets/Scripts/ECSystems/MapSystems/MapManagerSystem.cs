@@ -87,9 +87,7 @@ public class MapManagerSystem : ComponentSystem
         if(currentMapSquare.Equals(previousMapSquare))
             return;
 
-        mapMatrix.ReInitialise(Allocator.Persistent);
-
-        mapMatrix.rootPosition = MapMatrixRootPosition();
+        mapMatrix.ReInitialise(MapMatrixRootPosition(), Allocator.Persistent);
 
         NativeList<Entity> squaresToRemove;
 
