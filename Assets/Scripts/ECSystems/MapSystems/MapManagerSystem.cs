@@ -153,8 +153,8 @@ public class MapManagerSystem : ComponentSystem
 				Entity entity   = entities[e];
 				float3 position = positions[e].Value;
 
-                bool inCurrentRadius    = mapMatrix.PositionInWorldBounds(position);
-
+                bool inCurrentRadius = mapMatrix.WorldPositionInDistanceFromCenter(position, currentMapSquare, TerrainSettings.viewDistance);
+                
                 if(inCurrentRadius)
                 {
                     int matrixIndex = mapMatrix.WorldPositionToIndex(position);
@@ -365,7 +365,7 @@ public class MapManagerSystem : ComponentSystem
 
     void UpdateAdjacentSquares(float3 mapSquarePosition)
     {
-        if(mapMatrix.PositionInWorldBounds(mapSquarePosition))
+        if(mapMatrix.WorldPositionInBounds(mapSquarePosition))
         {
             Entity adjacent = mapMatrix.GetItemFromWorldPosition(mapSquarePosition);
 

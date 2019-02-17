@@ -75,7 +75,7 @@ public struct WorldGridMatrix<T> where T : struct
         return true;
 	}
 
-    public bool PositionInWorldBounds(float3 worldPosition, int offset = 0)
+    public bool WorldPositionInBounds(float3 worldPosition, int offset = 0)
 	{
         float3 index = (worldPosition - rootPosition) / itemWorldSize;
         int arrayWidth = width-1;
@@ -87,22 +87,9 @@ public struct WorldGridMatrix<T> where T : struct
 			return false;
 	}
 
-    public bool PositionIsInRing(float3 index, int offset = 0)
-	{
-        int arrayWidth = width-1;
-
-		if(	index.x == offset ||
-            index.z == offset ||
-			index.x ==  arrayWidth - offset ||
-            index.z ==  arrayWidth - offset )
-			return true;
-		else
-			return false;
-	}
-
     public bool PositionIsOffsetFromCenter(float3 positionInMatrix, float3 centerPosition, int offset)
 	{
-        if(!PositionWithinDistanceFromCenter(positionInMatrix, centerPosition, offset))
+        if(!PositionInDistanceFromCenter(positionInMatrix, centerPosition, offset))
             return false;
 
 		if(	positionInMatrix.x == centerPosition.x - offset ||
@@ -113,8 +100,20 @@ public struct WorldGridMatrix<T> where T : struct
 		else
 			return false;
 	}
-    public bool PositionWithinDistanceFromCenter(float3 positionInMatrix, float3 centerPosition, int offset)
+    public bool PositionInDistanceFromCenter(float3 positionInMatrix, float3 centerPosition, int offset)
     {
+        if(	positionInMatrix.x >= centerPosition.x - offset &&
+            positionInMatrix.z >= centerPosition.z - offset &&
+			positionInMatrix.x <= centerPosition.x + offset &&
+            positionInMatrix.z <= centerPosition.z + offset )
+			return true;
+		else
+			return false;
+    }
+    public bool WorldPositionInDistanceFromCenter(float3 worldPosition, float3 centerWorldPosition, int offset)
+    {
+        float3 positionInMatrix = WorldToMatrixPosition(worldPosition);
+        float3 centerPosition = WorldToMatrixPosition(centerWorldPosition);
         if(	positionInMatrix.x >= centerPosition.x - offset &&
             positionInMatrix.z >= centerPosition.z - offset &&
 			positionInMatrix.x <= centerPosition.x + offset &&
@@ -143,7 +142,7 @@ public struct WorldGridMatrix<T> where T : struct
 
     void CheckAndResizeMatrix(float3 worldPosition)
     {
-        if(PositionInWorldBounds(worldPosition))
+        if(WorldPositionInBounds(worldPosition))
             return;
 
         float3 positionInMatrix = WorldToMatrixPosition(worldPosition);
