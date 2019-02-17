@@ -75,13 +75,13 @@ public struct WorldGridMatrix<T> where T : struct
         return true;
 	}
 
-    public bool WorldPositionInMatrix(float3 worldPosition, int offset = 0)
+    public bool WorldPositionIsInMatrix(float3 worldPosition, int offset = 0)
 	{
-        float3 index = (worldPosition - rootPosition) / itemWorldSize;
+        float3 matrixPosition = WorldToMatrixPosition(worldPosition);
         int arrayWidth = width-1;
 
-		if(	index.x >= offset && index.x <= arrayWidth-offset &&
-			index.z >= offset && index.z <= arrayWidth-offset )
+		if(	matrixPosition.x >= offset && matrixPosition.x <= arrayWidth-offset &&
+			matrixPosition.z >= offset && matrixPosition.z <= arrayWidth-offset )
 			return true;
 		else
 			return false;
@@ -136,7 +136,7 @@ public struct WorldGridMatrix<T> where T : struct
 
     void CheckAndResizeMatrix(float3 worldPosition)
     {
-        if(WorldPositionInMatrix(worldPosition))
+        if(WorldPositionIsInMatrix(worldPosition))
             return;
 
         float3 positionInMatrix = WorldToMatrixPosition(worldPosition);
