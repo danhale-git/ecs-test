@@ -56,6 +56,12 @@ public struct WorldGridMatrix<T> where T : struct
 		return matrix[WorldPositionToIndex(worldPosition)];
     }
 
+    public void SetItemAndResizeIfNeeded(T item, float3 worldPosition)
+    {
+        CheckAndResizeMatrix(worldPosition);
+        SetItemFromWorldPosition(item, worldPosition);
+    }
+
     public bool TryGetItemFromWorldPosition(float3 worldPosition, out T item)
 	{
         float3 localPosition = worldPosition - rootPosition;
@@ -94,6 +100,30 @@ public struct WorldGridMatrix<T> where T : struct
 			return false;
 	}
 
+    public bool PositionIsOffsetFromCenter(float3 positionInMatrix, float3 centerPosition, int offset)
+	{
+        if(!PositionWithinDistanceFromCenter(positionInMatrix, centerPosition, offset))
+            return false;
+
+		if(	positionInMatrix.x == centerPosition.x - offset ||
+            positionInMatrix.z == centerPosition.z - offset ||
+			positionInMatrix.x == centerPosition.x + offset ||
+            positionInMatrix.z == centerPosition.z + offset )
+			return true;
+		else
+			return false;
+	}
+    public bool PositionWithinDistanceFromCenter(float3 positionInMatrix, float3 centerPosition, int offset)
+    {
+        if(	positionInMatrix.x >= centerPosition.x - offset &&
+            positionInMatrix.z >= centerPosition.z - offset &&
+			positionInMatrix.x <= centerPosition.x + offset &&
+            positionInMatrix.z <= centerPosition.z + offset )
+			return true;
+		else
+			return false;
+    }
+
     public float3 WorldToMatrixPosition(float3 worldPosition)
     {
         return (worldPosition - rootPosition) / itemWorldSize;
@@ -111,10 +141,10 @@ public struct WorldGridMatrix<T> where T : struct
         return Util.Unflatten2D(index, width);
     }
 
-    bool CheckAndResizeMatrix(float3 worldPosition)
+    void CheckAndResizeMatrix(float3 worldPosition)
     {
         if(PositionInWorldBounds(worldPosition))
-            return false;
+            return;
 
         float3 positionInMatrix = WorldToMatrixPosition(worldPosition);
 
@@ -124,8 +154,6 @@ public struct WorldGridMatrix<T> where T : struct
 
         matrix.Dispose();
         matrix = newMatrix;
-
-        return true;
     }
 
     float3 CheckAndAdjustBounds(float3 positionInMatrix)

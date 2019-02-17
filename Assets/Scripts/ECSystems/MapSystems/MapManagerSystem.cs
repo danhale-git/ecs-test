@@ -117,11 +117,14 @@ public class MapManagerSystem : ComponentSystem
         return Util.VoxelOwner(playerPosition, squareWidth);
     }
 
-    MapBuffer GetBuffer(float3 index)
+    MapBuffer GetBuffer(float3 positionInMatrix)
     {
-        if      (mapMatrix.PositionIsInRing(index, 0)) return MapBuffer.EDGE;
-        else if (mapMatrix.PositionIsInRing(index, 1)) return MapBuffer.OUTER;
-        else if (mapMatrix.PositionIsInRing(index, 2)) return MapBuffer.INNER;
+        float3 centerPosition = mapMatrix.WorldToMatrixPosition(currentMapSquare);
+        int view = TerrainSettings.viewDistance;
+
+        if      (mapMatrix.PositionIsOffsetFromCenter(positionInMatrix, centerPosition, view)) return MapBuffer.EDGE;        
+        else if (mapMatrix.PositionIsOffsetFromCenter(positionInMatrix, centerPosition, view-1)) return MapBuffer.OUTER;
+        else if (mapMatrix.PositionIsOffsetFromCenter(positionInMatrix, centerPosition, view-2)) return MapBuffer.INNER;
         else return MapBuffer.NONE;
     }
 
