@@ -137,11 +137,11 @@ public class PlayerInputSystem : ComponentSystem
             CustomDebugTools.Cube(Color.red, position);
         }
 
-        DynamicBuffer<WorleyCellSet> cellSet = entityManager.GetBuffer<WorleyCellSet>(owner);
+        DynamicBuffer<UniqueWorleyCells> cellSet = entityManager.GetBuffer<UniqueWorleyCells>(owner);
         for(int i = 0; i < cellSet.Length; i++)
         {
-            Debug.Log("value: "+cellSet[i].value);
-            Debug.Log("index: "+cellSet[i].index);
+            Debug.Log(  "value: "+cellSet[i].value + "\n" +
+                        "index: "+cellSet[i].index + "position: "+cellSet[i].position);
         }
         Debug.Log("-----");
     }
