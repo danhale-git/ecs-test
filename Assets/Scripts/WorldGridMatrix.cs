@@ -64,9 +64,9 @@ public struct WorldGridMatrix<T> where T : struct
 
     public bool TryGetItemFromWorldPosition(float3 worldPosition, out T item)
 	{
-        float3 localPosition = worldPosition - rootPosition;
-        if(!Util.EdgeOverlap(localPosition, width).Equals(float3.zero))
+        if(!WorldPositionIsInMatrix(worldPosition))
         {
+            CheckAndAdjustBounds(WorldToMatrixPosition(worldPosition));
             item = new T();
             return false;
         }
@@ -132,6 +132,10 @@ public struct WorldGridMatrix<T> where T : struct
     public float3 IndexToMatrixPosition(int index)
     {
         return Util.Unflatten2D(index, width);
+    }
+    public int MatrixPositionToIndex(float3 matrixPosition)
+    {
+        return Util.Flatten2D(matrixPosition, width);
     }
 
     void CheckAndResizeMatrix(float3 worldPosition)

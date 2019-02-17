@@ -228,11 +228,6 @@ public class MapManagerSystem : ComponentSystem
         }
     }
 
-    void ExploreCell(float3 position)
-    {
-        //if()
-    }
-
     void NewMapSquare(int matrixIndex)
     {
         float3      matrixPosition  = mapMatrix.IndexToMatrixPosition(matrixIndex);
@@ -370,7 +365,7 @@ public class MapManagerSystem : ComponentSystem
 
     void UpdateAdjacentSquares(float3 mapSquarePosition)
     {
-        if(mapMatrix.WorldPositionInMatrix(mapSquarePosition))
+        if(mapMatrix.WorldPositionIsInMatrix(mapSquarePosition))
         {
             Entity adjacent = mapMatrix.GetItemFromWorldPosition(mapSquarePosition);
 
