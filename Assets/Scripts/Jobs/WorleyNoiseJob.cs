@@ -4,6 +4,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Burst;
 using MyComponents;
+using Unity.Entities;
 
 //[BurstCompile]
 struct WorleyNoiseJob : IJobParallelFor

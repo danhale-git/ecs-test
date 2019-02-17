@@ -33,12 +33,12 @@ public class JobifiedNoise
         return noiseMap;
     }
 
-    public NativeArray<WorleyNoise> CellularDistanceToEdge(float3 position, float frequency = 0.01f)
+    /*public NativeArray<WorleyNoise> CellularDistanceToEdge(float3 position, float frequency = 0.01f)
     {
         NativeArray<WorleyNoise> worleyNoiseMap = new NativeArray<WorleyNoise>((int)math.pow(squareWidth, 2), Allocator.TempJob);
 
         WorleyNoiseJob cellJob = new WorleyNoiseJob(){
-            worleyNoiseMap 	= worleyNoiseMap,						//	Flattened 2D array of noise
+            worleyNoiseBuffer 	= worleyNoiseMap,						//	Flattened 2D array of noise
 			offset 		    = position,						        //	World position of this map square's local 0,0
 			squareWidth	    = squareWidth,						    //	Length of one side of a square/cube	
             seed 		    = TerrainSettings.seed,			        //	Perlin noise seed
@@ -53,5 +53,5 @@ public class JobifiedNoise
         cellJob.noise.Dispose();
 
         return worleyNoiseMap;
-    }
+    } */
 }

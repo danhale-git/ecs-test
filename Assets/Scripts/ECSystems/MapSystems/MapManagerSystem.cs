@@ -217,15 +217,20 @@ public class MapManagerSystem : ComponentSystem
         CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
 	}
 
-    void CreateMapSquares(NativeArray<int> doNotCreate)
+    void CreateMapSquares(NativeArray<int> alreadyExists)
     {
         for(int i = 0; i < mapMatrix.Length(); i++)
         {
-            if(doNotCreate[i] == 1)
+            if(alreadyExists[i] == 1)
                 continue;
 
             NewMapSquare(i);
         }
+    }
+
+    void ExploreCell(float3 position)
+    {
+        //if()
     }
 
     void NewMapSquare(int matrixIndex)
@@ -254,16 +259,17 @@ public class MapManagerSystem : ComponentSystem
     {
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = entityManager.GetBuffer<WorleyNoise>(entity);
         worleyNoiseBuffer.ResizeUninitialized(0);
+        DynamicBuffer<WorleyCellValueSet> cellValueSetBuffer = entityManager.GetBuffer<WorleyCellValueSet>(entity);
+        cellValueSetBuffer.ResizeUninitialized(0);
 
-        NativeArray<WorleyNoise> worleyNoiseMap = RunWorleyNoiseJob(position, TerrainSettings.cellFrequency);
-    
-        GetWorleyCellValueSet(entity, worleyNoiseMap);
-
+        NativeArray<WorleyNoise> worleyNoiseMap = GetWorleyNoiseMap(position);
         worleyNoiseBuffer.AddRange(worleyNoiseMap);
         worleyNoiseMap.Dispose();
+    
+        GetWorleyCellValueSet(cellValueSetBuffer, worleyNoiseBuffer);
     }
 
-    NativeArray<WorleyNoise> RunWorleyNoiseJob(float3 position, float frequency = 0.01f)
+    NativeArray<WorleyNoise> GetWorleyNoiseMap(float3 position)
     {
         NativeArray<WorleyNoise> worleyNoiseMap = new NativeArray<WorleyNoise>((int)math.pow(squareWidth, 2), Allocator.TempJob);
 
@@ -272,7 +278,7 @@ public class MapManagerSystem : ComponentSystem
 			offset 		    = position,						        //	World position of this map square's local 0,0
 			squareWidth	    = squareWidth,						    //	Length of one side of a square/cube	
             seed 		    = TerrainSettings.seed,			        //	Perlin noise seed
-            frequency 	    = frequency,	                        //	Perlin noise frequency
+            frequency 	    = TerrainSettings.cellFrequency,	    //	Perlin noise frequency
             perterbAmp      = TerrainSettings.cellEdgeSmoothing,    //  Gradient Peturb amount
             cellularJitter  = TerrainSettings.cellularJitter,       //  Randomness of cell shapes
 			util 		    = new JobUtil(),				        //	Utilities
@@ -286,10 +292,9 @@ public class MapManagerSystem : ComponentSystem
         return worleyNoiseMap;
     }
 
-    void GetWorleyCellValueSet(Entity entity,  NativeArray<WorleyNoise> worleyNoiseMap)
+    void GetWorleyCellValueSet(DynamicBuffer<WorleyCellValueSet> cellValueSetBuffer,  DynamicBuffer<WorleyNoise> worleyNoiseBuffer)
     {
-        NativeArray<float> cellValues = SortedCellValues(worleyNoiseMap);
-        DynamicBuffer<WorleyCellValueSet> cellValueSetBuffer = entityManager.GetBuffer<WorleyCellValueSet>(entity);
+        NativeArray<float> cellValues = SortedCellValues(worleyNoiseBuffer);
 
         int setIndex = 0;
         cellValueSetBuffer.Add(new WorleyCellValueSet { value = cellValues[0] });
@@ -304,11 +309,11 @@ public class MapManagerSystem : ComponentSystem
 
         cellValues.Dispose();
     }
-    NativeArray<float> SortedCellValues(NativeArray<WorleyNoise> worleyNoiseMap)
+    NativeArray<float> SortedCellValues(DynamicBuffer<WorleyNoise> worleyNoiseBuffer)
     {
-        NativeArray<float> cellValues = new NativeArray<float>(worleyNoiseMap.Length, Allocator.Temp);
+        NativeArray<float> cellValues = new NativeArray<float>(worleyNoiseBuffer.Length, Allocator.Temp);
         for(int i = 0; i < cellValues.Length; i++)
-            cellValues[i] = worleyNoiseMap[i].currentCellValue;
+            cellValues[i] = worleyNoiseBuffer[i].currentCellValue;
 
         cellValues.Sort();        
 
