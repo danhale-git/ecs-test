@@ -122,9 +122,9 @@ public class MapManagerSystem : ComponentSystem
         float3 centerPosition = mapMatrix.WorldToMatrixPosition(currentMapSquare);
         int view = TerrainSettings.viewDistance;
 
-        if      (mapMatrix.PositionIsOffsetFromCenter(positionInMatrix, centerPosition, view)) return MapBuffer.EDGE;        
-        else if (mapMatrix.PositionIsOffsetFromCenter(positionInMatrix, centerPosition, view-1)) return MapBuffer.OUTER;
-        else if (mapMatrix.PositionIsOffsetFromCenter(positionInMatrix, centerPosition, view-2)) return MapBuffer.INNER;
+        if      (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view)) return MapBuffer.EDGE;        
+        else if (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view-1)) return MapBuffer.OUTER;
+        else if (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view-2)) return MapBuffer.INNER;
         else return MapBuffer.NONE;
     }
 
@@ -153,7 +153,7 @@ public class MapManagerSystem : ComponentSystem
 				Entity entity   = entities[e];
 				float3 position = positions[e].Value;
 
-                bool inCurrentRadius = mapMatrix.WorldPositionInDistanceFromCenter(position, currentMapSquare, TerrainSettings.viewDistance);
+                bool inCurrentRadius = mapMatrix.InDistanceFromWorldPosition(position, currentMapSquare, TerrainSettings.viewDistance);
                 
                 if(inCurrentRadius)
                 {
@@ -365,7 +365,7 @@ public class MapManagerSystem : ComponentSystem
 
     void UpdateAdjacentSquares(float3 mapSquarePosition)
     {
-        if(mapMatrix.WorldPositionInBounds(mapSquarePosition))
+        if(mapMatrix.WorldPositionInMatrix(mapSquarePosition))
         {
             Entity adjacent = mapMatrix.GetItemFromWorldPosition(mapSquarePosition);
 
