@@ -87,7 +87,7 @@ public class MapManagerSystem : ComponentSystem
         if(currentMapSquare.Equals(previousMapSquare))
             return;
 
-        mapMatrix.ReInitialise(MapMatrixRootPosition(), Allocator.Persistent);
+        mapMatrix.ReInitialise(MapMatrixRootPosition());
 
         NativeList<Entity> squaresToRemove;
 
@@ -227,7 +227,7 @@ public class MapManagerSystem : ComponentSystem
 
     void NewMapSquare(int matrixIndex)
     {
-        float3      matrixPosition  = mapMatrix.IndexToPosition(matrixIndex);
+        float3      matrixPosition  = mapMatrix.IndexToMatrixPosition(matrixIndex);
         MapBuffer   buffer          = GetBuffer(matrixPosition);
         float3      worldPosition   = mapMatrix.MatrixToWorldPosition(matrixPosition);
 

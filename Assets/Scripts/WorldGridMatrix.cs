@@ -8,6 +8,7 @@ public struct WorldGridMatrix<T> where T : struct
 
     NativeArray<T> matrix;
     public int width;
+    Allocator label;
 
     public WorldGridMatrix(float3 rootPosition, int itemWorldSize, int width, Allocator label)
     {
@@ -15,19 +16,22 @@ public struct WorldGridMatrix<T> where T : struct
         this.itemWorldSize = itemWorldSize;
         matrix = new NativeArray<T>((int)math.pow(width, 2), label);
         this.width = width;
+        this.label = label;
     }
     
     public void Dispose()
     {
         if(matrix.IsCreated)matrix.Dispose();
     }
-    public void ReInitialise(float3 newRootPosition, Allocator label)
+
+    public void ReInitialise(float3 newRootPosition)
     {
         if(matrix.IsCreated) Dispose();
         matrix = new NativeArray<T>((int)math.pow(width, 2), label);      
 
         rootPosition = newRootPosition;
-    }    
+    } 
+
     public int Length()
     {
         return matrix.Length;
@@ -61,8 +65,7 @@ public struct WorldGridMatrix<T> where T : struct
             return false;
         }
 
-		float3 index = WorldToMatrixPosition(worldPosition);
-		item = matrix[Util.Flatten2D(index.x, index.z, width)];
+		item = matrix[WorldPositionToIndex(worldPosition)];
         return true;
 	}
 
@@ -103,8 +106,70 @@ public struct WorldGridMatrix<T> where T : struct
     {
         return Util.Flatten2D(WorldToMatrixPosition(worldPosition), width);
     }
-    public float3 IndexToPosition(int index)
+    public float3 IndexToMatrixPosition(int index)
     {
         return Util.Unflatten2D(index, width);
     }
+
+    bool CheckAndResizeMatrix(float3 worldPosition)
+    {
+        if(PositionInWorldBounds(worldPosition))
+            return false;
+
+        float3 positionInMatrix = WorldToMatrixPosition(worldPosition);
+
+        float3 rootPositionChange = CheckAndAdjustBounds(positionInMatrix);
+
+        NativeArray<T> newMatrix = CreateNewMatrix(rootPositionChange);
+
+        matrix.Dispose();
+        matrix = newMatrix;
+
+        return true;
+    }
+
+    float3 CheckAndAdjustBounds(float3 positionInMatrix)
+    {
+        int x = (int)positionInMatrix.x;
+        int z = (int)positionInMatrix.z;
+
+        float3 rootPositionChange = float3.zero;
+
+        int xWidth = 0;
+        int zWidth = 0;
+
+        if(x < 0) rootPositionChange.x = x;
+        else if(x >= width) xWidth = x - (width - 1);
+
+        if(z < 0) rootPositionChange.z = z;
+        else if(z >= width) zWidth = z - (width - 1);
+
+        if(xWidth+zWidth > 0)
+            width += math.max(xWidth, zWidth);
+
+        return rootPositionChange;
+    }
+
+    NativeArray<T> CreateNewMatrix(float3 rootPositionChange)
+    {
+        NativeArray<T> newMatrix = new NativeArray<T>((int)math.pow(width, 2), label);
+        float3 positionOffset = rootPositionChange * -1;
+
+        AddOldMatrixWithOffset(positionOffset, newMatrix);
+
+        return newMatrix;
+    }
+
+    void AddOldMatrixWithOffset(float3 positionChange, NativeArray<T> newMatrix)
+    {
+        for(int i = 0; i < matrix.Length; i++)
+        {
+            float3 oldMatrixPosition = IndexToMatrixPosition(i);
+            float3 newMatrixPosition = oldMatrixPosition + positionChange;
+
+            int newMatrixIndex = Util.Flatten2D(newMatrixPosition, width);
+            newMatrix[newMatrixIndex] = matrix[i];
+        }
+    }
+
 }
