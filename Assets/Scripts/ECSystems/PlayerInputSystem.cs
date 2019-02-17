@@ -129,6 +129,8 @@ public class PlayerInputSystem : ComponentSystem
         //Debug.Log(centerNoise.currentCellPosition);
         //Debug.Log(centerNoise.currentCellIndex);
 
+        WorleyNoise clickedNoise = noise[Util.Flatten2D(block.localPosition.x, block.localPosition.z, squareWidth)];
+
         for(int y = 0; y < 10; y++)
         {
             float3 position = centerNoise.currentCellPosition + new float3(0, 50 + y, 0);
@@ -141,6 +143,7 @@ public class PlayerInputSystem : ComponentSystem
             Debug.Log(cellSet[i].value);
         }
         Debug.Log("-----");
+        Debug.Log("index: "+clickedNoise.currentCellIndex);
     }
 
     //  Return list of voxel positions hit by ray from eye to dir
