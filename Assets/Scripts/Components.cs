@@ -22,7 +22,6 @@ namespace MyComponents
 
 	#region Map
 
-	public enum CubeComposition { MIXED, SOLID, AIR};
 	public enum SlopeType { NOTSLOPED, FLAT, INNERCORNER, OUTERCORNER }
 	public enum SlopeFacing { NWSE, SWNE }
 
@@ -174,6 +173,8 @@ namespace MyComponents
 	{
 		public Block block;
 	}
+
+	
 
 	#endregion
 }
