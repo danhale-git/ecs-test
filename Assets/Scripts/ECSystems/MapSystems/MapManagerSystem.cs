@@ -39,7 +39,7 @@ public class MapManagerSystem : ComponentSystem
             ComponentType.Create<RenderMeshComponent>(),
             ComponentType.Create<MapSquare>(),
             ComponentType.Create<WorleyNoise>(),
-            ComponentType.Create<WorleyCellValueSet>(),
+            ComponentType.Create<WorleyCellSet>(),
             ComponentType.Create<Topology>(),
             ComponentType.Create<Block>(),
 
@@ -240,7 +240,7 @@ public class MapManagerSystem : ComponentSystem
         
         mapMatrix.SetItem(entity, matrixIndex);
 
-        SetBuffer(entity, buffer);
+        SetMapBuffer(entity, buffer);
     }
 
     Entity CreateMapSquareAtPosition(float3 worldPosition)
@@ -254,14 +254,14 @@ public class MapManagerSystem : ComponentSystem
     {
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = entityManager.GetBuffer<WorleyNoise>(entity);
         worleyNoiseBuffer.ResizeUninitialized(0);
-        DynamicBuffer<WorleyCellValueSet> cellValueSetBuffer = entityManager.GetBuffer<WorleyCellValueSet>(entity);
+        DynamicBuffer<WorleyCellSet> cellValueSetBuffer = entityManager.GetBuffer<WorleyCellSet>(entity);
         cellValueSetBuffer.ResizeUninitialized(0);
 
         NativeArray<WorleyNoise> worleyNoiseMap = GetWorleyNoiseMap(position);
         worleyNoiseBuffer.AddRange(worleyNoiseMap);
         worleyNoiseMap.Dispose();
     
-        GetWorleyCellValueSet(cellValueSetBuffer, worleyNoiseBuffer);
+        GetWorleySet(cellValueSetBuffer, worleyNoiseBuffer);
     }
 
     NativeArray<WorleyNoise> GetWorleyNoiseMap(float3 position)
@@ -287,35 +287,45 @@ public class MapManagerSystem : ComponentSystem
         return worleyNoiseMap;
     }
 
-    void GetWorleyCellValueSet(DynamicBuffer<WorleyCellValueSet> cellValueSetBuffer,  DynamicBuffer<WorleyNoise> worleyNoiseBuffer)
+    void GetWorleySet(DynamicBuffer<WorleyCellSet> cellSetBuffer,  DynamicBuffer<WorleyNoise> worleyNoiseBuffer)
     {
-        NativeArray<float> cellValues = SortedCellValues(worleyNoiseBuffer);
+        NativeArray<WorleyNoise> sortedWorleyNoise = SortedWorleyNoise(worleyNoiseBuffer);
 
         int setIndex = 0;
-        cellValueSetBuffer.Add(new WorleyCellValueSet { value = cellValues[0] });
-        for(int i = 1; i < cellValues.Length; i++)
+        AddCellToSet(cellSetBuffer, sortedWorleyNoise[0]);
+        for(int i = 1; i < sortedWorleyNoise.Length; i++)
         {
-            if(cellValues[i] != cellValueSetBuffer[setIndex].value)
+            if(sortedWorleyNoise[i].currentCellValue != cellSetBuffer[setIndex].value)
             {
                 setIndex++;
-                cellValueSetBuffer.Add(new WorleyCellValueSet { value = cellValues[i] });
+                AddCellToSet(cellSetBuffer, sortedWorleyNoise[i]);
             }
         }
 
-        cellValues.Dispose();
+        sortedWorleyNoise.Dispose();
     }
-    NativeArray<float> SortedCellValues(DynamicBuffer<WorleyNoise> worleyNoiseBuffer)
+
+    NativeArray<WorleyNoise> SortedWorleyNoise(DynamicBuffer<WorleyNoise> worleyNoiseBuffer)
     {
-        NativeArray<float> cellValues = new NativeArray<float>(worleyNoiseBuffer.Length, Allocator.Temp);
+        NativeArray<WorleyNoise> cellValues = new NativeArray<WorleyNoise>(worleyNoiseBuffer.Length, Allocator.Temp);
         for(int i = 0; i < cellValues.Length; i++)
-            cellValues[i] = worleyNoiseBuffer[i].currentCellValue;
+            cellValues[i] = worleyNoiseBuffer[i];
 
         cellValues.Sort();        
-
         return cellValues;
     }
+    
+    void AddCellToSet(DynamicBuffer<WorleyCellSet> cellSet, WorleyNoise worleyNoise)
+    {
+        WorleyCellSet setItem = new WorleyCellSet {
+            value = worleyNoise.currentCellValue,
+            index = worleyNoise.currentCellIndex,
+            position = worleyNoise.currentCellPosition
+        };
+        cellSet.Add(setItem);
+    }
 
-    void SetBuffer(Entity entity, MapBuffer buffer)
+    void SetMapBuffer(Entity entity, MapBuffer buffer)
     {
         switch(buffer)
         {

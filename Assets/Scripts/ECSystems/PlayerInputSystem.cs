@@ -137,13 +137,13 @@ public class PlayerInputSystem : ComponentSystem
             CustomDebugTools.Cube(Color.red, position);
         }
 
-        DynamicBuffer<WorleyCellValueSet> cellSet = entityManager.GetBuffer<WorleyCellValueSet>(owner);
+        DynamicBuffer<WorleyCellSet> cellSet = entityManager.GetBuffer<WorleyCellSet>(owner);
         for(int i = 0; i < cellSet.Length; i++)
         {
-            Debug.Log(cellSet[i].value);
+            Debug.Log("value: "+cellSet[i].value);
+            Debug.Log("index: "+cellSet[i].index);
         }
         Debug.Log("-----");
-        Debug.Log("index: "+clickedNoise.currentCellIndex);
     }
 
     //  Return list of voxel positions hit by ray from eye to dir

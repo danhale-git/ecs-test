@@ -53,16 +53,23 @@ namespace MyComponents
 	}
 
 	[InternalBufferCapacity(0)]
-	public struct WorleyNoise : IBufferElementData
+	public struct WorleyNoise : IBufferElementData, System.IComparable<WorleyNoise>
 	{
+		public int CompareTo(WorleyNoise other)
+		{
+			return currentCellValue.CompareTo(other.currentCellValue);
+		}
+
 		public float3 currentCellPosition;
 		public int2 currentCellIndex;
 		public float currentCellValue, distance2Edge, adjacentCellValue;
 	}
 	[InternalBufferCapacity(10)]
-	public struct WorleyCellValueSet : IBufferElementData
+	public struct WorleyCellSet : IBufferElementData
 	{
 		public float value;
+		public int2 index;
+		public float3 position;
 	}
 
 	public struct AdjacentSquares : IComponentData
