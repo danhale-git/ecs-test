@@ -39,6 +39,7 @@ public class MapManagerSystem : ComponentSystem
             ComponentType.Create<RenderMeshComponent>(),
             ComponentType.Create<MapSquare>(),
             ComponentType.Create<WorleyNoise>(),
+            ComponentType.Create<WorleyCellValueSet>(),
             ComponentType.Create<Topology>(),
             ComponentType.Create<Block>(),
 
@@ -167,7 +168,11 @@ public class MapManagerSystem : ComponentSystem
                 }
                 else
                 {
-                    toRemove.Add(entity);
+                    //toRemove.Add(entity);
+                    if(entityManager.HasComponent<RenderMesh>(entity))
+                        commandBuffer.RemoveComponent(entity, typeof(RenderMesh));
+
+                    tags.TryAddTag<Tags.DrawMesh>(entity, commandBuffer);
                 }
 			}
 
@@ -218,18 +223,23 @@ public class MapManagerSystem : ComponentSystem
             if(doNotCreate[i] == 1)
                 continue;
 
-            float3      matrixPosition  = mapMatrix.IndexToPosition(i);
-            MapBuffer   buffer          = GetBuffer(matrixPosition);
-            float3      worldPosition   = mapMatrix.MatrixToWorldPosition(matrixPosition);
-
-            Entity entity = CreateMapSquareAtPosition(worldPosition);
-
-            GenerateWorleyNoise(entity, worldPosition);
-            
-            mapMatrix.SetItem(entity, i);
-
-            SetBuffer(entity, buffer);
+            NewMapSquare(i);
         }
+    }
+
+    void NewMapSquare(int matrixIndex)
+    {
+        float3      matrixPosition  = mapMatrix.IndexToPosition(matrixIndex);
+        MapBuffer   buffer          = GetBuffer(matrixPosition);
+        float3      worldPosition   = mapMatrix.MatrixToWorldPosition(matrixPosition);
+
+        Entity entity = CreateMapSquareAtPosition(worldPosition);
+
+        GenerateWorleyNoise(entity, worldPosition);
+        
+        mapMatrix.SetItem(entity, matrixIndex);
+
+        SetBuffer(entity, buffer);
     }
 
     Entity CreateMapSquareAtPosition(float3 worldPosition)
@@ -245,6 +255,8 @@ public class MapManagerSystem : ComponentSystem
         worleyNoiseBuffer.ResizeUninitialized(0);
 
         NativeArray<WorleyNoise> worleyNoiseMap = RunWorleyNoiseJob(position, TerrainSettings.cellFrequency);
+    
+        GetWorleyCellValueSet(entity, worleyNoiseMap);
 
         worleyNoiseBuffer.AddRange(worleyNoiseMap);
         worleyNoiseMap.Dispose();
@@ -271,6 +283,35 @@ public class MapManagerSystem : ComponentSystem
         cellJob.noise.Dispose();
 
         return worleyNoiseMap;
+    }
+
+    void GetWorleyCellValueSet(Entity entity,  NativeArray<WorleyNoise> worleyNoiseMap)
+    {
+        NativeArray<float> cellValues = SortedCellValues(worleyNoiseMap);
+        DynamicBuffer<WorleyCellValueSet> cellValueSetBuffer = entityManager.GetBuffer<WorleyCellValueSet>(entity);
+
+        int setIndex = 0;
+        cellValueSetBuffer.Add(new WorleyCellValueSet { value = cellValues[0] });
+        for(int i = 1; i < cellValues.Length; i++)
+        {
+            if(cellValues[i] != cellValueSetBuffer[setIndex].value)
+            {
+                setIndex++;
+                cellValueSetBuffer.Add(new WorleyCellValueSet { value = cellValues[i] });
+            }
+        }
+
+        cellValues.Dispose();
+    }
+    NativeArray<float> SortedCellValues(NativeArray<WorleyNoise> worleyNoiseMap)
+    {
+        NativeArray<float> cellValues = new NativeArray<float>(worleyNoiseMap.Length, Allocator.Temp);
+        for(int i = 0; i < cellValues.Length; i++)
+            cellValues[i] = worleyNoiseMap[i].currentCellValue;
+
+        cellValues.Sort();        
+
+        return cellValues;
     }
 
     void SetBuffer(Entity entity, MapBuffer buffer)

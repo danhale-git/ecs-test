@@ -60,6 +60,11 @@ namespace MyComponents
 		public int2 currentCellIndex;
 		public float currentCellValue, distance2Edge, adjacentCellValue;
 	}
+	[InternalBufferCapacity(10)]
+	public struct WorleyCellValueSet : IBufferElementData
+	{
+		public float value;
+	}
 
 	public struct AdjacentSquares : IComponentData
 	{
