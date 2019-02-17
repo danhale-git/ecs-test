@@ -20,7 +20,7 @@ public class MapManagerSystem : ComponentSystem
 
 	public static Entity playerEntity;
 
-    public Matrix<Entity> mapMatrix;
+    public WorldGridMatrix<Entity> mapMatrix;
 
     float3 currentMapSquare;
     float3 previousMapSquare;
@@ -67,7 +67,7 @@ public class MapManagerSystem : ComponentSystem
 
         int matrixWidth = (TerrainSettings.viewDistance * 2) + 1;
 
-        mapMatrix = new Matrix<Entity>(
+        mapMatrix = new WorldGridMatrix<Entity>(
             MapMatrixRootPosition(),
             squareWidth,
             matrixWidth,

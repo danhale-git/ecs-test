@@ -1,7 +1,7 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 
-public struct Matrix<T> where T : struct
+public struct WorldGridMatrix<T> where T : struct
 {
     public float3 rootPosition;
     int itemWorldSize;
@@ -9,7 +9,7 @@ public struct Matrix<T> where T : struct
     NativeArray<T> matrix;
     public int width;
 
-    public Matrix(float3 rootPosition, int itemWorldSize, int width, Allocator label)
+    public WorldGridMatrix(float3 rootPosition, int itemWorldSize, int width, Allocator label)
     {
         this.rootPosition = rootPosition;
         this.itemWorldSize = itemWorldSize;
