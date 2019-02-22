@@ -22,7 +22,7 @@ public class MapManagerSystem : ComponentSystem
 
     public WorldGridMatrix<Entity> mapMatrix;
 
-    public WorldGridMatrix<bool> cellMatrix;
+    Dictionary<int2, bool> cellsDiscovered = new Dictionary<int2, bool>();
 
     float3 currentMapSquare;
     float3 previousMapSquare;
@@ -73,13 +73,6 @@ public class MapManagerSystem : ComponentSystem
             rootPosition = MapMatrixRootPosition(),
             itemWorldSize = squareWidth,
             width = matrixWidth,
-            label = Allocator.Persistent
-        };
-
-        cellMatrix = new WorldGridMatrix<bool>{
-            rootPosition = float3.zero,
-            itemWorldSize = 1,
-            width = 0,
             label = Allocator.Persistent
         };
 
@@ -244,82 +237,131 @@ public class MapManagerSystem : ComponentSystem
 
     void DiscoverNearbyCells(float3 playerPosition, NativeArray<float3> startSquares, NativeArray<UniqueWorleyCells> startCells)
     {
-        Color[] colors = new Color[] { Color.red, Color.green, Color.blue, Color.yellow };
-        Debug.Log("cells: "+startCells.Length);
+        Color[] colors = new Color[] { Color.red, Color.green, Color.blue, Color.yellow, Color.grey, Color.cyan, Color.black, Color.magenta };
 
-        NativeList<UniqueWorleyCells> cellsToDiscover = new NativeList<UniqueWorleyCells>(Allocator.Temp);
+        NativeList<UniqueWorleyCells> cellsToDiscover = new NativeList<UniqueWorleyCells>(Allocator.TempJob);
         cellsToDiscover.AddRange(startCells);
+        NativeList<float3> startSquaresToDiscover = new NativeList<float3>(Allocator.TempJob);
+        startSquaresToDiscover.AddRange(startSquares);
 
-        for(int c = 0; c < startCells.Length; c++)
+        int cellSafety = 0;
+
+        while(cellsToDiscover.Length > 0 && cellSafety < 100)
         {
-            //  Cell and corresponding starting square position
-            UniqueWorleyCells cell = startCells[c];
-            float3 startSquare = startSquares[c];
+            cellSafety++;
+            if(cellSafety == 99)
+                Debug.Log("SAFETY HIT - - - - ");
 
-            //  Check if cell out of range
-            float3 difference = cell.position - playerPosition;
-            if(math.sign(difference.x) > 70 || math.sign(difference.z) > 70)
-                continue;
+            NativeList<UniqueWorleyCells> newCellsToDiscover = new NativeList<UniqueWorleyCells>(Allocator.Temp);
+            NativeList<float3> newStartSquaresToDiscover = new NativeList<float3>(Allocator.Temp);
 
-            //  Initialise positionsTpCheck with starting position
-            NativeList<float3> positionsToCheck = new NativeList<float3>(Allocator.TempJob);
-            positionsToCheck.Add(startSquare);
-
-            int safety = 0;
-            while(positionsToCheck.Length > 0 && safety < 100)
+            for(int c = 0; c < cellsToDiscover.Length; c++)
             {
-                safety++;
+                Debug.Log(":::: checking "+cellsToDiscover.Length+" cells");
 
-                if(positionsToCheck.Length == 0) break;
+                //  Cell and corresponding starting square position
+                UniqueWorleyCells cell = cellsToDiscover[c];
+                float3 startSquare = startSquaresToDiscover[c];
 
-                NativeList<float3> newPositionsToCheck = new NativeList<float3>(Allocator.Temp);
+                //  Initialise positionsTpCheck with starting position
+                NativeList<float3> positionsToCheck = new NativeList<float3>(Allocator.TempJob);
+                positionsToCheck.Add(startSquare);
 
-                for(int p = 0; p < positionsToCheck.Length; p++)
+                int safety = 0;
+                while(positionsToCheck.Length > 0 && safety < 100)
                 {
-                    float3 currentPosition = positionsToCheck[p];
+                    safety++;
+                    if(safety == 99)
+                        Debug.Log("SAFETY HIT - - - - ");
 
-                    //DEBUG
-                    CustomDebugTools.MarkError(currentPosition, colors[c]);
-
-                    NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
-                    for(int i = 0; i < 4; i++)
+                    if(positionsToCheck.Length == 0)
                     {
-                        float3 checkPosition = currentPosition + (directions[i] * squareWidth);
-                        //Debug.Log("checking position+ "+checkPosition);
-
-                        Entity entity;
-
-                        if(!mapMatrix.TryGetItemFromWorldPosition(checkPosition, out entity))
-                        {
-                            entity = NewMapSquare(checkPosition); 
-                        }
-                        else if(!entityManager.Exists(entity))
-                        {
-                            entity = NewMapSquare(checkPosition); 
-                        }
-
-                        DynamicBuffer<UniqueWorleyCells> uniqueCells = entityManager.GetBuffer<UniqueWorleyCells>(entity);
-
-                        //  Contains only this cell type
-                        if(!mapMatrix.GetBool(checkPosition) && uniqueCells.Length == 1 && uniqueCells[0].value == cell.value)
-                        {
-                            newPositionsToCheck.Add(checkPosition);
-                        }
-
-                        
+                        //Debug.Log("no positions to check for "+cell.index);
+                        break;
+                    }
+                    else
+                    {
+                        //Debug.Log("checking "+positionsToCheck.Length+" positions for "+cell.index);
                     }
 
-                    mapMatrix.SetBool(true, currentPosition);
+                    NativeList<float3> newPositionsToCheck = new NativeList<float3>(Allocator.Temp);
+
+                    for(int p = 0; p < positionsToCheck.Length; p++)
+                    {
+                        float3 currentPosition = positionsToCheck[p];
+
+                        //DEBUG
+                        CustomDebugTools.MarkError(currentPosition, colors[cellSafety]);
+
+                        NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
+                        for(int d = 0; d < 4; d++)
+                        {
+                            float3 checkPosition = currentPosition + (directions[d] * squareWidth);
+                            //Debug.Log("checking position+ "+checkPosition);
+
+                            Entity entity;
+
+                            if(!mapMatrix.TryGetItemFromWorldPosition(checkPosition, out entity))
+                            {
+                                entity = NewMapSquare(checkPosition); 
+                            }
+                            else if(!entityManager.Exists(entity))
+                            {
+                                entity = NewMapSquare(checkPosition); 
+                            }
+
+                            DynamicBuffer<UniqueWorleyCells> uniqueCells = entityManager.GetBuffer<UniqueWorleyCells>(entity);
+
+                            //  Contains only this cell type
+                            if(uniqueCells.Length == 1 && uniqueCells[0].value == cell.value)
+                            {
+                                if(!mapMatrix.GetBool(checkPosition))
+                                    newPositionsToCheck.Add(checkPosition);
+                            }
+                            
+                            for(int i = 0; i < uniqueCells.Length; i++)
+                            {
+                                float3 difference = uniqueCells[i].position - playerPosition;
+                                bool discovered = false;
+                                cellsDiscovered.TryGetValue(uniqueCells[i].index, out discovered);
+
+                                if(!discovered)
+                                {
+                                    if(math.abs(difference.x) < 200 && math.abs(difference.z) < 200)
+                                    {
+                                        newStartSquaresToDiscover.Add(checkPosition);
+                                        newCellsToDiscover.Add(uniqueCells[i]);
+                                        //Debug.Log("adding cell: "+uniqueCells[i].index);
+
+                                        cellsDiscovered[uniqueCells[i].index] = true;
+
+                                        Debug.Log(uniqueCells[i].index+" in range");
+                                    }
+                                    else
+                                        Debug.Log(uniqueCells[i].index+" out of range");
+                                }
+                            }
+                            
+                        }
+
+                        mapMatrix.SetBool(true, currentPosition);
+                    }
+
+                    positionsToCheck.Clear();
+                    positionsToCheck.AddRange(newPositionsToCheck);
+                    newPositionsToCheck.Dispose();
                 }
 
-                Debug.Log("looped "+safety+" times");
-
-                positionsToCheck.Clear();
-                positionsToCheck.AddRange(newPositionsToCheck);
-                newPositionsToCheck.Dispose();
+                positionsToCheck.Dispose();
             }
 
-            positionsToCheck.Dispose();
+            cellsToDiscover.Clear();
+            startSquaresToDiscover.Clear();
+            cellsToDiscover.AddRange(newCellsToDiscover);
+            startSquaresToDiscover.AddRange(newStartSquaresToDiscover);
+
+            newCellsToDiscover.Dispose();
+            newStartSquaresToDiscover.Dispose();
         }
     }
 
