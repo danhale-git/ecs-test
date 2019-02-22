@@ -49,6 +49,7 @@ public struct WorldGridMatrix<T> where T : struct
     public void SetItemFromWorldPosition(T item, float3 worldPosition)
     {
         int index = WorldPositionToIndex(worldPosition);
+
         SetItem(item, index);
     }
     public T GetItemFromWorldPosition(float3 worldPosition)
@@ -126,7 +127,14 @@ public struct WorldGridMatrix<T> where T : struct
     }
     public int WorldPositionToIndex(float3 worldPosition)
     {
-        return Util.Flatten2D(WorldToMatrixPosition(worldPosition), width);
+        int index = MatrixPositionToIndex(WorldToMatrixPosition(worldPosition));
+        if(index < 0)
+        {
+            UnityEngine.Debug.Log("index: "+index+"\nwidth: "+width);
+            UnityEngine.Debug.Log("WorldToMatrixPosition(worldPosition): "+WorldToMatrixPosition(worldPosition));
+            UnityEngine.Debug.Log("worldPosition: "+worldPosition+"\nrootPosition: "+rootPosition);
+        }
+        return index;
     }
     public float3 IndexToMatrixPosition(int index)
     {
@@ -140,7 +148,12 @@ public struct WorldGridMatrix<T> where T : struct
     void CheckAndResizeMatrix(float3 worldPosition)
     {
         if(WorldPositionIsInMatrix(worldPosition))
+        {
+            UnityEngine.Debug.Log(":: did not resize");
             return;
+        }
+
+        UnityEngine.Debug.Log("World position: "+worldPosition+"\nrootPosition: "+rootPosition);
 
         float3 positionInMatrix = WorldToMatrixPosition(worldPosition);
 
@@ -148,10 +161,14 @@ public struct WorldGridMatrix<T> where T : struct
 
         float3 rootPositionChange = CheckAndAdjustBounds(positionInMatrix);
 
+        rootPosition = rootPosition + (rootPositionChange * itemWorldSize);
+
         NativeArray<T> newMatrix = CreateNewMatrix(rootPositionChange, oldWith);
 
         matrix.Dispose();
         matrix = newMatrix;
+
+        UnityEngine.Debug.Log(":: width change: "+(width - oldWith)+"\nposition change: "+rootPositionChange);
     }
 
     float3 CheckAndAdjustBounds(float3 positionInMatrix)
@@ -160,18 +177,20 @@ public struct WorldGridMatrix<T> where T : struct
         int z = (int)positionInMatrix.z;
 
         float3 rootPositionChange = float3.zero;
-
-        int xWidth = 0;
-        int zWidth = 0;
+        float3 widthChange = float3.zero;
 
         if(x < 0) rootPositionChange.x = x;
-        else if(x >= width) xWidth = x - (width - 1);
+        else if(x >= width) widthChange.x = x - (width - 1);
 
         if(z < 0) rootPositionChange.z = z;
-        else if(z >= width) zWidth = z - (width - 1);
+        else if(z >= width) widthChange.z = z - (width - 1);
 
-        if(xWidth+zWidth > 0)
-            width += math.max(xWidth, zWidth);
+        widthChange += (rootPositionChange * -1);
+
+        if(widthChange.x+widthChange.z > 0)
+            width += math.max((int)widthChange.x, (int)widthChange.z);
+
+        UnityEngine.Debug.Log("rootPositionChange: "+rootPositionChange+"\nwidth change: "+widthChange);
 
         return rootPositionChange;
     }
@@ -181,17 +200,21 @@ public struct WorldGridMatrix<T> where T : struct
         NativeArray<T> newMatrix = new NativeArray<T>((int)math.pow(width, 2), label);
         float3 positionOffset = rootPositionChange * -1;
 
+        UnityEngine.Debug.Log("oldWidth: "+ oldWidth+"\nwidth: "+ width);
+        UnityEngine.Debug.Log("positionOffset: "+ positionOffset);
+
         AddOldMatrixWithOffset(positionOffset, oldWidth, newMatrix);
 
         return newMatrix;
     }
 
-    void AddOldMatrixWithOffset(float3 positionChange, int oldWidth, NativeArray<T> newMatrix)
+    void AddOldMatrixWithOffset(float3 positionOffset, int oldWidth, NativeArray<T> newMatrix)
     {
         for(int i = 0; i < matrix.Length; i++)
         {
             float3 oldMatrixPosition = Util.Unflatten2D(i, oldWidth);
-            float3 newMatrixPosition = oldMatrixPosition + positionChange;
+            float3 newMatrixPosition = oldMatrixPosition + positionOffset;
+
 
             int newMatrixIndex = Util.Flatten2D(newMatrixPosition, width);
             newMatrix[newMatrixIndex] = matrix[i];

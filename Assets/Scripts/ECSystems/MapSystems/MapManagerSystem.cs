@@ -260,6 +260,9 @@ public class MapManagerSystem : ComponentSystem
                 for(int p = 0; p < positionsToCheck.Length; p++)
                 {
                     float3 currentPosition = positionsToCheck[p];
+
+                    CustomDebugTools.MarkError(currentPosition, Color.green);
+
                     NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
                     for(int i = 0; i < 4; i++)
                     {
@@ -274,7 +277,10 @@ public class MapManagerSystem : ComponentSystem
 
                             //  Contains only this cell type
                             if(uniqueCells.Length == 1 && uniqueCells[0].value == cell.value)
+                            {
                                 positionsToCheck.Add(checkPosition);
+
+                            }
 
                             //  Add extra discovered cells
                             //  SetItemAndResizeIfNeeded/CheckAndResizeMatrix needs debugging!
@@ -287,6 +293,8 @@ public class MapManagerSystem : ComponentSystem
 
     Entity NewMapSquare(float3 worldPosition)
     {
+        CustomDebugTools.IncrementDebugCount("squares created");
+
         float3      matrixPosition  = mapMatrix.WorldToMatrixPosition(worldPosition);
         MapBuffer   buffer          = GetBuffer(matrixPosition);
         int matrixIndex = mapMatrix.MatrixPositionToIndex(matrixPosition);
