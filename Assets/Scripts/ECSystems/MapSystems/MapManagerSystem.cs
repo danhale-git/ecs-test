@@ -271,17 +271,10 @@ public class MapManagerSystem : ComponentSystem
                         //  eligible for pseudo deterministic generation
                     }
 
-                    for(int i = 0; i < uniqueCells.Length; i++)
-                    {
-                        if(uniqueCells[i].index.Equals(cell.index) && !mapMatrix.GetBool(adjacentSquare))
-                        {
-                            newPositionsToCheck.Add(adjacentSquare);
-                            break;
-                        }
-                    }
+                    if(MapSquareNeedsChecking(cell, adjacentSquare, uniqueCells))
+                        newPositionsToCheck.Add(adjacentSquare);
 
-                    NativeList<WorleyCell> newCells = OnlyNewCells(uniqueCells, playerPosition);
-                    
+                    NativeList<WorleyCell> newCells = OnlyNewCells(uniqueCells);
                     newCellsToDiscover.AddRange(newCells);
                     newCells.Dispose();
                 }
@@ -298,7 +291,16 @@ public class MapManagerSystem : ComponentSystem
         return newCellsToDiscover;
     }
 
-    NativeList<WorleyCell> OnlyNewCells(DynamicBuffer<WorleyCell> uniqueCells, float3 playerPosition)
+    bool MapSquareNeedsChecking(WorleyCell cell, float3 adjacentPosition, DynamicBuffer<WorleyCell> uniqueCells)
+    {
+        for(int i = 0; i < uniqueCells.Length; i++)
+            if(uniqueCells[i].index.Equals(cell.index) && !mapMatrix.GetBool(adjacentPosition))
+                return true;
+
+        return false;
+    }
+
+    NativeList<WorleyCell> OnlyNewCells(DynamicBuffer<WorleyCell> uniqueCells)
     {
         NativeList<WorleyCell> newCells = new NativeList<WorleyCell>(Allocator.TempJob);
 
