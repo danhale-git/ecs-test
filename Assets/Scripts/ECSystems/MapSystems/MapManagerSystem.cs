@@ -132,7 +132,9 @@ public class MapManagerSystem : ComponentSystem
         currentMapSquare = CurrentMapSquare();
         if(currentMapSquare.Equals(previousMapSquare))
             return;
-        else previousMapSquare = currentMapSquare;       
+        else previousMapSquare = currentMapSquare;
+
+        CheckAndUpdateMapSquares();      
 
         NativeList<WorleyCell> cellsToDiscover = new NativeList<WorleyCell>(Allocator.TempJob);
         for(int i = 0; i < undiscoveredCells.Length; i++)
@@ -161,16 +163,13 @@ public class MapManagerSystem : ComponentSystem
         return Util.VoxelOwner(playerPosition, squareWidth);
     }
 
-    /*void CheckAndUpdateMapSquares(out NativeList<Entity> toRemove, out NativeArray<int> alreadyExists)
+    void CheckAndUpdateMapSquares()
 	{
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
 		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);
 
 		ArchetypeChunkEntityType                entityType	    = GetArchetypeChunkEntityType();
 		ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>(true);
-
-        toRemove    = new NativeList<Entity>(Allocator.TempJob);
-        alreadyExists = new NativeArray<int>(mapMatrix.Length(), Allocator.TempJob);
 
         int squareCount = 0;
 
@@ -192,17 +191,13 @@ public class MapManagerSystem : ComponentSystem
                 {
                     int matrixIndex = mapMatrix.WorldPositionToIndex(position);
 
-                    mapMatrix.SetItem(entity, matrixIndex);
-                    alreadyExists[matrixIndex]  = 1;
-
-                    MapBuffer buffer = GetBuffer(mapMatrix.WorldToMatrixPosition(position));
+                    DrawBufferType buffer = GetBuffer(position);
                     UpdateBuffer(entity, buffer, commandBuffer);
 
                     squareCount++;
                 }
                 else
                 {
-                    //toRemove.Add(entity);
                     if(entityManager.HasComponent<RenderMesh>(entity))
                         commandBuffer.RemoveComponent(entity, typeof(RenderMesh));
 
@@ -217,7 +212,20 @@ public class MapManagerSystem : ComponentSystem
 		commandBuffer.Dispose();
 
 		chunks.Dispose();//
-	} */
+	}
+
+    DrawBufferType GetBuffer(float3 bufferWorldPosition)
+    {
+        float3 centerPosition = mapMatrix.WorldToMatrixPosition(currentMapSquare);
+        float3 bufferPosition = mapMatrix.WorldToMatrixPosition(bufferWorldPosition);
+        int view = TerrainSettings.viewDistance;
+
+        if      (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
+        else if (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view-1)) return DrawBufferType.OUTER;
+        else if (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view-2)) return DrawBufferType.INNER;
+        else if (!mapMatrix.InDistancceFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
+        else return DrawBufferType.NONE;
+    }
 
 	void UpdateBuffer(Entity entity, DrawBufferType buffer, EntityCommandBuffer commandBuffer)
 	{
@@ -392,7 +400,7 @@ public class MapManagerSystem : ComponentSystem
     {
         Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 		entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
-        SetDrawBuffer(worldPosition, entity);
+        SetDrawBuffer(entity, GetBuffer(worldPosition));
 
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = GenerateWorleyNoise(entity, worldPosition);
         DynamicBuffer<WorleyCell> uniqueWorleyCells = GetWorleySet(entity, worleyNoiseBuffer);
@@ -404,7 +412,27 @@ public class MapManagerSystem : ComponentSystem
         return entity;
     }
 
-    void SetDrawBuffer(float3 bufferWorldPosition, Entity entity)
+    void SetDrawBuffer(Entity entity, DrawBufferType buffer)
+    {
+        switch(buffer)
+        {
+            case DrawBufferType.INNER:
+                tags.AddTag<Tags.InnerBuffer>(entity);
+                break;
+            case DrawBufferType.OUTER:
+                tags.AddTag<Tags.OuterBuffer>(entity);
+                break;
+            case DrawBufferType.EDGE:
+                tags.AddTag<Tags.EdgeBuffer>(entity);
+                break;
+            default:
+                break;
+        }
+
+        CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
+    }
+
+    /*void SetDrawBuffer(float3 bufferWorldPosition, Entity entity)
     {
         float3 centerPosition = mapMatrix.WorldToMatrixPosition(currentMapSquare);
         float3 positionInMatrix = mapMatrix.WorldToMatrixPosition(bufferWorldPosition);
@@ -418,7 +446,7 @@ public class MapManagerSystem : ComponentSystem
             tags.AddTag<Tags.InnerBuffer>(entity);
         else if (!mapMatrix.InDistancceFromPosition(positionInMatrix, centerPosition, view))
             tags.AddTag<Tags.EdgeBuffer>(entity);
-    }
+    } */
 
     DynamicBuffer<WorleyNoise> GenerateWorleyNoise(Entity entity, float3 position)
     {
