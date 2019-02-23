@@ -123,32 +123,9 @@ public class MapManagerSystem : ComponentSystem
 
         UpdateDrawBuffer();      
 
-        NativeList<WorleyCell> cellsToDiscover = new NativeList<WorleyCell>(Allocator.TempJob);
-        for(int i = 0; i < undiscoveredCells.Length; i++)
-        {
-            WorleyCell cell = undiscoveredCells[i];
-            if(CellInRange(cell))
-            {
-                cellsToDiscover.Add(cell);
-                undiscoveredCells.RemoveAtSwapBack(i);
-            }
-        }
-
-        DiscoverCells(currentMapSquare, cellsToDiscover);
-        cellsToDiscover.Dispose();
-    }
-
-    DrawBufferType GetDrawBuffer(float3 bufferWorldPosition)
-    {
-        float3 centerPosition = mapMatrix.WorldToMatrixPosition(currentMapSquare);
-        float3 bufferPosition = mapMatrix.WorldToMatrixPosition(bufferWorldPosition);
-        int view = TerrainSettings.viewDistance;
-
-        if      (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
-        else if (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view-1)) return DrawBufferType.OUTER;
-        else if (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view-2)) return DrawBufferType.INNER;
-        else if (!mapMatrix.InDistancceFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
-        else return DrawBufferType.NONE;
+        NativeList<WorleyCell> cellsInRange = CheckUndiscoveredCells();
+        DiscoverCells(currentMapSquare, cellsInRange);
+        cellsInRange.Dispose();
     }
 
     void UpdateDrawBuffer()
@@ -183,13 +160,49 @@ public class MapManagerSystem : ComponentSystem
         commandBuffer.Playback(entityManager);
 		commandBuffer.Dispose();
 
-		chunks.Dispose();//
+		chunks.Dispose();
 	}
+
+    DrawBufferType GetDrawBuffer(float3 bufferWorldPosition)
+    {
+        float3 centerPosition = mapMatrix.WorldToMatrixPosition(currentMapSquare);
+        float3 bufferPosition = mapMatrix.WorldToMatrixPosition(bufferWorldPosition);
+        int view = TerrainSettings.viewDistance;
+
+        if      (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
+        else if (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view-1)) return DrawBufferType.OUTER;
+        else if (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view-2)) return DrawBufferType.INNER;
+        else if (!mapMatrix.InDistancceFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
+        else return DrawBufferType.NONE;
+    }
 
     void RedrawMapSquare(Entity entity, EntityCommandBuffer commandBuffer)
     {
         entityUtil.TryRemoveSharedComponent<RenderMesh>(entity, commandBuffer);
         entityUtil.TryAddComponent<Tags.DrawMesh>(entity, commandBuffer);
+    }
+
+    NativeList<WorleyCell> CheckUndiscoveredCells()
+    {
+        NativeList<WorleyCell> cellsInRange = new NativeList<WorleyCell>(Allocator.TempJob);
+
+        for(int i = 0; i < undiscoveredCells.Length; i++)
+        {
+            WorleyCell cell = undiscoveredCells[i];
+            if(CellInRange(cell))
+            {
+                cellsInRange.Add(cell);
+                undiscoveredCells.RemoveAtSwapBack(i);
+            }
+        }
+
+        return cellsInRange;
+    } 
+
+    bool CellInRange(WorleyCell cell)
+    {
+        float3 difference = cell.position - currentMapSquare;
+        return (math.abs(difference.x) < 150 && math.abs(difference.z) < 150);
     }
 
     void DiscoverCells(float3 playerPosition, NativeArray<WorleyCell> startCells)
@@ -201,43 +214,31 @@ public class MapManagerSystem : ComponentSystem
         while(cellsToDiscover.Length > 0 && cellSafety < 100)
         {
             cellSafety++;
-            if(cellSafety == 99) Debug.Log("SAFETY HIT!!!!!!!!");
+            if(cellSafety == 99) throw new System.Exception("Maximum 99 while loop iterations exceeded");
 
             NativeList<WorleyCell> newCellsToDiscover = new NativeList<WorleyCell>(Allocator.TempJob);
 
             for(int c = 0; c < cellsToDiscover.Length; c++)
             {
-                NativeList<WorleyCell> newCells = DiscoverCell(cellsToDiscover[c], playerPosition);
+                NativeList<WorleyCell> newCells = DiscoverMapSquares(cellsToDiscover[c], playerPosition);
 
                 for(int i = 0; i < newCells.Length; i++)
-                {
                     if(CellInRange(newCells[i]))
-                    {
                         newCellsToDiscover.Add(newCells[i]);
-                    }
                     else
-                    {
                         undiscoveredCells.Add(newCells[i]);
-                    }
-                }
+
                 newCells.Dispose();
             }
 
-            cellsToDiscover.Clear();
-            cellsToDiscover.AddRange(newCellsToDiscover);
-            newCellsToDiscover.Dispose();
+            cellsToDiscover.Dispose();
+            cellsToDiscover = newCellsToDiscover;
         }
 
         cellsToDiscover.Dispose();
     }
 
-    bool CellInRange(WorleyCell cell)
-    {
-        float3 difference = cell.position - currentMapSquare;
-        return (math.abs(difference.x) < 150 && math.abs(difference.z) < 150);
-    }
-
-    NativeList<WorleyCell> DiscoverCell(WorleyCell cell, float3 playerPosition)
+    NativeList<WorleyCell> DiscoverMapSquares(WorleyCell cell, float3 playerPosition)
     {
         cellMatrix.SetItem(cell, cell.indexFloat);
 
@@ -251,7 +252,7 @@ public class MapManagerSystem : ComponentSystem
         while(positionsToCheck.Length > 0 && squareSafety < 100)
         {
             squareSafety++;
-            if(squareSafety == 99) Debug.Log("SAFETY HIT!!!!!!!!");
+            if(squareSafety == 99)  throw new System.Exception("Maximum 99 while loop iterations exceeded");
 
             NativeList<float3> newPositionsToCheck = new NativeList<float3>(Allocator.Temp);
 
@@ -263,7 +264,6 @@ public class MapManagerSystem : ComponentSystem
                     float3 adjacentSquare = positionsToCheck[p] + (directions[d] * squareWidth);
 
                     Entity mapSquareEntity = GetOrCreateMapSquare(adjacentSquare);
-
                     DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(mapSquareEntity);
 
                     if(uniqueCells.Length == 1 && uniqueCells[0].value == cell.value)
@@ -289,9 +289,8 @@ public class MapManagerSystem : ComponentSystem
                 mapMatrix.SetBool(true, positionsToCheck[p]);
             }
 
-            positionsToCheck.Clear();
-            positionsToCheck.AddRange(newPositionsToCheck);
-            newPositionsToCheck.Dispose();
+            positionsToCheck.Dispose();
+            positionsToCheck = newPositionsToCheck;
         }
 
         positionsToCheck.Dispose();
@@ -336,33 +335,21 @@ public class MapManagerSystem : ComponentSystem
 		entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
         entityUtil.SetDrawBuffer(entity, GetDrawBuffer(worldPosition));
 
+        mapMatrix.SetItem(entity, worldPosition);
+
+        DynamicBuffer<WorleyCell> uniqueWorleyCells = GenerateWorleyData(entity, worldPosition);
+        return entity;
+    }
+
+    DynamicBuffer<WorleyCell> GenerateWorleyData(Entity entity, float3 worldPosition)
+    {
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = GenerateWorleyNoise(entity, worldPosition);
         DynamicBuffer<WorleyCell> uniqueWorleyCells = GetWorleySet(entity, worleyNoiseBuffer);
 
         CustomDebugTools.MarkError(worldPosition, new Color(uniqueWorleyCells[0].value, uniqueWorleyCells[0].value, uniqueWorleyCells[0].value));   //DEBUG
 
-        mapMatrix.SetItem(entity, worldPosition);
-
-        return entity;
+        return uniqueWorleyCells;
     }
-
-    
-
-    /*void SetDrawBuffer(float3 bufferWorldPosition, Entity entity)
-    {
-        float3 centerPosition = mapMatrix.WorldToMatrixPosition(currentMapSquare);
-        float3 positionInMatrix = mapMatrix.WorldToMatrixPosition(bufferWorldPosition);
-        int view = TerrainSettings.viewDistance;
-
-        if      (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view))
-            tags.AddTag<Tags.EdgeBuffer>(entity);
-        else if (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view-1))
-            tags.AddTag<Tags.OuterBuffer>(entity);
-        else if (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view-2))
-            tags.AddTag<Tags.InnerBuffer>(entity);
-        else if (!mapMatrix.InDistancceFromPosition(positionInMatrix, centerPosition, view))
-            tags.AddTag<Tags.EdgeBuffer>(entity);
-    } */
 
     DynamicBuffer<WorleyNoise> GenerateWorleyNoise(Entity entity, float3 position)
     {
