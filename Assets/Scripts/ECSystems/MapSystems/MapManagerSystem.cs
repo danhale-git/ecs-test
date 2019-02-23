@@ -21,8 +21,7 @@ public class MapManagerSystem : ComponentSystem
 	public static Entity playerEntity;
 
     public WorldGridMatrix<Entity> mapMatrix;
-
-    Dictionary<int2, bool> discoveredCells = new Dictionary<int2, bool>();
+    WorldGridMatrix<WorleyCell> cellMatrix;
     
     float3 currentMapSquare;
     float3 previousMapSquare;
@@ -70,15 +69,25 @@ public class MapManagerSystem : ComponentSystem
         int matrixWidth = 1;
 
         mapMatrix = new WorldGridMatrix<Entity>{
-            rootPosition = MapMatrixRootPosition(),
+            rootPosition = MapMatrixRootPosition(),//remove?
             itemWorldSize = squareWidth,
         };
 
         float3 currentSquare = CurrentMapSquare();
-        mapMatrix.ReInitialise(currentSquare, matrixWidth, Allocator.Persistent);
-        DynamicBuffer<WorleyCell> cellsToDiscover = entityManager.GetBuffer<WorleyCell>(NewMapSquare(currentSquare));
 
-        //DiscoverNearbyCells(currentSquare, startPoints, cellsToDiscover.AsNativeArray());
+        //TODO: why this?
+        mapMatrix.ReInitialise(currentSquare, matrixWidth, Allocator.Persistent);
+
+        DynamicBuffer<WorleyCell> cellsToDiscover = entityManager.GetBuffer<WorleyCell>(NewMapSquare(currentSquare));
+        
+        cellMatrix = new WorldGridMatrix<WorleyCell>{
+            rootPosition = cellsToDiscover[0].indexFloat,//remove?
+            itemWorldSize = 1
+        };
+
+        //TODO: why this?
+        cellMatrix.ReInitialise(cellsToDiscover[0].indexFloat, 1, Allocator.Persistent);
+
         DiscoverCells(currentSquare, cellsToDiscover.AsNativeArray());
     }
 
@@ -260,6 +269,8 @@ public class MapManagerSystem : ComponentSystem
 
     NativeList<WorleyCell> DiscoverCell(WorleyCell cell, float3 playerPosition)
     {
+        cellMatrix.SetItem(cell, cell.indexFloat);
+
         NativeList<WorleyCell> newCellsToDiscover = new NativeList<WorleyCell>(Allocator.Temp);
 
         NativeList<float3> positionsToCheck = new NativeList<float3>(Allocator.TempJob);
@@ -326,13 +337,11 @@ public class MapManagerSystem : ComponentSystem
         {
             WorleyCell cell = uniqueCells[i];
 
-            bool discovered = false;
-            discoveredCells.TryGetValue(cell.index, out discovered);
-
-            if(!discovered)
+            if(!cellMatrix.GetBool(cell.indexFloat))
             {
                 newCells.Add(cell);
-                discoveredCells[cell.index] = true;
+                cellMatrix.SetItem(cell, cell.indexFloat);
+                cellMatrix.SetBool(true, cell.indexFloat);
             }
         }
 
@@ -455,6 +464,7 @@ public class MapManagerSystem : ComponentSystem
         WorleyCell setItem = new WorleyCell {
             value = worleyNoise.currentCellValue,
             index = worleyNoise.currentCellIndex,
+            indexFloat = new float3(worleyNoise.currentCellIndex.x, 0, worleyNoise.currentCellIndex.y),
             position = worleyNoise.currentCellPosition
         };
         uniqueCells.Add(setItem);

@@ -68,6 +68,9 @@ public struct WorldGridMatrix<T> where T : struct
 
     public bool GetBool(float3 worldPosition)
     {
+        if(!WorldPositionIsInMatrix(worldPosition))
+            return false;
+            
         int index = WorldPositionToIndex(worldPosition);
         return bools.GetItem(index) > 0 ? true : false;
     }

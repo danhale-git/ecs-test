@@ -3,15 +3,19 @@ using Unity.Collections;
 
 public struct Matrix<T> where T : struct
 {
+    int2 rootPosition;
+
     NativeArray<T> matrix;
     public int width;
     Allocator label;
+
+    public bool initialised{ get{ return matrix.IsCreated; } }
 
     public int Length{ get{ return matrix.Length; } }
 
     public void Dispose()
     {
-        if(matrix.IsCreated)matrix.Dispose();
+        if(matrix.IsCreated) matrix.Dispose();
     }
 
     public void Initialise(int width, Allocator label)
@@ -22,6 +26,10 @@ public struct Matrix<T> where T : struct
         this.label = label;
     }
 
+    public float3 ResizeMatrix(int2 matrixIndex)
+    {
+        return ResizeMatrix(new float3(matrixIndex.x, 0, matrixIndex.y));
+    }
 
     public float3 ResizeMatrix(float3 matrixPosition)
     {
@@ -89,5 +97,9 @@ public struct Matrix<T> where T : struct
     public int PositionToIndex(float3 matrixPosition)
     {
         return Util.Flatten2D(matrixPosition, width);
+    }
+    public int PositionToIndex(int2 matrixPosition)
+    {
+        return Util.Flatten2D(matrixPosition.x, matrixPosition.y, width);
     }
 }
