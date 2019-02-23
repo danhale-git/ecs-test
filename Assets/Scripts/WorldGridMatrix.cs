@@ -6,20 +6,11 @@ public struct WorldGridMatrix<T> where T : struct
     public float3 rootPosition;
     public int itemWorldSize;
 
-    public NativeArray<T> matrix;
-    public NativeArray<sbyte> bools;
+    NativeArray<T> matrix;
+    NativeArray<sbyte> bools;
 
     public int width;
     public Allocator label;
-
-    /*public WorldGridMatrix(float3 rootPosition, int itemWorldSize, int width, Allocator label)
-    {
-        this.rootPosition = rootPosition;
-        this.itemWorldSize = itemWorldSize;
-        matrix = new NativeArray<T>((int)math.pow(width, 2), label);
-        this.width = width;
-        this.label = label;
-    } */
     
     public void Dispose()
     {
@@ -45,10 +36,38 @@ public struct WorldGridMatrix<T> where T : struct
     {
         matrix[index] = item;
     }
+    public void SetItem(T item, float3 worldPosition)
+    {
+        int index = WorldPositionToIndex(worldPosition);
+
+        SetItem(item, index);
+    }
+    public void SetItemAndResizeIfNeeded(T item, float3 worldPosition)
+    {
+        CheckAndResizeMatrix(worldPosition);
+        SetItem(item, worldPosition);
+    }
+
     public T GetItem(int index)
     {
         return matrix[index];
     }
+    public T GetItem(float3 worldPosition)
+    {
+        int index = WorldPositionToIndex(worldPosition);
+		return matrix[index];
+    }
+    public bool TryGetItem(float3 worldPosition, out T item)
+	{
+        if(!WorldPositionIsInMatrix(worldPosition))
+        {
+            item = new T();
+            return false;
+        }
+
+		item = matrix[WorldPositionToIndex(worldPosition)];
+        return true;
+	}
 
     public void SetBool(bool value, int index)
     {
@@ -70,35 +89,6 @@ public struct WorldGridMatrix<T> where T : struct
         return bools[index] > 0 ? true : false;
     }
 
-    public void SetItemFromWorldPosition(T item, float3 worldPosition)
-    {
-        int index = WorldPositionToIndex(worldPosition);
-
-        SetItem(item, index);
-    }
-    public T GetItemFromWorldPosition(float3 worldPosition)
-    {
-        int index = WorldPositionToIndex(worldPosition);
-		return matrix[index];
-    }
-
-    public void SetItemAndResizeIfNeeded(T item, float3 worldPosition)
-    {
-        CheckAndResizeMatrix(worldPosition);
-        SetItemFromWorldPosition(item, worldPosition);
-    }
-
-    public bool TryGetItemFromWorldPosition(float3 worldPosition, out T item)
-	{
-        if(!WorldPositionIsInMatrix(worldPosition))
-        {
-            item = new T();
-            return false;
-        }
-
-		item = matrix[WorldPositionToIndex(worldPosition)];
-        return true;
-	}
 
     public bool WorldPositionIsInMatrix(float3 worldPosition, int offset = 0)
 	{
@@ -125,6 +115,7 @@ public struct WorldGridMatrix<T> where T : struct
 		else
 			return false;
 	}
+
     public bool InDistancceFromPosition(float3 inDistanceFrom, float3 position, int offset)
     {
         if(	inDistanceFrom.x >= position.x - offset &&
@@ -142,29 +133,31 @@ public struct WorldGridMatrix<T> where T : struct
         return InDistancceFromPosition(inDistanceFrom, position, offset);
     }
 
+    public float3 IndexToMatrixPosition(int index)
+    {
+        return Util.Unflatten2D(index, width);
+    }
     public float3 WorldToMatrixPosition(float3 worldPosition)
     {
         return (worldPosition - rootPosition) / itemWorldSize;
+    }
+    
+    public float3 IndexToWorldPosition(int index)
+    {
+        return MatrixToWorldPosition(IndexToMatrixPosition(index));
     }
     public float3 MatrixToWorldPosition(float3 matrixPosition)
     {
         return (matrixPosition * itemWorldSize) + rootPosition;
     }
-    public int WorldPositionToIndex(float3 worldPosition)
-    {
-        return MatrixPositionToIndex(WorldToMatrixPosition(worldPosition));
-    }
-    public float3 IndexToMatrixPosition(int index)
-    {
-        return Util.Unflatten2D(index, width);
-    }
-    public float3 IndexToWorldPosition(int index)
-    {
-        return MatrixToWorldPosition(IndexToMatrixPosition(index));
-    }
+    
     public int MatrixPositionToIndex(float3 matrixPosition)
     {
         return Util.Flatten2D(matrixPosition, width);
+    }
+    public int WorldPositionToIndex(float3 worldPosition)
+    {
+        return MatrixPositionToIndex(WorldToMatrixPosition(worldPosition));
     }
 
     void CheckAndResizeMatrix(float3 worldPosition)

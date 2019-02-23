@@ -155,7 +155,7 @@ public class PlayerInputSystem : ComponentSystem
         float3 previousVoxelOwnerPosition = Util.VoxelOwner(ray.origin, squareWidth);
 
         //  Origin entity does not exist
-        if(!managerSystem.mapMatrix.TryGetItemFromWorldPosition(previousVoxelOwnerPosition, out currentOwner))
+        if(!managerSystem.mapMatrix.TryGetItem(previousVoxelOwnerPosition, out currentOwner))
             throw new Exception("Camera is in non-existent map square");
 
         MapSquare               mapSquare = entityManager.GetComponentData<MapSquare>(currentOwner);
@@ -228,7 +228,7 @@ public class PlayerInputSystem : ComponentSystem
             if(!previousVoxelOwnerPosition.Equals(nextVoxelOwnerPosition))
             {
                 //  Update current map square
-                if(!managerSystem.mapMatrix.TryGetItemFromWorldPosition(nextVoxelOwnerPosition, out currentOwner))
+                if(!managerSystem.mapMatrix.TryGetItem(nextVoxelOwnerPosition, out currentOwner))
                     continue;
 
                 mapSquare   = entityManager.GetComponentData<MapSquare>(currentOwner);

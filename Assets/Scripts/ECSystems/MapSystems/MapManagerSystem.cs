@@ -82,17 +82,6 @@ public class MapManagerSystem : ComponentSystem
 
         //DiscoverNearbyCells(currentSquare, startPoints, cellsToDiscover.AsNativeArray());
         DiscoverCells(currentSquare, cellsToDiscover.AsNativeArray());
-
-        for(int i = 0; i < mapMatrix.matrix.Length; i++)
-        {
-            if(!entityManager.Exists(mapMatrix.matrix[i]))
-            {
-                CustomDebugTools.Cube(Color.red, mapMatrix.IndexToWorldPosition(i));
-            }
-            else
-                CustomDebugTools.Cube(Color.green, mapMatrix.IndexToWorldPosition(i));
-
-        }
     }
 
     protected override void OnDestroyManager()
@@ -368,7 +357,7 @@ public class MapManagerSystem : ComponentSystem
     {
         Entity entity;
 
-        if(!mapMatrix.TryGetItemFromWorldPosition(position, out entity))
+        if(!mapMatrix.TryGetItem(position, out entity))
             return NewMapSquare(position);
         else if(!entityManager.Exists(entity))
             return NewMapSquare(position);
@@ -387,8 +376,6 @@ public class MapManagerSystem : ComponentSystem
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = GenerateWorleyNoise(entity, worldPosition);
 
         DynamicBuffer<UniqueWorleyCells> uniqueWorleyCells = GetWorleySet(entity, worleyNoiseBuffer);
-
-        if(worldPosition.Equals(new float3(-36f, 0f, 24f))) Debug.Log(entityManager.Exists(entity));
 
         CustomDebugTools.MarkError(worldPosition, new Color(uniqueWorleyCells[0].value, uniqueWorleyCells[0].value, uniqueWorleyCells[0].value));   //DEBUG
 
@@ -535,7 +522,7 @@ public class MapManagerSystem : ComponentSystem
     {
         if(mapMatrix.WorldPositionIsInMatrix(mapSquarePosition))
         {
-            Entity adjacent = mapMatrix.GetItemFromWorldPosition(mapSquarePosition);
+            Entity adjacent = mapMatrix.GetItem(mapSquarePosition);
 
             tags.TryAddTag<Tags.GetAdjacentSquares>(adjacent);
         }
