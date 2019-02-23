@@ -14,7 +14,7 @@ public class MapManagerSystem : ComponentSystem
 	enum DrawBufferType { NONE, INNER, OUTER, EDGE }
 
     EntityManager entityManager;
-    TagUtil tags;
+    EntityUtil entityUtil;
 
     int squareWidth;
 
@@ -34,7 +34,7 @@ public class MapManagerSystem : ComponentSystem
 	protected override void OnCreateManager()
     {
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        tags = new TagUtil(entityManager);
+        entityUtil = new EntityUtil(entityManager);
         squareWidth = TerrainSettings.mapSquareWidth;
 
         mapSquareArchetype = entityManager.CreateArchetype(
@@ -148,8 +148,6 @@ public class MapManagerSystem : ComponentSystem
 		ArchetypeChunkEntityType                entityType	    = GetArchetypeChunkEntityType();
 		ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>(true);
 
-        int squareCount = 0;
-
 		for(int c = 0; c < chunks.Length; c++)
 		{
 			ArchetypeChunk chunk = chunks[c];
@@ -162,33 +160,50 @@ public class MapManagerSystem : ComponentSystem
 				Entity entity   = entities[e];
 				float3 position = positions[e].Value;
 
-                bool inCurrentRadius = mapMatrix.InDistanceFromWorldPosition(position, currentMapSquare, TerrainSettings.viewDistance);
+                bool inViewRadius = mapMatrix.InDistanceFromWorldPosition(position, currentMapSquare, TerrainSettings.viewDistance);
 
-                if(inCurrentRadius)
-                {
-                    int matrixIndex = mapMatrix.WorldPositionToIndex(position);
-
-                    DrawBufferType buffer = GetBuffer(position);
-                    UpdateBuffer(entity, buffer, commandBuffer);
-
-                    squareCount++;
-                }
+                if(inViewRadius)
+                    UpdateDrawBuffer(entity, GetBuffer(position), commandBuffer);
                 else
-                {
-                    if(entityManager.HasComponent<RenderMesh>(entity))
-                        commandBuffer.RemoveComponent(entity, typeof(RenderMesh));
-
-                    tags.TryAddTag<Tags.DrawMesh>(entity, commandBuffer);
-                }
+                    RedrawMapSquare(entity, commandBuffer);
 			}
-
-            CustomDebugTools.SetDebugText("Square count", squareCount);
 		}
 
         commandBuffer.Playback(entityManager);
 		commandBuffer.Dispose();
 
 		chunks.Dispose();//
+	}
+
+	void UpdateDrawBuffer(Entity entity, DrawBufferType buffer, EntityCommandBuffer commandBuffer)
+	{
+		switch(buffer)
+		{
+			//	Outer/None buffer changed to inner buffer
+			case DrawBufferType.INNER:
+                if(!entityUtil.TryReplaceComponent<Tags.OuterBuffer, Tags.InnerBuffer>(entity, commandBuffer))
+                    entityUtil.TryAddComponent<Tags.InnerBuffer>(entity, commandBuffer);
+				break;
+
+			//	Edge/Inner buffer changed to outer buffer
+			case DrawBufferType.OUTER:
+                if(!entityUtil.TryReplaceComponent<Tags.EdgeBuffer, Tags.OuterBuffer>(entity, commandBuffer))
+                    entityUtil.TryReplaceComponent<Tags.InnerBuffer, Tags.OuterBuffer>(entity, commandBuffer);
+				break;
+
+			//	Outer buffer changed to edge buffer
+			case DrawBufferType.EDGE:
+                entityUtil.TryReplaceComponent<Tags.OuterBuffer, Tags.EdgeBuffer>(entity, commandBuffer);
+                break;
+
+			//	Not a buffer
+			default:
+                entityUtil.TryRemoveComponent<Tags.EdgeBuffer>(entity, commandBuffer);
+                entityUtil.TryRemoveComponent<Tags.InnerBuffer>(entity, commandBuffer);
+				break;
+		}
+
+        CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
 	}
 
     DrawBufferType GetBuffer(float3 bufferWorldPosition)
@@ -204,36 +219,11 @@ public class MapManagerSystem : ComponentSystem
         else return DrawBufferType.NONE;
     }
 
-	void UpdateBuffer(Entity entity, DrawBufferType buffer, EntityCommandBuffer commandBuffer)
-	{
-		switch(buffer)
-		{
-			//	Outer/None buffer changed to inner buffer
-			case DrawBufferType.INNER:
-                if(!tags.TryReplaceTag<Tags.OuterBuffer, Tags.InnerBuffer>(entity, commandBuffer))
-                    tags.TryAddTag<Tags.InnerBuffer>(entity, commandBuffer);
-				break;
-
-			//	Edge/Inner buffer changed to outer buffer
-			case DrawBufferType.OUTER:
-                if(!tags.TryReplaceTag<Tags.EdgeBuffer, Tags.OuterBuffer>(entity, commandBuffer))
-                    tags.TryReplaceTag<Tags.InnerBuffer, Tags.OuterBuffer>(entity, commandBuffer);
-				break;
-
-			//	Outer buffer changed to edge buffer
-			case DrawBufferType.EDGE:
-                tags.TryReplaceTag<Tags.OuterBuffer, Tags.EdgeBuffer>(entity, commandBuffer);
-                break;
-
-			//	Not a buffer
-			default:
-                tags.TryRemoveTag<Tags.EdgeBuffer>(entity, commandBuffer);
-                tags.TryRemoveTag<Tags.InnerBuffer>(entity, commandBuffer);
-				break;
-		}
-
-        CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
-	}
+    void RedrawMapSquare(Entity entity, EntityCommandBuffer commandBuffer)
+    {
+        entityUtil.TryRemoveSharedComponent<RenderMesh>(entity, commandBuffer);
+        entityUtil.TryAddComponent<Tags.DrawMesh>(entity, commandBuffer);
+    }
 
     void DiscoverCells(float3 playerPosition, NativeArray<WorleyCell> startCells)
     {
@@ -394,13 +384,13 @@ public class MapManagerSystem : ComponentSystem
         switch(buffer)
         {
             case DrawBufferType.INNER:
-                tags.AddTag<Tags.InnerBuffer>(entity);
+                entityUtil.AddComponent<Tags.InnerBuffer>(entity);
                 break;
             case DrawBufferType.OUTER:
-                tags.AddTag<Tags.OuterBuffer>(entity);
+                entityUtil.AddComponent<Tags.OuterBuffer>(entity);
                 break;
             case DrawBufferType.EDGE:
-                tags.AddTag<Tags.EdgeBuffer>(entity);
+                entityUtil.AddComponent<Tags.EdgeBuffer>(entity);
                 break;
             default:
                 break;
@@ -530,7 +520,7 @@ public class MapManagerSystem : ComponentSystem
         {
             Entity adjacent = mapMatrix.GetItem(mapSquarePosition);
 
-            tags.TryAddTag<Tags.GetAdjacentSquares>(adjacent);
+            entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(adjacent);
         }
     }
 }
