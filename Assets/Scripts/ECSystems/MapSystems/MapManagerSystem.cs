@@ -22,6 +22,8 @@ public class MapManagerSystem : ComponentSystem
 
     public WorldGridMatrix<Entity> mapMatrix;
     WorldGridMatrix<WorleyCell> cellMatrix;
+
+    NativeList<WorleyCell> undiscoveredCells;
     
     float3 currentMapSquare;
     float3 previousMapSquare;
@@ -62,6 +64,8 @@ public class MapManagerSystem : ComponentSystem
 
     protected override void OnStartRunning()
     {
+        undiscoveredCells = new NativeList<WorleyCell>(Allocator.Persistent);
+        
         //  Initialise previous square as different to starting square
         float3 offset = (new float3(100, 100, 100) * squareWidth);
         previousMapSquare = CurrentMapSquare() + offset;
@@ -94,6 +98,8 @@ public class MapManagerSystem : ComponentSystem
     protected override void OnDestroyManager()
     {
         mapMatrix.Dispose();
+        cellMatrix.Dispose();
+        undiscoveredCells.Dispose();
     }
 
     /*protected override void OnUpdate()
@@ -123,7 +129,24 @@ public class MapManagerSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
+        currentMapSquare = CurrentMapSquare();
+        if(currentMapSquare.Equals(previousMapSquare))
+            return;
+        else previousMapSquare = currentMapSquare;       
 
+        NativeList<WorleyCell> cellsToDiscover = new NativeList<WorleyCell>(Allocator.TempJob);
+        for(int i = 0; i < undiscoveredCells.Length; i++)
+        {
+            WorleyCell cell = undiscoveredCells[i];
+            if(CellInRange(cell))
+            {
+                cellsToDiscover.Add(cell);
+                undiscoveredCells.RemoveAtSwapBack(i);
+            }
+        }
+
+        DiscoverCells(currentMapSquare, cellsToDiscover);
+        cellsToDiscover.Dispose();
     }
 
     float3 MapMatrixRootPosition()
@@ -246,14 +269,13 @@ public class MapManagerSystem : ComponentSystem
 
                 for(int i = 0; i < newCells.Length; i++)
                 {
-                    float3 difference = newCells[i].position - playerPosition;
-                    if(math.abs(difference.x) < 150 && math.abs(difference.z) < 150)
+                    if(CellInRange(newCells[i]))
                     {
                         newCellsToDiscover.Add(newCells[i]);
                     }
                     else
                     {
-                        //  Check distance next time
+                        undiscoveredCells.Add(newCells[i]);
                     }
                 }
                 newCells.Dispose();
@@ -265,6 +287,12 @@ public class MapManagerSystem : ComponentSystem
         }
 
         cellsToDiscover.Dispose();
+    }
+
+    bool CellInRange(WorleyCell cell)
+    {
+        float3 difference = cell.position - currentMapSquare;
+        return (math.abs(difference.x) < 150 && math.abs(difference.z) < 150);
     }
 
     NativeList<WorleyCell> DiscoverCell(WorleyCell cell, float3 playerPosition)
