@@ -168,13 +168,13 @@ public struct WorldGridMatrix<T> where T : struct
 
         float3 positionInMatrix = WorldToMatrixPosition(worldPosition);
 
-        int oldWith = width;
-
         float3 rootPositionChange = CheckAndAdjustBounds(positionInMatrix);
 
+        //  move the checkandadjustbounds
         rootPosition = rootPosition + (rootPositionChange * itemWorldSize);
 
-        CreateNewMatrix(rootPositionChange, oldWith);
+        matrix.AdjustMatrixSize(rootPositionChange, width);
+        bools.AdjustMatrixSize(rootPositionChange, width);
     }
 
     float3 CheckAndAdjustBounds(float3 positionInMatrix)
@@ -197,32 +197,5 @@ public struct WorldGridMatrix<T> where T : struct
             width += math.max((int)widthChange.x, (int)widthChange.z);
 
         return rootPositionChange;
-    }
-
-    void CreateNewMatrix(float3 rootPositionChange, int oldWidth)
-    {
-        NativeArray<T> newMatrix = new NativeArray<T>((int)math.pow(width, 2), label);
-        NativeArray<sbyte> newBools = new NativeArray<sbyte>((int)math.pow(width, 2), label);
-        float3 positionOffset = rootPositionChange * -1;
-
-        AddOldMatrixWithOffset(positionOffset, oldWidth, newMatrix, newBools);
-    }
-
-    void AddOldMatrixWithOffset(float3 positionOffset, int oldWidth, NativeArray<T> newMatrix, NativeArray<sbyte> newBools)
-    {
-        for(int i = 0; i < matrix.Length(); i++)
-        {
-            float3 oldMatrixPosition = Util.Unflatten2D(i, oldWidth);
-            float3 newMatrixPosition = oldMatrixPosition + positionOffset;
-
-
-            int newMatrixIndex = Util.Flatten2D(newMatrixPosition, width);
-            newMatrix[newMatrixIndex] = matrix.GetItem(i);
-            newBools[newMatrixIndex] = bools.GetItem(i);
-        }
-
-        matrix.SetMatrix(newMatrix);
-
-        bools.SetMatrix(newBools);
-    }
+    } 
 }
