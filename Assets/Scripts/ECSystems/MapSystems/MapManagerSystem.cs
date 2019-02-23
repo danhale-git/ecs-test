@@ -22,7 +22,7 @@ public class MapManagerSystem : ComponentSystem
 
     public WorldGridMatrix<Entity> mapMatrix;
 
-    Dictionary<int2, bool> cellsDiscovered = new Dictionary<int2, bool>();
+    Dictionary<int2, bool> discoveredCells = new Dictionary<int2, bool>();
     
     float3 currentMapSquare;
     float3 previousMapSquare;
@@ -339,12 +339,12 @@ public class MapManagerSystem : ComponentSystem
             WorleyCell cell = uniqueCells[i];
 
             bool discovered = false;
-            cellsDiscovered.TryGetValue(cell.index, out discovered);
+            discoveredCells.TryGetValue(cell.index, out discovered);
 
             if(!discovered)
             {
                 newCells.Add(cell);
-                cellsDiscovered[cell.index] = true;
+                discoveredCells[cell.index] = true;
             }
         }
 
