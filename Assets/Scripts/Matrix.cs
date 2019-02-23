@@ -51,15 +51,14 @@ public struct Matrix<T> where T : struct
         return Util.Flatten2D(matrixPosition, width);
     }
 
-    public void AdjustMatrixSize(float3 rootPositionChange, int newWidth)
+    public void AdjustMatrixSize(float3 rootIndexOffset, int newWidth)
     {
         int oldWidth = width;
         width = newWidth;
 
         NativeArray<T> newMatrix = new NativeArray<T>((int)math.pow(width, 2), label);
-        float3 positionOffset = rootPositionChange * -1;
 
-        AddOldMatrixWithOffset(positionOffset, oldWidth, newMatrix);
+        AddOldMatrixWithOffset(rootIndexOffset, oldWidth, newMatrix);
     }
 
     void AddOldMatrixWithOffset(float3 positionOffset, int oldWidth, NativeArray<T> newMatrix)

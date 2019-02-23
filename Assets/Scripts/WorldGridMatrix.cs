@@ -31,15 +31,11 @@ public struct WorldGridMatrix<T> where T : struct
         return matrix.Length();
     }
 
-    public void SetItem(T item, int index)
-    {
-        matrix.SetItem(item, index);
-    }
     public void SetItem(T item, float3 worldPosition)
     {
         int index = WorldPositionToIndex(worldPosition);
 
-        SetItem(item, index);
+        matrix.SetItem(item, index);
     }
     public void SetItemAndResizeIfNeeded(T item, float3 worldPosition)
     {
@@ -47,10 +43,6 @@ public struct WorldGridMatrix<T> where T : struct
         SetItem(item, worldPosition);
     }
 
-    public T GetItem(int index)
-    {
-        return matrix.GetItem(index);
-    }
     public T GetItem(float3 worldPosition)
     {
         int index = WorldPositionToIndex(worldPosition);
@@ -68,26 +60,17 @@ public struct WorldGridMatrix<T> where T : struct
         return true;
 	}
 
-    public void SetBool(bool value, int index)
-    {
-        bools.SetItem(value ? (sbyte)1 : (sbyte)0, index);
-    }
     public void SetBool(bool value, float3 worldPosition)
     {
         int index = WorldPositionToIndex(worldPosition);
         bools.SetItem(value ? (sbyte)1 : (sbyte)0, index);
     }
 
-    public bool GetBool(int index)
-    {
-        return bools.GetItem(index) > 0 ? true : false;
-    }
     public bool GetBool(float3 worldPosition)
     {
         int index = WorldPositionToIndex(worldPosition);
         return bools.GetItem(index) > 0 ? true : false;
     }
-
 
     public bool WorldPositionIsInMatrix(float3 worldPosition, int offset = 0)
 	{
@@ -166,15 +149,10 @@ public struct WorldGridMatrix<T> where T : struct
             return;
         }
 
-        float3 positionInMatrix = WorldToMatrixPosition(worldPosition);
+        float3 rootIndexOffset = CheckAndAdjustBounds(WorldToMatrixPosition(worldPosition));
 
-        float3 rootPositionChange = CheckAndAdjustBounds(positionInMatrix);
-
-        //  move the checkandadjustbounds
-        rootPosition = rootPosition + (rootPositionChange * itemWorldSize);
-
-        matrix.AdjustMatrixSize(rootPositionChange, width);
-        bools.AdjustMatrixSize(rootPositionChange, width);
+        matrix.AdjustMatrixSize(rootIndexOffset, width);
+        bools.AdjustMatrixSize(rootIndexOffset, width);
     }
 
     float3 CheckAndAdjustBounds(float3 positionInMatrix)
@@ -191,11 +169,15 @@ public struct WorldGridMatrix<T> where T : struct
         if(z < 0) rootPositionChange.z = z;
         else if(z >= width) widthChange.z = z - (width - 1);
 
-        widthChange += (rootPositionChange * -1);
+        float3 rootIndexOffset = rootPositionChange * -1;
+
+        widthChange += rootIndexOffset;
 
         if(widthChange.x+widthChange.z > 0)
             width += math.max((int)widthChange.x, (int)widthChange.z);
 
-        return rootPositionChange;
+        rootPosition = rootPosition + (rootPositionChange * itemWorldSize);        
+
+        return rootIndexOffset;
     } 
 }
