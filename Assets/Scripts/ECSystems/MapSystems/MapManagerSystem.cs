@@ -259,7 +259,19 @@ public class MapManagerSystem : ComponentSystem
             for(int c = 0; c < cellsToDiscover.Length; c++)
             {
                 NativeList<UniqueWorleyCells> newCells = DiscoverCell(cellsToDiscover[c], playerPosition);
-                newCellsToDiscover.AddRange(newCells);
+
+                for(int i = 0; i < newCells.Length; i++)
+                {
+                    float3 difference = newCells[i].position - playerPosition;
+                    if(math.abs(difference.x) < 150 && math.abs(difference.z) < 150)
+                    {
+                        newCellsToDiscover.Add(newCells[i]);
+                    }
+                    else
+                    {
+                        //  Check distance next time
+                    }
+                }
                 newCells.Dispose();
             }
 
@@ -312,7 +324,7 @@ public class MapManagerSystem : ComponentSystem
                         }
                     }
 
-                    NativeList<UniqueWorleyCells> newCells = FindNewCells(uniqueCells, playerPosition);
+                    NativeList<UniqueWorleyCells> newCells = OnlyNewCells(uniqueCells, playerPosition);
                     
                     newCellsToDiscover.AddRange(newCells);
                     newCells.Dispose();
@@ -331,7 +343,7 @@ public class MapManagerSystem : ComponentSystem
         return newCellsToDiscover;
     }
 
-    NativeList<UniqueWorleyCells> FindNewCells(DynamicBuffer<UniqueWorleyCells> uniqueCells, float3 playerPosition)
+    NativeList<UniqueWorleyCells> OnlyNewCells(DynamicBuffer<UniqueWorleyCells> uniqueCells, float3 playerPosition)
     {
         NativeList<UniqueWorleyCells> newCells = new NativeList<UniqueWorleyCells>(Allocator.TempJob);
 
@@ -339,22 +351,14 @@ public class MapManagerSystem : ComponentSystem
         {
             UniqueWorleyCells cell = uniqueCells[i];
 
-            float3 difference = cell.position - playerPosition;
             bool discovered = false;
             cellsDiscovered.TryGetValue(cell.index, out discovered);
 
             if(!discovered)
             {
-                if(math.abs(difference.x) < 150 && math.abs(difference.z) < 150)
-                {
-                    newCells.Add(cell);
-
-                    cellsDiscovered[cell.index] = true;
-                }
+                newCells.Add(cell);
+                cellsDiscovered[cell.index] = true;
             }
-
-            
-
         }
 
         return newCells;
