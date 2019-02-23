@@ -95,37 +95,26 @@ public class MapManagerSystem : ComponentSystem
         DiscoverCells(currentSquare, cellsToDiscover.AsNativeArray());
     }
 
+    
+
+    float3 MapMatrixRootPosition()
+    {
+        int offset = TerrainSettings.viewDistance * squareWidth;
+        return new float3(currentMapSquare.x - offset, 0, currentMapSquare.z - offset);
+    }
+
+    float3 CurrentMapSquare()
+    {
+        float3 playerPosition = entityManager.GetComponentData<Position>(playerEntity).Value;
+        return Util.VoxelOwner(playerPosition, squareWidth);
+    }
+
     protected override void OnDestroyManager()
     {
         mapMatrix.Dispose();
         cellMatrix.Dispose();
         undiscoveredCells.Dispose();
     }
-
-    /*protected override void OnUpdate()
-    {
-        currentMapSquare = CurrentMapSquare();
-
-        if(currentMapSquare.Equals(previousMapSquare))
-            return;
-
-        mapMatrix.ReInitialise(MapMatrixRootPosition());
-
-        NativeList<Entity> squaresToRemove;
-
-        NativeArray<int> alreadyExists;
-
-        CheckAndUpdateMapSquares(out squaresToRemove, out alreadyExists);
-
-        CreateMapSquares(alreadyExists);
-
-        RemoveMapSquares(squaresToRemove);
-
-        squaresToRemove.Dispose();
-        alreadyExists.Dispose();
-
-        previousMapSquare = currentMapSquare;
-    } */
 
     protected override void OnUpdate()
     {
@@ -134,7 +123,7 @@ public class MapManagerSystem : ComponentSystem
             return;
         else previousMapSquare = currentMapSquare;
 
-        CheckAndUpdateMapSquares();      
+        UpdateDrawBuffer();      
 
         NativeList<WorleyCell> cellsToDiscover = new NativeList<WorleyCell>(Allocator.TempJob);
         for(int i = 0; i < undiscoveredCells.Length; i++)
@@ -151,19 +140,7 @@ public class MapManagerSystem : ComponentSystem
         cellsToDiscover.Dispose();
     }
 
-    float3 MapMatrixRootPosition()
-    {
-        int offset = TerrainSettings.viewDistance * squareWidth;
-        return new float3(currentMapSquare.x - offset, 0, currentMapSquare.z - offset);
-    }
-
-    float3 CurrentMapSquare()
-    {
-        float3 playerPosition = entityManager.GetComponentData<Position>(playerEntity).Value;
-        return Util.VoxelOwner(playerPosition, squareWidth);
-    }
-
-    void CheckAndUpdateMapSquares()
+    void UpdateDrawBuffer()
 	{
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
 		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);
