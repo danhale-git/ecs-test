@@ -9,6 +9,8 @@ public struct WorldGridMatrix<T> where T : struct
     Matrix<T> matrix;
     Matrix<sbyte> bools;
 
+    public int Length{ get{ return matrix.Length; } }
+
     public void Dispose()
     {
         matrix.Dispose();
@@ -23,15 +25,18 @@ public struct WorldGridMatrix<T> where T : struct
         rootPosition = newRootPosition;
     } 
 
-    public int Length()
+    void ResizeMatrices(float3 worldPosition)
     {
-        return matrix.Length();
+        float3 rootPositionChange = matrix.ResizeMatrix(WorldToMatrixPosition(worldPosition));
+        bools.ResizeMatrix(WorldToMatrixPosition(worldPosition));
+
+        rootPosition = rootPosition + (rootPositionChange * itemWorldSize);
     }
 
     public void SetItem(T item, float3 worldPosition)
     {
         if(!WorldPositionIsInMatrix(worldPosition))
-            ResizeMatrix(worldPosition);
+            ResizeMatrices(worldPosition);
 
         int index = WorldPositionToIndex(worldPosition);
         matrix.SetItem(item, index);
@@ -42,6 +47,7 @@ public struct WorldGridMatrix<T> where T : struct
         int index = WorldPositionToIndex(worldPosition);
 		return matrix.GetItem(index);
     }
+
     public bool TryGetItem(float3 worldPosition, out T item)
 	{
         if(!WorldPositionIsInMatrix(worldPosition))
@@ -108,11 +114,12 @@ public struct WorldGridMatrix<T> where T : struct
         float3 position = WorldToMatrixPosition(positionWorld);
         return InDistancceFromPosition(inDistanceFrom, position, offset);
     }
-
-    public float3 IndexToMatrixPosition(int index)
+    
+    public int WorldPositionToIndex(float3 worldPosition)
     {
-        return Util.Unflatten2D(index, matrix.width);
+        return matrix.MatrixPositionToIndex(WorldToMatrixPosition(worldPosition));
     }
+
     public float3 WorldToMatrixPosition(float3 worldPosition)
     {
         return (worldPosition - rootPosition) / itemWorldSize;
@@ -120,48 +127,10 @@ public struct WorldGridMatrix<T> where T : struct
     
     public float3 IndexToWorldPosition(int index)
     {
-        return MatrixToWorldPosition(IndexToMatrixPosition(index));
+        return MatrixToWorldPosition(matrix.IndexToMatrixPosition(index));
     }
     public float3 MatrixToWorldPosition(float3 matrixPosition)
     {
         return (matrixPosition * itemWorldSize) + rootPosition;
-    }
-    
-    public int MatrixPositionToIndex(float3 matrixPosition)
-    {
-        return Util.Flatten2D(matrixPosition, matrix.width);
-    }
-    public int WorldPositionToIndex(float3 worldPosition)
-    {
-        return MatrixPositionToIndex(WorldToMatrixPosition(worldPosition));
-    }
-
-    void ResizeMatrix(float3 worldPosition)
-    {
-        float3 positionInMatrix = WorldToMatrixPosition(worldPosition);
-
-        int width = matrix.width;
-
-        int x = (int)positionInMatrix.x;
-        int z = (int)positionInMatrix.z;
-
-        float3 rootPositionChange = float3.zero;
-        float3 widthChange = float3.zero;
-
-        if(x < 0) rootPositionChange.x = x;
-        else if(x >= width) widthChange.x = x - (width - 1);
-
-        if(z < 0) rootPositionChange.z = z;
-        else if(z >= width) widthChange.z = z - (width - 1);
-
-        float3 rootIndexOffset = rootPositionChange * -1;
-        this.rootPosition = rootPosition + (rootPositionChange * itemWorldSize);
-
-        widthChange += rootIndexOffset;
-        if(widthChange.x+widthChange.z > 0)
-            width += math.max((int)widthChange.x, (int)widthChange.z);
-
-        matrix.AdjustMatrixSize(rootIndexOffset, width);
-        bools.AdjustMatrixSize(rootIndexOffset, width);
     }
 }

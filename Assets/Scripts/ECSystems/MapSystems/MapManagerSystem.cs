@@ -366,20 +366,17 @@ public class MapManagerSystem : ComponentSystem
     Entity NewMapSquare(float3 worldPosition)
     {
         float3      matrixPosition  = mapMatrix.WorldToMatrixPosition(worldPosition);
-        MapBuffer   buffer          = GetBuffer(matrixPosition);
-        int         matrixIndex     = mapMatrix.MatrixPositionToIndex(matrixPosition);
+        MapBuffer   drawBuffer          = GetBuffer(matrixPosition);
 
         Entity entity = CreateMapSquareAtPosition(worldPosition);
 
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = GenerateWorleyNoise(entity, worldPosition);
-
         DynamicBuffer<WorleyCell> uniqueWorleyCells = GetWorleySet(entity, worleyNoiseBuffer);
 
         CustomDebugTools.MarkError(worldPosition, new Color(uniqueWorleyCells[0].value, uniqueWorleyCells[0].value, uniqueWorleyCells[0].value));   //DEBUG
 
         mapMatrix.SetItem(entity, worldPosition);
-
-        SetMapBuffer(entity, buffer);
+        SetMapBuffer(entity, drawBuffer);
 
         return entity;
     }
