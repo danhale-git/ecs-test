@@ -11,7 +11,7 @@ using MyComponents;
 [AlwaysUpdateSystem]
 public class MapManagerSystem : ComponentSystem
 {
-	enum MapBuffer { NONE, INNER, OUTER, EDGE }
+	enum DrawBufferType { NONE, INNER, OUTER, EDGE }
 
     EntityManager entityManager;
     TagUtil tags;
@@ -129,16 +129,16 @@ public class MapManagerSystem : ComponentSystem
         return Util.VoxelOwner(playerPosition, squareWidth);
     }
 
-    MapBuffer GetBuffer(float3 positionInMatrix)
+    DrawBufferType GetBuffer(float3 positionInMatrix)
     {
         float3 centerPosition = mapMatrix.WorldToMatrixPosition(currentMapSquare);
         int view = TerrainSettings.viewDistance;
 
-        if      (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view)) return MapBuffer.EDGE;
-        else if (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view-1)) return MapBuffer.OUTER;
-        else if (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view-2)) return MapBuffer.INNER;
-        else if (!mapMatrix.InDistancceFromPosition(positionInMatrix, centerPosition, view)) return MapBuffer.EDGE;
-        else return MapBuffer.NONE;
+        if      (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view)) return DrawBufferType.EDGE;
+        else if (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view-1)) return DrawBufferType.OUTER;
+        else if (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view-2)) return DrawBufferType.INNER;
+        else if (!mapMatrix.InDistancceFromPosition(positionInMatrix, centerPosition, view)) return DrawBufferType.EDGE;
+        else return DrawBufferType.NONE;
     }
 
     /*void CheckAndUpdateMapSquares(out NativeList<Entity> toRemove, out NativeArray<int> alreadyExists)
@@ -199,24 +199,24 @@ public class MapManagerSystem : ComponentSystem
 		chunks.Dispose();//
 	} */
 
-	void UpdateBuffer(Entity entity, MapBuffer buffer, EntityCommandBuffer commandBuffer)
+	void UpdateBuffer(Entity entity, DrawBufferType buffer, EntityCommandBuffer commandBuffer)
 	{
 		switch(buffer)
 		{
 			//	Outer/None buffer changed to inner buffer
-			case MapBuffer.INNER:
+			case DrawBufferType.INNER:
                 if(!tags.TryReplaceTag<Tags.OuterBuffer, Tags.InnerBuffer>(entity, commandBuffer))
                     tags.TryAddTag<Tags.InnerBuffer>(entity, commandBuffer);
 				break;
 
 			//	Edge/Inner buffer changed to outer buffer
-			case MapBuffer.OUTER:
+			case DrawBufferType.OUTER:
                 if(!tags.TryReplaceTag<Tags.EdgeBuffer, Tags.OuterBuffer>(entity, commandBuffer))
                     tags.TryReplaceTag<Tags.InnerBuffer, Tags.OuterBuffer>(entity, commandBuffer);
 				break;
 
 			//	Outer buffer changed to edge buffer
-			case MapBuffer.EDGE:
+			case DrawBufferType.EDGE:
                 tags.TryReplaceTag<Tags.OuterBuffer, Tags.EdgeBuffer>(entity, commandBuffer);
                 break;
 
@@ -366,7 +366,7 @@ public class MapManagerSystem : ComponentSystem
     Entity NewMapSquare(float3 worldPosition)
     {
         float3      matrixPosition  = mapMatrix.WorldToMatrixPosition(worldPosition);
-        MapBuffer   drawBuffer          = GetBuffer(matrixPosition);
+        DrawBufferType   drawBuffer          = GetBuffer(matrixPosition);
 
         Entity entity = CreateMapSquareAtPosition(worldPosition);
 
@@ -465,22 +465,22 @@ public class MapManagerSystem : ComponentSystem
         uniqueCells.Add(setItem);
     }
 
-    void SetMapBuffer(Entity entity, MapBuffer buffer)
+    void SetMapBuffer(Entity entity, DrawBufferType buffer)
     {
         switch(buffer)
         {
             //	Is inner buffer
-            case MapBuffer.INNER:
+            case DrawBufferType.INNER:
                 tags.AddTag<Tags.InnerBuffer>(entity);
                 break;
 
             //	Is outer buffer
-            case MapBuffer.OUTER:
+            case DrawBufferType.OUTER:
                 tags.AddTag<Tags.OuterBuffer>(entity);
                 break;
 
             //	Is edge buffer
-            case MapBuffer.EDGE:
+            case DrawBufferType.EDGE:
                 tags.AddTag<Tags.EdgeBuffer>(entity);
                 break;
 
