@@ -70,6 +70,14 @@ public class MapAdjacentSystem : ComponentSystem
 					backLeft 	= managerSystem.mapMatrix.GetItemFromWorldPosition(position + adjacentPositions[7])
 				};
 
+				for(int i = 0; i < 8; i++)
+				{
+					if(!entityManager.Exists(adjacent[i]))
+					{
+						//Debug.Log(position + (Util.CardinalDirections()[i] * squareWidth));
+					}
+				} 
+
 				if(entityManager.HasComponent<AdjacentSquares>(entity))
 					commandBuffer.SetComponent<AdjacentSquares>(entity, adjacent);
 				else

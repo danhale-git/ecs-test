@@ -78,7 +78,8 @@ public struct WorldGridMatrix<T> where T : struct
     }
     public T GetItemFromWorldPosition(float3 worldPosition)
     {
-		return matrix[WorldPositionToIndex(worldPosition)];
+        int index = WorldPositionToIndex(worldPosition);
+		return matrix[index];
     }
 
     public void SetItemAndResizeIfNeeded(T item, float3 worldPosition)
@@ -156,6 +157,10 @@ public struct WorldGridMatrix<T> where T : struct
     public float3 IndexToMatrixPosition(int index)
     {
         return Util.Unflatten2D(index, width);
+    }
+    public float3 IndexToWorldPosition(int index)
+    {
+        return MatrixToWorldPosition(IndexToMatrixPosition(index));
     }
     public int MatrixPositionToIndex(float3 matrixPosition)
     {

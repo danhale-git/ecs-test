@@ -150,6 +150,21 @@ public static class CustomDebugTools
         mapSquareLines[2][manager.CreateEntity()] = errorCuboid;
     }
 
+    //  allLines[2]
+    public static void MarkError(float3 position, Color color, EntityCommandBuffer commandBuffer)
+    {
+        List<DebugLine> errorCuboid = CreateBox(
+            new float3(position.x, 0, position.z),
+            squareWidth,
+            color,
+            TerrainSettings.terrainHeight,
+            0,
+            noSides: false
+        );
+
+        mapSquareLines[2][commandBuffer.CreateEntity()] = errorCuboid;
+    }
+
     public static void Line(float3 start, float3 end, Color color)
     {
         lines.Add(new DebugLine(start, end, color));
