@@ -56,4 +56,55 @@ public struct EntityUtil
         }
         else return false;
     }
+
+    public void UpdateDrawBuffer(Entity entity, MapManagerSystem.DrawBufferType buffer, EntityCommandBuffer commandBuffer)
+	{
+		switch(buffer)
+		{
+			//	Outer/None buffer changed to inner buffer
+			case MapManagerSystem.DrawBufferType.INNER:
+                if(!TryReplaceComponent<Tags.OuterBuffer, Tags.InnerBuffer>(entity, commandBuffer))
+                    TryAddComponent<Tags.InnerBuffer>(entity, commandBuffer);
+				break;
+
+			//	Edge/Inner buffer changed to outer buffer
+			case MapManagerSystem.DrawBufferType.OUTER:
+                if(!TryReplaceComponent<Tags.EdgeBuffer, Tags.OuterBuffer>(entity, commandBuffer))
+                    TryReplaceComponent<Tags.InnerBuffer, Tags.OuterBuffer>(entity, commandBuffer);
+				break;
+
+			//	Outer buffer changed to edge buffer
+			case MapManagerSystem.DrawBufferType.EDGE:
+                TryReplaceComponent<Tags.OuterBuffer, Tags.EdgeBuffer>(entity, commandBuffer);
+                break;
+
+			//	Not a buffer
+			default:
+                TryRemoveComponent<Tags.EdgeBuffer>(entity, commandBuffer);
+                TryRemoveComponent<Tags.InnerBuffer>(entity, commandBuffer);
+				break;
+		}
+
+        CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
+	}
+
+    public void SetDrawBuffer(Entity entity, MapManagerSystem.DrawBufferType buffer)
+    {
+        switch(buffer)
+        {
+            case MapManagerSystem.DrawBufferType.INNER:
+                AddComponent<Tags.InnerBuffer>(entity);
+                break;
+            case MapManagerSystem.DrawBufferType.OUTER:
+                AddComponent<Tags.OuterBuffer>(entity);
+                break;
+            case MapManagerSystem.DrawBufferType.EDGE:
+                AddComponent<Tags.EdgeBuffer>(entity);
+                break;
+            default:
+                break;
+        }
+
+        CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
+    }
 }

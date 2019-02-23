@@ -11,7 +11,7 @@ using MyComponents;
 [AlwaysUpdateSystem]
 public class MapManagerSystem : ComponentSystem
 {
-	enum DrawBufferType { NONE, INNER, OUTER, EDGE }
+	public enum DrawBufferType { NONE, INNER, OUTER, EDGE }
 
     EntityManager entityManager;
     EntityUtil entityUtil;
@@ -95,8 +95,6 @@ public class MapManagerSystem : ComponentSystem
         DiscoverCells(currentSquare, cellsToDiscover.AsNativeArray());
     }
 
-    
-
     float3 MapMatrixRootPosition()
     {
         int offset = TerrainSettings.viewDistance * squareWidth;
@@ -140,6 +138,19 @@ public class MapManagerSystem : ComponentSystem
         cellsToDiscover.Dispose();
     }
 
+    DrawBufferType GetDrawBuffer(float3 bufferWorldPosition)
+    {
+        float3 centerPosition = mapMatrix.WorldToMatrixPosition(currentMapSquare);
+        float3 bufferPosition = mapMatrix.WorldToMatrixPosition(bufferWorldPosition);
+        int view = TerrainSettings.viewDistance;
+
+        if      (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
+        else if (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view-1)) return DrawBufferType.OUTER;
+        else if (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view-2)) return DrawBufferType.INNER;
+        else if (!mapMatrix.InDistancceFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
+        else return DrawBufferType.NONE;
+    }
+
     void UpdateDrawBuffer()
 	{
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
@@ -163,7 +174,7 @@ public class MapManagerSystem : ComponentSystem
                 bool inViewRadius = mapMatrix.InDistanceFromWorldPosition(position, currentMapSquare, TerrainSettings.viewDistance);
 
                 if(inViewRadius)
-                    UpdateDrawBuffer(entity, GetBuffer(position), commandBuffer);
+                    entityUtil.UpdateDrawBuffer(entity, GetDrawBuffer(position), commandBuffer);
                 else
                     RedrawMapSquare(entity, commandBuffer);
 			}
@@ -174,50 +185,6 @@ public class MapManagerSystem : ComponentSystem
 
 		chunks.Dispose();//
 	}
-
-	void UpdateDrawBuffer(Entity entity, DrawBufferType buffer, EntityCommandBuffer commandBuffer)
-	{
-		switch(buffer)
-		{
-			//	Outer/None buffer changed to inner buffer
-			case DrawBufferType.INNER:
-                if(!entityUtil.TryReplaceComponent<Tags.OuterBuffer, Tags.InnerBuffer>(entity, commandBuffer))
-                    entityUtil.TryAddComponent<Tags.InnerBuffer>(entity, commandBuffer);
-				break;
-
-			//	Edge/Inner buffer changed to outer buffer
-			case DrawBufferType.OUTER:
-                if(!entityUtil.TryReplaceComponent<Tags.EdgeBuffer, Tags.OuterBuffer>(entity, commandBuffer))
-                    entityUtil.TryReplaceComponent<Tags.InnerBuffer, Tags.OuterBuffer>(entity, commandBuffer);
-				break;
-
-			//	Outer buffer changed to edge buffer
-			case DrawBufferType.EDGE:
-                entityUtil.TryReplaceComponent<Tags.OuterBuffer, Tags.EdgeBuffer>(entity, commandBuffer);
-                break;
-
-			//	Not a buffer
-			default:
-                entityUtil.TryRemoveComponent<Tags.EdgeBuffer>(entity, commandBuffer);
-                entityUtil.TryRemoveComponent<Tags.InnerBuffer>(entity, commandBuffer);
-				break;
-		}
-
-        CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
-	}
-
-    DrawBufferType GetBuffer(float3 bufferWorldPosition)
-    {
-        float3 centerPosition = mapMatrix.WorldToMatrixPosition(currentMapSquare);
-        float3 bufferPosition = mapMatrix.WorldToMatrixPosition(bufferWorldPosition);
-        int view = TerrainSettings.viewDistance;
-
-        if      (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
-        else if (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view-1)) return DrawBufferType.OUTER;
-        else if (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view-2)) return DrawBufferType.INNER;
-        else if (!mapMatrix.InDistancceFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
-        else return DrawBufferType.NONE;
-    }
 
     void RedrawMapSquare(Entity entity, EntityCommandBuffer commandBuffer)
     {
@@ -367,7 +334,7 @@ public class MapManagerSystem : ComponentSystem
     {
         Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 		entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
-        SetDrawBuffer(entity, GetBuffer(worldPosition));
+        entityUtil.SetDrawBuffer(entity, GetDrawBuffer(worldPosition));
 
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = GenerateWorleyNoise(entity, worldPosition);
         DynamicBuffer<WorleyCell> uniqueWorleyCells = GetWorleySet(entity, worleyNoiseBuffer);
@@ -379,25 +346,7 @@ public class MapManagerSystem : ComponentSystem
         return entity;
     }
 
-    void SetDrawBuffer(Entity entity, DrawBufferType buffer)
-    {
-        switch(buffer)
-        {
-            case DrawBufferType.INNER:
-                entityUtil.AddComponent<Tags.InnerBuffer>(entity);
-                break;
-            case DrawBufferType.OUTER:
-                entityUtil.AddComponent<Tags.OuterBuffer>(entity);
-                break;
-            case DrawBufferType.EDGE:
-                entityUtil.AddComponent<Tags.EdgeBuffer>(entity);
-                break;
-            default:
-                break;
-        }
-
-        CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
-    }
+    
 
     /*void SetDrawBuffer(float3 bufferWorldPosition, Entity entity)
     {
