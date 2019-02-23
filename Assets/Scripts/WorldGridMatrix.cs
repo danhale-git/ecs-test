@@ -7,7 +7,7 @@ public struct WorldGridMatrix<T> where T : struct
     public int itemWorldSize;
 
     Matrix<T> matrix;
-    NativeArray<sbyte> bools;
+    Matrix<sbyte> bools;
 
     public int width;
     public Allocator label;
@@ -15,13 +15,13 @@ public struct WorldGridMatrix<T> where T : struct
     public void Dispose()
     {
         matrix.Dispose();
-        if(bools.IsCreated)bools.Dispose();
+        bools.Dispose();
     }
 
     public void ReInitialise(float3 newRootPosition)
     {
         matrix.Initialise(width, label); 
-        bools = new NativeArray<sbyte>(matrix.Length(), label);   
+        bools.Initialise(width, label); 
 
         rootPosition = newRootPosition;
     } 
@@ -70,22 +70,22 @@ public struct WorldGridMatrix<T> where T : struct
 
     public void SetBool(bool value, int index)
     {
-        bools[index] = value ? (sbyte)1 : (sbyte)0;
+        bools.SetItem(value ? (sbyte)1 : (sbyte)0, index);
     }
     public void SetBool(bool value, float3 worldPosition)
     {
         int index = WorldPositionToIndex(worldPosition);
-        bools[index] = value ? (sbyte)1 : (sbyte)0;
+        bools.SetItem(value ? (sbyte)1 : (sbyte)0, index);
     }
 
     public bool GetBool(int index)
     {
-        return bools[index] > 0 ? true : false;
+        return bools.GetItem(index) > 0 ? true : false;
     }
     public bool GetBool(float3 worldPosition)
     {
         int index = WorldPositionToIndex(worldPosition);
-        return bools[index] > 0 ? true : false;
+        return bools.GetItem(index) > 0 ? true : false;
     }
 
 
@@ -174,9 +174,7 @@ public struct WorldGridMatrix<T> where T : struct
 
         rootPosition = rootPosition + (rootPositionChange * itemWorldSize);
 
-        NativeArray<T> newMatrix = CreateNewMatrix(rootPositionChange, oldWith);
-
-        
+        CreateNewMatrix(rootPositionChange, oldWith);
     }
 
     float3 CheckAndAdjustBounds(float3 positionInMatrix)
@@ -201,15 +199,13 @@ public struct WorldGridMatrix<T> where T : struct
         return rootPositionChange;
     }
 
-    NativeArray<T> CreateNewMatrix(float3 rootPositionChange, int oldWidth)
+    void CreateNewMatrix(float3 rootPositionChange, int oldWidth)
     {
         NativeArray<T> newMatrix = new NativeArray<T>((int)math.pow(width, 2), label);
         NativeArray<sbyte> newBools = new NativeArray<sbyte>((int)math.pow(width, 2), label);
         float3 positionOffset = rootPositionChange * -1;
 
         AddOldMatrixWithOffset(positionOffset, oldWidth, newMatrix, newBools);
-
-        return newMatrix;
     }
 
     void AddOldMatrixWithOffset(float3 positionOffset, int oldWidth, NativeArray<T> newMatrix, NativeArray<sbyte> newBools)
@@ -222,12 +218,11 @@ public struct WorldGridMatrix<T> where T : struct
 
             int newMatrixIndex = Util.Flatten2D(newMatrixPosition, width);
             newMatrix[newMatrixIndex] = matrix.GetItem(i);
-            newBools[newMatrixIndex] = bools[i];
+            newBools[newMatrixIndex] = bools.GetItem(i);
         }
 
-        matrix.Set(newMatrix);
+        matrix.SetMatrix(newMatrix);
 
-        bools.Dispose();
-        bools = newBools;
+        bools.SetMatrix(newBools);
     }
 }

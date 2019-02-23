@@ -17,7 +17,7 @@ public struct Matrix<T> where T : struct
         matrix = new NativeArray<T>((int)math.pow(width, 2), label); 
     }
 
-    public void Set(NativeArray<T> newMatrix)
+    public void SetMatrix(NativeArray<T> newMatrix)
     {
         Dispose();
         matrix = newMatrix;
