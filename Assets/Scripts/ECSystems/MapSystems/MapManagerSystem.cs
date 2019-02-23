@@ -129,18 +129,6 @@ public class MapManagerSystem : ComponentSystem
         return Util.VoxelOwner(playerPosition, squareWidth);
     }
 
-    DrawBufferType GetBuffer(float3 positionInMatrix)
-    {
-        float3 centerPosition = mapMatrix.WorldToMatrixPosition(currentMapSquare);
-        int view = TerrainSettings.viewDistance;
-
-        if      (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view)) return DrawBufferType.EDGE;
-        else if (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view-1)) return DrawBufferType.OUTER;
-        else if (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view-2)) return DrawBufferType.INNER;
-        else if (!mapMatrix.InDistancceFromPosition(positionInMatrix, centerPosition, view)) return DrawBufferType.EDGE;
-        else return DrawBufferType.NONE;
-    }
-
     /*void CheckAndUpdateMapSquares(out NativeList<Entity> toRemove, out NativeArray<int> alreadyExists)
 	{
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
@@ -365,10 +353,9 @@ public class MapManagerSystem : ComponentSystem
 
     Entity NewMapSquare(float3 worldPosition)
     {
-        float3      matrixPosition  = mapMatrix.WorldToMatrixPosition(worldPosition);
-        DrawBufferType   drawBuffer          = GetBuffer(matrixPosition);
-
-        Entity entity = CreateMapSquareAtPosition(worldPosition);
+        Entity entity = entityManager.CreateEntity(mapSquareArchetype);
+		entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
+        SetDrawBuffer(worldPosition, entity);
 
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = GenerateWorleyNoise(entity, worldPosition);
         DynamicBuffer<WorleyCell> uniqueWorleyCells = GetWorleySet(entity, worleyNoiseBuffer);
@@ -376,16 +363,24 @@ public class MapManagerSystem : ComponentSystem
         CustomDebugTools.MarkError(worldPosition, new Color(uniqueWorleyCells[0].value, uniqueWorleyCells[0].value, uniqueWorleyCells[0].value));   //DEBUG
 
         mapMatrix.SetItem(entity, worldPosition);
-        SetMapBuffer(entity, drawBuffer);
 
         return entity;
     }
 
-    Entity CreateMapSquareAtPosition(float3 worldPosition)
+    void SetDrawBuffer(float3 bufferWorldPosition, Entity entity)
     {
-        Entity entity = entityManager.CreateEntity(mapSquareArchetype);
-		entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
-        return entity;
+        float3 centerPosition = mapMatrix.WorldToMatrixPosition(currentMapSquare);
+        float3 positionInMatrix = mapMatrix.WorldToMatrixPosition(bufferWorldPosition);
+        int view = TerrainSettings.viewDistance;
+
+        if      (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view))
+            tags.AddTag<Tags.EdgeBuffer>(entity);
+        else if (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view-1))
+            tags.AddTag<Tags.OuterBuffer>(entity);
+        else if (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view-2))
+            tags.AddTag<Tags.InnerBuffer>(entity);
+        else if (!mapMatrix.InDistancceFromPosition(positionInMatrix, centerPosition, view))
+            tags.AddTag<Tags.EdgeBuffer>(entity);
     }
 
     DynamicBuffer<WorleyNoise> GenerateWorleyNoise(Entity entity, float3 position)
@@ -463,33 +458,6 @@ public class MapManagerSystem : ComponentSystem
             position = worleyNoise.currentCellPosition
         };
         uniqueCells.Add(setItem);
-    }
-
-    void SetMapBuffer(Entity entity, DrawBufferType buffer)
-    {
-        switch(buffer)
-        {
-            //	Is inner buffer
-            case DrawBufferType.INNER:
-                tags.AddTag<Tags.InnerBuffer>(entity);
-                break;
-
-            //	Is outer buffer
-            case DrawBufferType.OUTER:
-                tags.AddTag<Tags.OuterBuffer>(entity);
-                break;
-
-            //	Is edge buffer
-            case DrawBufferType.EDGE:
-                tags.AddTag<Tags.EdgeBuffer>(entity);
-                break;
-
-            //	Is not a buffer
-            default:
-                break;
-        }
-
-        CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
     }
 
     void RemoveMapSquares(NativeList<Entity> squaresToRemove)
