@@ -137,7 +137,7 @@ public class PlayerInputSystem : ComponentSystem
             CustomDebugTools.Cube(Color.red, position);
         }
 
-        DynamicBuffer<UniqueWorleyCells> cellSet = entityManager.GetBuffer<UniqueWorleyCells>(owner);
+        DynamicBuffer<WorleyCell> cellSet = entityManager.GetBuffer<WorleyCell>(owner);
         for(int i = 0; i < cellSet.Length; i++)
         {
             Debug.Log(  "value: "+cellSet[i].value + "\n" +

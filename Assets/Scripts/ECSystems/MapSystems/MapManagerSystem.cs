@@ -23,7 +23,7 @@ public class MapManagerSystem : ComponentSystem
     public WorldGridMatrix<Entity> mapMatrix;
 
     Dictionary<int2, bool> cellsDiscovered = new Dictionary<int2, bool>();
-
+    
     float3 currentMapSquare;
     float3 previousMapSquare;
 
@@ -41,7 +41,7 @@ public class MapManagerSystem : ComponentSystem
             ComponentType.Create<RenderMeshComponent>(),
             ComponentType.Create<MapSquare>(),
             ComponentType.Create<WorleyNoise>(),
-            ComponentType.Create<UniqueWorleyCells>(),
+            ComponentType.Create<WorleyCell>(),
             ComponentType.Create<Topology>(),
             ComponentType.Create<Block>(),
 
@@ -76,7 +76,7 @@ public class MapManagerSystem : ComponentSystem
 
         float3 currentSquare = CurrentMapSquare();
         mapMatrix.ReInitialise(currentSquare, matrixWidth, Allocator.Persistent);
-        DynamicBuffer<UniqueWorleyCells> cellsToDiscover = entityManager.GetBuffer<UniqueWorleyCells>(NewMapSquare(currentSquare));
+        DynamicBuffer<WorleyCell> cellsToDiscover = entityManager.GetBuffer<WorleyCell>(NewMapSquare(currentSquare));
 
         //DiscoverNearbyCells(currentSquare, startPoints, cellsToDiscover.AsNativeArray());
         DiscoverCells(currentSquare, cellsToDiscover.AsNativeArray());
@@ -230,9 +230,9 @@ public class MapManagerSystem : ComponentSystem
         CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
 	}
 
-    void DiscoverCells(float3 playerPosition, NativeArray<UniqueWorleyCells> startCells)
+    void DiscoverCells(float3 playerPosition, NativeArray<WorleyCell> startCells)
     {
-        NativeList<UniqueWorleyCells> cellsToDiscover = new NativeList<UniqueWorleyCells>(Allocator.TempJob);
+        NativeList<WorleyCell> cellsToDiscover = new NativeList<WorleyCell>(Allocator.TempJob);
         cellsToDiscover.AddRange(startCells);
 
         int cellSafety = 0;
@@ -241,11 +241,11 @@ public class MapManagerSystem : ComponentSystem
             cellSafety++;
             if(cellSafety == 99) Debug.Log("SAFETY HIT!!!!!!!!");
 
-            NativeList<UniqueWorleyCells> newCellsToDiscover = new NativeList<UniqueWorleyCells>(Allocator.TempJob);
+            NativeList<WorleyCell> newCellsToDiscover = new NativeList<WorleyCell>(Allocator.TempJob);
 
             for(int c = 0; c < cellsToDiscover.Length; c++)
             {
-                NativeList<UniqueWorleyCells> newCells = DiscoverCell(cellsToDiscover[c], playerPosition);
+                NativeList<WorleyCell> newCells = DiscoverCell(cellsToDiscover[c], playerPosition);
 
                 for(int i = 0; i < newCells.Length; i++)
                 {
@@ -270,9 +270,9 @@ public class MapManagerSystem : ComponentSystem
         cellsToDiscover.Dispose();
     }
 
-    NativeList<UniqueWorleyCells> DiscoverCell(UniqueWorleyCells cell, float3 playerPosition)
+    NativeList<WorleyCell> DiscoverCell(WorleyCell cell, float3 playerPosition)
     {
-        NativeList<UniqueWorleyCells> newCellsToDiscover = new NativeList<UniqueWorleyCells>(Allocator.Temp);
+        NativeList<WorleyCell> newCellsToDiscover = new NativeList<WorleyCell>(Allocator.Temp);
 
         NativeList<float3> positionsToCheck = new NativeList<float3>(Allocator.TempJob);
         positionsToCheck.Add(Util.VoxelOwner(cell.position, squareWidth));
@@ -295,7 +295,7 @@ public class MapManagerSystem : ComponentSystem
 
                     Entity mapSquareEntity = GetOrCreateMapSquare(adjacentSquare);
 
-                    DynamicBuffer<UniqueWorleyCells> uniqueCells = entityManager.GetBuffer<UniqueWorleyCells>(mapSquareEntity);
+                    DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(mapSquareEntity);
 
                     if(uniqueCells.Length == 1 && uniqueCells[0].value == cell.value)
                     {
@@ -311,7 +311,7 @@ public class MapManagerSystem : ComponentSystem
                         }
                     }
 
-                    NativeList<UniqueWorleyCells> newCells = OnlyNewCells(uniqueCells, playerPosition);
+                    NativeList<WorleyCell> newCells = OnlyNewCells(uniqueCells, playerPosition);
                     
                     newCellsToDiscover.AddRange(newCells);
                     newCells.Dispose();
@@ -330,13 +330,13 @@ public class MapManagerSystem : ComponentSystem
         return newCellsToDiscover;
     }
 
-    NativeList<UniqueWorleyCells> OnlyNewCells(DynamicBuffer<UniqueWorleyCells> uniqueCells, float3 playerPosition)
+    NativeList<WorleyCell> OnlyNewCells(DynamicBuffer<WorleyCell> uniqueCells, float3 playerPosition)
     {
-        NativeList<UniqueWorleyCells> newCells = new NativeList<UniqueWorleyCells>(Allocator.TempJob);
+        NativeList<WorleyCell> newCells = new NativeList<WorleyCell>(Allocator.TempJob);
 
         for(int i = 0; i < uniqueCells.Length; i++)
         {
-            UniqueWorleyCells cell = uniqueCells[i];
+            WorleyCell cell = uniqueCells[i];
 
             bool discovered = false;
             cellsDiscovered.TryGetValue(cell.index, out discovered);
@@ -373,7 +373,7 @@ public class MapManagerSystem : ComponentSystem
 
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = GenerateWorleyNoise(entity, worldPosition);
 
-        DynamicBuffer<UniqueWorleyCells> uniqueWorleyCells = GetWorleySet(entity, worleyNoiseBuffer);
+        DynamicBuffer<WorleyCell> uniqueWorleyCells = GetWorleySet(entity, worleyNoiseBuffer);
 
         CustomDebugTools.MarkError(worldPosition, new Color(uniqueWorleyCells[0].value, uniqueWorleyCells[0].value, uniqueWorleyCells[0].value));   //DEBUG
 
@@ -426,11 +426,11 @@ public class MapManagerSystem : ComponentSystem
         return worleyNoiseMap;
     }
 
-    DynamicBuffer<UniqueWorleyCells> GetWorleySet(Entity entity, DynamicBuffer<WorleyNoise> worleyNoiseBuffer)
+    DynamicBuffer<WorleyCell> GetWorleySet(Entity entity, DynamicBuffer<WorleyNoise> worleyNoiseBuffer)
     {
         NativeArray<WorleyNoise> sortedWorleyNoise = SortedWorleyNoise(worleyNoiseBuffer);
 
-        DynamicBuffer<UniqueWorleyCells> uniqueCellsBuffer = entityManager.GetBuffer<UniqueWorleyCells>(entity);
+        DynamicBuffer<WorleyCell> uniqueCellsBuffer = entityManager.GetBuffer<WorleyCell>(entity);
         uniqueCellsBuffer.ResizeUninitialized(0);
 
         int index = 0;
@@ -458,9 +458,9 @@ public class MapManagerSystem : ComponentSystem
         return sortedWorleyNoise;
     }
 
-    void AddCellToSet(DynamicBuffer<UniqueWorleyCells> uniqueCells, WorleyNoise worleyNoise)
+    void AddCellToSet(DynamicBuffer<WorleyCell> uniqueCells, WorleyNoise worleyNoise)
     {
-        UniqueWorleyCells setItem = new UniqueWorleyCells {
+        WorleyCell setItem = new WorleyCell {
             value = worleyNoise.currentCellValue,
             index = worleyNoise.currentCellIndex,
             position = worleyNoise.currentCellPosition
