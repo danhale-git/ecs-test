@@ -6,7 +6,7 @@ public struct WorldGridMatrix<T> where T : struct
     public float3 rootPosition;
     public int itemWorldSize;
 
-    NativeArray<T> matrix;
+    Matrix<T> matrix;
     NativeArray<sbyte> bools;
 
     public int width;
@@ -14,27 +14,26 @@ public struct WorldGridMatrix<T> where T : struct
     
     public void Dispose()
     {
-        if(matrix.IsCreated)matrix.Dispose();
+        matrix.Dispose();
         if(bools.IsCreated)bools.Dispose();
     }
 
     public void ReInitialise(float3 newRootPosition)
     {
-        if(matrix.IsCreated) Dispose();
-        matrix = new NativeArray<T>((int)math.pow(width, 2), label); 
-        bools = new NativeArray<sbyte>(matrix.Length, label);   
+        matrix.Initialise(width, label); 
+        bools = new NativeArray<sbyte>(matrix.Length(), label);   
 
         rootPosition = newRootPosition;
     } 
 
     public int Length()
     {
-        return matrix.Length;
+        return matrix.Length();
     }
 
     public void SetItem(T item, int index)
     {
-        matrix[index] = item;
+        matrix.SetItem(item, index);
     }
     public void SetItem(T item, float3 worldPosition)
     {
@@ -50,12 +49,12 @@ public struct WorldGridMatrix<T> where T : struct
 
     public T GetItem(int index)
     {
-        return matrix[index];
+        return matrix.GetItem(index);
     }
     public T GetItem(float3 worldPosition)
     {
         int index = WorldPositionToIndex(worldPosition);
-		return matrix[index];
+		return matrix.GetItem(index);
     }
     public bool TryGetItem(float3 worldPosition, out T item)
 	{
@@ -65,7 +64,7 @@ public struct WorldGridMatrix<T> where T : struct
             return false;
         }
 
-		item = matrix[WorldPositionToIndex(worldPosition)];
+		item = matrix.GetItem(WorldPositionToIndex(worldPosition));
         return true;
 	}
 
@@ -215,19 +214,18 @@ public struct WorldGridMatrix<T> where T : struct
 
     void AddOldMatrixWithOffset(float3 positionOffset, int oldWidth, NativeArray<T> newMatrix, NativeArray<sbyte> newBools)
     {
-        for(int i = 0; i < matrix.Length; i++)
+        for(int i = 0; i < matrix.Length(); i++)
         {
             float3 oldMatrixPosition = Util.Unflatten2D(i, oldWidth);
             float3 newMatrixPosition = oldMatrixPosition + positionOffset;
 
 
             int newMatrixIndex = Util.Flatten2D(newMatrixPosition, width);
-            newMatrix[newMatrixIndex] = matrix[i];
+            newMatrix[newMatrixIndex] = matrix.GetItem(i);
             newBools[newMatrixIndex] = bools[i];
         }
 
-        matrix.Dispose();
-        matrix = newMatrix;
+        matrix.Set(newMatrix);
 
         bools.Dispose();
         bools = newBools;

@@ -11,6 +11,18 @@ public struct Matrix<T> where T : struct
         if(matrix.IsCreated)matrix.Dispose();
     }
 
+    public void Initialise(int width, Allocator label)
+    {
+        Dispose();
+        matrix = new NativeArray<T>((int)math.pow(width, 2), label); 
+    }
+
+    public void Set(NativeArray<T> newMatrix)
+    {
+        Dispose();
+        matrix = newMatrix;
+    }
+
     public int Length()
     {
         return matrix.Length;
