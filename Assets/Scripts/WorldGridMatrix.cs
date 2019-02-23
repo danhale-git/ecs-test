@@ -117,7 +117,7 @@ public struct WorldGridMatrix<T> where T : struct
     
     public int WorldPositionToIndex(float3 worldPosition)
     {
-        return matrix.MatrixPositionToIndex(WorldToMatrixPosition(worldPosition));
+        return matrix.PositionToIndex(WorldToMatrixPosition(worldPosition));
     }
 
     public float3 WorldToMatrixPosition(float3 worldPosition)
@@ -127,7 +127,7 @@ public struct WorldGridMatrix<T> where T : struct
     
     public float3 IndexToWorldPosition(int index)
     {
-        return MatrixToWorldPosition(matrix.IndexToMatrixPosition(index));
+        return MatrixToWorldPosition(matrix.IndexToPosition(index));
     }
     public float3 MatrixToWorldPosition(float3 matrixPosition)
     {
