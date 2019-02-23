@@ -234,5 +234,4 @@ public struct WorldGridMatrix<T> where T : struct
         bools.Dispose();
         bools = newBools;
     }
-
 }

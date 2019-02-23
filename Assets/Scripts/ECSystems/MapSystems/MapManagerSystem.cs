@@ -12,7 +12,7 @@ using MyComponents;
 public class MapManagerSystem : ComponentSystem
 {
 	enum MapBuffer { NONE, INNER, OUTER, EDGE }
-    
+
     EntityManager entityManager;
     TagUtil tags;
 
@@ -55,7 +55,7 @@ public class MapManagerSystem : ComponentSystem
 			ComponentType.Create<Tags.DrawMesh>()
 		);
 
-		EntityArchetypeQuery allSquaresQuery = new EntityArchetypeQuery{		
+		EntityArchetypeQuery allSquaresQuery = new EntityArchetypeQuery{
 			All = new ComponentType [] { typeof(MapSquare) }
 		};
 		allSquaresGroup = GetComponentGroup(allSquaresQuery);
@@ -85,7 +85,8 @@ public class MapManagerSystem : ComponentSystem
             startPoints[i] = currentSquare;
         }
 
-        DiscoverNearbyCells(currentSquare, startPoints, cellsToDiscover.AsNativeArray());
+        //DiscoverNearbyCells(currentSquare, startPoints, cellsToDiscover.AsNativeArray());
+        DiscoverCells(currentSquare, cellsToDiscover.AsNativeArray());
     }
 
     protected override void OnDestroyManager()
@@ -105,11 +106,11 @@ public class MapManagerSystem : ComponentSystem
         NativeList<Entity> squaresToRemove;
 
         NativeArray<int> alreadyExists;
-        
+
         CheckAndUpdateMapSquares(out squaresToRemove, out alreadyExists);
 
         CreateMapSquares(alreadyExists);
-        
+
         RemoveMapSquares(squaresToRemove);
 
         squaresToRemove.Dispose();
@@ -140,7 +141,7 @@ public class MapManagerSystem : ComponentSystem
         float3 centerPosition = mapMatrix.WorldToMatrixPosition(currentMapSquare);
         int view = TerrainSettings.viewDistance;
 
-        if      (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view)) return MapBuffer.EDGE;        
+        if      (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view)) return MapBuffer.EDGE;
         else if (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view-1)) return MapBuffer.OUTER;
         else if (mapMatrix.IsOffsetFromPosition(positionInMatrix, centerPosition, view-2)) return MapBuffer.INNER;
         else return MapBuffer.NONE;
@@ -149,11 +150,11 @@ public class MapManagerSystem : ComponentSystem
     void CheckAndUpdateMapSquares(out NativeList<Entity> toRemove, out NativeArray<int> alreadyExists)
 	{
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
-		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);	
+		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);
 
 		ArchetypeChunkEntityType                entityType	    = GetArchetypeChunkEntityType();
 		ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>(true);
-		
+
         toRemove    = new NativeList<Entity>(Allocator.TempJob);
         alreadyExists = new NativeArray<int>(mapMatrix.Length(), Allocator.TempJob);
 
@@ -172,7 +173,7 @@ public class MapManagerSystem : ComponentSystem
 				float3 position = positions[e].Value;
 
                 bool inCurrentRadius = mapMatrix.InDistanceFromWorldPosition(position, currentMapSquare, TerrainSettings.viewDistance);
-                
+
                 if(inCurrentRadius)
                 {
                     int matrixIndex = mapMatrix.WorldPositionToIndex(position);
@@ -224,7 +225,7 @@ public class MapManagerSystem : ComponentSystem
 			case MapBuffer.EDGE:
                 tags.TryReplaceTag<Tags.OuterBuffer, Tags.EdgeBuffer>(entity, commandBuffer);
                 break;
-			
+
 			//	Not a buffer
 			default:
                 tags.TryRemoveTag<Tags.EdgeBuffer>(entity, commandBuffer);
@@ -235,135 +236,125 @@ public class MapManagerSystem : ComponentSystem
         CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
 	}
 
-    void DiscoverNearbyCells(float3 playerPosition, NativeArray<float3> startSquares, NativeArray<UniqueWorleyCells> startCells)
+    void DiscoverCells(float3 playerPosition, NativeArray<UniqueWorleyCells> startCells)
     {
-        Color[] colors = new Color[] { Color.red, Color.green, Color.blue, Color.yellow, Color.grey, Color.cyan, Color.black, Color.magenta };
-
         NativeList<UniqueWorleyCells> cellsToDiscover = new NativeList<UniqueWorleyCells>(Allocator.TempJob);
         cellsToDiscover.AddRange(startCells);
-        NativeList<float3> startSquaresToDiscover = new NativeList<float3>(Allocator.TempJob);
-        startSquaresToDiscover.AddRange(startSquares);
 
         int cellSafety = 0;
-
         while(cellsToDiscover.Length > 0 && cellSafety < 100)
         {
             cellSafety++;
-            if(cellSafety == 99)
-                Debug.Log("SAFETY HIT - - - - ");
+            if(cellSafety == 99) Debug.Log("SAFETY HIT!!!!!!!!");
 
-            NativeList<UniqueWorleyCells> newCellsToDiscover = new NativeList<UniqueWorleyCells>(Allocator.Temp);
-            NativeList<float3> newStartSquaresToDiscover = new NativeList<float3>(Allocator.Temp);
+            NativeList<UniqueWorleyCells> newCellsToDiscover = new NativeList<UniqueWorleyCells>(Allocator.TempJob);
 
             for(int c = 0; c < cellsToDiscover.Length; c++)
             {
-                Debug.Log(":::: checking "+cellsToDiscover.Length+" cells");
-
-                //  Cell and corresponding starting square position
-                UniqueWorleyCells cell = cellsToDiscover[c];
-                float3 startSquare = startSquaresToDiscover[c];
-
-                //  Initialise positionsTpCheck with starting position
-                NativeList<float3> positionsToCheck = new NativeList<float3>(Allocator.TempJob);
-                positionsToCheck.Add(startSquare);
-
-                int safety = 0;
-                while(positionsToCheck.Length > 0 && safety < 100)
-                {
-                    safety++;
-                    if(safety == 99)
-                        Debug.Log("SAFETY HIT - - - - ");
-
-                    if(positionsToCheck.Length == 0)
-                    {
-                        //Debug.Log("no positions to check for "+cell.index);
-                        break;
-                    }
-                    else
-                    {
-                        //Debug.Log("checking "+positionsToCheck.Length+" positions for "+cell.index);
-                    }
-
-                    NativeList<float3> newPositionsToCheck = new NativeList<float3>(Allocator.Temp);
-
-                    for(int p = 0; p < positionsToCheck.Length; p++)
-                    {
-                        float3 currentPosition = positionsToCheck[p];
-
-                        //DEBUG
-                        CustomDebugTools.MarkError(currentPosition, colors[cellSafety]);
-
-                        NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
-                        for(int d = 0; d < 4; d++)
-                        {
-                            float3 checkPosition = currentPosition + (directions[d] * squareWidth);
-                            //Debug.Log("checking position+ "+checkPosition);
-
-                            Entity entity;
-
-                            if(!mapMatrix.TryGetItemFromWorldPosition(checkPosition, out entity))
-                            {
-                                entity = NewMapSquare(checkPosition); 
-                            }
-                            else if(!entityManager.Exists(entity))
-                            {
-                                entity = NewMapSquare(checkPosition); 
-                            }
-
-                            DynamicBuffer<UniqueWorleyCells> uniqueCells = entityManager.GetBuffer<UniqueWorleyCells>(entity);
-
-                            //  Contains only this cell type
-                            if(uniqueCells.Length == 1 && uniqueCells[0].value == cell.value)
-                            {
-                                if(!mapMatrix.GetBool(checkPosition))
-                                    newPositionsToCheck.Add(checkPosition);
-                            }
-                            
-                            for(int i = 0; i < uniqueCells.Length; i++)
-                            {
-                                float3 difference = uniqueCells[i].position - playerPosition;
-                                bool discovered = false;
-                                cellsDiscovered.TryGetValue(uniqueCells[i].index, out discovered);
-
-                                if(!discovered)
-                                {
-                                    if(math.abs(difference.x) < 200 && math.abs(difference.z) < 200)
-                                    {
-                                        newStartSquaresToDiscover.Add(checkPosition);
-                                        newCellsToDiscover.Add(uniqueCells[i]);
-                                        //Debug.Log("adding cell: "+uniqueCells[i].index);
-
-                                        cellsDiscovered[uniqueCells[i].index] = true;
-
-                                        Debug.Log(uniqueCells[i].index+" in range");
-                                    }
-                                    else
-                                        Debug.Log(uniqueCells[i].index+" out of range");
-                                }
-                            }
-                            
-                        }
-
-                        mapMatrix.SetBool(true, currentPosition);
-                    }
-
-                    positionsToCheck.Clear();
-                    positionsToCheck.AddRange(newPositionsToCheck);
-                    newPositionsToCheck.Dispose();
-                }
-
-                positionsToCheck.Dispose();
+                NativeList<UniqueWorleyCells> newCells = DiscoverCell(cellsToDiscover[c], playerPosition);
+                newCellsToDiscover.AddRange(newCells);
+                newCells.Dispose();
             }
 
             cellsToDiscover.Clear();
-            startSquaresToDiscover.Clear();
             cellsToDiscover.AddRange(newCellsToDiscover);
-            startSquaresToDiscover.AddRange(newStartSquaresToDiscover);
-
             newCellsToDiscover.Dispose();
-            newStartSquaresToDiscover.Dispose();
         }
     }
+
+    NativeList<UniqueWorleyCells> DiscoverCell(UniqueWorleyCells cell, float3 playerPosition)
+    {
+        NativeList<UniqueWorleyCells> newCellsToDiscover = new NativeList<UniqueWorleyCells>(Allocator.Temp);
+
+        NativeList<float3> positionsToCheck = new NativeList<float3>(Allocator.TempJob);
+        positionsToCheck.Add(Util.VoxelOwner(cell.position, squareWidth));
+
+        int squareSafety = 0;
+
+        while(positionsToCheck.Length > 0 && squareSafety < 100)
+        {
+            squareSafety++;
+            if(squareSafety == 99) Debug.Log("SAFETY HIT!!!!!!!!");
+
+            NativeList<float3> newPositionsToCheck = new NativeList<float3>(Allocator.Temp);
+
+            for(int p = 0; p < positionsToCheck.Length; p++)
+            {
+                NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
+                for(int d = 0; d < 4; d++)
+                {
+                    float3 adjacentSquare = positionsToCheck[p] + (directions[d] * squareWidth);
+
+                    Entity mapSquareEntity = GetOrCreateMapSquare(adjacentSquare);
+
+                    DynamicBuffer<UniqueWorleyCells> uniqueCells = entityManager.GetBuffer<UniqueWorleyCells>(mapSquareEntity);
+
+                    if(uniqueCells.Length == 1 && uniqueCells[0].value == cell.value)
+                    {
+                        if(!mapMatrix.GetBool(adjacentSquare))
+                            newPositionsToCheck.Add(adjacentSquare);
+                    }
+
+                    NativeList<UniqueWorleyCells> newCells = FindNewCells(uniqueCells, playerPosition);
+                    
+                    newCellsToDiscover.AddRange(newCells);
+                    newCells.Dispose();
+                }
+
+                mapMatrix.SetBool(true, positionsToCheck[p]);
+            }
+
+            positionsToCheck.Clear();
+            positionsToCheck.AddRange(newPositionsToCheck);
+            newPositionsToCheck.Dispose();
+        }
+
+        positionsToCheck.Dispose();
+
+        return newCellsToDiscover;
+    }
+
+    Entity GetOrCreateMapSquare(float3 position)
+    {
+        Entity entity;
+
+        if(!mapMatrix.TryGetItemFromWorldPosition(position, out entity))
+            return NewMapSquare(position);
+        else if(!entityManager.Exists(entity))
+            return NewMapSquare(position);
+        else
+            return entity;
+    }
+
+    NativeList<UniqueWorleyCells> FindNewCells(DynamicBuffer<UniqueWorleyCells> uniqueCells, float3 playerPosition)
+    {
+        NativeList<UniqueWorleyCells> newCells = new NativeList<UniqueWorleyCells>(Allocator.TempJob);
+
+        for(int i = 0; i < uniqueCells.Length; i++)
+        {
+            UniqueWorleyCells cell = uniqueCells[i];
+
+            float3 difference = cell.position - playerPosition;
+            bool discovered = false;
+            cellsDiscovered.TryGetValue(cell.index, out discovered);
+
+            if(!discovered)
+            {
+                if(math.abs(difference.x) < 150 && math.abs(difference.z) < 150)
+                {
+                    newCells.Add(cell);
+
+                    cellsDiscovered[cell.index] = true;
+                }
+            }
+
+            
+
+        }
+
+        return newCells;
+    }
+
 
     Entity NewMapSquare(float3 worldPosition)
     {
@@ -376,7 +367,9 @@ public class MapManagerSystem : ComponentSystem
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = GenerateWorleyNoise(entity, worldPosition);
 
         DynamicBuffer<UniqueWorleyCells> uniqueWorleyCells = GetWorleySet(entity, worleyNoiseBuffer);
-        
+
+        CustomDebugTools.MarkError(worldPosition, new Color(uniqueWorleyCells[0].value, uniqueWorleyCells[0].value, uniqueWorleyCells[0].value));   //DEBUG
+
         mapMatrix.SetItemAndResizeIfNeeded(entity, worldPosition);
 
         SetMapBuffer(entity, buffer);
@@ -406,7 +399,7 @@ public class MapManagerSystem : ComponentSystem
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = GenerateWorleyNoise(entity, worldPosition);
 
         DynamicBuffer<UniqueWorleyCells> worleyCellSet = GetWorleySet(entity, worleyNoiseBuffer);
-        
+
         mapMatrix.SetItem(entity, matrixIndex);
 
         SetMapBuffer(entity, buffer);
@@ -423,11 +416,11 @@ public class MapManagerSystem : ComponentSystem
     {
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = entityManager.GetBuffer<WorleyNoise>(entity);
         worleyNoiseBuffer.ResizeUninitialized(0);
-        
+
         NativeArray<WorleyNoise> worleyNoiseMap = GetWorleyNoiseMap(position);
         worleyNoiseBuffer.AddRange(worleyNoiseMap);
         worleyNoiseMap.Dispose();
-    
+
         return worleyNoiseBuffer;
     }
 
@@ -438,7 +431,7 @@ public class MapManagerSystem : ComponentSystem
         WorleyNoiseJob cellJob = new WorleyNoiseJob(){
             worleyNoiseMap 	= worleyNoiseMap,						//	Flattened 2D array of noise
 			offset 		    = position,						        //	World position of this map square's local 0,0
-			squareWidth	    = squareWidth,						    //	Length of one side of a square/cube	
+			squareWidth	    = squareWidth,						    //	Length of one side of a square/cube
             seed 		    = TerrainSettings.seed,			        //	Perlin noise seed
             frequency 	    = TerrainSettings.cellFrequency,	    //	Perlin noise frequency
             perterbAmp      = TerrainSettings.cellEdgeSmoothing,    //  Gradient Peturb amount
@@ -482,10 +475,10 @@ public class MapManagerSystem : ComponentSystem
         for(int i = 0; i < sortedWorleyNoise.Length; i++)
             sortedWorleyNoise[i] = worleyNoiseBuffer[i];
 
-        sortedWorleyNoise.Sort();        
+        sortedWorleyNoise.Sort();
         return sortedWorleyNoise;
     }
-    
+
     void AddCellToSet(DynamicBuffer<UniqueWorleyCells> uniqueCells, WorleyNoise worleyNoise)
     {
         UniqueWorleyCells setItem = new UniqueWorleyCells {
@@ -514,7 +507,7 @@ public class MapManagerSystem : ComponentSystem
             case MapBuffer.EDGE:
                 tags.AddTag<Tags.EdgeBuffer>(entity);
                 break;
-            
+
             //	Is not a buffer
             default:
                 break;
@@ -530,7 +523,7 @@ public class MapManagerSystem : ComponentSystem
             Entity entity = squaresToRemove[i];
 
             UpdateNeighbouringSquares(entityManager.GetComponentData<Position>(entity).Value);
-            
+
             entityManager.AddComponent(entity, typeof(Tags.RemoveMapSquare));
         }
     }
