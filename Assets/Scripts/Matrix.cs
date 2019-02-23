@@ -4,7 +4,7 @@ using Unity.Collections;
 public struct Matrix<T> where T : struct
 {
     NativeArray<T> matrix;
-    int width;
+    public int width;
     Allocator label;
 
     public void Dispose()
@@ -58,15 +58,10 @@ public struct Matrix<T> where T : struct
 
         NativeArray<T> newMatrix = new NativeArray<T>((int)math.pow(width, 2), label);
 
-        AddOldMatrixWithOffset(rootIndexOffset, oldWidth, newMatrix);
-    }
-
-    void AddOldMatrixWithOffset(float3 positionOffset, int oldWidth, NativeArray<T> newMatrix)
-    {
         for(int i = 0; i < matrix.Length; i++)
         {
             float3 oldMatrixPosition = Util.Unflatten2D(i, oldWidth);
-            float3 newMatrixPosition = oldMatrixPosition + positionOffset;
+            float3 newMatrixPosition = oldMatrixPosition + rootIndexOffset;
 
             int newMatrixIndex = Util.Flatten2D(newMatrixPosition, width);
             newMatrix[newMatrixIndex] = matrix[i];

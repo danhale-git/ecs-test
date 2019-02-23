@@ -72,12 +72,10 @@ public class MapManagerSystem : ComponentSystem
         mapMatrix = new WorldGridMatrix<Entity>{
             rootPosition = MapMatrixRootPosition(),
             itemWorldSize = squareWidth,
-            width = matrixWidth,
-            label = Allocator.Persistent
         };
 
         float3 currentSquare = CurrentMapSquare();
-        mapMatrix.ReInitialise(currentSquare);
+        mapMatrix.ReInitialise(currentSquare, matrixWidth, Allocator.Persistent);
         DynamicBuffer<UniqueWorleyCells> cellsToDiscover = entityManager.GetBuffer<UniqueWorleyCells>(NewMapSquare(currentSquare));
 
         //DiscoverNearbyCells(currentSquare, startPoints, cellsToDiscover.AsNativeArray());
@@ -143,7 +141,7 @@ public class MapManagerSystem : ComponentSystem
         else return MapBuffer.NONE;
     }
 
-    void CheckAndUpdateMapSquares(out NativeList<Entity> toRemove, out NativeArray<int> alreadyExists)
+    /*void CheckAndUpdateMapSquares(out NativeList<Entity> toRemove, out NativeArray<int> alreadyExists)
 	{
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
 		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);
@@ -199,7 +197,7 @@ public class MapManagerSystem : ComponentSystem
 		commandBuffer.Dispose();
 
 		chunks.Dispose();//
-	}
+	} */
 
 	void UpdateBuffer(Entity entity, MapBuffer buffer, EntityCommandBuffer commandBuffer)
 	{
@@ -379,7 +377,7 @@ public class MapManagerSystem : ComponentSystem
 
         CustomDebugTools.MarkError(worldPosition, new Color(uniqueWorleyCells[0].value, uniqueWorleyCells[0].value, uniqueWorleyCells[0].value));   //DEBUG
 
-        mapMatrix.SetItemAndResizeIfNeeded(entity, worldPosition);
+        mapMatrix.SetItem(entity, worldPosition);
 
         SetMapBuffer(entity, buffer);
 
