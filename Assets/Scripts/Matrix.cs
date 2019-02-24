@@ -26,6 +26,11 @@ public struct Matrix<T> where T : struct
         this.label = label;
     }
 
+    NativeArray<T> GetNativeArray()
+    {
+        return matrix;
+    }
+
     public float3 ResizeMatrix(int2 matrixIndex)
     {
         return ResizeMatrix(new float3(matrixIndex.x, 0, matrixIndex.y));
@@ -87,6 +92,17 @@ public struct Matrix<T> where T : struct
     public T GetItem(int index)
     {
         return matrix[index];
+    }
+
+    public T this[int index]
+    {
+        get{
+            return matrix[index];
+        }
+
+        set{
+            matrix[index] = value;
+        }
     }
 
     public float3 IndexToPosition(int index)
