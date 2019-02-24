@@ -31,6 +31,17 @@ public struct WorldGridMatrix<T> where T : struct
         rootPosition = rootPosition + (rootPositionChange * itemWorldSize);
     }
 
+    public T this[int index]
+    {
+        get{
+            return matrix[index];
+        }
+
+        set{
+            matrix[index] = value;
+        }
+    }
+
     public void SetItem(T item, float3 worldPosition)
     {
         if(!WorldPositionIsInMatrix(worldPosition))
