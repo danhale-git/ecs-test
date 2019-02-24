@@ -11,9 +11,9 @@ using MyComponents;
 [AlwaysUpdateSystem]
 public class MapManagerSystem : ComponentSystem
 {
-	public enum DrawBufferType { NONE, INNER, OUTER, EDGE }
-
     EntityManager entityManager;
+    MapHorizontalDrawBufferSystem horizontalDrawBufferSystem;
+
     EntityUtil entityUtil;
 
     int squareWidth;
@@ -25,17 +25,19 @@ public class MapManagerSystem : ComponentSystem
 
     NativeList<WorleyCell> undiscoveredCells;
     
-    float3 currentMapSquare;
+    public bool update;
+    public float3 currentMapSquare;
     float3 previousMapSquare;
 
     EntityArchetype mapSquareArchetype;
-    ComponentGroup allSquaresGroup;
 
     EntityArchetype worleyCellArchetype;
 
 	protected override void OnCreateManager()
     {
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
+        horizontalDrawBufferSystem = World.Active.GetOrCreateManager<MapHorizontalDrawBufferSystem>();
+
         entityUtil = new EntityUtil(entityManager);
         squareWidth = TerrainSettings.mapSquareWidth;
 
@@ -57,11 +59,6 @@ public class MapManagerSystem : ComponentSystem
             ComponentType.Create<Tags.SetSlopes>(),
 			ComponentType.Create<Tags.DrawMesh>()
 		);
-
-		EntityArchetypeQuery allSquaresQuery = new EntityArchetypeQuery{
-			All = new ComponentType [] { typeof(MapSquare) }
-		};
-		allSquaresGroup = GetComponentGroup(allSquaresQuery);
 
         worleyCellArchetype = entityManager.CreateArchetype(
             ComponentType.Create<WorleyCell>(),
@@ -105,7 +102,7 @@ public class MapManagerSystem : ComponentSystem
             DiscoverCells(initialCells[i]);
     }
 
-    float3 CurrentMapSquare()
+    public float3 CurrentMapSquare()
     {
         float3 playerPosition = entityManager.GetComponentData<Position>(playerEntity).Value;
         return Util.VoxelOwner(playerPosition, squareWidth);
@@ -122,10 +119,15 @@ public class MapManagerSystem : ComponentSystem
     {
         currentMapSquare = CurrentMapSquare();
         if(currentMapSquare.Equals(previousMapSquare))
+        {
+            update = false;
             return;
-        else previousMapSquare = currentMapSquare;
-
-        UpdateDrawBuffer();      
+        }
+        else
+        {
+            update = true;
+            previousMapSquare = currentMapSquare;   
+        }
 
         NativeList<WorleyCell> cellsInRange = CheckUndiscoveredCells();
 
@@ -150,60 +152,6 @@ public class MapManagerSystem : ComponentSystem
         }
 
         return cellsInRange;
-    } 
-
-    void UpdateDrawBuffer()
-	{
-        EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
-		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);
-
-		ArchetypeChunkEntityType                entityType	    = GetArchetypeChunkEntityType();
-		ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>(true);
-
-		for(int c = 0; c < chunks.Length; c++)
-		{
-			ArchetypeChunk chunk = chunks[c];
-
-			NativeArray<Entity> entities 	= chunk.GetNativeArray(entityType);
-			NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-
-			for(int e = 0; e < entities.Length; e++)
-			{
-				Entity entity   = entities[e];
-				float3 position = positions[e].Value;
-
-                bool inViewRadius = mapMatrix.InDistanceFromWorldPosition(position, currentMapSquare, TerrainSettings.viewDistance);
-
-                if(inViewRadius)
-                    entityUtil.UpdateDrawBuffer(entity, GetDrawBuffer(position), commandBuffer);
-                else
-                    RedrawMapSquare(entity, commandBuffer);
-			}
-		}
-
-        commandBuffer.Playback(entityManager);
-		commandBuffer.Dispose();
-
-		chunks.Dispose();
-	}
-
-    DrawBufferType GetDrawBuffer(float3 bufferWorldPosition)
-    {
-        float3 centerPosition = mapMatrix.WorldToMatrixPosition(currentMapSquare);
-        float3 bufferPosition = mapMatrix.WorldToMatrixPosition(bufferWorldPosition);
-        int view = TerrainSettings.viewDistance;
-
-        if      (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
-        else if (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view-1)) return DrawBufferType.OUTER;
-        else if (mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view-2)) return DrawBufferType.INNER;
-        else if (!mapMatrix.InDistancceFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
-        else return DrawBufferType.NONE;
-    }
-
-    void RedrawMapSquare(Entity entity, EntityCommandBuffer commandBuffer)
-    {
-        entityUtil.TryRemoveSharedComponent<RenderMesh>(entity, commandBuffer);
-        entityUtil.TryAddComponent<Tags.DrawMesh>(entity, commandBuffer);
     }
 
     bool CellInRange(WorleyCell cell)
@@ -338,7 +286,7 @@ public class MapManagerSystem : ComponentSystem
     {
         Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 		entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
-        entityUtil.SetDrawBuffer(entity, GetDrawBuffer(worldPosition));
+        horizontalDrawBufferSystem.SetDrawBuffer(entity, worldPosition);
 
         mapMatrix.SetItem(entity, worldPosition);
 

@@ -225,6 +225,6 @@ namespace Tags
 
 namespace UpdateGroups
 {
-	[UpdateAfter(typeof(MapManagerSystem))]
+	[UpdateAfter(typeof(MapHorizontalDrawBufferSystem))]
 	public class NewMapSquareUpdateGroup { }
 }
