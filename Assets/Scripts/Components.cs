@@ -74,7 +74,7 @@ namespace MyComponents
 		public float3 position;
 	}
 	
-	[InternalBufferCapacity(100)]
+	[InternalBufferCapacity(0)]
 	public struct CellMapSquare : IBufferElementData
 	{
 		public Entity entity;

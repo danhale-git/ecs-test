@@ -129,12 +129,38 @@ public class MapManagerSystem : ComponentSystem
         NativeList<WorleyCell> cellsInRange = CheckUndiscoveredCells();
         DiscoverCells(currentMapSquare, cellsInRange);
         cellsInRange.Dispose();
+    }
 
+    /*void DebugCells()
+    {
         for(int i = 0; i < cellMatrix.Length; i++)
         {
-            
+            Entity entity = cellMatrix[i];
+            if(!entityManager.Exists(entity))
+                continue;
+                
+            DynamicBuffer<CellMapSquare> mapSquaresBuffer = entityManager.GetBuffer<CellMapSquare>(entity);
+            NativeArray<CellMapSquare> mapSquares = new NativeArray<CellMapSquare>(mapSquaresBuffer.Length, Allocator.Temp);
+            mapSquares.CopyFrom(mapSquaresBuffer.AsNativeArray());
+
+            for(int s = 0; s < mapSquares.Length; s++)
+            {
+                DynamicBuffer<WorleyCell> uniqueWorleyCells = entityManager.GetBuffer<WorleyCell>(mapSquares[s].entity);
+                float3 worldPosition = entityManager.GetComponentData<Position>(mapSquares[s].entity).Value;
+
+                Color color = new Color(uniqueWorleyCells[0].value, uniqueWorleyCells[0].value, uniqueWorleyCells[0].value);
+
+                if(mapSquares[s].edge == 1)
+                    color = Color.red;
+
+                color = new Color(1, 0, 0, 0.1f);
+
+                CustomDebugTools.MarkError(worldPosition, color);   //DEBUG
+            }
+
+            mapSquares.Dispose();
         }
-    }
+    } */
 
     void UpdateDrawBuffer()
 	{
@@ -285,8 +311,6 @@ public class MapManagerSystem : ComponentSystem
                 NativeList<WorleyCell> newCells = CheckAdjacentMapSquares(cellEntity, positionsToCheck[p], newPositionsToCheck);
                 newCellsToDiscover.AddRange(newCells);
                 newCells.Dispose();
-
-                mapMatrix.SetBool(true, positionsToCheck[p]);
             }
 
             positionsToCheck.Dispose();
@@ -316,7 +340,9 @@ public class MapManagerSystem : ComponentSystem
 
             if(!MapSquareNeedsChecking(currentCell, adjacentPosition, uniqueCells))
                 continue;
-
+            else
+                mapMatrix.SetBool(true, adjacentPosition);
+            
             sbyte atEdge;
             if(uniqueCells.Length == 1 && uniqueCells[0].value == currentCell.value)
                 atEdge = 0;
@@ -334,8 +360,8 @@ public class MapManagerSystem : ComponentSystem
         }
 
         DynamicBuffer<CellMapSquare> cellMapSquareBuffer = entityManager.GetBuffer<CellMapSquare>(currentCellEntity);
-        cellMapSquareBuffer.ResizeUninitialized(0);
         cellMapSquareBuffer.AddRange(squaresInCell);
+        squaresInCell.Dispose();
         
         return newCells;
     }
@@ -375,13 +401,19 @@ public class MapManagerSystem : ComponentSystem
 
     void AddNewCells(DynamicBuffer<WorleyCell> uniqueCells, NativeList<WorleyCell> newCells)
     {
-        for(int i = 0; i < uniqueCells.Length; i++)
+        NativeArray<WorleyCell> cells = new NativeArray<WorleyCell>(uniqueCells.Length, Allocator.Temp);
+        cells.CopyFrom(uniqueCells.AsNativeArray());
+        for(int i = 0; i < cells.Length; i++)
         {
-            WorleyCell cell = uniqueCells[i];
+            WorleyCell cell = cells[i];
 
             if(!cellMatrix.GetBool(cell.indexFloat))
+            {
                 newCells.Add(cell);
+                NewWorleyCell(cell);
+            }
         }
+        cells.Dispose();
     }
 
     DynamicBuffer<WorleyCell> GenerateWorleyData(Entity entity, float3 worldPosition)
