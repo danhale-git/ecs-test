@@ -77,16 +77,22 @@ public class MapManagerSystem : ComponentSystem
 
     void InitialiseCellMatrix(DynamicBuffer<WorleyCell> initialCells)
     {
-        cellMatrix = new WorldGridMatrix<WorleyCell>{ itemWorldSize = 1 };
-        cellMatrix.Initialise(initialCells[0].indexFloat, 1, Allocator.Persistent);
+        cellMatrix = new WorldGridMatrix<WorleyCell>{
+            rootPosition = initialCells[0].indexFloat,
+            itemWorldSize = 1
+        };
+        cellMatrix.Initialise(1, Allocator.Persistent);
 
         DiscoverCells(currentMapSquare, initialCells.AsNativeArray());
     }
 
     Entity InitialiseMapMatrix()
     {
-        mapMatrix = new WorldGridMatrix<Entity>{ itemWorldSize = squareWidth };
-        mapMatrix.Initialise(currentMapSquare, 1, Allocator.Persistent);
+        mapMatrix = new WorldGridMatrix<Entity>{
+            rootPosition = currentMapSquare,
+            itemWorldSize = squareWidth
+        };
+        mapMatrix.Initialise(1, Allocator.Persistent);
 
         return NewMapSquare(currentMapSquare);
     }
@@ -193,12 +199,6 @@ public class MapManagerSystem : ComponentSystem
     {
         float3 difference = cell.position - currentMapSquare;
         return (math.abs(difference.x) < 150 && math.abs(difference.z) < 150);
-    }
-
-    int WhileLoopSafetyCeck(int safetyCount)
-    {
-        if(safetyCount == 99) throw new System.Exception("Maximum 99 while loop iterations exceeded");
-        else return 1;
     }
 
     void DiscoverCells(float3 playerPosition, NativeArray<WorleyCell> startCells)
@@ -461,5 +461,11 @@ public class MapManagerSystem : ComponentSystem
 
             entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(adjacent);
         }
+    }
+
+    int WhileLoopSafetyCeck(int safetyCount)
+    {
+        if(safetyCount == 99) throw new System.Exception("Maximum 99 while loop iterations exceeded");
+        else return 1;
     }
 }
