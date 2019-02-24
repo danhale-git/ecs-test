@@ -25,21 +25,11 @@ public struct WorldGridMatrix<T> where T : struct
 
     void ResizeMatrices(float3 worldPosition)
     {
-        float3 rootPositionChange = matrix.ResizeMatrix(WorldToMatrixPosition(worldPosition));
-        bools.ResizeMatrix(WorldToMatrixPosition(worldPosition));
+        float3 matrixPosition = WorldToMatrixPosition(worldPosition);
+        float3 rootPositionChange = matrix.ResizeMatrix(matrixPosition);
+        bools.ResizeMatrix(matrixPosition);
 
         rootPosition = rootPosition + (rootPositionChange * itemWorldSize);
-    }
-
-    public T this[int index]
-    {
-        get{
-            return matrix[index];
-        }
-
-        set{
-            matrix[index] = value;
-        }
     }
 
     public void SetItem(T item, float3 worldPosition)
@@ -49,6 +39,11 @@ public struct WorldGridMatrix<T> where T : struct
 
         int index = WorldPositionToIndex(worldPosition);
         matrix.SetItem(item, index);
+    }
+
+    public T GetItem(int index)
+    {
+		return matrix.GetItem(index);
     }
 
     public T GetItem(float3 worldPosition)
@@ -75,12 +70,25 @@ public struct WorldGridMatrix<T> where T : struct
         bools.SetItem(value ? (sbyte)1 : (sbyte)0, index);
     }
 
+    public void SetBool(bool value, int index)
+    {
+        bools.SetItem(value ? (sbyte)1 : (sbyte)0, index);
+    }
+
     public bool GetBool(float3 worldPosition)
     {
         if(!WorldPositionIsInMatrix(worldPosition))
             return false;
             
         int index = WorldPositionToIndex(worldPosition);
+        return bools.GetItem(index) > 0 ? true : false;
+    }
+
+    public bool GetBool(int index)
+    {
+        if(!WorldPositionIsInMatrix(IndexToWorldPosition(index)))
+            return false;
+            
         return bools.GetItem(index) > 0 ? true : false;
     }
 

@@ -79,6 +79,13 @@ public class MapManagerSystem : ComponentSystem
         InitialiseCellMatrix(entityManager.GetBuffer<WorleyCell>(initialMapSquare).AsNativeArray());
     }
 
+    protected override void OnDestroyManager()
+    {
+        mapMatrix.Dispose();
+        cellMatrix.Dispose();
+        undiscoveredCells.Dispose();
+    }
+
     Entity InitialiseMapMatrix()
     {
         mapMatrix = new WorldGridMatrix<Entity>{
@@ -108,13 +115,6 @@ public class MapManagerSystem : ComponentSystem
         return Util.VoxelOwner(playerPosition, squareWidth);
     }
 
-    protected override void OnDestroyManager()
-    {
-        mapMatrix.Dispose();
-        cellMatrix.Dispose();
-        undiscoveredCells.Dispose();
-    }
-
     protected override void OnUpdate()
     {
         currentMapSquare = CurrentMapSquare();
@@ -129,15 +129,17 @@ public class MapManagerSystem : ComponentSystem
             previousMapSquare = currentMapSquare;   
         }
 
-        NativeList<WorleyCell> cellsInRange = CheckUndiscoveredCells();
+        NativeList<WorleyCell> cellsInRange = UndiscoveredCellsInRange();
 
         for(int i = 0; i < cellsInRange.Length; i++)
             DiscoverCells(cellsInRange[i]);
 
         cellsInRange.Dispose();
+
+        RemoveOutOfRangeCells();
     }
 
-    NativeList<WorleyCell> CheckUndiscoveredCells()
+    NativeList<WorleyCell> UndiscoveredCellsInRange()
     {
         NativeList<WorleyCell> cellsInRange = new NativeList<WorleyCell>(Allocator.TempJob);
 
@@ -158,6 +160,75 @@ public class MapManagerSystem : ComponentSystem
     {
         float3 difference = cell.position - currentMapSquare;
         return (math.abs(difference.x) < 150 && math.abs(difference.z) < 150);
+    }
+
+    void RemoveOutOfRangeCells()
+    {
+        for(int c = 0; c < cellMatrix.Length; c++)
+        {
+            Entity cellEntity = cellMatrix.GetItem(c);
+
+            //TODO why is this necessary?
+            if(!entityManager.Exists(cellEntity))
+                continue;
+
+            WorleyCell cell = entityManager.GetBuffer<WorleyCell>(cellEntity)[0];
+
+            if(!CellInRange(cell))
+            {
+                DynamicBuffer<CellMapSquare> mapSquaresBuffer = entityManager.GetBuffer<CellMapSquare>(cellEntity);
+
+                NativeArray<CellMapSquare> mapSquares = new NativeArray<CellMapSquare>(mapSquaresBuffer.Length, Allocator.Temp);
+                mapSquares.CopyFrom(mapSquaresBuffer.AsNativeArray());
+
+                for(int s = 0; s < mapSquares.Length; s++)
+                {
+                    Entity squareEntity = mapSquares[s].entity;
+        
+                    //TODO why is this necessary?
+                    if(!entityManager.Exists(squareEntity))
+                        continue;
+
+                    float3 squarePosition = entityManager.GetComponentData<Position>(squareEntity).Value;
+                    DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(squareEntity);
+                    if(MapSquareEligibleForRemoval(squareEntity, cell, uniqueCells))
+                    {
+                        UpdateNeighbouringSquares(squarePosition);
+                        entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity);
+                    }
+                }
+
+                mapSquares.Dispose();
+            }
+        }
+    }
+
+    void UpdateNeighbouringSquares(float3 centerSquarePosition)
+    {
+        NativeArray<float3> neighbourDirections = Util.CardinalDirections(Allocator.Temp);
+        for(int i = 0; i < neighbourDirections.Length; i++)
+            UpdateAdjacentSquares(centerSquarePosition + (neighbourDirections[i] * squareWidth));
+
+        neighbourDirections.Dispose();
+    }
+
+    void UpdateAdjacentSquares(float3 mapSquarePosition)
+    {
+        Entity squareEntity = mapMatrix.GetItem(mapSquarePosition);
+        if(mapMatrix.WorldPositionIsInMatrix(mapSquarePosition) && entityManager.Exists(squareEntity))
+        {
+            Entity adjacent = mapMatrix.GetItem(mapSquarePosition);
+            entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(adjacent);
+        }
+    }
+
+    bool MapSquareEligibleForRemoval(Entity squareEntity, WorleyCell cell, DynamicBuffer<WorleyCell> uniqueCells)
+    {
+        for(int i = 0; i < uniqueCells.Length; i++)
+            if(CellInRange(uniqueCells[i]) && cellMatrix.GetBool(cell.indexFloat))
+                return false;
+
+        return true;
     }
 
     void DiscoverCells(WorleyCell cell)
@@ -352,36 +423,5 @@ public class MapManagerSystem : ComponentSystem
         }
 
         return cellSet;
-    }
-
-    void RemoveMapSquares(NativeList<Entity> squaresToRemove)
-    {
-        for(int i = 0; i < squaresToRemove.Length; i++)
-        {
-            Entity entity = squaresToRemove[i];
-
-            UpdateNeighbouringSquares(entityManager.GetComponentData<Position>(entity).Value);
-
-            entityManager.AddComponent(entity, typeof(Tags.RemoveMapSquare));
-        }
-    }
-
-    void UpdateNeighbouringSquares(float3 centerSquarePosition)
-    {
-        NativeArray<float3> neighbourDirections = Util.CardinalDirections(Allocator.Temp);
-        for(int i = 0; i < neighbourDirections.Length; i++)
-            UpdateAdjacentSquares(centerSquarePosition + (neighbourDirections[i] * squareWidth));
-
-        neighbourDirections.Dispose();
-    }
-
-    void UpdateAdjacentSquares(float3 mapSquarePosition)
-    {
-        if(mapMatrix.WorldPositionIsInMatrix(mapSquarePosition))
-        {
-            Entity adjacent = mapMatrix.GetItem(mapSquarePosition);
-
-            entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(adjacent);
-        }
     }
 }

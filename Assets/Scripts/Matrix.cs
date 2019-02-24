@@ -94,17 +94,6 @@ public struct Matrix<T> where T : struct
         return matrix[index];
     }
 
-    public T this[int index]
-    {
-        get{
-            return matrix[index];
-        }
-
-        set{
-            matrix[index] = value;
-        }
-    }
-
     public float3 IndexToPosition(int index)
     {
         return Util.Unflatten2D(index, width);
