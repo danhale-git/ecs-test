@@ -346,7 +346,12 @@ public class MapManagerSystem : ComponentSystem
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = entityManager.GetBuffer<WorleyNoise>(entity);
         worleyNoiseBuffer.CopyFrom(worleyNoiseMap);
 
-        GenerateWorley(entity, worldPosition, worleyNoiseMap);
+        DynamicBuffer<WorleyCell> uniqueWorleyCells = entityManager.GetBuffer<WorleyCell>(entity);
+        NativeArray<WorleyCell> worleyCellSet = WorleySet(worldPosition, worleyNoiseMap);
+        uniqueWorleyCells.CopyFrom(worleyCellSet);
+
+        worleyCellSet.Dispose();
+        worleyNoiseMap.Dispose();
         return entity;
     }
 
@@ -359,16 +364,10 @@ public class MapManagerSystem : ComponentSystem
         return false;
     }
     
-    NativeArray<WorleyCell> GenerateWorley(Entity entity, float3 worldPosition, NativeArray<WorleyNoise> worleyNoiseMap)
+    NativeArray<WorleyCell> WorleySet(float3 worldPosition, NativeArray<WorleyNoise> worleyNoiseMap)
     {
-        DynamicBuffer<WorleyCell> uniqueWorleyCells = entityManager.GetBuffer<WorleyCell>(entity);
-        uniqueWorleyCells.ResizeUninitialized(0);
-
-        
         NativeList<WorleyNoise> noiseSet = Util.Set<WorleyNoise>(worleyNoiseMap, Allocator.Temp);
-
         NativeArray<WorleyCell> cellSet = new NativeArray<WorleyCell>(noiseSet.Length, Allocator.TempJob);
-
 
         for(int i = 0; i < noiseSet.Length; i++)
         {
@@ -381,11 +380,8 @@ public class MapManagerSystem : ComponentSystem
                 position = worleyNoise.currentCellPosition
             };
 
-            uniqueWorleyCells.Add(cell);
+            cellSet[i] = cell;
         }
-
-        worleyNoiseMap.Dispose();
-        cellSet.Dispose();
 
         return cellSet;
     }
