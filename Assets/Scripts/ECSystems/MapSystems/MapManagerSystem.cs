@@ -65,35 +65,28 @@ public class MapManagerSystem : ComponentSystem
     protected override void OnStartRunning()
     {
         undiscoveredCells = new NativeList<WorleyCell>(Allocator.Persistent);
-        
-        //  Initialise previous square as different to starting square
-        float3 offset = (new float3(100, 100, 100) * squareWidth);
-        previousMapSquare = CurrentMapSquare() + offset;
 
-        int matrixWidth = 1;
+        currentMapSquare = CurrentMapSquare();
+        //  Initialise previousMapSquare as different to starting square
+        float3 offset = (new float3(100, 100, 100) * squareWidth);
+        previousMapSquare = currentMapSquare + offset;
 
         mapMatrix = new WorldGridMatrix<Entity>{
-            rootPosition = MapMatrixRootPosition(),//remove?
-            itemWorldSize = squareWidth,
+            itemWorldSize = squareWidth
         };
+        mapMatrix.Initialise(currentMapSquare, 1, Allocator.Persistent);
 
-        float3 currentSquare = CurrentMapSquare();
-
-        //TODO: why this?
-        mapMatrix.ReInitialise(currentSquare, matrixWidth, Allocator.Persistent);
-
-        DynamicBuffer<WorleyCell> cellsToDiscover = entityManager.GetBuffer<WorleyCell>(NewMapSquare(currentSquare));
+        Entity initialMapSquare = NewMapSquare(currentMapSquare);
+        DynamicBuffer<WorleyCell> cellsToDiscover = entityManager.GetBuffer<WorleyCell>(initialMapSquare);
         
         cellMatrix = new WorldGridMatrix<WorleyCell>{
-            rootPosition = cellsToDiscover[0].indexFloat,//remove?
             itemWorldSize = 1
         };
+        cellMatrix.Initialise(cellsToDiscover[0].indexFloat, 1, Allocator.Persistent);
 
-        //TODO: why this?
-        cellMatrix.ReInitialise(cellsToDiscover[0].indexFloat, 1, Allocator.Persistent);
-
-        DiscoverCells(currentSquare, cellsToDiscover.AsNativeArray());
+        DiscoverCells(currentMapSquare, cellsToDiscover.AsNativeArray());
     }
+
 
     float3 MapMatrixRootPosition()
     {
@@ -223,10 +216,17 @@ public class MapManagerSystem : ComponentSystem
                 NativeList<WorleyCell> newCells = DiscoverMapSquares(cellsToDiscover[c], playerPosition);
 
                 for(int i = 0; i < newCells.Length; i++)
-                    if(CellInRange(newCells[i]))
-                        newCellsToDiscover.Add(newCells[i]);
+                {
+                    WorleyCell cell = newCells[i];
+                    if(CellInRange(cell))
+                        newCellsToDiscover.Add(cell);
                     else
-                        undiscoveredCells.Add(newCells[i]);
+                        undiscoveredCells.Add(cell);
+                
+                    cellMatrix.SetItem(cell, cell.indexFloat);
+                    cellMatrix.SetBool(true, cell.indexFloat);
+                }
+                
 
                 newCells.Dispose();
             }
@@ -309,11 +309,7 @@ public class MapManagerSystem : ComponentSystem
             WorleyCell cell = uniqueCells[i];
 
             if(!cellMatrix.GetBool(cell.indexFloat))
-            {
                 newCells.Add(cell);
-                cellMatrix.SetItem(cell, cell.indexFloat);
-                cellMatrix.SetBool(true, cell.indexFloat);
-            }
         }
 
         return newCells;

@@ -17,7 +17,7 @@ public struct WorldGridMatrix<T> where T : struct
         bools.Dispose();
     }
 
-    public void ReInitialise(float3 newRootPosition, int width, Allocator label)
+    public void Initialise(float3 newRootPosition, int width, Allocator label)
     {
         matrix.Initialise(width, label); 
         bools.Initialise(width, label); 
