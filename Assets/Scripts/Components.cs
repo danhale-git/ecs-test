@@ -64,6 +64,7 @@ namespace MyComponents
 		public int2 currentCellIndex;
 		public float currentCellValue, distance2Edge, adjacentCellValue;
 	}
+
 	[InternalBufferCapacity(10)]
 	public struct WorleyCell : IBufferElementData
 	{
@@ -72,9 +73,12 @@ namespace MyComponents
 		public float3 indexFloat;
 		public float3 position;
 	}
+	
+	[InternalBufferCapacity(100)]
 	public struct CellMapSquare : IBufferElementData
 	{
-		Entity entity;
+		public Entity entity;
+		public sbyte edge;
 	}
 
 	public struct AdjacentSquares : IComponentData
