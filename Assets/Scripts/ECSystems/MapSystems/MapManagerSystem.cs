@@ -31,6 +31,8 @@ public class MapManagerSystem : ComponentSystem
     EntityArchetype mapSquareArchetype;
     ComponentGroup allSquaresGroup;
 
+    EntityArchetype worleyCellArchetype;
+
 	protected override void OnCreateManager()
     {
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
@@ -60,6 +62,11 @@ public class MapManagerSystem : ComponentSystem
 			All = new ComponentType [] { typeof(MapSquare) }
 		};
 		allSquaresGroup = GetComponentGroup(allSquaresQuery);
+
+        worleyCellArchetype = entityManager.CreateArchetype(
+            ComponentType.Create<WorleyCell>(),
+            ComponentType.Create<CellMapSquare>()
+        );
     }
 
     protected override void OnStartRunning()
@@ -239,10 +246,20 @@ public class MapManagerSystem : ComponentSystem
         cellsToDiscover.Dispose();
     }
 
+    void NewWorleyCell(WorleyCell cell)
+    {
+        Entity cellEntity = entityManager.CreateEntity(worleyCellArchetype);
+
+        DynamicBuffer<WorleyCell> cellBuffer = entityManager.GetBuffer<WorleyCell>(cellEntity);
+        cellBuffer.ResizeUninitialized(1);
+        cellBuffer[0] = cell;
+
+        cellMatrix.SetItem(cell, cell.indexFloat);
+        cellMatrix.SetBool(true, cell.indexFloat);
+    }
+
     NativeList<WorleyCell> DiscoverMapSquares(WorleyCell cell)
     {
-        cellMatrix.SetItem(cell, cell.indexFloat);
-
         NativeList<WorleyCell> newCellsToDiscover = new NativeList<WorleyCell>(Allocator.Temp);
 
         NativeList<float3> positionsToCheck = new NativeList<float3>(Allocator.TempJob);

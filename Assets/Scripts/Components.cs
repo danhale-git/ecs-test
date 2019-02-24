@@ -72,6 +72,10 @@ namespace MyComponents
 		public float3 indexFloat;
 		public float3 position;
 	}
+	public struct CellMapSquare : IBufferElementData
+	{
+		Entity entity;
+	}
 
 	public struct AdjacentSquares : IComponentData
 	{
