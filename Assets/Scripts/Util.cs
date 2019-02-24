@@ -196,4 +196,25 @@ public static class Util
         float3 voxel = block.localPosition;
         return Util.Flatten(voxel.x, voxel.y - mapSquare.bottomBlockBuffer, voxel.z, squareWidth);
     }
+
+    public static NativeList<T> Set<T>(NativeArray<T> raw, Allocator label) where T : struct, System.IComparable<T>
+    {
+        NativeList<T> set = new NativeList<T>(label);
+
+        raw.Sort();
+
+        int index = 0;
+        set.Add(raw[0]);
+
+        for(int i = 1; i < raw.Length; i++)
+        {
+            if(raw[i].CompareTo(set[index]) != 0)
+            {
+                index++;
+                set.Add(raw[i]);
+            }
+        }
+
+        return set;
+    }
 }

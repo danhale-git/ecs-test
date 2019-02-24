@@ -341,7 +341,7 @@ public class MapManagerSystem : ComponentSystem
 
         mapMatrix.SetItem(entity, worldPosition);
 
-        DynamicBuffer<WorleyCell> uniqueWorleyCells = GenerateWorleyData(entity, worldPosition);
+        GenerateWorley(entity, worldPosition);
         return entity;
     }
 
@@ -353,27 +353,35 @@ public class MapManagerSystem : ComponentSystem
 
         return false;
     }
-
-    DynamicBuffer<WorleyCell> GenerateWorleyData(Entity entity, float3 worldPosition)
+    
+    void GenerateWorley(Entity entity, float3 worldPosition)
     {
-        DynamicBuffer<WorleyNoise> worleyNoiseBuffer = GenerateWorleyNoise(entity, worldPosition);
-        DynamicBuffer<WorleyCell> uniqueWorleyCells = GetWorleySet(entity, worleyNoiseBuffer);
+        NativeArray<WorleyNoise> worleyNoiseMap = GetWorleyNoiseMap(worldPosition);
 
-        //CustomDebugTools.MarkError(worldPosition, new Color(uniqueWorleyCells[0].value, uniqueWorleyCells[0].value, uniqueWorleyCells[0].value));   //DEBUG
-
-        return uniqueWorleyCells;
-    }
-
-    DynamicBuffer<WorleyNoise> GenerateWorleyNoise(Entity entity, float3 position)
-    {
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = entityManager.GetBuffer<WorleyNoise>(entity);
-        worleyNoiseBuffer.ResizeUninitialized(0);
+        worleyNoiseBuffer.CopyFrom(worleyNoiseMap);
 
-        NativeArray<WorleyNoise> worleyNoiseMap = GetWorleyNoiseMap(position);
-        worleyNoiseBuffer.AddRange(worleyNoiseMap);
+        DynamicBuffer<WorleyCell> uniqueWorleyCells = entityManager.GetBuffer<WorleyCell>(entity);
+        uniqueWorleyCells.ResizeUninitialized(0);
+        
+        NativeArray<WorleyNoise> noiseSet = Util.Set<WorleyNoise>(worleyNoiseMap, Allocator.Temp);
+
+        for(int i = 0; i < noiseSet.Length; i++)
+        {
+            WorleyNoise worleyNoise = noiseSet[i];
+
+            WorleyCell cell = new WorleyCell {
+                value = worleyNoise.currentCellValue,
+                index = worleyNoise.currentCellIndex,
+                indexFloat = new float3(worleyNoise.currentCellIndex.x, 0, worleyNoise.currentCellIndex.y),
+                position = worleyNoise.currentCellPosition
+            };
+
+            uniqueWorleyCells.Add(cell);
+        }
+
         worleyNoiseMap.Dispose();
-
-        return worleyNoiseBuffer;
+        //CustomDebugTools.MarkError(worldPosition, new Color(uniqueWorleyCells[0].value, uniqueWorleyCells[0].value, uniqueWorleyCells[0].value));   //DEBUG
     }
 
     NativeArray<WorleyNoise> GetWorleyNoiseMap(float3 position)
@@ -397,38 +405,6 @@ public class MapManagerSystem : ComponentSystem
         cellJob.noise.Dispose();
 
         return worleyNoiseMap;
-    }
-
-    DynamicBuffer<WorleyCell> GetWorleySet(Entity entity, DynamicBuffer<WorleyNoise> worleyNoiseBuffer)
-    {
-        NativeArray<WorleyNoise> sortedWorleyNoise = SortedWorleyNoise(worleyNoiseBuffer);
-
-        DynamicBuffer<WorleyCell> uniqueCellsBuffer = entityManager.GetBuffer<WorleyCell>(entity);
-        uniqueCellsBuffer.ResizeUninitialized(0);
-
-        int index = 0;
-        AddCellToSet(uniqueCellsBuffer, sortedWorleyNoise[0]);
-        for(int i = 1; i < sortedWorleyNoise.Length; i++)
-        {
-            if(sortedWorleyNoise[i].currentCellValue != uniqueCellsBuffer[index].value)
-            {
-                index++;
-                AddCellToSet(uniqueCellsBuffer, sortedWorleyNoise[i]);
-            }
-        }
-
-        sortedWorleyNoise.Dispose();
-        return uniqueCellsBuffer;
-    }
-
-    NativeArray<WorleyNoise> SortedWorleyNoise(DynamicBuffer<WorleyNoise> worleyNoiseBuffer)
-    {
-        NativeArray<WorleyNoise> sortedWorleyNoise = new NativeArray<WorleyNoise>(worleyNoiseBuffer.Length, Allocator.Temp);
-        for(int i = 0; i < sortedWorleyNoise.Length; i++)
-            sortedWorleyNoise[i] = worleyNoiseBuffer[i];
-
-        sortedWorleyNoise.Sort();
-        return sortedWorleyNoise;
     }
 
     void AddCellToSet(DynamicBuffer<WorleyCell> uniqueCells, WorleyNoise worleyNoise)
