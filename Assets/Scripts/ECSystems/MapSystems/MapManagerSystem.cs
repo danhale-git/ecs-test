@@ -97,12 +97,8 @@ public class MapManagerSystem : ComponentSystem
         };
         cellMatrix.Initialise(1, Allocator.Persistent);
 
-        //NewWorleyCell(initialCells[0]);
-
         for(int i = 0; i < initialCells.Length; i++)
-        {
             DiscoverCell(initialCells[i]);
-        }
     }
 
     Entity InitialiseMapMatrix()
@@ -232,16 +228,11 @@ public class MapManagerSystem : ComponentSystem
         Entity cellEntity = NewWorleyCell(cell);
 
         NativeList<CellMapSquare> allSquares = DiscoverMapSquares(cellEntity);
+
         DynamicBuffer<CellMapSquare> cellMapSquareBuffer = entityManager.GetBuffer<CellMapSquare>(cellEntity);
         cellMapSquareBuffer.CopyFrom(allSquares);
 
-        NativeList<WorleyCell> newCells = new NativeList<WorleyCell>(Allocator.Temp);
-
-        for(int i = 0; i < allSquares.Length; i++)
-        {
-            DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(allSquares[i].entity);
-            AddNewCells(uniqueCells, newCells);
-        }
+        NativeList<WorleyCell> newCells = NewCells(allSquares);
 
         for(int i = 0; i < newCells.Length; i++)
         {
@@ -253,22 +244,32 @@ public class MapManagerSystem : ComponentSystem
         }
 
         allSquares.Dispose();
+        newCells.Dispose();
     }
 
-    void AddNewCells(DynamicBuffer<WorleyCell> uniqueCells, NativeList<WorleyCell> newCells)
+    NativeList<WorleyCell> NewCells(NativeList<CellMapSquare> allSquares)
     {
-        NativeArray<WorleyCell> cells = new NativeArray<WorleyCell>(uniqueCells.Length, Allocator.Temp);
-        cells.CopyFrom(uniqueCells.AsNativeArray());
-        for(int i = 0; i < cells.Length; i++)
-        {
-            WorleyCell cell = cells[i];
+        NativeList<WorleyCell> newCells = new NativeList<WorleyCell>(Allocator.Temp);
 
-            if(!cellMatrix.GetBool(cell.indexFloat))
+        for(int s = 0; s < allSquares.Length; s++)
+        {
+            DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(allSquares[s].entity);
+
+            NativeArray<WorleyCell> cells = new NativeArray<WorleyCell>(uniqueCells.Length, Allocator.Temp);
+            cells.CopyFrom(uniqueCells.AsNativeArray());
+            for(int c = 0; c < cells.Length; c++)
             {
-                newCells.Add(cell);
+                WorleyCell cell = cells[c];
+
+                if(!cellMatrix.GetBool(cell.indexFloat))
+                {
+                    newCells.Add(cell);
+                }
             }
+            cells.Dispose();
         }
-        cells.Dispose();
+        
+        return newCells;
     }
 
     NativeList<CellMapSquare> DiscoverMapSquares(Entity cellEntity)
