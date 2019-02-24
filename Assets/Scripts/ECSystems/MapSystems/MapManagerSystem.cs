@@ -232,7 +232,18 @@ public class MapManagerSystem : ComponentSystem
             for(int c = 0; c < cellsToDiscover.Length; c++)
             {
                 Entity cellEntity = cellMatrix.GetItem(cellsToDiscover[c].indexFloat);
-                NativeList<WorleyCell> newCells = DiscoverMapSquares(cellEntity);
+                NativeList<CellMapSquare> allSquares = DiscoverMapSquares(cellEntity);
+
+                NativeList<WorleyCell> newCells = new NativeList<WorleyCell>(Allocator.Temp);
+
+                for(int i = 0; i < allSquares.Length; i++)
+                {
+                    DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(allSquares[i].entity);
+                    AddNewCells(uniqueCells, newCells);
+                }
+
+                DynamicBuffer<CellMapSquare> cellMapSquareBuffer = entityManager.GetBuffer<CellMapSquare>(cellEntity);
+                cellMapSquareBuffer.CopyFrom(allSquares);
 
                 for(int i = 0; i < newCells.Length; i++)
                 {
@@ -243,6 +254,7 @@ public class MapManagerSystem : ComponentSystem
                         undiscoveredCells.Add(cell);
                 }
                 
+                allSquares.Dispose();
                 newCells.Dispose();
             }
 
@@ -253,39 +265,69 @@ public class MapManagerSystem : ComponentSystem
         cellsToDiscover.Dispose();
     }
 
-    NativeList<WorleyCell> DiscoverMapSquares(Entity cellEntity)
+    void AddNewCells(DynamicBuffer<WorleyCell> uniqueCells, NativeList<WorleyCell> newCells)
+    {
+        NativeArray<WorleyCell> cells = new NativeArray<WorleyCell>(uniqueCells.Length, Allocator.Temp);
+        cells.CopyFrom(uniqueCells.AsNativeArray());
+        for(int i = 0; i < cells.Length; i++)
+        {
+            WorleyCell cell = cells[i];
+
+            if(!cellMatrix.GetBool(cell.indexFloat))
+            {
+                newCells.Add(cell);
+                NewWorleyCell(cell);
+            }
+        }
+        cells.Dispose();
+    }
+
+    NativeList<CellMapSquare> DiscoverMapSquares(Entity cellEntity)
     {
         WorleyCell cell = entityManager.GetBuffer<WorleyCell>(cellEntity)[0];
 
-        NativeList<WorleyCell> newCellsToDiscover = new NativeList<WorleyCell>(Allocator.Temp);
+        float3 startPosition = Util.VoxelOwner(cell.position, squareWidth);
 
-        NativeList<float3> positionsToCheck = new NativeList<float3>(Allocator.TempJob);
-        positionsToCheck.Add(Util.VoxelOwner(cell.position, squareWidth));
+        NativeList<CellMapSquare> allSquares = new NativeList<CellMapSquare>(Allocator.TempJob);
 
-        int squareSafety = 0;
-        while(positionsToCheck.Length > 0 && squareSafety < 100)
-        {
-            squareSafety += WhileLoopSafetyCeck(squareSafety);
-
-            NativeList<float3> newPositionsToCheck = new NativeList<float3>(Allocator.Temp);
-
-            for(int p = 0; p < positionsToCheck.Length; p++)
-            {
-                NativeList<WorleyCell> newCells = CheckAdjacentMapSquares(cellEntity, positionsToCheck[p], newPositionsToCheck);
-                newCellsToDiscover.AddRange(newCells);
-                newCells.Dispose();
-            }
-
-            positionsToCheck.Dispose();
-            positionsToCheck = newPositionsToCheck;
-        }
-
-        positionsToCheck.Dispose();
-
-        return newCellsToDiscover;
+        CheckAdjacentSquares(cellEntity, startPosition, allSquares);
+      
+        return allSquares;
     }
 
-    NativeList<WorleyCell> CheckAdjacentMapSquares(Entity currentCellEntity, float3 centerPosition, NativeList<float3> newPositionsToCheck)
+    void CheckAdjacentSquares(Entity currentCellEntity, float3 position, NativeList<CellMapSquare> allSquares)
+    {
+        WorleyCell currentCell = entityManager.GetBuffer<WorleyCell>(currentCellEntity)[0];
+
+        Entity mapSquareEntity = GetOrCreateMapSquare(position);
+        DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(mapSquareEntity);
+
+        if(!MapSquareNeedsChecking(currentCell, position, uniqueCells))
+            return;
+
+        mapMatrix.SetBool(true, position);
+
+        sbyte atEdge;
+        if(uniqueCells.Length == 1 && uniqueCells[0].value == currentCell.value)
+            atEdge = 0;
+        else
+            atEdge = 1;
+
+        allSquares.Add(new CellMapSquare {
+                entity = mapSquareEntity,
+                edge = atEdge
+            }
+        );
+
+        NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
+        for(int d = 0; d < 4; d++)
+        {
+            float3 adjacentPosition = position + (directions[d] * squareWidth);
+            CheckAdjacentSquares(currentCellEntity, adjacentPosition, allSquares);
+        }  
+    }
+
+    /*NativeList<WorleyCell> CheckAdjacentMapSquares(Entity currentCellEntity, float3 centerPosition, NativeList<float3> newPositionsToCheck)
     {
         WorleyCell currentCell = entityManager.GetBuffer<WorleyCell>(currentCellEntity)[0];
 
@@ -327,7 +369,7 @@ public class MapManagerSystem : ComponentSystem
         squaresInCell.Dispose();
         
         return newCells;
-    }
+    } */
 
     Entity GetOrCreateMapSquare(float3 position)
     {
@@ -360,23 +402,6 @@ public class MapManagerSystem : ComponentSystem
                 return true;
 
         return false;
-    }
-
-    void AddNewCells(DynamicBuffer<WorleyCell> uniqueCells, NativeList<WorleyCell> newCells)
-    {
-        NativeArray<WorleyCell> cells = new NativeArray<WorleyCell>(uniqueCells.Length, Allocator.Temp);
-        cells.CopyFrom(uniqueCells.AsNativeArray());
-        for(int i = 0; i < cells.Length; i++)
-        {
-            WorleyCell cell = cells[i];
-
-            if(!cellMatrix.GetBool(cell.indexFloat))
-            {
-                newCells.Add(cell);
-                NewWorleyCell(cell);
-            }
-        }
-        cells.Dispose();
     }
 
     Entity NewWorleyCell(WorleyCell cell)
