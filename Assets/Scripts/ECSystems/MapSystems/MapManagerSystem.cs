@@ -71,27 +71,24 @@ public class MapManagerSystem : ComponentSystem
         float3 offset = (new float3(100, 100, 100) * squareWidth);
         previousMapSquare = currentMapSquare + offset;
 
-        mapMatrix = new WorldGridMatrix<Entity>{
-            itemWorldSize = squareWidth
-        };
-        mapMatrix.Initialise(currentMapSquare, 1, Allocator.Persistent);
-
-        Entity initialMapSquare = NewMapSquare(currentMapSquare);
-        DynamicBuffer<WorleyCell> cellsToDiscover = entityManager.GetBuffer<WorleyCell>(initialMapSquare);
-        
-        cellMatrix = new WorldGridMatrix<WorleyCell>{
-            itemWorldSize = 1
-        };
-        cellMatrix.Initialise(cellsToDiscover[0].indexFloat, 1, Allocator.Persistent);
-
-        DiscoverCells(currentMapSquare, cellsToDiscover.AsNativeArray());
+        Entity initialMapSquare = InitialiseMapMatrix();
+        InitialiseCellMatrix(entityManager.GetBuffer<WorleyCell>(initialMapSquare));
     }
 
-
-    float3 MapMatrixRootPosition()
+    void InitialiseCellMatrix(DynamicBuffer<WorleyCell> initialCells)
     {
-        int offset = TerrainSettings.viewDistance * squareWidth;
-        return new float3(currentMapSquare.x - offset, 0, currentMapSquare.z - offset);
+        cellMatrix = new WorldGridMatrix<WorleyCell>{ itemWorldSize = 1 };
+        cellMatrix.Initialise(initialCells[0].indexFloat, 1, Allocator.Persistent);
+
+        DiscoverCells(currentMapSquare, initialCells.AsNativeArray());
+    }
+
+    Entity InitialiseMapMatrix()
+    {
+        mapMatrix = new WorldGridMatrix<Entity>{ itemWorldSize = squareWidth };
+        mapMatrix.Initialise(currentMapSquare, 1, Allocator.Persistent);
+
+        return NewMapSquare(currentMapSquare);
     }
 
     float3 CurrentMapSquare()
