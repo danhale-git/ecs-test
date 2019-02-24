@@ -98,7 +98,7 @@ public class MapManagerSystem : ComponentSystem
         cellMatrix.Initialise(1, Allocator.Persistent);
 
         for(int i = 0; i < initialCells.Length; i++)
-            DiscoverCell(initialCells[i]);
+            DiscoverCells(initialCells[i]);
     }
 
     Entity InitialiseMapMatrix()
@@ -138,7 +138,7 @@ public class MapManagerSystem : ComponentSystem
 
         for(int i = 0; i < cellsInRange.Length; i++)
         {
-            DiscoverCell(cellsInRange[i]);
+            DiscoverCells(cellsInRange[i]);
         }
         cellsInRange.Dispose();
     }
@@ -220,25 +220,31 @@ public class MapManagerSystem : ComponentSystem
         return (math.abs(difference.x) < 150 && math.abs(difference.z) < 150);
     }
 
-    void DiscoverCell(WorleyCell cell)
+    void DiscoverCells(WorleyCell cell)
     {
         if(cellMatrix.GetBool(cell.indexFloat))
             return;
 
         Entity cellEntity = NewWorleyCell(cell);
 
-        NativeList<CellMapSquare> allSquares = DiscoverMapSquares(cellEntity);
+        cellMatrix.SetItem(cellEntity, cell.indexFloat);
+        cellMatrix.SetBool(true, cell.indexFloat);
+
+        NativeList<CellMapSquare> allSquares = new NativeList<CellMapSquare>(Allocator.Temp);
+        float3 startPosition = Util.VoxelOwner(cell.position, squareWidth);
+        DiscoverMapSquares(cellEntity, startPosition, allSquares);
 
         DynamicBuffer<CellMapSquare> cellMapSquareBuffer = entityManager.GetBuffer<CellMapSquare>(cellEntity);
         cellMapSquareBuffer.CopyFrom(allSquares);
 
-        NativeList<WorleyCell> newCells = NewCells(allSquares);
+        NativeList<WorleyCell> newCells = FindNewCells(allSquares);
 
         for(int i = 0; i < newCells.Length; i++)
         {
             WorleyCell newCell = newCells[i];
+
             if(CellInRange(newCell))
-                DiscoverCell(newCell);
+                DiscoverCells(newCell);
             else
                 undiscoveredCells.Add(newCell);
         }
@@ -247,7 +253,18 @@ public class MapManagerSystem : ComponentSystem
         newCells.Dispose();
     }
 
-    NativeList<WorleyCell> NewCells(NativeList<CellMapSquare> allSquares)
+    Entity NewWorleyCell(WorleyCell cell)
+    {
+        Entity cellEntity = entityManager.CreateEntity(worleyCellArchetype);
+
+        DynamicBuffer<WorleyCell> cellBuffer = entityManager.GetBuffer<WorleyCell>(cellEntity);
+        cellBuffer.ResizeUninitialized(1);
+        cellBuffer[0] = cell;
+
+        return cellEntity;
+    }
+
+    NativeList<WorleyCell> FindNewCells(NativeList<CellMapSquare> allSquares)
     {
         NativeList<WorleyCell> newCells = new NativeList<WorleyCell>(Allocator.Temp);
 
@@ -272,20 +289,7 @@ public class MapManagerSystem : ComponentSystem
         return newCells;
     }
 
-    NativeList<CellMapSquare> DiscoverMapSquares(Entity cellEntity)
-    {
-        WorleyCell cell = entityManager.GetBuffer<WorleyCell>(cellEntity)[0];
-
-        float3 startPosition = Util.VoxelOwner(cell.position, squareWidth);
-
-        NativeList<CellMapSquare> allSquares = new NativeList<CellMapSquare>(Allocator.TempJob);
-
-        CheckAdjacentSquares(cellEntity, startPosition, allSquares);
-      
-        return allSquares;
-    }
-
-    void CheckAdjacentSquares(Entity currentCellEntity, float3 position, NativeList<CellMapSquare> allSquares)
+    void DiscoverMapSquares(Entity currentCellEntity, float3 position, NativeList<CellMapSquare> allSquares)
     {
         WorleyCell currentCell = entityManager.GetBuffer<WorleyCell>(currentCellEntity)[0];
 
@@ -313,7 +317,7 @@ public class MapManagerSystem : ComponentSystem
         for(int d = 0; d < 4; d++)
         {
             float3 adjacentPosition = position + (directions[d] * squareWidth);
-            CheckAdjacentSquares(currentCellEntity, adjacentPosition, allSquares);
+            DiscoverMapSquares(currentCellEntity, adjacentPosition, allSquares);
         }  
     }
 
@@ -348,20 +352,6 @@ public class MapManagerSystem : ComponentSystem
                 return true;
 
         return false;
-    }
-
-    Entity NewWorleyCell(WorleyCell cell)
-    {
-        Entity cellEntity = entityManager.CreateEntity(worleyCellArchetype);
-
-        DynamicBuffer<WorleyCell> cellBuffer = entityManager.GetBuffer<WorleyCell>(cellEntity);
-        cellBuffer.ResizeUninitialized(1);
-        cellBuffer[0] = cell;
-
-        cellMatrix.SetItem(cellEntity, cell.indexFloat);
-        cellMatrix.SetBool(true, cell.indexFloat);
-
-        return cellEntity;
     }
 
     DynamicBuffer<WorleyCell> GenerateWorleyData(Entity entity, float3 worldPosition)
