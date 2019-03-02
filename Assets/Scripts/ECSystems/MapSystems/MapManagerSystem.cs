@@ -136,7 +136,7 @@ public class MapManagerSystem : ComponentSystem
 
         cellsInRange.Dispose();
 
-        RemoveOutOfRangeCells();
+        //RemoveOutOfRangeCells();
     }
 
     NativeList<WorleyCell> UndiscoveredCellsInRange()
@@ -146,7 +146,7 @@ public class MapManagerSystem : ComponentSystem
         for(int i = 0; i < undiscoveredCells.Length; i++)
         {
             WorleyCell cell = undiscoveredCells[i];
-            if(CellInRange(cell))
+            if(CellIsInRange(cell))
             {
                 cellsInRange.Add(cell);
                 undiscoveredCells.RemoveAtSwapBack(i);
@@ -156,7 +156,7 @@ public class MapManagerSystem : ComponentSystem
         return cellsInRange;
     }
 
-    bool CellInRange(WorleyCell cell)
+    bool CellIsInRange(WorleyCell cell)
     {
         float3 difference = cell.position - currentMapSquare;
         return (math.abs(difference.x) < 150 && math.abs(difference.z) < 150);
@@ -174,7 +174,7 @@ public class MapManagerSystem : ComponentSystem
 
             WorleyCell cell = entityManager.GetBuffer<WorleyCell>(cellEntity)[0];
 
-            if(!CellInRange(cell))
+            if(!CellIsInRange(cell))
             {
                 DynamicBuffer<CellMapSquare> mapSquaresBuffer = entityManager.GetBuffer<CellMapSquare>(cellEntity);
 
@@ -193,7 +193,7 @@ public class MapManagerSystem : ComponentSystem
                     DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(squareEntity);
                     if(MapSquareEligibleForRemoval(squareEntity, cell, uniqueCells))
                     {
-                        UpdateNeighbouringSquares(squarePosition);
+                        UpdateNeighbourAdjacentSquares(squarePosition);
                         entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity);
                     }
                 }
@@ -203,7 +203,7 @@ public class MapManagerSystem : ComponentSystem
         }
     }
 
-    void UpdateNeighbouringSquares(float3 centerSquarePosition)
+    void UpdateNeighbourAdjacentSquares(float3 centerSquarePosition)
     {
         NativeArray<float3> neighbourDirections = Util.CardinalDirections(Allocator.Temp);
         for(int i = 0; i < neighbourDirections.Length; i++)
@@ -225,7 +225,7 @@ public class MapManagerSystem : ComponentSystem
     bool MapSquareEligibleForRemoval(Entity squareEntity, WorleyCell cell, DynamicBuffer<WorleyCell> uniqueCells)
     {
         for(int i = 0; i < uniqueCells.Length; i++)
-            if(CellInRange(uniqueCells[i]) && cellMatrix.GetBool(cell.indexFloat))
+            if(CellIsInRange(uniqueCells[i]) && cellMatrix.GetBool(cell.indexFloat))
                 return false;
 
         return true;
@@ -248,13 +248,13 @@ public class MapManagerSystem : ComponentSystem
         DynamicBuffer<CellMapSquare> cellMapSquareBuffer = entityManager.GetBuffer<CellMapSquare>(cellEntity);
         cellMapSquareBuffer.CopyFrom(allSquares);
 
-        NativeList<WorleyCell> newCells = FindNewCells(allSquares);
+        NativeList<WorleyCell> newCells = FindUndiscoveredCells(allSquares);
 
         for(int i = 0; i < newCells.Length; i++)
         {
             WorleyCell newCell = newCells[i];
 
-            if(CellInRange(newCell))
+            if(CellIsInRange(newCell))
                 DiscoverCells(newCell);
             else
                 undiscoveredCells.Add(newCell);
@@ -275,7 +275,7 @@ public class MapManagerSystem : ComponentSystem
         return cellEntity;
     }
 
-    NativeList<WorleyCell> FindNewCells(NativeList<CellMapSquare> allSquares)
+    NativeList<WorleyCell> FindUndiscoveredCells(NativeList<CellMapSquare> allSquares)
     {
         NativeList<WorleyCell> newCells = new NativeList<WorleyCell>(Allocator.Temp);
 
@@ -344,10 +344,10 @@ public class MapManagerSystem : ComponentSystem
             return entity;
     }
 
-    bool MapSquareNeedsChecking(WorleyCell cell, float3 adjacentPosition, DynamicBuffer<WorleyCell> uniqueCells)
+    bool MapSquareNeedsChecking(WorleyCell cell, float3 mapSquarePosition, DynamicBuffer<WorleyCell> uniqueCells)
     {
         for(int i = 0; i < uniqueCells.Length; i++)
-            if(uniqueCells[i].index.Equals(cell.index) && !mapMatrix.GetBool(adjacentPosition))
+            if(uniqueCells[i].index.Equals(cell.index) && !mapMatrix.GetBool(mapSquarePosition))
                 return true;
 
         return false;
