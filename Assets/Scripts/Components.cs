@@ -66,8 +66,13 @@ namespace MyComponents
 	}
 
 	[InternalBufferCapacity(10)]
-	public struct WorleyCell : IBufferElementData
+	public struct WorleyCell : IBufferElementData, System.IComparable<WorleyCell>
 	{
+		public int CompareTo(WorleyCell other)
+		{
+			return value.CompareTo(other.value);
+		}
+
 		public float value;
 		public int2 index;
 		public float3 indexFloat;

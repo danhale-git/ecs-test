@@ -213,27 +213,21 @@ public class MapManagerSystem : ComponentSystem
 
     NativeList<WorleyCell> FindUndiscoveredCells(NativeList<CellMapSquare> allSquares)
     {
-        NativeList<WorleyCell> newCells = new NativeList<WorleyCell>(Allocator.Temp);
+        NativeList<WorleyCell> newCells = new NativeList<WorleyCell>(Allocator.TempJob);
 
         for(int s = 0; s < allSquares.Length; s++)
         {
-            DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(allSquares[s].entity);
-
-            NativeArray<WorleyCell> cells = new NativeArray<WorleyCell>(uniqueCells.Length, Allocator.Temp);
-            cells.CopyFrom(uniqueCells.AsNativeArray());
+            NativeArray<WorleyCell> cells = entityUtil.CopyDynamicBuffer<WorleyCell>(allSquares[s].entity, Allocator.Temp);
             for(int c = 0; c < cells.Length; c++)
-            {
-                WorleyCell cell = cells[c];
-
-                if(!cellMatrix.ItemIsSet(cell.indexFloat))
-                {
-                    newCells.Add(cell);
-                }
-            }
+                if(!cellMatrix.ItemIsSet(cells[c].indexFloat))
+                    newCells.Add(cells[c]);
             cells.Dispose();
         }
         
-        return newCells;
+        NativeList<WorleyCell> newCellSet = Util.Set<WorleyCell>(newCells, Allocator.Temp);
+        newCells.Dispose();
+
+        return newCellSet;
     }
 
     void DiscoverMapSquares(Entity currentCellEntity, float3 position, NativeList<CellMapSquare> allSquares)

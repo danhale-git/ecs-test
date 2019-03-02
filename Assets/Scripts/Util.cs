@@ -201,6 +201,8 @@ public static class Util
     {
         NativeList<T> set = new NativeList<T>(label);
 
+        if(raw.Length == 0) return set;
+
         raw.Sort();
 
         int index = 0;
