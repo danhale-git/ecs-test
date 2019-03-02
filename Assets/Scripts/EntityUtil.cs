@@ -1,4 +1,5 @@
 ﻿using Unity.Entities;
+using Unity.Collections;
 using MyComponents;
 
 public struct EntityUtil
@@ -55,5 +56,14 @@ public struct EntityUtil
             return true;
         }
         else return false;
+    }
+
+    public NativeArray<T> CopyDynamicBuffer<T>(Entity entity, Allocator label)
+    where T : struct, IBufferElementData
+    {
+        DynamicBuffer<T> buffer = entityManager.GetBuffer<T>(entity);
+        NativeArray<T> array = new NativeArray<T>(buffer.Length, label);
+        array.CopyFrom(buffer.AsNativeArray());
+        return array;
     }
 }

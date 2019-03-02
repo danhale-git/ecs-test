@@ -78,7 +78,6 @@ namespace MyComponents
 	public struct CellMapSquare : IBufferElementData
 	{
 		public Entity entity;
-		public float3 position;
 		public sbyte edge;
 	}
 
@@ -200,7 +199,6 @@ namespace MyComponents
 
 namespace Tags
 {
-	public struct GenerateCells : IComponentData { }
 	public struct GenerateTerrain : IComponentData { }
 	public struct GetAdjacentSquares : IComponentData { }
 	public struct LoadChanges : IComponentData { }
