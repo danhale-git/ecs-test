@@ -7,6 +7,45 @@ using UnityEngine.UI;
 public class DebugMonoB : MonoBehaviour
 {
     public Text debugPanelText;
+    public GameObject squarePrefab;
+    public List<GameObject> allSquares = new List<GameObject>();
+    GameObject canvas;
+
+    float timer = 0;
+
+    void Start()
+    {
+        canvas = FindObjectOfType<Canvas>().gameObject;
+    }
+
+    void DebugMatrixEntities()
+    {
+        GridMatrix<Entity> matrix = CustomDebugTools.currentMatrix;
+        Vector2 centerOffset = new Vector2(Screen.width/2, Screen.height/2);
+
+        foreach(GameObject square in allSquares)
+            Destroy(square);
+
+        for(int i = 0; i < matrix.Length; i++)
+        {
+            Vector3 position = matrix.FlatIndexToGridPosition(i) * 100;
+            Vector2 position2 = new Vector2(position.x, position.z) + centerOffset;
+            Color color;
+            if(matrix.GetBool(i))
+            {
+                color = Color.red;
+            }
+            else
+            {
+                color = Color.cyan;
+            } 
+            GameObject square = Instantiate(squarePrefab, position2, Quaternion.identity, canvas.transform);
+
+            square.GetComponent<Image>().color = color;
+
+            allSquares.Add(square);
+        }    
+    }
 
     void Update()
     {
@@ -21,6 +60,12 @@ public class DebugMonoB : MonoBehaviour
         }
 
         debugPanelText.text = newText;
+
+        if(Time.fixedTime > timer+1)
+        {
+            DebugMatrixEntities();
+            timer = Time.fixedTime;
+        }
     }
 
     void OnDrawGizmos()
