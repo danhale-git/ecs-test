@@ -271,6 +271,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   debugPanelText: {fileID: 1153342973}
+  squarePrefab: {fileID: 1631620478590898727, guid: 12f1f4224d6e08e44a86cd550a4d6510,
+    type: 3}
+  allSquares: []
 --- !u!4 &215104910
 Transform:
   m_ObjectHideFlags: 0

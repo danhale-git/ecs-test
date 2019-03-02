@@ -136,7 +136,10 @@ public class MapManagerSystem : ComponentSystem
 
         cellsInRange.Dispose();
 
-        //RemoveOutOfRangeCells();
+        RemoveOutOfRangeCells();
+
+        CustomDebugTools.SetDebugText("Cell matrix length", cellMatrix.Length);
+        CustomDebugTools.currentMatrix = cellMatrix;
     }
 
     NativeList<WorleyCell> UndiscoveredCellsInRange()
@@ -195,8 +198,12 @@ public class MapManagerSystem : ComponentSystem
                     {
                         UpdateNeighbourAdjacentSquares(squarePosition);
                         entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity);
+                        mapMatrix.SetBool(false, squarePosition);
                     }
                 }
+
+                cellMatrix.SetBool(false, cell.indexFloat);
+                undiscoveredCells.Add(cell);
 
                 mapSquares.Dispose();
             }
