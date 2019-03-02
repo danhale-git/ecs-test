@@ -6,6 +6,8 @@ public struct Matrix<T> where T : struct
     int2 rootPosition;
 
     NativeArray<T> matrix;
+    NativeArray<sbyte> isSet;
+
     public int width;
     Allocator label;
 
@@ -16,12 +18,14 @@ public struct Matrix<T> where T : struct
     public void Dispose()
     {
         if(matrix.IsCreated) matrix.Dispose();
+        if(isSet.IsCreated) isSet.Dispose();
     }
 
     public void Initialise(int width, Allocator label)
     {
         Dispose();
         matrix = new NativeArray<T>((int)math.pow(width, 2), label);
+        isSet = new NativeArray<sbyte>(matrix.Length, label);
         this.width = width;
         this.label = label;
     }
@@ -65,28 +69,43 @@ public struct Matrix<T> where T : struct
     void GenerateNewArray(float3 rootIndexOffset, int oldWidth)
     {
         NativeArray<T> newMatrix = new NativeArray<T>((int)math.pow(width, 2), label);
+        NativeArray<sbyte> newIsSet = new NativeArray<sbyte>(newMatrix.Length, label);
 
         for(int i = 0; i < matrix.Length; i++)
         {
             float3 oldMatrixPosition = Util.Unflatten2D(i, oldWidth);
             float3 newMatrixPosition = oldMatrixPosition + rootIndexOffset;
 
-            int newMatrixIndex = Util.Flatten2D(newMatrixPosition, width);
-            newMatrix[newMatrixIndex] = matrix[i];
+            int newIndex = Util.Flatten2D(newMatrixPosition, width);
+            newMatrix[newIndex] = matrix[i];
+            newIsSet[newIndex] = isSet[i];
         }
 
-        SetMatrix(newMatrix);
+        SetMatrix(newMatrix, newIsSet);
     }
 
-    public void SetMatrix(NativeArray<T> newMatrix)
+    public void SetMatrix(NativeArray<T> newMatrix, NativeArray<sbyte> newIsSet)
     {
         Dispose();
         matrix = newMatrix;
+        isSet = newIsSet;
     }
 
     public void SetItem(T item, int index)
     {
         matrix[index] = item;
+        isSet[index] = 1;
+    }
+
+    public void UnsetItem(int index)
+    {
+        matrix[index] = new T();
+        isSet[index] = 0;
+    }
+    
+    public bool ItemIsSet(int index)
+    {
+        return isSet[index] > 0;
     }
 
     public T GetItem(int index)

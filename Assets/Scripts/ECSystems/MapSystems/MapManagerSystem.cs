@@ -171,8 +171,12 @@ public class MapManagerSystem : ComponentSystem
         {
             Entity cellEntity = cellMatrix.GetItem(c);
 
-            //TODO why is this necessary?
-            if(!entityManager.Exists(cellEntity))
+            if(cellMatrix.GetBool(c) != cellMatrix.ItemIsSet(c))
+            {
+                Debug.Log("Difference at "+cellEntity.Index);
+            }
+
+            if(!cellMatrix.ItemIsSet(c))
                 continue;
 
             WorleyCell cell = entityManager.GetBuffer<WorleyCell>(cellEntity)[0];
@@ -199,10 +203,12 @@ public class MapManagerSystem : ComponentSystem
                         UpdateNeighbourAdjacentSquares(squarePosition);
                         entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity);
                         mapMatrix.SetBool(false, squarePosition);
+                        mapMatrix.UnsetItem(squarePosition);
                     }
                 }
 
                 cellMatrix.SetBool(false, cell.indexFloat);
+                cellMatrix.UnsetItem(cell.indexFloat);
                 undiscoveredCells.Add(cell);
 
                 mapSquares.Dispose();
@@ -232,7 +238,7 @@ public class MapManagerSystem : ComponentSystem
     bool MapSquareEligibleForRemoval(Entity squareEntity, WorleyCell cell, DynamicBuffer<WorleyCell> uniqueCells)
     {
         for(int i = 0; i < uniqueCells.Length; i++)
-            if(CellIsInRange(uniqueCells[i]) && cellMatrix.GetBool(cell.indexFloat))
+            if(CellIsInRange(uniqueCells[i]) && cellMatrix.ItemIsSet(cell.indexFloat))
                 return false;
 
         return true;
@@ -240,7 +246,7 @@ public class MapManagerSystem : ComponentSystem
 
     void DiscoverCells(WorleyCell cell)
     {
-        if(cellMatrix.GetBool(cell.indexFloat))
+        if(cellMatrix.ItemIsSet(cell.indexFloat))
             return;
 
         Entity cellEntity = NewWorleyCell(cell);
@@ -296,7 +302,7 @@ public class MapManagerSystem : ComponentSystem
             {
                 WorleyCell cell = cells[c];
 
-                if(!cellMatrix.GetBool(cell.indexFloat))
+                if(!cellMatrix.ItemIsSet(cell.indexFloat))
                 {
                     newCells.Add(cell);
                 }

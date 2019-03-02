@@ -41,6 +41,26 @@ public struct GridMatrix<T> where T : struct
         matrix.SetItem(item, index);
     }
 
+    public void UnsetItem(float3 gridPosition)
+    {
+        matrix.UnsetItem(GridPositionToFlatIndex(gridPosition));
+    }
+
+    public bool ItemIsSet(float3 gridPosition)
+    {
+        if(!GridPositionIsInMatrix(gridPosition))
+            return false;
+
+        return matrix.ItemIsSet(GridPositionToFlatIndex(gridPosition));
+    }
+    public bool ItemIsSet(int index)
+    {
+        if(index < 0 || index >= matrix.Length)
+            return false;
+
+        return matrix.ItemIsSet(index);
+    }
+
     public T GetItem(int index)
     {
 		return matrix.GetItem(index);
@@ -86,7 +106,7 @@ public struct GridMatrix<T> where T : struct
 
     public bool GetBool(int index)
     {
-        if(!GridPositionIsInMatrix(FlatIndexToGridPosition(index)))
+        if(index < 0 || index >= matrix.Length)
             return false;
             
         return bools.GetItem(index) > 0 ? true : false;
