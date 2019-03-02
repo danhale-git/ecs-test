@@ -232,12 +232,12 @@ public class MapManagerSystem : ComponentSystem
         WorleyCell currentCell = entityManager.GetBuffer<WorleyCell>(currentCellEntity)[0];
 
         Entity mapSquareEntity = GetOrCreateMapSquare(squarePosition);
+        mapMatrix.SetBool(true, squarePosition);
+
         DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(mapSquareEntity);
 
-        if(mapMatrix.GetBool(squarePosition) || !MapSquareNeedsChecking(currentCell, uniqueCells))
+        if(!MapSquareNeedsChecking(currentCell, uniqueCells))
             return;
-        else
-            mapMatrix.SetBool(true, squarePosition);
 
         sbyte atEdge;
         if(uniqueCells.Length == 1 && uniqueCells[0].value == currentCell.value)
@@ -255,7 +255,8 @@ public class MapManagerSystem : ComponentSystem
         for(int d = 0; d < 4; d++)
         {
             float3 adjacentPosition = squarePosition + (directions[d] * squareWidth);
-            DiscoverMapSquaresRecursive(currentCellEntity, adjacentPosition, allSquares);
+            if(!mapMatrix.GetBool(adjacentPosition))
+                DiscoverMapSquaresRecursive(currentCellEntity, adjacentPosition, allSquares);
         }  
     }
 
@@ -351,8 +352,6 @@ public class MapManagerSystem : ComponentSystem
 
         return cellSet;
     }
-
-    
 
     void RemoveOutOfRangeCells()
     {
