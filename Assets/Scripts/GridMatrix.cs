@@ -1,10 +1,10 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 
-public struct WorldGridMatrix<T> where T : struct
+public struct GridMatrix<T> where T : struct
 {
     public float3 rootPosition;
-    public int itemWorldSize;
+    public int gridSquareSize;
 
     Matrix<T> matrix;
     Matrix<sbyte> bools;
@@ -23,21 +23,21 @@ public struct WorldGridMatrix<T> where T : struct
         bools.Initialise(width, label); 
     } 
 
-    void ResizeMatrices(float3 worldPosition)
+    void ResizeMatrices(float3 gridPosition)
     {
-        float3 matrixPosition = WorldToMatrixPosition(worldPosition);
+        float3 matrixPosition = GridToMatrixPosition(gridPosition);
         float3 rootPositionChange = matrix.ResizeMatrix(matrixPosition);
         bools.ResizeMatrix(matrixPosition);
 
-        rootPosition = rootPosition + (rootPositionChange * itemWorldSize);
+        rootPosition = rootPosition + (rootPositionChange * gridSquareSize);
     }
 
-    public void SetItem(T item, float3 worldPosition)
+    public void SetItem(T item, float3 gridPosition)
     {
-        if(!WorldPositionIsInMatrix(worldPosition))
-            ResizeMatrices(worldPosition);
+        if(!GridPositionIsInMatrix(gridPosition))
+            ResizeMatrices(gridPosition);
 
-        int index = WorldPositionToIndex(worldPosition);
+        int index = GridPositionToFlatIndex(gridPosition);
         matrix.SetItem(item, index);
     }
 
@@ -46,27 +46,27 @@ public struct WorldGridMatrix<T> where T : struct
 		return matrix.GetItem(index);
     }
 
-    public T GetItem(float3 worldPosition)
+    public T GetItem(float3 gridPosition)
     {
-        int index = WorldPositionToIndex(worldPosition);
+        int index = GridPositionToFlatIndex(gridPosition);
 		return matrix.GetItem(index);
     }
 
-    public bool TryGetItem(float3 worldPosition, out T item)
+    public bool TryGetItem(float3 gridPosition, out T item)
 	{
-        if(!WorldPositionIsInMatrix(worldPosition))
+        if(!GridPositionIsInMatrix(gridPosition))
         {
             item = new T();
             return false;
         }
 
-		item = matrix.GetItem(WorldPositionToIndex(worldPosition));
+		item = matrix.GetItem(GridPositionToFlatIndex(gridPosition));
         return true;
 	}
 
-    public void SetBool(bool value, float3 worldPosition)
+    public void SetBool(bool value, float3 gridPosition)
     {
-        int index = WorldPositionToIndex(worldPosition);
+        int index = GridPositionToFlatIndex(gridPosition);
         bools.SetItem(value ? (sbyte)1 : (sbyte)0, index);
     }
 
@@ -75,26 +75,26 @@ public struct WorldGridMatrix<T> where T : struct
         bools.SetItem(value ? (sbyte)1 : (sbyte)0, index);
     }
 
-    public bool GetBool(float3 worldPosition)
+    public bool GetBool(float3 gridPosition)
     {
-        if(!WorldPositionIsInMatrix(worldPosition))
+        if(!GridPositionIsInMatrix(gridPosition))
             return false;
             
-        int index = WorldPositionToIndex(worldPosition);
+        int index = GridPositionToFlatIndex(gridPosition);
         return bools.GetItem(index) > 0 ? true : false;
     }
 
     public bool GetBool(int index)
     {
-        if(!WorldPositionIsInMatrix(IndexToWorldPosition(index)))
+        if(!GridPositionIsInMatrix(FlatIndexToGridPosition(index)))
             return false;
             
         return bools.GetItem(index) > 0 ? true : false;
     }
 
-    public bool WorldPositionIsInMatrix(float3 worldPosition, int offset = 0)
+    public bool GridPositionIsInMatrix(float3 gridPosition, int offset = 0)
 	{
-        float3 matrixPosition = WorldToMatrixPosition(worldPosition);
+        float3 matrixPosition = GridToMatrixPosition(gridPosition);
         int arrayWidth = matrix.width-1;
 
 		if(	matrixPosition.x >= offset && matrixPosition.x <= arrayWidth-offset &&
@@ -128,29 +128,29 @@ public struct WorldGridMatrix<T> where T : struct
 		else
 			return false;
     }
-    public bool InDistanceFromWorldPosition(float3 inDistanceFromWorld, float3 positionWorld, int offset)
+    public bool InDistanceFromGridPosition(float3 inDistanceFromGrid, float3 positionGrid, int offset)
     {
-        float3 inDistanceFrom = WorldToMatrixPosition(inDistanceFromWorld);
-        float3 position = WorldToMatrixPosition(positionWorld);
+        float3 inDistanceFrom = GridToMatrixPosition(inDistanceFromGrid);
+        float3 position = GridToMatrixPosition(positionGrid);
         return InDistancceFromPosition(inDistanceFrom, position, offset);
     }
     
-    public int WorldPositionToIndex(float3 worldPosition)
+    public int GridPositionToFlatIndex(float3 gridPosition)
     {
-        return matrix.PositionToIndex(WorldToMatrixPosition(worldPosition));
+        return matrix.PositionToIndex(GridToMatrixPosition(gridPosition));
     }
 
-    public float3 WorldToMatrixPosition(float3 worldPosition)
+    public float3 GridToMatrixPosition(float3 gridPosition)
     {
-        return (worldPosition - rootPosition) / itemWorldSize;
+        return (gridPosition - rootPosition) / gridSquareSize;
     }
     
-    public float3 IndexToWorldPosition(int index)
+    public float3 FlatIndexToGridPosition(int index)
     {
-        return MatrixToWorldPosition(matrix.IndexToPosition(index));
+        return MatrixToGridPosition(matrix.IndexToPosition(index));
     }
-    public float3 MatrixToWorldPosition(float3 matrixPosition)
+    public float3 MatrixToGridPosition(float3 matrixPosition)
     {
-        return (matrixPosition * itemWorldSize) + rootPosition;
+        return (matrixPosition * gridSquareSize) + rootPosition;
     }
 }

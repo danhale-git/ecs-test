@@ -20,8 +20,8 @@ public class MapManagerSystem : ComponentSystem
 
 	public static Entity playerEntity;
 
-    public WorldGridMatrix<Entity> mapMatrix;
-    WorldGridMatrix<Entity> cellMatrix;
+    public GridMatrix<Entity> mapMatrix;
+    GridMatrix<Entity> cellMatrix;
 
     NativeList<WorleyCell> undiscoveredCells;
     
@@ -88,9 +88,9 @@ public class MapManagerSystem : ComponentSystem
 
     Entity InitialiseMapMatrix()
     {
-        mapMatrix = new WorldGridMatrix<Entity>{
+        mapMatrix = new GridMatrix<Entity>{
             rootPosition = currentMapSquare,
-            itemWorldSize = squareWidth
+            gridSquareSize = squareWidth
         };
         mapMatrix.Initialise(1, Allocator.Persistent);
 
@@ -99,9 +99,9 @@ public class MapManagerSystem : ComponentSystem
 
     void InitialiseCellMatrix(NativeArray<WorleyCell> initialCells)
     {
-        cellMatrix = new WorldGridMatrix<Entity>{
+        cellMatrix = new GridMatrix<Entity>{
             rootPosition = initialCells[0].indexFloat,
-            itemWorldSize = 1
+            gridSquareSize = 1
         };
         cellMatrix.Initialise(1, Allocator.Persistent);
 
@@ -215,7 +215,7 @@ public class MapManagerSystem : ComponentSystem
     void UpdateAdjacentSquares(float3 mapSquarePosition)
     {
         Entity squareEntity = mapMatrix.GetItem(mapSquarePosition);
-        if(mapMatrix.WorldPositionIsInMatrix(mapSquarePosition) && entityManager.Exists(squareEntity))
+        if(mapMatrix.GridPositionIsInMatrix(mapSquarePosition) && entityManager.Exists(squareEntity))
         {
             Entity adjacent = mapMatrix.GetItem(mapSquarePosition);
             entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(adjacent);

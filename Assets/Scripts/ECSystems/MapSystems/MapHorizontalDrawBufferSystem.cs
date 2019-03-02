@@ -56,7 +56,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 				Entity entity   = entities[e];
 				float3 position = positions[e].Value;
 
-                bool inViewRadius = managerSystem.mapMatrix.InDistanceFromWorldPosition(position, managerSystem.currentMapSquare, TerrainSettings.viewDistance);
+                bool inViewRadius = managerSystem.mapMatrix.InDistanceFromGridPosition(position, managerSystem.currentMapSquare, TerrainSettings.viewDistance);
 
                 if(inViewRadius)
                     UpdateDrawBuffer(entity, position, commandBuffer);
@@ -133,8 +133,8 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
     DrawBufferType GetDrawBuffer(float3 bufferWorldPosition)
     {
-        float3 centerPosition = managerSystem.mapMatrix.WorldToMatrixPosition(managerSystem.currentMapSquare);
-        float3 bufferPosition = managerSystem.mapMatrix.WorldToMatrixPosition(bufferWorldPosition);
+        float3 centerPosition = managerSystem.mapMatrix.GridToMatrixPosition(managerSystem.currentMapSquare);
+        float3 bufferPosition = managerSystem.mapMatrix.GridToMatrixPosition(bufferWorldPosition);
         int view = TerrainSettings.viewDistance;
 
         if      (managerSystem.mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
