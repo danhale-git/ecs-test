@@ -53,7 +53,6 @@ public class MapManagerSystem : ComponentSystem
             ComponentType.Create<Topology>(),
             ComponentType.Create<Block>(),
 
-            ComponentType.Create<Tags.UpdateHorizontalDrawBuffer>(),            
             ComponentType.Create<Tags.GenerateTerrain>(),
             ComponentType.Create<Tags.GetAdjacentSquares>(),
             ComponentType.Create<Tags.LoadChanges>(),
