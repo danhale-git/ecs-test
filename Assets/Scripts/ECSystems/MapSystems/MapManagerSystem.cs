@@ -18,6 +18,8 @@ public class MapManagerSystem : ComponentSystem
 
     int squareWidth;
 
+    const int maxCellDistance = 150;
+
 	public static Entity playerEntity;
 
     public GridMatrix<Entity> mapMatrix;
@@ -140,6 +142,8 @@ public class MapManagerSystem : ComponentSystem
         RemoveOutOfRangeCells();
 
         CustomDebugTools.SetDebugText("Cell matrix length", cellMatrix.Length);
+        CustomDebugTools.SetDebugText("Map matrix length", mapMatrix.Length);
+
         //CustomDebugTools.currentMatrix = mapMatrix;
         //CustomDebugTools.currentMatrix = cellMatrix;
     }
@@ -164,7 +168,7 @@ public class MapManagerSystem : ComponentSystem
     bool CellIsInRange(WorleyCell cell)
     {
         float3 difference = cell.position - currentMapSquare;
-        return (math.abs(difference.x) < 150 && math.abs(difference.z) < 150);
+        return (math.abs(difference.x) < maxCellDistance && math.abs(difference.z) < maxCellDistance);
     }
 
     void RemoveOutOfRangeCells()
@@ -351,12 +355,10 @@ public class MapManagerSystem : ComponentSystem
         Entity mapSquareEntity = GetOrCreateMapSquare(position);
         DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(mapSquareEntity);
 
-        
-
-        if(!MapSquareNeedsChecking(currentCell, position, uniqueCells))
+        if(mapMatrix.GetBool(position) || !MapSquareNeedsChecking(currentCell, position, uniqueCells))
             return;
-
-        mapMatrix.SetBool(true, position);
+        else
+            mapMatrix.SetBool(true, position);
 
         sbyte atEdge;
         if(uniqueCells.Length == 1 && uniqueCells[0].value == currentCell.value)
@@ -394,7 +396,7 @@ public class MapManagerSystem : ComponentSystem
     bool MapSquareNeedsChecking(WorleyCell cell, float3 mapSquarePosition, DynamicBuffer<WorleyCell> uniqueCells)
     {
         for(int i = 0; i < uniqueCells.Length; i++)
-            if(uniqueCells[i].index.Equals(cell.index) && !mapMatrix.GetBool(mapSquarePosition))
+            if(uniqueCells[i].index.Equals(cell.index))
                 return true;
 
         return false;
