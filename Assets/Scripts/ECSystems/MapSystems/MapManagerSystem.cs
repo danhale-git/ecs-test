@@ -21,6 +21,7 @@ public class MapManagerSystem : ComponentSystem
 	public static Entity playerEntity;
 
     public GridMatrix<Entity> mapMatrix;
+
     GridMatrix<Entity> cellMatrix;
 
     NativeList<WorleyCell> undiscoveredCells;
@@ -139,6 +140,7 @@ public class MapManagerSystem : ComponentSystem
         RemoveOutOfRangeCells();
 
         CustomDebugTools.SetDebugText("Cell matrix length", cellMatrix.Length);
+        //CustomDebugTools.currentMatrix = mapMatrix;
         CustomDebugTools.currentMatrix = cellMatrix;
     }
 
@@ -191,20 +193,47 @@ public class MapManagerSystem : ComponentSystem
                 for(int s = 0; s < mapSquares.Length; s++)
                 {
                     Entity squareEntity = mapSquares[s].entity;
+                    CellMapSquare mapSquare = mapSquares[s];
         
                     //TODO why is this necessary?
+                    //if(!mapMatrix.ItemIsSet(s))
+                    //    continue;
+
                     if(!entityManager.Exists(squareEntity))
-                        continue;
+                        CustomDebugTools.Cube(Color.red, mapMatrix.FlatIndexToGridPosition(s));
 
                     float3 squarePosition = entityManager.GetComponentData<Position>(squareEntity).Value;
                     DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(squareEntity);
-                    if(MapSquareEligibleForRemoval(squareEntity, cell, uniqueCells))
+
+
+                    if(mapSquare.edge == 0)
+                        Remove(squareEntity, squarePosition);
+                    else
+                    {
+                        int activeCells = 0;
+                        for(int i = 0; i < uniqueCells.Length; i++)
+                        {
+                            if(cellMatrix.ItemIsSet(uniqueCells[i].indexFloat))
+                                activeCells++;
+                        }
+
+                        if(activeCells <= 1)
+                            Remove(squareEntity, squarePosition);
+                        else{
+                            CustomDebugTools.Cube(Color.cyan, squarePosition);
+                        }
+                    }
+
+                    
+
+
+                    /*if(MapSquareEligibleForRemoval(squareEntity, cell, uniqueCells))
                     {
                         UpdateNeighbourAdjacentSquares(squarePosition);
                         entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity);
                         mapMatrix.SetBool(false, squarePosition);
                         mapMatrix.UnsetItem(squarePosition);
-                    }
+                    } */
                 }
 
                 cellMatrix.SetBool(false, cell.indexFloat);
@@ -214,6 +243,14 @@ public class MapManagerSystem : ComponentSystem
                 mapSquares.Dispose();
             }
         }
+    }
+
+    void Remove(Entity squareEntity, float3 squarePosition)
+    {
+        UpdateNeighbourAdjacentSquares(squarePosition);
+        entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity);
+        mapMatrix.SetBool(false, squarePosition);
+        mapMatrix.UnsetItem(squarePosition);
     }
 
     void UpdateNeighbourAdjacentSquares(float3 centerSquarePosition)
@@ -235,14 +272,14 @@ public class MapManagerSystem : ComponentSystem
         }
     }
 
-    bool MapSquareEligibleForRemoval(Entity squareEntity, WorleyCell cell, DynamicBuffer<WorleyCell> uniqueCells)
+    /*bool MapSquareEligibleForRemoval(Entity squareEntity, WorleyCell cell, DynamicBuffer<WorleyCell> uniqueCells)
     {
         for(int i = 0; i < uniqueCells.Length; i++)
             if(CellIsInRange(uniqueCells[i]) && cellMatrix.ItemIsSet(cell.indexFloat))
                 return false;
 
         return true;
-    }
+    } */
 
     void DiscoverCells(WorleyCell cell)
     {
@@ -319,6 +356,8 @@ public class MapManagerSystem : ComponentSystem
 
         Entity mapSquareEntity = GetOrCreateMapSquare(position);
         DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(mapSquareEntity);
+
+        
 
         if(!MapSquareNeedsChecking(currentCell, position, uniqueCells))
             return;

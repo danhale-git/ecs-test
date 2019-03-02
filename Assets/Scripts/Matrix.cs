@@ -9,7 +9,7 @@ public struct Matrix<T> where T : struct
     NativeArray<sbyte> isSet;
 
     public int width;
-    Allocator label;
+    public Allocator label;
 
     public bool initialised{ get{ return matrix.IsCreated; } }
 
@@ -102,7 +102,7 @@ public struct Matrix<T> where T : struct
         matrix[index] = new T();
         isSet[index] = 0;
     }
-    
+
     public bool ItemIsSet(int index)
     {
         return isSet[index] > 0;

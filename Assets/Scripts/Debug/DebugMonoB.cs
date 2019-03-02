@@ -28,10 +28,10 @@ public class DebugMonoB : MonoBehaviour
 
         for(int i = 0; i < matrix.Length; i++)
         {
-            Vector3 position = matrix.FlatIndexToGridPosition(i) * 50;
+            Vector3 position = (matrix.FlatIndexToGridPosition(i) * 15) / matrix.gridSquareSize;
             Vector2 position2 = new Vector2(position.x, position.z) + centerOffset;
             Color color;
-            if(matrix.GetBool(i))
+            if(matrix.ItemIsSet(i))
             {
                 color = new Color(1, 0, 0, 0.5f);
             }

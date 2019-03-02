@@ -21,7 +21,13 @@ public struct GridMatrix<T> where T : struct
     {
         matrix.Initialise(width, label); 
         bools.Initialise(width, label); 
-    } 
+    }
+
+    public void ResetBools()
+    {
+        bools.Dispose();
+        bools.Initialise(matrix.width, matrix.label); 
+    }
 
     void ResizeMatrices(float3 gridPosition)
     {
