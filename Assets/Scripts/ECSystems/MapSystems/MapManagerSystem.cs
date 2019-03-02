@@ -133,17 +133,14 @@ public class MapManagerSystem : ComponentSystem
         }
 
         NativeList<WorleyCell> cellsInRange = UndiscoveredCellsInRange();
-
         for(int i = 0; i < cellsInRange.Length; i++)
             DiscoverCells(cellsInRange[i]);
-
         cellsInRange.Dispose();
 
         RemoveOutOfRangeCells();
 
         CustomDebugTools.SetDebugText("Cell matrix length", cellMatrix.Length);
         CustomDebugTools.SetDebugText("Map matrix length", mapMatrix.Length);
-
         //CustomDebugTools.currentMatrix = mapMatrix;
         //CustomDebugTools.currentMatrix = cellMatrix;
     }
@@ -177,11 +174,6 @@ public class MapManagerSystem : ComponentSystem
         {
             Entity cellEntity = cellMatrix.GetItem(c);
 
-            if(cellMatrix.GetBool(c) != cellMatrix.ItemIsSet(c))
-            {
-                Debug.Log("Difference at "+cellEntity.Index);
-            }
-
             if(!cellMatrix.ItemIsSet(c))
                 continue;
 
@@ -202,40 +194,16 @@ public class MapManagerSystem : ComponentSystem
                     float3 squarePosition = entityManager.GetComponentData<Position>(squareEntity).Value;
                     DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(squareEntity);
 
-                    if(mapSquare.edge == 0)
+                    if(mapSquare.edge == 0 || ActiveCellCount(uniqueCells) <= 1)
                         RemoveMapSquare(squareEntity, squarePosition);
-                    else
-                    {
-                        if(ActiveCellCount(uniqueCells) <= 1)
-                            RemoveMapSquare(squareEntity, squarePosition);
-                    }
-
-                    
-
-
-                    /*if(MapSquareEligibleForRemoval(squareEntity, cell, uniqueCells))
-                    {
-                        UpdateNeighbourAdjacentSquares(squarePosition);
-                        entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity);
-                        mapMatrix.SetBool(false, squarePosition);
-                        mapMatrix.UnsetItem(squarePosition);
-                    } */
                 }
 
-                cellMatrix.SetBool(false, cell.indexFloat);
                 cellMatrix.UnsetItem(cell.indexFloat);
                 undiscoveredCells.Add(cell);
 
                 mapSquares.Dispose();
             }
         }
-    }
-
-    void RemoveMapSquare(Entity squareEntity, float3 squarePosition)
-    {
-        UpdateNeighbourAdjacentSquares(squarePosition);
-        entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity);
-        mapMatrix.UnsetItem(squarePosition);
     }
 
     int ActiveCellCount(DynamicBuffer<WorleyCell> uniqueCells)
@@ -249,12 +217,18 @@ public class MapManagerSystem : ComponentSystem
         return activeCells;
     }
 
-    void UpdateNeighbourAdjacentSquares(float3 centerSquarePosition)
+    void RemoveMapSquare(Entity squareEntity, float3 squarePosition)
+    {
+        UpdateNeighbouringSquares(squarePosition);
+        entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity);
+        mapMatrix.UnsetItem(squarePosition);
+    }
+
+    void UpdateNeighbouringSquares(float3 centerSquarePosition)
     {
         NativeArray<float3> neighbourDirections = Util.CardinalDirections(Allocator.Temp);
         for(int i = 0; i < neighbourDirections.Length; i++)
             UpdateAdjacentSquares(centerSquarePosition + (neighbourDirections[i] * squareWidth));
-
         neighbourDirections.Dispose();
     }
 
@@ -268,15 +242,6 @@ public class MapManagerSystem : ComponentSystem
         }
     }
 
-    /*bool MapSquareEligibleForRemoval(Entity squareEntity, WorleyCell cell, DynamicBuffer<WorleyCell> uniqueCells)
-    {
-        for(int i = 0; i < uniqueCells.Length; i++)
-            if(CellIsInRange(uniqueCells[i]) && cellMatrix.ItemIsSet(cell.indexFloat))
-                return false;
-
-        return true;
-    } */
-
     void DiscoverCells(WorleyCell cell)
     {
         if(cellMatrix.ItemIsSet(cell.indexFloat))
@@ -285,7 +250,6 @@ public class MapManagerSystem : ComponentSystem
         Entity cellEntity = NewWorleyCell(cell);
 
         cellMatrix.SetItem(cellEntity, cell.indexFloat);
-        cellMatrix.SetBool(true, cell.indexFloat);
 
         NativeList<CellMapSquare> allSquares = new NativeList<CellMapSquare>(Allocator.Temp);
         float3 startPosition = Util.VoxelOwner(cell.position, squareWidth);
