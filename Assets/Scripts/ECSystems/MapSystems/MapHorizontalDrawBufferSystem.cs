@@ -38,6 +38,8 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
     void UpdateDrawBuffer()
 	{
+        int mapSquareCount = 0;
+
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
 		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);
 
@@ -62,6 +64,8 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
                     UpdateDrawBuffer(entity, position, commandBuffer);
                 else
                     RedrawMapSquare(entity, commandBuffer);
+
+                mapSquareCount++;
 			}
 		}
 
@@ -69,6 +73,8 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 		commandBuffer.Dispose();
 
 		chunks.Dispose();
+
+        CustomDebugTools.SetDebugText("Total map squares", mapSquareCount);
 	}
 
     public void UpdateDrawBuffer(Entity entity, float3 worldPosition, EntityCommandBuffer commandBuffer)
