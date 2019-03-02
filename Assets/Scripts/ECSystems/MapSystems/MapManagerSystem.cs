@@ -140,8 +140,8 @@ public class MapManagerSystem : ComponentSystem
         RemoveOutOfRangeCells();
 
         CustomDebugTools.SetDebugText("Cell matrix length", cellMatrix.Length);
-        //CustomDebugTools.currentMatrix = mapMatrix;
-        CustomDebugTools.currentMatrix = cellMatrix;
+        CustomDebugTools.currentMatrix = mapMatrix;
+        //CustomDebugTools.currentMatrix = cellMatrix;
     }
 
     NativeList<WorleyCell> UndiscoveredCellsInRange()
@@ -195,33 +195,15 @@ public class MapManagerSystem : ComponentSystem
                     Entity squareEntity = mapSquares[s].entity;
                     CellMapSquare mapSquare = mapSquares[s];
         
-                    //TODO why is this necessary?
-                    //if(!mapMatrix.ItemIsSet(s))
-                    //    continue;
-
-                    if(!entityManager.Exists(squareEntity))
-                        CustomDebugTools.Cube(Color.red, mapMatrix.FlatIndexToGridPosition(s));
-
                     float3 squarePosition = entityManager.GetComponentData<Position>(squareEntity).Value;
                     DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(squareEntity);
-
 
                     if(mapSquare.edge == 0)
                         Remove(squareEntity, squarePosition);
                     else
                     {
-                        int activeCells = 0;
-                        for(int i = 0; i < uniqueCells.Length; i++)
-                        {
-                            if(cellMatrix.ItemIsSet(uniqueCells[i].indexFloat))
-                                activeCells++;
-                        }
-
-                        if(activeCells <= 1)
+                        if(ActiveCellCount(uniqueCells) <= 1)
                             Remove(squareEntity, squarePosition);
-                        else{
-                            CustomDebugTools.Cube(Color.cyan, squarePosition);
-                        }
                     }
 
                     
@@ -251,6 +233,17 @@ public class MapManagerSystem : ComponentSystem
         entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity);
         mapMatrix.SetBool(false, squarePosition);
         mapMatrix.UnsetItem(squarePosition);
+    }
+
+    int ActiveCellCount(DynamicBuffer<WorleyCell> uniqueCells)
+    {
+        int activeCells = 0;
+        for(int i = 0; i < uniqueCells.Length; i++)
+        {
+            if(cellMatrix.ItemIsSet(uniqueCells[i].indexFloat))
+                activeCells++;
+        }
+        return activeCells;
     }
 
     void UpdateNeighbourAdjacentSquares(float3 centerSquarePosition)
@@ -293,6 +286,8 @@ public class MapManagerSystem : ComponentSystem
 
         NativeList<CellMapSquare> allSquares = new NativeList<CellMapSquare>(Allocator.Temp);
         float3 startPosition = Util.VoxelOwner(cell.position, squareWidth);
+
+        mapMatrix.ResetBools();
         DiscoverMapSquares(cellEntity, startPosition, allSquares);
 
         DynamicBuffer<CellMapSquare> cellMapSquareBuffer = entityManager.GetBuffer<CellMapSquare>(cellEntity);
