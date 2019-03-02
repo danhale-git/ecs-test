@@ -28,16 +28,16 @@ public class DebugMonoB : MonoBehaviour
 
         for(int i = 0; i < matrix.Length; i++)
         {
-            Vector3 position = matrix.FlatIndexToGridPosition(i) * 100;
+            Vector3 position = matrix.FlatIndexToGridPosition(i) * 50;
             Vector2 position2 = new Vector2(position.x, position.z) + centerOffset;
             Color color;
             if(matrix.GetBool(i))
             {
-                color = Color.red;
+                color = new Color(1, 0, 0, 0.5f);
             }
             else
             {
-                color = Color.cyan;
+                color = new Color(0, 1, 1, 0.5f);
             } 
             GameObject square = Instantiate(squarePrefab, position2, Quaternion.identity, canvas.transform);
 
