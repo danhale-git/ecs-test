@@ -194,16 +194,16 @@ public class MapManagerSystem : ComponentSystem
                 {
                     Entity squareEntity = mapSquares[s].entity;
                     CellMapSquare mapSquare = mapSquares[s];
-        
+
                     float3 squarePosition = entityManager.GetComponentData<Position>(squareEntity).Value;
                     DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(squareEntity);
 
                     if(mapSquare.edge == 0)
-                        Remove(squareEntity, squarePosition);
+                        RemoveMapSquare(squareEntity, squarePosition);
                     else
                     {
                         if(ActiveCellCount(uniqueCells) <= 1)
-                            Remove(squareEntity, squarePosition);
+                            RemoveMapSquare(squareEntity, squarePosition);
                     }
 
                     
@@ -227,7 +227,7 @@ public class MapManagerSystem : ComponentSystem
         }
     }
 
-    void Remove(Entity squareEntity, float3 squarePosition)
+    void RemoveMapSquare(Entity squareEntity, float3 squarePosition)
     {
         UpdateNeighbourAdjacentSquares(squarePosition);
         entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity);
@@ -365,8 +365,9 @@ public class MapManagerSystem : ComponentSystem
         else
             atEdge = 1;
 
-        allSquares.Add(new CellMapSquare {
+        allSquares.Add(new CellMapSquare{
                 entity = mapSquareEntity,
+                position = position,
                 edge = atEdge
             }
         );

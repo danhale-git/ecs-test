@@ -78,6 +78,7 @@ namespace MyComponents
 	public struct CellMapSquare : IBufferElementData
 	{
 		public Entity entity;
+		public float3 position;
 		public sbyte edge;
 	}
 

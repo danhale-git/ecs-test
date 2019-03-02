@@ -80,7 +80,7 @@ public struct GridMatrix<T> where T : struct
 
     public bool TryGetItem(float3 gridPosition, out T item)
 	{
-        if(!GridPositionIsInMatrix(gridPosition))
+        if(!GridPositionIsInMatrix(gridPosition) || !ItemIsSet(gridPosition))
         {
             item = new T();
             return false;
