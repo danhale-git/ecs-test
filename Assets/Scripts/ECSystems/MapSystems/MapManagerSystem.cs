@@ -140,7 +140,7 @@ public class MapManagerSystem : ComponentSystem
         RemoveOutOfRangeCells();
 
         CustomDebugTools.SetDebugText("Cell matrix length", cellMatrix.Length);
-        CustomDebugTools.currentMatrix = mapMatrix;
+        //CustomDebugTools.currentMatrix = mapMatrix;
         //CustomDebugTools.currentMatrix = cellMatrix;
     }
 
@@ -231,7 +231,6 @@ public class MapManagerSystem : ComponentSystem
     {
         UpdateNeighbourAdjacentSquares(squarePosition);
         entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity);
-        mapMatrix.SetBool(false, squarePosition);
         mapMatrix.UnsetItem(squarePosition);
     }
 
@@ -257,8 +256,8 @@ public class MapManagerSystem : ComponentSystem
 
     void UpdateAdjacentSquares(float3 mapSquarePosition)
     {
-        Entity squareEntity = mapMatrix.GetItem(mapSquarePosition);
-        if(mapMatrix.GridPositionIsInMatrix(mapSquarePosition) && entityManager.Exists(squareEntity))
+        Entity squareEntity;
+        if(mapMatrix.TryGetItem(mapSquarePosition, out squareEntity))
         {
             Entity adjacent = mapMatrix.GetItem(mapSquarePosition);
             entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(adjacent);
