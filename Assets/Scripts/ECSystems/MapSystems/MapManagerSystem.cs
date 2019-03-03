@@ -15,6 +15,7 @@ public class MapManagerSystem : ComponentSystem
     MapHorizontalDrawBufferSystem horizontalDrawBufferSystem;
 
     EntityUtil entityUtil;
+    WorleyNoiseUtil worleyUtil;
 
     int squareWidth;
 
@@ -23,7 +24,6 @@ public class MapManagerSystem : ComponentSystem
 	public static Entity playerEntity;
 
     public GridMatrix<Entity> mapMatrix;
-
     public GridMatrix<Entity> cellMatrix;
 
     NativeList<WorleyCell> undiscoveredCells;
@@ -33,7 +33,6 @@ public class MapManagerSystem : ComponentSystem
     float3 previousMapSquare;
 
     EntityArchetype mapSquareArchetype;
-
     EntityArchetype worleyCellArchetype;
 
 	protected override void OnCreateManager()
@@ -42,6 +41,8 @@ public class MapManagerSystem : ComponentSystem
         horizontalDrawBufferSystem = World.Active.GetOrCreateManager<MapHorizontalDrawBufferSystem>();
 
         entityUtil = new EntityUtil(entityManager);
+        worleyUtil = new WorleyNoiseUtil();
+
         squareWidth = TerrainSettings.mapSquareWidth;
 
         mapSquareArchetype = entityManager.CreateArchetype(
@@ -236,18 +237,12 @@ public class MapManagerSystem : ComponentSystem
 
         DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(mapSquareEntity);
 
-        if(!MapSquareNeedsChecking(currentCell, uniqueCells))
+        if(!UniqueCellsContainsCell(uniqueCells, currentCell))
             return;
-
-        sbyte atEdge;
-        if(uniqueCells.Length == 1 && uniqueCells[0].value == currentCell.value)
-            atEdge = 0;
-        else
-            atEdge = 1;
 
         allSquares.Add(new CellMapSquare{
                 entity = mapSquareEntity,
-                edge = atEdge
+                edge = MapSquareIsAtEge(uniqueCells, currentCell)
             }
         );
 
@@ -257,7 +252,8 @@ public class MapManagerSystem : ComponentSystem
             float3 adjacentPosition = squarePosition + (directions[d] * squareWidth);
             if(!mapMatrix.GetBool(adjacentPosition))
                 DiscoverMapSquaresRecursive(currentCellEntity, adjacentPosition, allSquares);
-        }  
+        }
+        directions.Dispose();
     }
 
     Entity GetOrCreateMapSquare(float3 position)
@@ -285,7 +281,21 @@ public class MapManagerSystem : ComponentSystem
         return entity;
     }
 
-    bool MapSquareNeedsChecking(WorleyCell cell, DynamicBuffer<WorleyCell> uniqueCells)
+    void GenerateWorleyNoise(Entity entity, float3 worldPosition)
+    {
+        NativeArray<WorleyNoise> worleyNoiseMap = worleyUtil.GetWorleyNoiseMap(worldPosition);
+        DynamicBuffer<WorleyNoise> worleyNoiseBuffer = entityManager.GetBuffer<WorleyNoise>(entity);
+        worleyNoiseBuffer.CopyFrom(worleyNoiseMap);
+
+        NativeArray<WorleyCell> worleyCellSet = worleyUtil.UniqueWorleyCellSet(worleyNoiseMap);
+        DynamicBuffer<WorleyCell> uniqueWorleyCells = entityManager.GetBuffer<WorleyCell>(entity);
+        uniqueWorleyCells.CopyFrom(worleyCellSet);
+
+        worleyCellSet.Dispose();
+        worleyNoiseMap.Dispose();
+    }
+
+    bool UniqueCellsContainsCell(DynamicBuffer<WorleyCell> uniqueCells, WorleyCell cell)
     {
         for(int i = 0; i < uniqueCells.Length; i++)
             if(uniqueCells[i].index.Equals(cell.index))
@@ -294,63 +304,12 @@ public class MapManagerSystem : ComponentSystem
         return false;
     }
 
-    void GenerateWorleyNoise(Entity entity, float3 worldPosition)
+    sbyte MapSquareIsAtEge(DynamicBuffer<WorleyCell> uniqueCells, WorleyCell cell)
     {
-        NativeArray<WorleyNoise> worleyNoiseMap = GetWorleyNoiseMap(worldPosition);
-        DynamicBuffer<WorleyNoise> worleyNoiseBuffer = entityManager.GetBuffer<WorleyNoise>(entity);
-        worleyNoiseBuffer.CopyFrom(worleyNoiseMap);
-
-        NativeArray<WorleyCell> worleyCellSet = UniqueWorleyCellSet(worldPosition, worleyNoiseMap);
-        DynamicBuffer<WorleyCell> uniqueWorleyCells = entityManager.GetBuffer<WorleyCell>(entity);
-        uniqueWorleyCells.CopyFrom(worleyCellSet);
-
-        worleyCellSet.Dispose();
-        worleyNoiseMap.Dispose();
-    }
-
-    NativeArray<WorleyNoise> GetWorleyNoiseMap(float3 position)
-    {
-        NativeArray<WorleyNoise> worleyNoiseMap = new NativeArray<WorleyNoise>((int)math.pow(squareWidth, 2), Allocator.TempJob);
-
-        WorleyNoiseJob cellJob = new WorleyNoiseJob(){
-            worleyNoiseMap 	= worleyNoiseMap,						//	Flattened 2D array of noise
-			offset 		    = position,						        //	World position of this map square's local 0,0
-			squareWidth	    = squareWidth,						    //	Length of one side of a square/cube
-            seed 		    = TerrainSettings.seed,			        //	Perlin noise seed
-            frequency 	    = TerrainSettings.cellFrequency,	    //	Perlin noise frequency
-            perterbAmp      = TerrainSettings.cellEdgeSmoothing,    //  Gradient Peturb amount
-            cellularJitter  = TerrainSettings.cellularJitter,       //  Randomness of cell shapes
-			util 		    = new JobUtil(),				        //	Utilities
-            noise 		    = new WorleyNoiseGenerator(0)	        //	FastNoise.GetSimplex adapted for Jobs
-        };
-
-        cellJob.Schedule(worleyNoiseMap.Length, 16).Complete();
-
-        cellJob.noise.Dispose();
-
-        return worleyNoiseMap;
-    }
-    
-    NativeArray<WorleyCell> UniqueWorleyCellSet(float3 worldPosition, NativeArray<WorleyNoise> worleyNoiseMap)
-    {
-        NativeList<WorleyNoise> noiseSet = Util.Set<WorleyNoise>(worleyNoiseMap, Allocator.Temp);
-        NativeArray<WorleyCell> cellSet = new NativeArray<WorleyCell>(noiseSet.Length, Allocator.TempJob);
-
-        for(int i = 0; i < noiseSet.Length; i++)
-        {
-            WorleyNoise worleyNoise = noiseSet[i];
-
-            WorleyCell cell = new WorleyCell {
-                value = worleyNoise.currentCellValue,
-                index = worleyNoise.currentCellIndex,
-                indexFloat = new float3(worleyNoise.currentCellIndex.x, 0, worleyNoise.currentCellIndex.y),
-                position = worleyNoise.currentCellPosition
-            };
-
-            cellSet[i] = cell;
-        }
-
-        return cellSet;
+        if(uniqueCells.Length == 1 && uniqueCells[0].value == cell.value)
+            return 0;
+        else
+            return 1;
     }
 
     void RemoveOutOfRangeCells()

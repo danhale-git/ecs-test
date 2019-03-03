@@ -22,8 +22,6 @@ public class MapTopologySystem : ComponentSystem
 
     ComponentGroup terrainGroup;
 
-    JobifiedNoise jobifiedNoise;
-
     BiomeUtility biomes;
 
     protected override void OnCreateManager()
@@ -37,8 +35,6 @@ public class MapTopologySystem : ComponentSystem
             All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateTerrain) }
         };
         terrainGroup = GetComponentGroup(terrainQuery);
-
-        jobifiedNoise = new JobifiedNoise();
 
         biomes = new BiomeUtility();
     }
