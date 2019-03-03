@@ -37,8 +37,6 @@ public class MapSquareCheckSystem : ComponentSystem
         if(!managerSystem.update)
             return;
 
-        managerSystem.mapMatrix.ResetBools();
-
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
 		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);
 
@@ -58,6 +56,8 @@ public class MapSquareCheckSystem : ComponentSystem
 			{
                 if(ActiveCellCount(cells[e]) == 0)
                     RemoveMapSquare(entities[e], positions[e].Value, commandBuffer);
+
+                entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(entities[e], commandBuffer);
             }
         }
 
@@ -79,27 +79,7 @@ public class MapSquareCheckSystem : ComponentSystem
 
     void RemoveMapSquare(Entity squareEntity, float3 squarePosition, EntityCommandBuffer commandBuffer)
     {
-        UpdateNeighbouringSquares(squarePosition, commandBuffer);
         entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity, commandBuffer);
         managerSystem.mapMatrix.UnsetItem(squarePosition);
     }
-
-    void UpdateNeighbouringSquares(float3 centerSquarePosition, EntityCommandBuffer commandBuffer)
-    {
-        NativeArray<float3> neighbourDirections = Util.CardinalDirections(Allocator.Temp);
-        for(int i = 0; i < neighbourDirections.Length; i++)
-        {
-            float3 neighbourPosition = centerSquarePosition + (neighbourDirections[i] * squareWidth);
-            Entity squareEntity;
-
-            bool alreadyUpdated = managerSystem.mapMatrix.GetBool(neighbourPosition);
-            if(!alreadyUpdated && managerSystem.mapMatrix.TryGetItem(neighbourPosition, out squareEntity))
-            {
-                managerSystem.mapMatrix.SetBool(true, neighbourPosition);
-                
-                entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(squareEntity, commandBuffer);
-            }
-        }
-        neighbourDirections.Dispose();
-    } 
 }
