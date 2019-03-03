@@ -5,7 +5,7 @@ using Unity.Transforms;
 using Unity.Rendering;
 using MyComponents;
 
-[UpdateAfter(typeof(MapManagerSystem))]
+[UpdateAfter(typeof(MapSquareCheckSystem))]
 public class MapHorizontalDrawBufferSystem : ComponentSystem
 {
 	public enum DrawBufferType { NONE, INNER, OUTER, EDGE }
@@ -32,12 +32,9 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        if(managerSystem.update)
-            UpdateDrawBuffer();
-    }
+        if(!managerSystem.update)
+            return;
 
-    void UpdateDrawBuffer()
-	{
         int mapSquareCount = 0;
 
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
@@ -75,7 +72,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 		chunks.Dispose();
 
         CustomDebugTools.SetDebugText("Total map squares", mapSquareCount);
-	}
+    }
 
     public void UpdateDrawBuffer(Entity entity, float3 worldPosition, EntityCommandBuffer commandBuffer)
 	{

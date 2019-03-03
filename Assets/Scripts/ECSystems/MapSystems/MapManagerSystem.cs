@@ -24,7 +24,7 @@ public class MapManagerSystem : ComponentSystem
 
     public GridMatrix<Entity> mapMatrix;
 
-    GridMatrix<Entity> cellMatrix;
+    public GridMatrix<Entity> cellMatrix;
 
     NativeList<WorleyCell> undiscoveredCells;
     
@@ -365,56 +365,9 @@ public class MapManagerSystem : ComponentSystem
 
             if(!CellIsInRange(cell))
             {
-                RemoveCellMapSquares(cellEntity, cell);
-
                 cellMatrix.UnsetItem(cell.indexFloat);
                 undiscoveredCells.Add(cell);
             }
         }
-    }
-
-    void RemoveCellMapSquares(Entity cellEntity, WorleyCell cell)
-    {
-        NativeArray<CellMapSquare> mapSquares = entityUtil.CopyDynamicBuffer<CellMapSquare>(cellEntity, Allocator.Temp);
-        for(int s = 0; s < mapSquares.Length; s++)
-        {
-            CellMapSquare mapSquare = mapSquares[s];
-            float3 squarePosition = entityManager.GetComponentData<Position>(mapSquare.entity).Value;
-
-            if(mapSquare.edge == 0 || ActiveCellCount(mapSquare) <= 1)
-                RemoveMapSquare(mapSquare.entity, squarePosition);
-        }
-        mapSquares.Dispose();
-    }
-
-    int ActiveCellCount(CellMapSquare mapSquare)
-    {
-        DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(mapSquare.entity);
-        int activeCells = 0;
-        for(int i = 0; i < uniqueCells.Length; i++)
-            if(cellMatrix.ItemIsSet(uniqueCells[i].indexFloat))
-                activeCells++;
-                
-        return activeCells;
-    }
-
-    void RemoveMapSquare(Entity squareEntity, float3 squarePosition)
-    {
-        UpdateNeighbouringSquares(squarePosition);
-        entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity);
-        mapMatrix.UnsetItem(squarePosition);
-    }
-
-    void UpdateNeighbouringSquares(float3 centerSquarePosition)
-    {
-        NativeArray<float3> neighbourDirections = Util.CardinalDirections(Allocator.Temp);
-        for(int i = 0; i < neighbourDirections.Length; i++)
-        {
-            float3 neighbourPosition = centerSquarePosition + (neighbourDirections[i] * squareWidth);
-            Entity squareEntity;
-            if(mapMatrix.TryGetItem(neighbourPosition, out squareEntity))
-                entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(squareEntity);
-        }
-        neighbourDirections.Dispose();
     }
 }
