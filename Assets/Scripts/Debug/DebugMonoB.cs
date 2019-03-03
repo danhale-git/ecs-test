@@ -18,7 +18,7 @@ public class DebugMonoB : MonoBehaviour
         canvas = FindObjectOfType<Canvas>().gameObject;
     }
 
-    void DebugMatrixEntities()
+    public void DebugMatrixEntities()
     {
         GridMatrix<Entity> matrix = CustomDebugTools.currentMatrix;
         Vector2 centerOffset = new Vector2(Screen.width/2, Screen.height/2);
