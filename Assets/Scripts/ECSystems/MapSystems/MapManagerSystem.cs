@@ -97,7 +97,7 @@ public class MapManagerSystem : ComponentSystem
         };
         mapMatrix.Initialise(1, Allocator.Persistent);
 
-        return NewMapSquare(currentMapSquare);
+        return CreateMapSquareEntity(currentMapSquare);
     }
 
     void InitialiseCellMatrix(NativeArray<WorleyCell> initialCells)
@@ -265,14 +265,14 @@ public class MapManagerSystem : ComponentSystem
         Entity entity;
 
         if(!mapMatrix.TryGetItem(position, out entity))
-            return NewMapSquare(position);
+            return CreateMapSquareEntity(position);
         else if(!entityManager.Exists(entity))
-            return NewMapSquare(position);
+            return CreateMapSquareEntity(position);
         else
             return entity;
     }
 
-    Entity NewMapSquare(float3 worldPosition)
+    Entity CreateMapSquareEntity(float3 worldPosition)
     {
         Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 		entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
