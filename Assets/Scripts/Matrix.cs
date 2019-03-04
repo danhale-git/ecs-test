@@ -1,10 +1,9 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
+using UnityEngine;
 
 public struct Matrix<T> where T : struct
 {
-    int2 rootPosition;
-
     NativeArray<T> matrix;
     NativeArray<sbyte> isSet;
 
@@ -35,11 +34,6 @@ public struct Matrix<T> where T : struct
         return matrix;
     }
 
-    public float3 ResizeMatrix(int2 matrixIndex)
-    {
-        return ResizeMatrix(new float3(matrixIndex.x, 0, matrixIndex.y));
-    }
-
     public float3 ResizeMatrix(float3 matrixPosition)
     {
         int x = (int)matrixPosition.x;
@@ -64,6 +58,44 @@ public struct Matrix<T> where T : struct
         GenerateNewArray(rootIndexOffset, oldWidth);
 
         return rootPositionChange;
+    }
+
+    string PrintMatrix()
+    {
+        string mat = "";
+
+        for(int z = width-1; z >= 0; z--)
+        {
+            for(int x = 0; x < width; x++)
+            {
+                int index = PositionToIndex(new int2(x, z));
+                mat += ItemIsSet(index) ? "x " : "o ";
+            }
+            mat += '\n';
+        }
+        return mat;
+    }
+
+    sbyte EdgeIsEmpty(int edge)
+    {
+        if(edge > 3) throw new System.Exception("Edge "+edge+" out of range 3");
+        
+        if(edge < 2)
+        {
+            int x = edge == 0 ? width-1 : 0;
+            for(int z  = 0; z < width; z++)
+                if(ItemIsSet( PositionToIndex(new int2(x, z)) ))
+                    return 0;
+        }
+        else
+        {
+            int z = edge == 2 ? width-1 : 0;
+            for(int x  = 0; x < width; x++)
+                if(ItemIsSet( PositionToIndex(new int2(x, z)) ))
+                    return 0;
+        }
+
+        return 1;
     }
 
     void GenerateNewArray(float3 rootIndexOffset, int oldWidth)
