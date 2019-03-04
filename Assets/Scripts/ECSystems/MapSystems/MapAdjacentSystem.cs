@@ -74,9 +74,14 @@ public class MapAdjacentSystem : ComponentSystem
 				{
 					if(!entityManager.Exists(adjacent[i]))
 					{
-						//Debug.Log(position + (Util.CardinalDirections()[i] * squareWidth));
+						CustomDebugTools.Cube(Color.red, (position + adjacentPositions[i])+(squareWidth/2), squareWidth);
+		        		CustomDebugTools.Cube(Color.green, position + (squareWidth/2), squareWidth-2);
+					
+						Debug.Log(managerSystem.mapMatrix.GridToMatrixPosition(position));
+
+						throw new System.Exception("Adjacent Entity does not exist at "+(position + adjacentPositions[i]));
 					}
-				} 
+				}
 
 				if(entityManager.HasComponent<AdjacentSquares>(entity))
 					commandBuffer.SetComponent<AdjacentSquares>(entity, adjacent);
