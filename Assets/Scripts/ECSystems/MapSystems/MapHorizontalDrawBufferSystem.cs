@@ -43,7 +43,8 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
 
         EntityArchetypeQuery allSquaresQuery = new EntityArchetypeQuery{
-			All = new ComponentType [] { typeof(MapSquare) }
+            Any = new ComponentType [] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer), typeof(Tags.InnerBuffer) },			
+            All = new ComponentType [] { typeof(MapSquare) }
 		};
 		allSquaresGroup = GetComponentGroup(allSquaresQuery);
 
@@ -53,6 +54,35 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 		};
 		newSquaresGroup = GetComponentGroup(newSquaresQuery);
     }
+    
+    DrawBufferType GetDrawBuffer(SubMatrix square, float3 bufferWorldPosition)
+    {
+        float3 localPositionInSubMatrix = (bufferWorldPosition - square.rootPosition) / squareWidth;
+
+        if (IsOutsideSubMatrix(square, localPositionInSubMatrix)) return DrawBufferType.EDGE;
+        else if (IsDistanceFromSubMatrixEdge(square, localPositionInSubMatrix, 0)) return DrawBufferType.EDGE;
+        else if (IsDistanceFromSubMatrixEdge(square, localPositionInSubMatrix, 1)) return DrawBufferType.OUTER;
+        else if (IsDistanceFromSubMatrixEdge(square, localPositionInSubMatrix, 2)) return DrawBufferType.INNER;
+        else return DrawBufferType.NONE;
+    }
+
+    bool IsDistanceFromSubMatrixEdge(SubMatrix square, float3 localPosition, int distance = 0)
+	{
+        if( (localPosition.x == 0+distance || localPosition.x == (square.width-1)-distance) ||
+            (localPosition.z == 0+distance || localPosition.z == (square.width-1)-distance) )
+            return true;
+        else
+            return false;
+	}
+
+    bool IsOutsideSubMatrix(SubMatrix square, float3 localPosition)
+	{
+        if( localPosition.x < 0 || localPosition.x >= square.width ||
+            localPosition.z < 0 || localPosition.z >= square.width )
+            return true;
+        else
+            return false;
+	}
 
     protected override void OnUpdate()
     {
@@ -62,12 +92,9 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
         SubMatrix subMatrix = LargestSquare(managerSystem.mapMatrix.GetMatrix(), managerSystem.mapMatrix.rootPosition);
         CustomDebugTools.Cube(Color.cyan, subMatrix.rootPosition + (squareWidth/2), squareWidth-1);
         
-        Debug.Log("root: "+subMatrix.rootPosition);
-        Debug.Log("width: "+subMatrix.width);
-
         SetNewSquares(subMatrix);
 
-        //CheckAllSquares(subMatrix);
+        CheckAllSquares(subMatrix);
         
     }
 
@@ -95,8 +122,6 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
                 DrawBufferType buffer = GetDrawBuffer(subMatrix, position);
 
-                if(position.Equals(new float3(36, 0, 0))) Debug.Log("Buffer: "+buffer);
-
                 SetDrawBuffer(entity, buffer, commandBuffer);
 			}
 		}
@@ -106,39 +131,6 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
 		chunks.Dispose();
     }
-    
-    DrawBufferType GetDrawBuffer(SubMatrix square, float3 bufferWorldPosition)
-    {
-        
-        //Debug.Log("world: "+bufferWorldPosition);
-
-        float3 localPositionInSubMatrix = (bufferWorldPosition - square.rootPosition) / squareWidth;
-
-        if(bufferWorldPosition.Equals(new float3(36, 0, 0))) Debug.Log("local: "+localPositionInSubMatrix);
-
-        if (IsOutsideSubMatrix(square, localPositionInSubMatrix)) return DrawBufferType.EDGE;
-        else if (IsDistanceFromSubMatrixEdge(square, localPositionInSubMatrix, 0)) return DrawBufferType.EDGE;
-        else if (IsDistanceFromSubMatrixEdge(square, localPositionInSubMatrix, 1)) return DrawBufferType.OUTER;
-        else if (IsDistanceFromSubMatrixEdge(square, localPositionInSubMatrix, 2)) return DrawBufferType.INNER;
-        else return DrawBufferType.NONE;
-    }
-
-    bool IsDistanceFromSubMatrixEdge(SubMatrix square, float3 localPosition, int distance = 0)
-	{
-        if( (localPosition.x == 0+distance || localPosition.x == (square.width-1)-distance) ||
-            (localPosition.z == 0+distance || localPosition.z == (square.width-1)-distance) )
-            return true;
-        else
-            return false;
-	}
-    bool IsOutsideSubMatrix(SubMatrix square, float3 localPosition)
-	{
-        if( localPosition.x < 0 || localPosition.x >= square.width ||
-            localPosition.z < 0 || localPosition.z >= square.width )
-            return true;
-        else
-            return false;
-	}
 
     void CheckAllSquares(SubMatrix subMatrix)
     {

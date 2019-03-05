@@ -207,6 +207,24 @@ struct WorleyNoiseGenerator
 		return cell;
 	}
 
+	public WorleyCell CellFromIndex(int2 cellIndex, int m_seed, float m_frequency, float cellularJitter)
+    {
+        
+        float2 vec = CELL_2D[Hash2D(m_seed, cellIndex.x, cellIndex.y) & 255];
+
+        float cellX = cellIndex.x + vec.x * cellularJitter;
+        float cellY = cellIndex.y + vec.y * cellularJitter;
+		
+		WorleyCell cell = new MyComponents.WorleyCell();
+
+        cell.index = cellIndex;
+        cell.indexFloat = new float3(cellIndex.x, 0, cellIndex.y);
+        cell.position = new float3(cellX, 0, cellY) / m_frequency;
+		cell.value =  To01(ValCoord2D(m_seed, cellIndex.x, cellIndex.y));
+		
+		return cell;
+    }
+
     float ValCoord2D(int seed, int x, int y)
 	{
 		int n = seed;
@@ -268,4 +286,7 @@ struct WorleyNoiseGenerator
 	}
 	private static float InterpQuinticFunc(float t) { return t * t * t * (t * (t * 6 - 15) + 10); }
 	float Lerp(float a, float b, float t) { return a + t * (b - a); }
+
+
+
 }

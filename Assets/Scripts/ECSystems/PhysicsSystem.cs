@@ -51,9 +51,9 @@ public class PhysicsSystem : ComponentSystem
             moveQuery,
             Allocator.TempJob
         );
-
-        if(chunks.Length == 0) chunks.Dispose();
-        else MoveEntities(chunks);
+        chunks.Dispose();//DEBUG
+        //if(chunks.Length == 0) chunks.Dispose();
+        //else MoveEntities(chunks);
     }
 
     void MoveEntities(NativeArray<ArchetypeChunk> chunks)
