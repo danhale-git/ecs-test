@@ -11,6 +11,11 @@ public struct GridMatrix<T> where T : struct
 
     public int Length{ get{ return matrix.Length; } }
 
+    public Matrix<T> GetMatrix()
+    {
+        return matrix;
+    }
+
     public void Dispose()
     {
         matrix.Dispose();

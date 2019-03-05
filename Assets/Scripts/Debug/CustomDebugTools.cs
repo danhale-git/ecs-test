@@ -29,6 +29,22 @@ public static class CustomDebugTools
         debugCounts[key] = currenCount + 1;
     }
 
+    public static string PrintMatrix(Matrix<Entity> matrix)
+    {
+        string mat = "";
+
+        for(int z = matrix.width-1; z >= 0; z--)
+        {
+            for(int x = 0; x < matrix.width; x++)
+            {
+                int index = matrix.PositionToIndex(new int2(x, z));
+                mat += matrix.ItemIsSet(index) ? "x " : "o ";
+            }
+            mat += '\n';
+        }
+        return mat;
+    }
+
     static Vector3[] cubeVectors = CubeVectors();
     public static List<Dictionary<Entity, List<DebugLine>>> mapSquareLines = new List<Dictionary<Entity, List<DebugLine>>>()
     {

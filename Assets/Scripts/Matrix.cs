@@ -29,11 +29,6 @@ public struct Matrix<T> where T : struct
         this.label = label;
     }
 
-    NativeArray<T> GetNativeArray()
-    {
-        return matrix;
-    }
-
     public float3 ResizeMatrix(float3 matrixPosition)
     {
         int x = (int)matrixPosition.x;
@@ -58,22 +53,6 @@ public struct Matrix<T> where T : struct
         GenerateNewArray(rootIndexOffset, oldWidth);
 
         return rootPositionChange;
-    }
-
-    string PrintMatrix()
-    {
-        string mat = "";
-
-        for(int z = width-1; z >= 0; z--)
-        {
-            for(int x = 0; x < width; x++)
-            {
-                int index = PositionToIndex(new int2(x, z));
-                mat += ItemIsSet(index) ? "x " : "o ";
-            }
-            mat += '\n';
-        }
-        return mat;
     }
 
     sbyte EdgeIsEmpty(int edge)
