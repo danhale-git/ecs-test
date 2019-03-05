@@ -13,7 +13,7 @@ using MyComponents;
 public class PlayerInputSystem : ComponentSystem
 {
     EntityManager entityManager;
-    MapManagerSystem managerSystem;
+    MapCellMarchingSystem managerSystem;
     int squareWidth;
 
     public static Entity playerEntity;
@@ -42,7 +42,7 @@ public class PlayerInputSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        managerSystem = World.Active.GetOrCreateManager<MapManagerSystem>();
+        managerSystem = World.Active.GetOrCreateManager<MapCellMarchingSystem>();
 
         squareWidth = TerrainSettings.mapSquareWidth;
 

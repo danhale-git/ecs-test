@@ -4,7 +4,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using MyComponents;
 
-[UpdateAfter(typeof(MapManagerSystem))]
+[UpdateAfter(typeof(MapCellMarchingSystem))]
 public class MapSquareCheckSystem : ComponentSystem
 {
     EntityManager entityManager;
@@ -12,14 +12,14 @@ public class MapSquareCheckSystem : ComponentSystem
 
     int squareWidth;
 
-    MapManagerSystem managerSystem;
+    MapCellMarchingSystem managerSystem;
 
     ComponentGroup allSquaresGroup;
 
 	protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        managerSystem = World.Active.GetOrCreateManager<MapManagerSystem>();
+        managerSystem = World.Active.GetOrCreateManager<MapCellMarchingSystem>();
 
         entityUtil = new EntityUtil(entityManager);
 
@@ -34,8 +34,8 @@ public class MapSquareCheckSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        if(!managerSystem.update)
-            return;
+        //if(!managerSystem.update)
+          //  return;
 
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
 		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);
@@ -54,8 +54,8 @@ public class MapSquareCheckSystem : ComponentSystem
 
 			for(int e = 0; e < entities.Length; e++)
 			{
-                if(ActiveCellCount(cells[e]) == 0)
-                    RemoveMapSquare(entities[e], positions[e].Value, commandBuffer);
+                //if(ActiveCellCount(cells[e]) == 0)
+                    //RemoveMapSquare(entities[e], positions[e].Value, commandBuffer);
 
                 entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(entities[e], commandBuffer);
             }
@@ -67,7 +67,7 @@ public class MapSquareCheckSystem : ComponentSystem
 		chunks.Dispose();
     }
 
-    int ActiveCellCount(DynamicBuffer<WorleyCell> uniqueCells)
+    /*int ActiveCellCount(DynamicBuffer<WorleyCell> uniqueCells)
     {
         int activeCells = 0;
         for(int i = 0; i < uniqueCells.Length; i++)
@@ -81,5 +81,5 @@ public class MapSquareCheckSystem : ComponentSystem
     {
         entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity, commandBuffer);
         managerSystem.mapMatrix.UnsetItem(squarePosition);
-    }
+    } */
 }
