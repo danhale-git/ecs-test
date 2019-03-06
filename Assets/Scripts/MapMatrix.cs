@@ -1,13 +1,13 @@
 ﻿using Unity.Mathematics;
 using Unity.Collections;
 
-public struct GridMatrix<T> where T : struct
+public struct MapMatrix<T> where T : struct
 {
     public float3 rootPosition;
     public int gridSquareSize;
 
     Matrix<T> matrix;
-    Matrix<sbyte> bools;
+    Matrix<sbyte> discovered;
 
     public int Length{ get{ return matrix.Length; } }
 
@@ -19,26 +19,26 @@ public struct GridMatrix<T> where T : struct
     public void Dispose()
     {
         matrix.Dispose();
-        bools.Dispose();
+        discovered.Dispose();
     }
 
     public void Initialise(int width, Allocator label)
     {
         matrix.Initialise(width, label); 
-        bools.Initialise(width, label); 
+        discovered.Initialise(width, label); 
     }
 
-    public void ResetBools()
+    public void ClearDiscoveryStatus()
     {
-        bools.Dispose();
-        bools.Initialise(matrix.width, matrix.label); 
+        discovered.Dispose();
+        discovered.Initialise(matrix.width, matrix.label); 
     }
 
     void ResizeMatrices(float3 gridPosition)
     {
         float3 matrixPosition = GridToMatrixPosition(gridPosition);
         float3 rootPositionChange = matrix.ResizeMatrix(matrixPosition);
-        bools.ResizeMatrix(matrixPosition);
+        discovered.ResizeMatrix(matrixPosition);
 
         rootPosition = rootPosition + (rootPositionChange * gridSquareSize);
     }
@@ -95,32 +95,32 @@ public struct GridMatrix<T> where T : struct
         return true;
 	}
 
-    public void SetBool(bool value, float3 gridPosition)
+    public void SetAsDiscovered(bool value, float3 gridPosition)
     {
         int index = GridPositionToFlatIndex(gridPosition);
-        bools.SetItem(value ? (sbyte)1 : (sbyte)0, index);
+        discovered.SetItem(value ? (sbyte)1 : (sbyte)0, index);
     }
 
-    public void SetBool(bool value, int index)
+    public void SetAsDiscovered(bool value, int index)
     {
-        bools.SetItem(value ? (sbyte)1 : (sbyte)0, index);
+        discovered.SetItem(value ? (sbyte)1 : (sbyte)0, index);
     }
 
-    public bool GetBool(float3 gridPosition)
+    public bool SquareIsDiscovered(float3 gridPosition)
     {
         if(!GridPositionIsInMatrix(gridPosition))
             return false;
             
         int index = GridPositionToFlatIndex(gridPosition);
-        return bools.GetItem(index) > 0 ? true : false;
+        return discovered.GetItem(index) > 0 ? true : false;
     }
 
-    public bool GetBool(int index)
+    public bool SquareIsDiscovered(int index)
     {
         if(index < 0 || index >= matrix.Length)
             return false;
             
-        return bools.GetItem(index) > 0 ? true : false;
+        return discovered.GetItem(index) > 0 ? true : false;
     }
 
     public bool GridPositionIsInMatrix(float3 gridPosition, int offset = 0)
@@ -135,7 +135,7 @@ public struct GridMatrix<T> where T : struct
 			return false;
 	}
 
-    public bool IsOffsetFromPosition(float3 isOffsetFrom, float3 position, int offset)
+/*    public bool IsOffsetFromPosition(float3 isOffsetFrom, float3 position, int offset)
 	{
         if(!InDistancceFromPosition(isOffsetFrom, position, offset))
             return false;
@@ -147,9 +147,9 @@ public struct GridMatrix<T> where T : struct
 			return true;
 		else
 			return false;
-	}
+	} */
 
-    public bool InDistancceFromPosition(float3 inDistanceFrom, float3 position, int offset)
+    /*public bool InDistancceFromPosition(float3 inDistanceFrom, float3 position, int offset)
     {
         if(	inDistanceFrom.x >= position.x - offset &&
             inDistanceFrom.z >= position.z - offset &&
@@ -164,7 +164,7 @@ public struct GridMatrix<T> where T : struct
         float3 inDistanceFrom = GridToMatrixPosition(inDistanceFromGrid);
         float3 position = GridToMatrixPosition(positionGrid);
         return InDistancceFromPosition(inDistanceFrom, position, offset);
-    }
+    } */
     
     public int GridPositionToFlatIndex(float3 gridPosition)
     {

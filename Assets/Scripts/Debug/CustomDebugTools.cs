@@ -12,7 +12,7 @@ public static class CustomDebugTools
     public static Dictionary<string, string> debugText = new Dictionary<string, string>();
     public static Dictionary<string, int> debugCounts = new Dictionary<string, int>();
 
-    public static GridMatrix<Entity> currentMatrix;
+    public static MapMatrix<Entity> currentMatrix;
 
     public static void SetDebugText(string key, string value)
     {

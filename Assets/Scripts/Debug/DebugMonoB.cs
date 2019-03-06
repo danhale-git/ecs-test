@@ -20,7 +20,7 @@ public class DebugMonoB : MonoBehaviour
 
     public void DebugMatrixEntities()
     {
-        GridMatrix<Entity> matrix = CustomDebugTools.currentMatrix;
+        MapMatrix<Entity> matrix = CustomDebugTools.currentMatrix;
         Vector2 centerOffset = new Vector2(Screen.width/2, Screen.height/2);
 
         foreach(GameObject square in allSquares)

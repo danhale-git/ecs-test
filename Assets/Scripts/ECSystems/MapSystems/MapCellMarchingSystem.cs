@@ -21,7 +21,7 @@ public class MapCellMarchingSystem : ComponentSystem
 
     public static Entity playerEntity;
 
-    public GridMatrix<Entity> mapMatrix;
+    public MapMatrix<Entity> mapMatrix;
     public CellMatrix<Entity> cellMatrix;
 
     public float3 currentMapSquare;
@@ -101,7 +101,7 @@ public class MapCellMarchingSystem : ComponentSystem
 
     Entity InitialiseMapMatrix()
     {
-        mapMatrix = new GridMatrix<Entity>{
+        mapMatrix = new MapMatrix<Entity>{
             rootPosition = currentMapSquare,
             gridSquareSize = squareWidth
         };
@@ -140,7 +140,7 @@ public class MapCellMarchingSystem : ComponentSystem
         else
             previousCellIndex = currentCellIndex;
 
-        mapMatrix.ResetBools();//DEBUG
+        mapMatrix.ClearDiscoveryStatus();//DEBUG
         MarchCells(currentCellIndex);
         RemoveOutOfRangeCells();
     }
@@ -189,7 +189,7 @@ public class MapCellMarchingSystem : ComponentSystem
         WorleyCell currentCell = entityManager.GetBuffer<WorleyCell>(currentCellEntity)[0];
 
         Entity mapSquareEntity = GetOrCreateMapSquare(squarePosition);
-        mapMatrix.SetBool(true, squarePosition);
+        mapMatrix.SetAsDiscovered(true, squarePosition);
 
         DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(mapSquareEntity);
 
@@ -206,7 +206,7 @@ public class MapCellMarchingSystem : ComponentSystem
         for(int d = 0; d < 8; d++)
         {
             float3 adjacentPosition = squarePosition + (directions[d] * squareWidth);
-            if(!mapMatrix.GetBool(adjacentPosition))
+            if(!mapMatrix.SquareIsDiscovered(adjacentPosition))
                 DiscoverMapSquaresRecursive(currentCellEntity, adjacentPosition, allSquares);
         }
         directions.Dispose();
