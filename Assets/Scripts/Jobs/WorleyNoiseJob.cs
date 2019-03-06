@@ -207,20 +207,20 @@ struct WorleyNoiseGenerator
 		return cell;
 	}
 
-	public WorleyCell CellFromIndex(int2 cellIndex, int m_seed, float m_frequency, float cellularJitter)
+	public WorleyCell CellFromIndex(int2 cellIndex)
     {
         
-        float2 vec = CELL_2D[Hash2D(m_seed, cellIndex.x, cellIndex.y) & 255];
+        float2 vec = CELL_2D[Hash2D(TerrainSettings.seed, cellIndex.x, cellIndex.y) & 255];
 
-        float cellX = cellIndex.x + vec.x * cellularJitter;
-        float cellY = cellIndex.y + vec.y * cellularJitter;
+        float cellX = cellIndex.x + vec.x * TerrainSettings.cellularJitter;
+        float cellY = cellIndex.y + vec.y * TerrainSettings.cellularJitter;
 		
 		WorleyCell cell = new MyComponents.WorleyCell();
 
         cell.index = cellIndex;
         cell.indexFloat = new float3(cellIndex.x, 0, cellIndex.y);
-        cell.position = new float3(cellX, 0, cellY) / m_frequency;
-		cell.value =  To01(ValCoord2D(m_seed, cellIndex.x, cellIndex.y));
+        cell.position = new float3(cellX, 0, cellY) / TerrainSettings.cellFrequency;
+		cell.value =  To01(ValCoord2D(TerrainSettings.seed, cellIndex.x, cellIndex.y));
 		
 		return cell;
     }

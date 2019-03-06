@@ -34,9 +34,6 @@ public class MapSquareCheckSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        //if(!managerSystem.update)
-          //  return;
-
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
 		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);
 

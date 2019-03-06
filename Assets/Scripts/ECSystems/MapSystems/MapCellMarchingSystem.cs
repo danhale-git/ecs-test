@@ -92,17 +92,11 @@ public class MapCellMarchingSystem : ComponentSystem
                 int2 cellIndex = new int2(x, z);
                 if(cellMatrix.ItemIsSet(cellIndex)) continue;
                 
-                WorleyCell cell = worleyNoiseGen.CellFromIndex(cellIndex,
-                                                        TerrainSettings.seed,
-                                                        TerrainSettings.cellFrequency,
-                                                        TerrainSettings.cellularJitter);
+                WorleyCell cell = worleyNoiseGen.CellFromIndex(cellIndex);
 
                 Entity cellEntity = DiscoverCell(cell);
                 cellMatrix.SetItem(cellEntity, cellIndex);
             }
-
-        //string debugMatrix = CustomDebugTools.PrintMatrix(mapMatrix.GetMatrix());
-        //Debug.Log(debugMatrix);
     }
 
     Entity InitialiseMapMatrix()
@@ -232,13 +226,6 @@ public class MapCellMarchingSystem : ComponentSystem
 
     Entity CreateMapSquareEntity(float3 worldPosition)
     {
-        if( worldPosition.Equals(new float3(0, 0, 0)) ||
-            worldPosition.Equals(new float3(12, 0, 0)) ||
-            worldPosition.Equals(new float3(0, 12, 0)) ||
-            worldPosition.Equals(new float3(0, 0, 12)))
-            {
-                Debug.Log("creating square at "+worldPosition);
-            }
         Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 		entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
         //horizontalDrawBufferSystem.SetDrawBuffer(entity, worldPosition);
