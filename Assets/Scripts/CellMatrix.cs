@@ -72,7 +72,7 @@ public struct CellMatrix<T> where T : struct
 		return matrix.GetItem(index);
     }
 
-    /*public bool TryGetItem(int2 gridPosition, out T item)
+    public bool TryGetItem(int2 gridPosition, out T item)
 	{
         if(!GridPositionIsInMatrix(gridPosition) || !ItemIsSet(gridPosition))
         {
@@ -82,33 +82,14 @@ public struct CellMatrix<T> where T : struct
 
 		item = matrix.GetItem(GridPositionToFlatIndex(gridPosition));
         return true;
-	} */
+	} 
 
     public bool GridPositionIsInMatrix(int2 gridPosition, int offset = 0)
 	{
         int2 matrixPosition = GridToMatrixPosition(gridPosition);
-        int arrayWidth = matrix.width-1;
 
-		if(	matrixPosition.x >= offset && matrixPosition.x <= arrayWidth-offset &&
-			matrixPosition.y >= offset && matrixPosition.y <= arrayWidth-offset )
-			return true;
-		else
-			return false;
+        return matrix.PositionIsInMatrix(matrixPosition, offset);
 	}
-
-    /*public bool IsOffsetFromPosition(float3 isOffsetFrom, float3 position, int offset)
-	{
-        if(!InDistancceFromPosition(isOffsetFrom, position, offset))
-            return false;
-
-		if(	isOffsetFrom.x == position.x - offset ||
-            isOffsetFrom.z == position.z - offset ||
-			isOffsetFrom.x == position.x + offset ||
-            isOffsetFrom.z == position.z + offset )
-			return true;
-		else
-			return false;
-	} */
 
     public bool InDistancceFromPosition(int2 inDistanceFrom, int2 position, int offset)
     {

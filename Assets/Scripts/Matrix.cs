@@ -101,6 +101,22 @@ public struct Matrix<T> where T : struct
         SetMatrix(newMatrix, newIsSet);
     }
 
+    public bool PositionIsInMatrix(float3 matrixPosition, int offset = 0)
+	{
+        return PositionIsInMatrix(new int2((int)matrixPosition.x, (int)matrixPosition.z), offset);
+	}
+    
+    public bool PositionIsInMatrix(int2 matrixPosition, int offset = 0)
+	{
+        int arrayWidth = width-1;
+
+		if(	matrixPosition.x >= offset && matrixPosition.x <= arrayWidth-offset &&
+			matrixPosition.y >= offset && matrixPosition.y <= arrayWidth-offset )
+			return true;
+		else
+			return false;
+	}
+
     public void SetMatrix(NativeArray<T> newMatrix, NativeArray<sbyte> newIsSet)
     {
         Dispose();

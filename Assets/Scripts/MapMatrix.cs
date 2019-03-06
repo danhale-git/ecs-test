@@ -126,45 +126,9 @@ public struct MapMatrix<T> where T : struct
     public bool GridPositionIsInMatrix(float3 gridPosition, int offset = 0)
 	{
         float3 matrixPosition = GridToMatrixPosition(gridPosition);
-        int arrayWidth = matrix.width-1;
 
-		if(	matrixPosition.x >= offset && matrixPosition.x <= arrayWidth-offset &&
-			matrixPosition.z >= offset && matrixPosition.z <= arrayWidth-offset )
-			return true;
-		else
-			return false;
+        return matrix.PositionIsInMatrix(matrixPosition, offset);
 	}
-
-/*    public bool IsOffsetFromPosition(float3 isOffsetFrom, float3 position, int offset)
-	{
-        if(!InDistancceFromPosition(isOffsetFrom, position, offset))
-            return false;
-
-		if(	isOffsetFrom.x == position.x - offset ||
-            isOffsetFrom.z == position.z - offset ||
-			isOffsetFrom.x == position.x + offset ||
-            isOffsetFrom.z == position.z + offset )
-			return true;
-		else
-			return false;
-	} */
-
-    /*public bool InDistancceFromPosition(float3 inDistanceFrom, float3 position, int offset)
-    {
-        if(	inDistanceFrom.x >= position.x - offset &&
-            inDistanceFrom.z >= position.z - offset &&
-			inDistanceFrom.x <= position.x + offset &&
-            inDistanceFrom.z <= position.z + offset )
-			return true;
-		else
-			return false;
-    }
-    public bool InDistanceFromGridPosition(float3 inDistanceFromGrid, float3 positionGrid, int offset)
-    {
-        float3 inDistanceFrom = GridToMatrixPosition(inDistanceFromGrid);
-        float3 position = GridToMatrixPosition(positionGrid);
-        return InDistancceFromPosition(inDistanceFrom, position, offset);
-    } */
     
     public int GridPositionToFlatIndex(float3 gridPosition)
     {
