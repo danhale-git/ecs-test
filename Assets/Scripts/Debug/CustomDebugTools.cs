@@ -250,4 +250,18 @@ public static class CustomDebugTools
         capsule.transform.localScale = new float3(scale);
         capsule.transform.position = worldPosition;
     }
+
+    public static Color NoiseToColor(float noise)
+    {
+        if(noise < 0.1f) return Color.black;
+        else if(noise < 0.2f) return Color.blue;
+        else if(noise < 0.3f) return Color.clear;
+        else if(noise < 0.4f) return Color.cyan;
+        else if(noise < 0.5f) return Color.gray;
+        else if(noise < 0.6f) return Color.green;
+        else if(noise < 0.7f) return Color.grey;
+        else if(noise < 0.8f) return Color.magenta;
+        else if(noise < 0.9f) return Color.red;
+        else return Color.yellow;
+    }
 }
