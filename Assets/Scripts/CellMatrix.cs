@@ -108,24 +108,24 @@ public struct CellMatrix<T> where T : struct
 			return true;
 		else
 			return false;
-	}
+	} */
 
-    public bool InDistancceFromPosition(float3 inDistanceFrom, float3 position, int offset)
+    public bool InDistancceFromPosition(int2 inDistanceFrom, int2 position, int offset)
     {
         if(	inDistanceFrom.x >= position.x - offset &&
-            inDistanceFrom.z >= position.z - offset &&
+            inDistanceFrom.y >= position.y - offset &&
 			inDistanceFrom.x <= position.x + offset &&
-            inDistanceFrom.z <= position.z + offset )
+            inDistanceFrom.y <= position.y + offset )
 			return true;
 		else
 			return false;
     }
-    public bool InDistanceFromGridPosition(float3 inDistanceFromGrid, float3 positionGrid, int offset)
+    public bool InDistanceFromGridPosition(int2 inDistanceFromGrid, int2 positionGrid, int offset)
     {
-        float3 inDistanceFrom = GridToMatrixPosition(inDistanceFromGrid);
-        float3 position = GridToMatrixPosition(positionGrid);
+        int2 inDistanceFrom = GridToMatrixPosition(inDistanceFromGrid);
+        int2 position = GridToMatrixPosition(positionGrid);
         return InDistancceFromPosition(inDistanceFrom, position, offset);
-    } */
+    } 
     
     public int GridPositionToFlatIndex(int2 gridPosition)
     {

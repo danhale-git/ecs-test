@@ -153,10 +153,9 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
                 bool inRadius = !IsOutsideSubMatrix(subMatrix, position);
 
                 DrawBufferType buffer = GetDrawBuffer(subMatrix, position);
+                UpdateDrawBuffer(entity, buffer, commandBuffer);
 
-                if(inRadius)
-                    UpdateDrawBuffer(entity, buffer, commandBuffer);
-                else
+                if(!inRadius)
                     RedrawMapSquare(entity, commandBuffer);
 
                 mapSquareCount++;
@@ -175,31 +174,24 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 	{
         //DrawBufferType buffer = GetDrawBuffer(worldPosition);
 
-		switch(buffer)
-		{
-			//	Outer/None buffer changed to inner buffer
-			case DrawBufferType.INNER:
-                if(!entityUtil.TryReplaceComponent<Tags.OuterBuffer, Tags.InnerBuffer>(entity, commandBuffer))
-                    entityUtil.TryAddComponent<Tags.InnerBuffer>(entity, commandBuffer);
-				break;
+		if(entityManager.HasComponent<Tags.EdgeBuffer>(entity))
+        {
+            if(buffer == DrawBufferType.EDGE) return;
+            commandBuffer.RemoveComponent<Tags.EdgeBuffer>(entity);
+        }
+        else if(entityManager.HasComponent<Tags.OuterBuffer>(entity))
+        {
+            if(buffer == DrawBufferType.OUTER) return;
+            commandBuffer.RemoveComponent<Tags.OuterBuffer>(entity);
+        }
+        else if(entityManager.HasComponent<Tags.InnerBuffer>(entity))
+        {
+            if(buffer == DrawBufferType.INNER) return;
+            commandBuffer.RemoveComponent<Tags.InnerBuffer>(entity);
+        }
 
-			//	Edge/Inner buffer changed to outer buffer
-			case DrawBufferType.OUTER:
-                if(!entityUtil.TryReplaceComponent<Tags.EdgeBuffer, Tags.OuterBuffer>(entity, commandBuffer))
-                    entityUtil.TryReplaceComponent<Tags.InnerBuffer, Tags.OuterBuffer>(entity, commandBuffer);
-				break;
-
-			//	Outer buffer changed to edge buffer
-			case DrawBufferType.EDGE:
-                entityUtil.TryReplaceComponent<Tags.OuterBuffer, Tags.EdgeBuffer>(entity, commandBuffer);
-                break;
-
-			//	Not a buffer
-			default:
-                entityUtil.TryRemoveComponent<Tags.EdgeBuffer>(entity, commandBuffer);
-                entityUtil.TryRemoveComponent<Tags.InnerBuffer>(entity, commandBuffer);
-				break;
-		}
+        if(buffer == DrawBufferType.NONE) return;
+        else SetDrawBuffer(entity, buffer, commandBuffer);
 
         CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
 	}     

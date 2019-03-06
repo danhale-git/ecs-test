@@ -50,14 +50,14 @@ public class MapSquareCheckSystem : ComponentSystem
 
 			NativeArray<Entity>         entities    = chunk.GetNativeArray(entityType);
             NativeArray<Position>       positions   = chunk.GetNativeArray<Position>(positionType);
-            BufferAccessor<WorleyCell>  cells       = chunk.GetBufferAccessor<WorleyCell>(bufferType);
+            BufferAccessor<WorleyCell>  cellBuffers = chunk.GetBufferAccessor<WorleyCell>(bufferType);
 
 			for(int e = 0; e < entities.Length; e++)
 			{
-                //if(ActiveCellCount(cells[e]) == 0)
-                    //RemoveMapSquare(entities[e], positions[e].Value, commandBuffer);
+                if(ActiveCellCount(cellBuffers[e]) == 0)
+                    RemoveMapSquare(entities[e], positions[e].Value, commandBuffer);
 
-                //entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(entities[e], commandBuffer);
+                entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(entities[e], commandBuffer);
             }
         }
 
@@ -67,11 +67,11 @@ public class MapSquareCheckSystem : ComponentSystem
 		chunks.Dispose();
     }
 
-    /*int ActiveCellCount(DynamicBuffer<WorleyCell> uniqueCells)
+    int ActiveCellCount(DynamicBuffer<WorleyCell> uniqueCells)
     {
         int activeCells = 0;
         for(int i = 0; i < uniqueCells.Length; i++)
-            if(managerSystem.cellMatrix.ItemIsSet(uniqueCells[i].indexFloat))
+            if(managerSystem.cellMatrix.ItemIsSet(uniqueCells[i].index))
                 activeCells++;
                 
         return activeCells;
@@ -81,5 +81,5 @@ public class MapSquareCheckSystem : ComponentSystem
     {
         entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity, commandBuffer);
         managerSystem.mapMatrix.UnsetItem(squarePosition);
-    } */
+    }
 }
