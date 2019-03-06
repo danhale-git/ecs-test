@@ -86,8 +86,8 @@ public class MapCellMarchingSystem : ComponentSystem
 
     void MarchCells(int2 centerIndex)
     {
-        for(int x = centerIndex.x-1; x <= centerIndex.x+1; x++)
-            for(int z = centerIndex.y-1; z <= centerIndex.y+1; z++)
+        for(int x = centerIndex.x-2; x <= centerIndex.x+2; x++)
+            for(int z = centerIndex.y-2; z <= centerIndex.y+2; z++)
             {
                 int2 cellIndex = new int2(x, z);
                 if(cellMatrix.ItemIsSet(cellIndex)) continue;
@@ -101,8 +101,8 @@ public class MapCellMarchingSystem : ComponentSystem
                 cellMatrix.SetItem(cellEntity, cellIndex);
             }
 
-        string debugMatrix = CustomDebugTools.PrintMatrix(cellMatrix.GetMatrix());
-        Debug.Log(debugMatrix);
+        //string debugMatrix = CustomDebugTools.PrintMatrix(mapMatrix.GetMatrix());
+        //Debug.Log(debugMatrix);
     }
 
     Entity InitialiseMapMatrix()
@@ -232,6 +232,13 @@ public class MapCellMarchingSystem : ComponentSystem
 
     Entity CreateMapSquareEntity(float3 worldPosition)
     {
+        if( worldPosition.Equals(new float3(0, 0, 0)) ||
+            worldPosition.Equals(new float3(12, 0, 0)) ||
+            worldPosition.Equals(new float3(0, 12, 0)) ||
+            worldPosition.Equals(new float3(0, 0, 12)))
+            {
+                Debug.Log("creating square at "+worldPosition);
+            }
         Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 		entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
         //horizontalDrawBufferSystem.SetDrawBuffer(entity, worldPosition);

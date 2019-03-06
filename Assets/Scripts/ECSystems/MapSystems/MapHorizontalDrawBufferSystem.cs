@@ -57,17 +57,18 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
     
     DrawBufferType GetDrawBuffer(SubMatrix square, float3 bufferWorldPosition)
     {
-        float3 localPositionInSubMatrix = (bufferWorldPosition - square.rootPosition) / squareWidth;
 
-        if (IsOutsideSubMatrix(square, localPositionInSubMatrix)) return DrawBufferType.EDGE;
-        else if (IsDistanceFromSubMatrixEdge(square, localPositionInSubMatrix, 0)) return DrawBufferType.EDGE;
-        else if (IsDistanceFromSubMatrixEdge(square, localPositionInSubMatrix, 1)) return DrawBufferType.OUTER;
-        else if (IsDistanceFromSubMatrixEdge(square, localPositionInSubMatrix, 2)) return DrawBufferType.INNER;
+        if (IsOutsideSubMatrix(square, bufferWorldPosition)) return DrawBufferType.EDGE;
+        else if (IsDistanceFromSubMatrixEdge(square, bufferWorldPosition, 0)) return DrawBufferType.EDGE;
+        else if (IsDistanceFromSubMatrixEdge(square, bufferWorldPosition, 1)) return DrawBufferType.OUTER;
+        else if (IsDistanceFromSubMatrixEdge(square, bufferWorldPosition, 2)) return DrawBufferType.INNER;
         else return DrawBufferType.NONE;
     }
 
-    bool IsDistanceFromSubMatrixEdge(SubMatrix square, float3 localPosition, int distance = 0)
+    bool IsDistanceFromSubMatrixEdge(SubMatrix square, float3 bufferWorldPosition, int distance = 0)
 	{
+        float3 localPosition = (bufferWorldPosition - square.rootPosition) / squareWidth;
+
         if( (localPosition.x == 0+distance || localPosition.x == (square.width-1)-distance) ||
             (localPosition.z == 0+distance || localPosition.z == (square.width-1)-distance) )
             return true;
@@ -75,8 +76,10 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
             return false;
 	}
 
-    bool IsOutsideSubMatrix(SubMatrix square, float3 localPosition)
+    bool IsOutsideSubMatrix(SubMatrix square, float3 bufferWorldPosition)
 	{
+        float3 localPosition = (bufferWorldPosition - square.rootPosition) / squareWidth;
+
         if( localPosition.x < 0 || localPosition.x >= square.width ||
             localPosition.z < 0 || localPosition.z >= square.width )
             return true;
@@ -87,6 +90,8 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
     protected override void OnUpdate()
     {
         SubMatrix subMatrix = LargestSquare(managerSystem.mapMatrix.GetMatrix(), managerSystem.mapMatrix.rootPosition);
+
+        subMatrix = TrimSubMatrix(subMatrix);
         
         SetNewSquares(subMatrix);
 
@@ -296,39 +301,18 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
         int finalWidth = subMatrix.width;
         float3 finalRoot = subMatrix.rootPosition;
 
-        int worldWidth = subMatrix.width * squareWidth;
-        int viewDistance = (TerrainSettings.viewDistance * squareWidth)/2;
+        float3 clampRootTo = managerSystem.currentMapSquare - (TerrainSettings.viewDistance * squareWidth);
 
-        float3 currentMapSquare = managerSystem.currentMapSquare;
+        int clampWidthTo = TerrainSettings.viewDistance * 2;
 
-        float3 rightBounds = subMatrix.rootPosition.x + worldWidth;
-        float3 leftBounds = subMatrix.rootPosition.x;
-        float3 topBounds = subMatrix.rootPosition.z + worldWidth;
-        float3 bottomBounds = subMatrix.rootPosition.z;
+        float rootX = clampRootTo.x > finalRoot.x ? clampRootTo.x : finalRoot.x;
+        float rootZ = clampRootTo.z > finalRoot.z ? clampRootTo.z : finalRoot.z;
 
-        int xWidthChange = 0;
-        int zWidthChange = 0;
+        finalRoot = new float3(rootX, 0, rootZ);
 
-        float rightDistance = rightBounds.x - currentMapSquare.x;
-        xWidthChange = GetChange(viewDistance, rightDistance);
+        finalWidth -= (int)math.min(finalRoot.x - subMatrix.rootPosition.x, finalRoot.z - subMatrix.rootPosition.z) / squareWidth;
 
-        float topDistance = topBounds.z - currentMapSquare.z;
-        zWidthChange = GetChange(viewDistance, topDistance);
-
-        int xRootChange = 0;
-        int zRootChange = 0;
-
-        float leftDistance = currentMapSquare.x - leftBounds.x;
-        xRootChange = GetChange(viewDistance, leftDistance);
-
-        float bottomDistance = currentMapSquare.z - bottomBounds.z;
-        zRootChange = GetChange(viewDistance, bottomDistance);
-
-        if(xWidthChange + zWidthChange > 0)
-            finalWidth -= math.min(xWidthChange, zWidthChange) / squareWidth;
-
-        if(xRootChange + zRootChange > 0)
-            finalRoot += math.min(xRootChange, zRootChange) / squareWidth;
+        if(finalWidth > clampWidthTo) finalWidth = clampWidthTo;
 
         return new SubMatrix(finalRoot, finalWidth);
     }
