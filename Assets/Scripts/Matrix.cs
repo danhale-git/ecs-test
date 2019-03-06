@@ -29,6 +29,12 @@ public struct Matrix<T> where T : struct
         this.label = label;
     }
 
+    public int2 ResizeMatrix(int2 matrixPosition)
+    {
+        float3 rootPositionChange = ResizeMatrix(new float3(matrixPosition.x, 0, matrixPosition.y));
+        return new int2((int)rootPositionChange.x, (int)rootPositionChange.z);
+    }
+
     public float3 ResizeMatrix(float3 matrixPosition)
     {
         int x = (int)matrixPosition.x;
@@ -127,6 +133,11 @@ public struct Matrix<T> where T : struct
     public float3 IndexToPosition(int index)
     {
         return Util.Unflatten2D(index, width);
+    }
+    public int2 IndexToPositionInt(int index)
+    {
+        float3 returnValue = Util.Unflatten2D(index, width);
+        return new int2((int)returnValue.x, (int)returnValue.z);
     }
     
     public int PositionToIndex(float3 matrixPosition)
