@@ -173,8 +173,6 @@ public class MapCellMarchingSystem : ComponentSystem
     {
         WorleyCell currentCell = entityManager.GetBuffer<WorleyCell>(currentCellEntity)[0];
 
-        CustomDebugTools.Cube(Color.cyan, squarePosition + (squareWidth/2), squareWidth/2);
-
         Entity mapSquareEntity = GetOrCreateMapSquare(squarePosition);
         mapMatrix.SetBool(true, squarePosition);
 
@@ -190,7 +188,7 @@ public class MapCellMarchingSystem : ComponentSystem
         );
 
         NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
-        for(int d = 0; d < 4; d++)
+        for(int d = 0; d < 8; d++)
         {
             float3 adjacentPosition = squarePosition + (directions[d] * squareWidth);
             if(!mapMatrix.GetBool(adjacentPosition))
