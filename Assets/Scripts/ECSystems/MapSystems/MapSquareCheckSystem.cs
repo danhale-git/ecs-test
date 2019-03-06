@@ -57,7 +57,7 @@ public class MapSquareCheckSystem : ComponentSystem
                 //if(ActiveCellCount(cells[e]) == 0)
                     //RemoveMapSquare(entities[e], positions[e].Value, commandBuffer);
 
-                entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(entities[e], commandBuffer);
+                //entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(entities[e], commandBuffer);
             }
         }
 

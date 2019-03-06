@@ -65,23 +65,9 @@ public class MapCellMarchingSystem : ComponentSystem
     
     protected override void OnStartRunning()
     {
-
         WorleyNoiseGenerator noiseGen = new WorleyNoiseGenerator(0);
-        WorleyCell testCell = noiseGen.CellFromIndex(new int2(0,0),
-                                                        TerrainSettings.seed,
-                                                        TerrainSettings.cellFrequency,
-                                                        TerrainSettings.cellularJitter);
-
-
-        //////////////////////////////
     
         Entity initialMapSquare = InitialiseMapMatrix();
-        DynamicBuffer<WorleyCell> initialCellsBuffer = entityManager.GetBuffer<WorleyCell>(initialMapSquare);
-        NativeArray<WorleyCell> initialCells = new NativeArray<WorleyCell>(initialCellsBuffer.Length, Allocator.Temp);
-        initialCells.CopyFrom(initialCellsBuffer.AsNativeArray());
-
-        //for(int i = 0; i < initialCells.Length; i++)
-        //DiscoverCell(initialCells[0]);
 
         for(int x = -1; x <= 1; x++)
             for(int z = -1; z <= 1; z++)
@@ -94,8 +80,6 @@ public class MapCellMarchingSystem : ComponentSystem
 
                 DiscoverCell(cell);
             }
-
-
 
         string debugMatrix = CustomDebugTools.PrintMatrix(mapMatrix.GetMatrix());
         Debug.Log(debugMatrix);
@@ -123,15 +107,9 @@ public class MapCellMarchingSystem : ComponentSystem
     {
         currentMapSquare = CurrentMapSquare();
         if(currentMapSquare.Equals(previousMapSquare))
-        {
-            //update = false;
             return;
-        }
         else
-        {
-            //update = true;
             previousMapSquare = currentMapSquare;   
-        }
     }
 
     public float3 CurrentMapSquare()
@@ -142,9 +120,6 @@ public class MapCellMarchingSystem : ComponentSystem
 
     void DiscoverCell(WorleyCell cell)
     {
-        //if(cellMatrix.ItemIsSet(cell.indexFloat))
-            //return;
-
         Entity cellEntity = CreateCellEntity(cell);
 
         NativeList<CellMapSquare> allSquares = new NativeList<CellMapSquare>(Allocator.Temp);

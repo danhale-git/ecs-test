@@ -86,11 +86,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        //if(!managerSystem.update)
-            //return;
-
         SubMatrix subMatrix = LargestSquare(managerSystem.mapMatrix.GetMatrix(), managerSystem.mapMatrix.rootPosition);
-        CustomDebugTools.Cube(Color.cyan, subMatrix.rootPosition + (squareWidth/2), squareWidth-1);
         
         SetNewSquares(subMatrix);
 
@@ -302,4 +298,54 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
         return new SubMatrix(squareRootPosition, resultSize);
         
 	}
+
+    SubMatrix TrimSubMatrix(SubMatrix subMatrix)
+    {
+        int finalWidth = subMatrix.width;
+        float3 finalRoot = subMatrix.rootPosition;
+
+        int worldWidth = subMatrix.width * squareWidth;
+        int viewDistance = (TerrainSettings.viewDistance * squareWidth)/2;
+
+        float3 currentMapSquare = managerSystem.currentMapSquare;
+
+        float3 rightBounds = subMatrix.rootPosition.x + worldWidth;
+        float3 leftBounds = subMatrix.rootPosition.x;
+        float3 topBounds = subMatrix.rootPosition.z + worldWidth;
+        float3 bottomBounds = subMatrix.rootPosition.z;
+
+        int xWidthChange = 0;
+        int zWidthChange = 0;
+
+        float rightDistance = rightBounds.x - currentMapSquare.x;
+        xWidthChange = GetChange(viewDistance, rightDistance);
+
+        float topDistance = topBounds.z - currentMapSquare.z;
+        zWidthChange = GetChange(viewDistance, topDistance);
+
+        int xRootChange = 0;
+        int zRootChange = 0;
+
+        float leftDistance = currentMapSquare.x - leftBounds.x;
+        xRootChange = GetChange(viewDistance, leftDistance);
+
+        float bottomDistance = currentMapSquare.z - bottomBounds.z;
+        zRootChange = GetChange(viewDistance, bottomDistance);
+
+        if(xWidthChange + zWidthChange > 0)
+            finalWidth -= math.min(xWidthChange, zWidthChange) / squareWidth;
+
+        if(xRootChange + zRootChange > 0)
+            finalRoot += math.min(xRootChange, zRootChange) / squareWidth;
+
+        return new SubMatrix(finalRoot, finalWidth);
+    }
+
+    int GetChange(int viewDistance, float boundDistance)
+    {
+        if(boundDistance > viewDistance)
+            return (int)(boundDistance - viewDistance);
+        else
+            return 0;
+    }
 }
