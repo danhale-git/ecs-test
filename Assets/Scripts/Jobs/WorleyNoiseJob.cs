@@ -218,7 +218,6 @@ struct WorleyNoiseGenerator
 		WorleyCell cell = new MyComponents.WorleyCell();
 
         cell.index = cellIndex;
-        cell.indexFloat = new float3(cellIndex.x, 0, cellIndex.y);
         cell.position = new float3(cellX, 0, cellY) / TerrainSettings.cellFrequency;
 		cell.value =  To01(ValCoord2D(TerrainSettings.seed, cellIndex.x, cellIndex.y));
 		

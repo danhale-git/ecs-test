@@ -75,7 +75,6 @@ namespace MyComponents
 
 		public float value;
 		public int2 index;
-		public float3 indexFloat;
 		public float3 position;
 	}
 	

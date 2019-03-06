@@ -42,7 +42,6 @@ public struct WorleyNoiseUtil
             WorleyCell cell = new WorleyCell {
                 value = worleyNoise.currentCellValue,
                 index = worleyNoise.currentCellIndex,
-                indexFloat = new float3(worleyNoise.currentCellIndex.x, 0, worleyNoise.currentCellIndex.y),
                 position = worleyNoise.currentCellPosition
             };
 
