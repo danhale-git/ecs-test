@@ -3,151 +3,79 @@ using Unity.Collections;
 
 public struct MapMatrix<T> where T : struct
 {
-    public float3 rootPosition;
-    public int gridSquareSize;
+    public Matrix<T> array;
+    Matrix<sbyte> discoveredArray;
 
-    Matrix<T> matrix;
-    Matrix<sbyte> discovered;
-
-    public int Length{ get{ return matrix.Length; } }
+    public int Length{ get{ return array.Length; } }
 
     public Matrix<T> GetMatrix()
     {
-        return matrix;
+        return array;
     }
 
     public void Dispose()
     {
-        matrix.Dispose();
-        discovered.Dispose();
+        array.Dispose();
+        discoveredArray.Dispose();
     }
 
-    public void Initialise(int width, Allocator label)
+    public void Initialise(int width, Allocator label, float3 rootPosition, int itemWorldSize)
     {
-        matrix.Initialise(width, label); 
-        discovered.Initialise(width, label); 
+        int2 root = Util.Float3ToInt2(rootPosition);
+        array.Initialise(width, label, root, itemWorldSize); 
+        discoveredArray.Initialise(width, label, root, itemWorldSize); 
     }
 
     public void ClearDiscoveryStatus()
     {
-        discovered.Dispose();
-        discovered.Initialise(matrix.width, matrix.label); 
+        discoveredArray.Dispose();
+        discoveredArray.Initialise(); 
     }
 
     void ResizeMatrices(float3 gridPosition)
     {
-        float3 matrixPosition = GridToMatrixPosition(gridPosition);
-        float3 rootPositionChange = matrix.ResizeMatrix(matrixPosition);
+        int2 matrixPosition = array.GridToMatrixPosition(Util.Float3ToInt2(gridPosition));
+        float3 rootPositionChange = array.ResizeMatrix(matrixPosition);
 
-        int newWidth = matrix.width;
-        discovered.GenerateNewArray(rootPositionChange * -1, newWidth);
-
-        rootPosition = rootPosition + (rootPositionChange * gridSquareSize);
+        int newWidth = array.width;
+        discoveredArray.GenerateNewArray(rootPositionChange * -1, newWidth);
     }
 
     public void SetItem(T item, float3 gridPosition)
     {
-        if(!GridPositionIsInMatrix(gridPosition))
+        if(!array.GridPositionIsInMatrix(Util.Float3ToInt2(gridPosition)))
             ResizeMatrices(gridPosition);
 
-        int index = GridPositionToFlatIndex(gridPosition);
-        matrix.SetItem(item, index);
+        int index = array.GridPositionToFlatIndex(Util.Float3ToInt2(gridPosition));
+        array.SetItem(item, index);
     }
-
-    public void UnsetItem(float3 gridPosition)
-    {
-        matrix.UnsetItem(GridPositionToFlatIndex(gridPosition));
-    }
-
-    public bool ItemIsSet(float3 gridPosition)
-    {
-        if(!GridPositionIsInMatrix(gridPosition))
-            return false;
-
-        return matrix.ItemIsSet(GridPositionToFlatIndex(gridPosition));
-    }
-    public bool ItemIsSet(int index)
-    {
-        if(index < 0 || index >= matrix.Length)
-            return false;
-
-        return matrix.ItemIsSet(index);
-    }
-
-    public T GetItem(int index)
-    {
-		return matrix.GetItem(index);
-    }
-
-    public T GetItem(float3 gridPosition)
-    {
-        int index = GridPositionToFlatIndex(gridPosition);
-		return matrix.GetItem(index);
-    }
-
-    public bool TryGetItem(float3 gridPosition, out T item)
-	{
-        if(!GridPositionIsInMatrix(gridPosition) || !ItemIsSet(gridPosition))
-        {
-            item = new T();
-            return false;
-        }
-
-		item = matrix.GetItem(GridPositionToFlatIndex(gridPosition));
-        return true;
-	}
 
     public void SetAsDiscovered(bool value, float3 gridPosition)
     {
-        int index = GridPositionToFlatIndex(gridPosition);
-        discovered.SetItem(value ? (sbyte)1 : (sbyte)0, index);
+        int index = array.GridPositionToFlatIndex(Util.Float3ToInt2(gridPosition));
+        discoveredArray.SetItem(value ? (sbyte)1 : (sbyte)0, index);
     }
 
     public void SetAsDiscovered(bool value, int index)
     {
-        discovered.SetItem(value ? (sbyte)1 : (sbyte)0, index);
+        discoveredArray.SetItem(value ? (sbyte)1 : (sbyte)0, index);
     }
 
     public bool SquareIsDiscovered(float3 gridPosition)
     {
-        if(!GridPositionIsInMatrix(gridPosition))
+        if(!array.GridPositionIsInMatrix(Util.Float3ToInt2(gridPosition)))
             return false;
             
-        int index = GridPositionToFlatIndex(gridPosition);
-        return discovered.GetItem(index) > 0 ? true : false;
+        int index = array.GridPositionToFlatIndex(Util.Float3ToInt2(gridPosition));
+        return discoveredArray.GetItem(index) > 0 ? true : false;
     }
 
     public bool SquareIsDiscovered(int index)
     {
-        if(index < 0 || index >= matrix.Length)
+        if(index < 0 || index >= array.Length)
             return false;
             
-        return discovered.GetItem(index) > 0 ? true : false;
+        return discoveredArray.GetItem(index) > 0 ? true : false;
     }
 
-    public bool GridPositionIsInMatrix(float3 gridPosition, int offset = 0)
-	{
-        float3 matrixPosition = GridToMatrixPosition(gridPosition);
-
-        return matrix.PositionIsInMatrix(matrixPosition, offset);
-	}
-    
-    public int GridPositionToFlatIndex(float3 gridPosition)
-    {
-        return matrix.PositionToIndex(GridToMatrixPosition(gridPosition));
-    }
-
-    public float3 GridToMatrixPosition(float3 gridPosition)
-    {
-        return (gridPosition - rootPosition) / gridSquareSize;
-    }
-    
-    public float3 FlatIndexToGridPosition(int index)
-    {
-        return MatrixToGridPosition(matrix.IndexToPosition(index));
-    }
-    public float3 MatrixToGridPosition(float3 matrixPosition)
-    {
-        return (matrixPosition * gridSquareSize) + rootPosition;
-    }
 }

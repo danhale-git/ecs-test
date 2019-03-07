@@ -89,7 +89,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        SubMatrix subMatrix = LargestSquare(managerSystem.mapMatrix.GetMatrix(), managerSystem.mapMatrix.rootPosition);
+        SubMatrix subMatrix = LargestSquare(managerSystem.mapMatrix.GetMatrix(), Util.Int2ToFloat3(managerSystem.mapMatrix.array.rootPosition));
 
         subMatrix = TrimSubMatrix(subMatrix);
         

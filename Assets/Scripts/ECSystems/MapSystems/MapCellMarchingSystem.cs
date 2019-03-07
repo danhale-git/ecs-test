@@ -83,22 +83,17 @@ public class MapCellMarchingSystem : ComponentSystem
 
     Entity InitialiseMapMatrix()
     {
-        mapMatrix = new MapMatrix<Entity>{
-            rootPosition = currentMapSquare,
-            gridSquareSize = squareWidth
-        };
-        mapMatrix.Initialise(5, Allocator.Persistent);
+        mapMatrix = new MapMatrix<Entity>{};
+        mapMatrix.Initialise(5, Allocator.Persistent, CurrentMapSquare(), squareWidth);
 
         return CreateMapSquareEntity(currentMapSquare);
     }
 
     void InitialiseCellMatrix(int2 rootPosition)
     {
-        cellMatrix = new CellMatrix<Entity>{
-            rootPosition = rootPosition
-        };
+        cellMatrix = new CellMatrix<Entity>{};
 
-        cellMatrix.Initialise(1, Allocator.Persistent);
+        cellMatrix.Initialise(1, Allocator.Persistent, rootPosition, 1);
     }
 
     void MarchCells(int2 centerIndex)
@@ -108,16 +103,13 @@ public class MapCellMarchingSystem : ComponentSystem
             for(int z = centerIndex.y-range; z <= centerIndex.y+range; z++)
             {
                 int2 cellIndex = new int2(x, z);
-                if(cellMatrix.ItemIsSet(cellIndex)) continue;
+                if(cellMatrix.array.ItemIsSet(cellIndex)) continue;
                 
                 WorleyCell cell = worleyNoiseGen.CellFromIndex(cellIndex);
 
                 Entity cellEntity = DiscoverCell(cell);
                 cellMatrix.SetItem(cellEntity, cellIndex);
             }
-
-        string cellDebug = CustomDebugTools.PrintMatrix(cellMatrix.GetMatrix());
-        Debug.Log(cellDebug);
     }
 
     protected override void OnDestroyManager()
@@ -155,7 +147,7 @@ public class MapCellMarchingSystem : ComponentSystem
     }
     public int2 CurrentCellIndex()
     {
-        WorleyCell currentCell = entityManager.GetBuffer<WorleyCell>(mapMatrix.GetItem(currentMapSquare))[0];
+        WorleyCell currentCell = entityManager.GetBuffer<WorleyCell>(mapMatrix.array.GetItem(currentMapSquare))[0];
         return currentCell.index;
     }
 
@@ -219,7 +211,7 @@ public class MapCellMarchingSystem : ComponentSystem
     {
         Entity entity;
 
-        if(!mapMatrix.TryGetItem(position, out entity))
+        if(!mapMatrix.array.TryGetItem(position, out entity))
             return CreateMapSquareEntity(position);
         else if(!entityManager.Exists(entity))
             return CreateMapSquareEntity(position);
@@ -274,15 +266,15 @@ public class MapCellMarchingSystem : ComponentSystem
     {
         for(int c = 0; c < cellMatrix.Length; c++)
         {
-            if(!cellMatrix.ItemIsSet(c))
+            if(!cellMatrix.array.ItemIsSet(c))
                 continue;
 
-            Entity cellEntity = cellMatrix.GetItem(c);
+            Entity cellEntity = cellMatrix.array.GetItem(c);
             WorleyCell cell = entityManager.GetBuffer<WorleyCell>(cellEntity)[0];
 
-            if(!cellMatrix.InDistanceFromGridPosition(cell.index, currentCellIndex, 2))
+            if(!cellMatrix.array.InDistanceFromGridPosition(cell.index, currentCellIndex, 2))
             {
-                cellMatrix.UnsetItem(cell.index);
+                cellMatrix.array.UnsetItem(cell.index);
             }
         }
     }

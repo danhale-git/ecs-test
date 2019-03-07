@@ -68,7 +68,7 @@ public class MapSquareCheckSystem : ComponentSystem
     {
         int activeCells = 0;
         for(int i = 0; i < uniqueCells.Length; i++)
-            if(managerSystem.cellMatrix.ItemIsSet(uniqueCells[i].index))
+            if(managerSystem.cellMatrix.array.ItemIsSet(uniqueCells[i].index))
                 activeCells++;
                 
         return activeCells;
@@ -77,6 +77,6 @@ public class MapSquareCheckSystem : ComponentSystem
     void RemoveMapSquare(Entity squareEntity, float3 squarePosition, EntityCommandBuffer commandBuffer)
     {
         entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity, commandBuffer);
-        managerSystem.mapMatrix.UnsetItem(squarePosition);
+        managerSystem.mapMatrix.array.UnsetItem(squarePosition);
     }
 }

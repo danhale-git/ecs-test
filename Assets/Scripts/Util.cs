@@ -49,6 +49,16 @@ public static class Util
 		return (value * 0.5f) + 0.5f;
 	}
 
+    public static int2 Float3ToInt2(float3 fl)
+    {
+        return new int2((int)fl.x, (int)fl.z);
+    }
+
+    public static float3 Int2ToFloat3(int2 in2)
+    {
+        return new float3(in2.x, 0, in2.y);
+    }
+
     public static Vector3[] CubeVectors()
     {
         return new Vector3[] {  new Vector3( 	-0.5f, -0.5f,	 0.5f ),	//	left front bottom

@@ -11,40 +11,9 @@ public class DebugMonoB : MonoBehaviour
     public List<GameObject> allSquares = new List<GameObject>();
     GameObject canvas;
 
-    float timer = 0;
-
     void Start()
     {
         canvas = FindObjectOfType<Canvas>().gameObject;
-    }
-
-    public void DebugMatrixEntities()
-    {
-        MapMatrix<Entity> matrix = CustomDebugTools.currentMatrix;
-        Vector2 centerOffset = new Vector2(Screen.width/2, Screen.height/2);
-
-        foreach(GameObject square in allSquares)
-            Destroy(square);
-
-        for(int i = 0; i < matrix.Length; i++)
-        {
-            Vector3 position = (matrix.FlatIndexToGridPosition(i) * 15) / matrix.gridSquareSize;
-            Vector2 position2 = new Vector2(position.x, position.z) + centerOffset;
-            Color color;
-            if(matrix.ItemIsSet(i))
-            {
-                color = new Color(1, 0, 0, 0.5f);
-            }
-            else
-            {
-                color = new Color(0, 1, 1, 0.5f);
-            } 
-            GameObject square = Instantiate(squarePrefab, position2, Quaternion.identity, canvas.transform);
-
-            square.GetComponent<Image>().color = color;
-
-            allSquares.Add(square);
-        }    
     }
 
     void Update()
@@ -60,12 +29,6 @@ public class DebugMonoB : MonoBehaviour
         }
 
         debugPanelText.text = newText;
-
-        if(Time.fixedTime > timer+1)
-        {
-            DebugMatrixEntities();
-            timer = Time.fixedTime;
-        }
     }
 
     void OnDrawGizmos()
