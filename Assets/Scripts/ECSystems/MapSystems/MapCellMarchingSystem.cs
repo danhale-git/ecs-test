@@ -11,7 +11,6 @@ using MyComponents;
 public class MapCellMarchingSystem : ComponentSystem
 {
     EntityManager entityManager;
-    MapHorizontalDrawBufferSystem horizontalDrawBufferSystem;
 
     EntityUtil entityUtil;
     WorleyNoiseUtil worleyUtil;
@@ -26,7 +25,6 @@ public class MapCellMarchingSystem : ComponentSystem
 
     public float3 currentMapSquare;
     float3 previousMapSquare;
-
     int2 currentCellIndex;
     int2 previousCellIndex;
 
@@ -36,7 +34,6 @@ public class MapCellMarchingSystem : ComponentSystem
 	protected override void OnCreateManager()
     {
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        horizontalDrawBufferSystem = World.Active.GetOrCreateManager<MapHorizontalDrawBufferSystem>();
 
         entityUtil = new EntityUtil(entityManager);
         worleyUtil = new WorleyNoiseUtil();
@@ -71,32 +68,17 @@ public class MapCellMarchingSystem : ComponentSystem
     
     protected override void OnStartRunning()
     {
-        //  Initialise to anything that doesn't match
-        previousMapSquare = currentMapSquare + (100 * squareWidth);
-        previousCellIndex = currentCellIndex + 100;
-
         Entity initialMapSquare = InitialiseMapMatrix();
-
         WorleyCell startCell = entityManager.GetBuffer<WorleyCell>(initialMapSquare)[0];
 
         InitialiseCellMatrix(startCell.index);
-
         MarchCells(startCell.index);
-    }
 
-    void MarchCells(int2 centerIndex)
-    {
-        for(int x = centerIndex.x-2; x <= centerIndex.x+2; x++)
-            for(int z = centerIndex.y-2; z <= centerIndex.y+2; z++)
-            {
-                int2 cellIndex = new int2(x, z);
-                if(cellMatrix.ItemIsSet(cellIndex)) continue;
-                
-                WorleyCell cell = worleyNoiseGen.CellFromIndex(cellIndex);
-
-                Entity cellEntity = DiscoverCell(cell);
-                cellMatrix.SetItem(cellEntity, cellIndex);
-            }
+        currentMapSquare = CurrentMapSquare();
+        currentCellIndex = CurrentCellIndex();
+        //  Initialise 'previous' variables to somomething that doesn't match the current position
+        previousMapSquare = currentMapSquare + (100 * squareWidth);
+        previousCellIndex = currentCellIndex + 100;
     }
 
     Entity InitialiseMapMatrix()
@@ -117,6 +99,22 @@ public class MapCellMarchingSystem : ComponentSystem
         };
 
         cellMatrix.Initialise(1, Allocator.Persistent);
+    }
+
+    void MarchCells(int2 centerIndex)
+    {
+        int range = 2;
+        for(int x = centerIndex.x-range; x <= centerIndex.x+range; x++)
+            for(int z = centerIndex.y-range; z <= centerIndex.y+range; z++)
+            {
+                int2 cellIndex = new int2(x, z);
+                if(cellMatrix.ItemIsSet(cellIndex)) continue;
+                
+                WorleyCell cell = worleyNoiseGen.CellFromIndex(cellIndex);
+
+                Entity cellEntity = DiscoverCell(cell);
+                cellMatrix.SetItem(cellEntity, cellIndex);
+            }
     }
 
     protected override void OnDestroyManager()
@@ -140,8 +138,10 @@ public class MapCellMarchingSystem : ComponentSystem
         else
             previousCellIndex = currentCellIndex;
 
-        mapMatrix.ClearDiscoveryStatus();//DEBUG
+        mapMatrix.ClearDiscoveryStatus();
+
         MarchCells(currentCellIndex);
+
         RemoveOutOfRangeCells();
     }
 
@@ -228,7 +228,6 @@ public class MapCellMarchingSystem : ComponentSystem
     {
         Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 		entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
-        //horizontalDrawBufferSystem.SetDrawBuffer(entity, worldPosition);
 
         mapMatrix.SetItem(entity, worldPosition);
 
