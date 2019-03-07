@@ -37,11 +37,6 @@ public struct Matrix<T> where T : struct
 
     public float3 ResizeMatrix(float3 matrixPosition)
     {
-        
-        EmptyEdgesCount(1);
-        
-        EmptyEdgesCount(3);
-
         int x = (int)matrixPosition.x;
         int z = (int)matrixPosition.z;
 
@@ -50,7 +45,7 @@ public struct Matrix<T> where T : struct
 
         if(x < 0)
         {
-            int rightGap = EmptyEdgesCount(0);
+            int rightGap = EmptyLayersCount(0);
             rootPositionChange.x = x;
 
             widthChange.x = (x * -1) - rightGap;
@@ -59,12 +54,15 @@ public struct Matrix<T> where T : struct
         }
         else if(x >= width)
         {
-            widthChange.x = x - (width - 1);
+            int leftGap = EmptyLayersCount(1);
+            widthChange.x = x - (width - 1) - leftGap;
+            
+            rootPositionChange.x = leftGap;
         }
 
         if(z < 0)
         {
-            int topGap = EmptyEdgesCount(2);
+            int topGap = EmptyLayersCount(2);
             rootPositionChange.z = z;
 
             widthChange.z = (z * -1) - topGap;
@@ -72,17 +70,13 @@ public struct Matrix<T> where T : struct
         }
         else if(z >= width)
         {
-            widthChange.z = z - (width - 1);
+            int bottomGap = EmptyLayersCount(3);
+            widthChange.z = z - (width - 1) - bottomGap;
+
+            rootPositionChange.z = bottomGap;
         }
 
         float3 rootIndexOffset = rootPositionChange * -1;
-
-        //Debug.Log("width "+width);
-        //Debug.Log("widthChange "+widthChange);
-        //Debug.Log("rootPositionChange "+rootPositionChange);
-        //Debug.Log("matrixPosition "+matrixPosition);
-
-        //CountEdges();
 
         int oldWidth = width;
         if(widthChange.x+widthChange.z > 0)
@@ -93,42 +87,17 @@ public struct Matrix<T> where T : struct
         return rootPositionChange;
     }
 
-    public void CountEdges()
+    int EmptyLayersCount(int edge)
     {
-        string debugString = "";
-
-        debugString += "  "+EdgeIsEmpty(2)+'\n';
-        debugString += EdgeIsEmpty(1)+"  "+EdgeIsEmpty(0)+'\n';
-        debugString += "  "+EdgeIsEmpty(3);
-
-        debugString += "\n-----------\n";
-
-        debugString += "  "+EmptyEdgesCount(2)+'\n';
-        debugString += EmptyEdgesCount(1)+"  "+EmptyEdgesCount(0)+'\n';
-        debugString += "  "+EmptyEdgesCount(3);
-
-        Debug.Log(debugString);
-    }
-
-    int EmptyEdgesCount(int edge)
-    {
-        int offset = 0;
         int count = 0;
 
-        int safety = 0;
-
-        while(EdgeIsEmpty(edge, offset) > 0 && safety < 100)
-        {
-            safety++;
-
-            offset++;
+        while(LayerIsEmpty(edge, count) > 0)
             count++;
-        }
 
         return count;
     }
 
-    sbyte EdgeIsEmpty(int edge, int offset = 0)
+    sbyte LayerIsEmpty(int edge, int offset = 0)
     {
         if(edge > 3) throw new System.Exception("Edge "+edge+" out of range 3");
         
