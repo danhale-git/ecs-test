@@ -35,10 +35,10 @@ public struct MapMatrix<T> where T : struct
     void ResizeMatrices(float3 gridPosition)
     {
         int2 matrixPosition = array.GridToMatrixPosition(Util.Float3ToInt2(gridPosition));
-        float3 rootPositionChange = array.ResizeMatrix(matrixPosition);
+        int2 rootIndexOffset = array.RepositionResize(matrixPosition);
 
         int newWidth = array.width;
-        discoveredArray.GenerateNewArray(rootPositionChange * -1, newWidth);
+        discoveredArray.CopyToAdjustedMatrix(rootIndexOffset, newWidth);
     }
 
     public void SetItem(T item, float3 gridPosition)

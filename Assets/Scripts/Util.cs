@@ -35,6 +35,10 @@ public static class Util
     {
         return (z * size) + x;
     }
+    public static int Flatten2D(int2 xy, int size)
+    {
+        return (xy.y * size) + xy.x;
+    }
     public static int Flatten2D(float x, float z, int size)
     {
         return ((int)z * size) + (int)x;

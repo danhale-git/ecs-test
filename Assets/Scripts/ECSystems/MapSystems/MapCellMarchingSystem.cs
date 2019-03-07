@@ -84,7 +84,7 @@ public class MapCellMarchingSystem : ComponentSystem
     Entity InitialiseMapMatrix()
     {
         mapMatrix = new MapMatrix<Entity>{};
-        mapMatrix.Initialise(5, Allocator.Persistent, CurrentMapSquare(), squareWidth);
+        mapMatrix.Initialise(1, Allocator.Persistent, CurrentMapSquare(), squareWidth);
 
         return CreateMapSquareEntity(currentMapSquare);
     }

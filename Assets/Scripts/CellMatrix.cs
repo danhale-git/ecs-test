@@ -20,7 +20,7 @@ public struct CellMatrix<T> where T : struct
     void ResizeMatrices(int2 gridPosition)
     {
         int2 matrixPosition = array.GridToMatrixPosition(gridPosition);
-        array.ResizeMatrix(matrixPosition);
+        array.RepositionResize(matrixPosition);
     }
 
     public void SetItem(T item, int2 gridPosition)
