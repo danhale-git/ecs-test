@@ -78,11 +78,11 @@ public struct Matrix<T> where T : struct
 
         float3 rootIndexOffset = rootPositionChange * -1;
 
-        int oldWidth = width;
+        int newWidth = width;
         if(widthChange.x+widthChange.z > 0)
-            width += math.max((int)widthChange.x, (int)widthChange.z);
+            newWidth += math.max((int)widthChange.x, (int)widthChange.z);
 
-        GenerateNewArray(rootIndexOffset, oldWidth);
+        GenerateNewArray(rootIndexOffset, newWidth);
 
         return rootPositionChange;
     }
@@ -123,17 +123,17 @@ public struct Matrix<T> where T : struct
         return 1;
     }
 
-    public void GenerateNewArray(float3 rootIndexOffset, int oldWidth)
+    public void GenerateNewArray(float3 rootIndexOffset, int newWidth)
     {
-        NativeArray<T> newMatrix = new NativeArray<T>((int)math.pow(width, 2), label);
+        NativeArray<T> newMatrix = new NativeArray<T>((int)math.pow(newWidth, 2), label);
         NativeArray<sbyte> newIsSet = new NativeArray<sbyte>(newMatrix.Length, label);
 
         for(int i = 0; i < matrix.Length; i++)
         {
-            float3 oldMatrixPosition = Util.Unflatten2D(i, oldWidth);
+            float3 oldMatrixPosition = Util.Unflatten2D(i, width);
             float3 newMatrixPosition = oldMatrixPosition + rootIndexOffset;
 
-            int newIndex = Util.Flatten2D(newMatrixPosition, width);
+            int newIndex = Util.Flatten2D(newMatrixPosition, newWidth);
 
             if(newIndex < 0 || newIndex >= newMatrix.Length) continue;
 
@@ -141,6 +141,7 @@ public struct Matrix<T> where T : struct
             newIsSet[newIndex] = isSet[i];
         }
 
+        width = newWidth;
         SetMatrix(newMatrix, newIsSet);
     }
 

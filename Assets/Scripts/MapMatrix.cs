@@ -39,9 +39,8 @@ public struct MapMatrix<T> where T : struct
         float3 matrixPosition = GridToMatrixPosition(gridPosition);
         float3 rootPositionChange = matrix.ResizeMatrix(matrixPosition);
 
-        int oldWidth = discovered.width;
-        discovered.width = matrix.width;
-        discovered.GenerateNewArray(rootPositionChange * -1, oldWidth);
+        int newWidth = matrix.width;
+        discovered.GenerateNewArray(rootPositionChange * -1, newWidth);
 
         rootPosition = rootPosition + (rootPositionChange * gridSquareSize);
     }
