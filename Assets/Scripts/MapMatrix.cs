@@ -38,7 +38,10 @@ public struct MapMatrix<T> where T : struct
     {
         float3 matrixPosition = GridToMatrixPosition(gridPosition);
         float3 rootPositionChange = matrix.ResizeMatrix(matrixPosition);
-        discovered.ResizeMatrix(matrixPosition);
+
+        int oldWidth = discovered.width;
+        discovered.width = matrix.width;
+        discovered.GenerateNewArray(rootPositionChange * -1, oldWidth);
 
         rootPosition = rootPosition + (rootPositionChange * gridSquareSize);
     }

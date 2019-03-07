@@ -87,7 +87,7 @@ public class MapCellMarchingSystem : ComponentSystem
             rootPosition = currentMapSquare,
             gridSquareSize = squareWidth
         };
-        mapMatrix.Initialise(1, Allocator.Persistent);
+        mapMatrix.Initialise(5, Allocator.Persistent);
 
         return CreateMapSquareEntity(currentMapSquare);
     }
@@ -115,6 +115,9 @@ public class MapCellMarchingSystem : ComponentSystem
                 Entity cellEntity = DiscoverCell(cell);
                 cellMatrix.SetItem(cellEntity, cellIndex);
             }
+
+        string cellDebug = CustomDebugTools.PrintMatrix(cellMatrix.GetMatrix());
+        Debug.Log(cellDebug);
     }
 
     protected override void OnDestroyManager()

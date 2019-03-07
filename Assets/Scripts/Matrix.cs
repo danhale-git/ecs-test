@@ -37,22 +37,54 @@ public struct Matrix<T> where T : struct
 
     public float3 ResizeMatrix(float3 matrixPosition)
     {
+        
+        EmptyEdgesCount(1);
+        
+        EmptyEdgesCount(3);
+
         int x = (int)matrixPosition.x;
         int z = (int)matrixPosition.z;
 
         float3 rootPositionChange = float3.zero;
         float3 widthChange = float3.zero;
 
-        if(x < 0) rootPositionChange.x = x;
-        else if(x >= width) widthChange.x = x - (width - 1);
+        if(x < 0)
+        {
+            int rightGap = EmptyEdgesCount(0);
+            rootPositionChange.x = x;
 
-        if(z < 0) rootPositionChange.z = z;
-        else if(z >= width) widthChange.z = z - (width - 1);
+            widthChange.x = (x * -1) - rightGap;
+            if(widthChange.x < 0) widthChange.x = 0;
+            
+        }
+        else if(x >= width)
+        {
+            widthChange.x = x - (width - 1);
+        }
+
+        if(z < 0)
+        {
+            int topGap = EmptyEdgesCount(2);
+            rootPositionChange.z = z;
+
+            widthChange.z = (z * -1) - topGap;
+            if(widthChange.z < 0) widthChange.z = 0;
+        }
+        else if(z >= width)
+        {
+            widthChange.z = z - (width - 1);
+        }
 
         float3 rootIndexOffset = rootPositionChange * -1;
 
+        //Debug.Log("width "+width);
+        //Debug.Log("widthChange "+widthChange);
+        //Debug.Log("rootPositionChange "+rootPositionChange);
+        //Debug.Log("matrixPosition "+matrixPosition);
+
+        //CountEdges();
+
         int oldWidth = width;
-        widthChange += rootIndexOffset;
         if(widthChange.x+widthChange.z > 0)
             width += math.max((int)widthChange.x, (int)widthChange.z);
 
@@ -61,29 +93,68 @@ public struct Matrix<T> where T : struct
         return rootPositionChange;
     }
 
-    sbyte EdgeIsEmpty(int edge)
+    public void CountEdges()
+    {
+        string debugString = "";
+
+        debugString += "  "+EdgeIsEmpty(2)+'\n';
+        debugString += EdgeIsEmpty(1)+"  "+EdgeIsEmpty(0)+'\n';
+        debugString += "  "+EdgeIsEmpty(3);
+
+        debugString += "\n-----------\n";
+
+        debugString += "  "+EmptyEdgesCount(2)+'\n';
+        debugString += EmptyEdgesCount(1)+"  "+EmptyEdgesCount(0)+'\n';
+        debugString += "  "+EmptyEdgesCount(3);
+
+        Debug.Log(debugString);
+    }
+
+    int EmptyEdgesCount(int edge)
+    {
+        int offset = 0;
+        int count = 0;
+
+        int safety = 0;
+
+        while(EdgeIsEmpty(edge, offset) > 0 && safety < 100)
+        {
+            safety++;
+
+            offset++;
+            count++;
+        }
+
+        return count;
+    }
+
+    sbyte EdgeIsEmpty(int edge, int offset = 0)
     {
         if(edge > 3) throw new System.Exception("Edge "+edge+" out of range 3");
         
+        if(offset >= math.floor(width/2)) return 0;
+
         if(edge < 2)
         {
-            int x = edge == 0 ? width-1 : 0;
+            int x       = edge == 0 ? width-1 : 0;
+            int xOffset = edge == 0 ? -offset : offset;
             for(int z  = 0; z < width; z++)
-                if(ItemIsSet( PositionToIndex(new int2(x, z)) ))
+                if(ItemIsSet( PositionToIndex(new int2(x+xOffset, z)) ))
                     return 0;
         }
         else
         {
-            int z = edge == 2 ? width-1 : 0;
+            int z       = edge == 2 ? width-1 : 0;
+            int zOffset = edge == 2 ? -offset : offset;
             for(int x  = 0; x < width; x++)
-                if(ItemIsSet( PositionToIndex(new int2(x, z)) ))
+                if(ItemIsSet( PositionToIndex(new int2(x, z+zOffset)) ))
                     return 0;
         }
 
         return 1;
     }
 
-    void GenerateNewArray(float3 rootIndexOffset, int oldWidth)
+    public void GenerateNewArray(float3 rootIndexOffset, int oldWidth)
     {
         NativeArray<T> newMatrix = new NativeArray<T>((int)math.pow(width, 2), label);
         NativeArray<sbyte> newIsSet = new NativeArray<sbyte>(newMatrix.Length, label);
@@ -94,6 +165,9 @@ public struct Matrix<T> where T : struct
             float3 newMatrixPosition = oldMatrixPosition + rootIndexOffset;
 
             int newIndex = Util.Flatten2D(newMatrixPosition, width);
+
+            if(newIndex < 0 || newIndex >= newMatrix.Length) continue;
+
             newMatrix[newIndex] = matrix[i];
             newIsSet[newIndex] = isSet[i];
         }
