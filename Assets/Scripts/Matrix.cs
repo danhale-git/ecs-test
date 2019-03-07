@@ -21,7 +21,7 @@ public struct Matrix<T> where T : struct
         if(isSet.IsCreated) isSet.Dispose();
     }
 
-    public void Initialise(int width, Allocator label, int2 rootPosition, int itemWorldSize)
+    public void Initialise(int width, Allocator label, int2 rootPosition, int itemWorldSize = 1)
     {
         Dispose();
         matrix = new NativeArray<T>((int)math.pow(width, 2), label);

@@ -26,7 +26,7 @@ public struct MapMatrix<T> where T : struct
         discoveredArray.Initialise(width, label, root, itemWorldSize); 
     }
 
-    public void ClearDiscoveryStatus()
+    public void ClearDiscoveredSquares()
     {
         discoveredArray.Dispose();
         discoveredArray.Initialise(); 

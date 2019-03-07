@@ -12,9 +12,9 @@ public struct CellMatrix<T> where T : struct
         array.Dispose();
     }
 
-    public void Initialise(int width, Allocator label, int2 rootPosition, int itemWorldSize)
+    public void Initialise(int width, Allocator label, int2 rootPosition)
     {
-        array.Initialise(width, label, rootPosition, itemWorldSize); 
+        array.Initialise(width, label, rootPosition); 
     }
 
     void ResizeMatrices(int2 gridPosition)
