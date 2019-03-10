@@ -37,6 +37,12 @@ public class MapTopologySystem : ComponentSystem
         terrainGroup = GetComponentGroup(terrainQuery);
 
         biomes = new BiomeUtility();
+        biomes.InitialiseBiomes();
+    }
+
+    protected override void OnDestroyManager()
+    {
+        biomes.Dispose();
     }
 
     protected override void OnUpdate()

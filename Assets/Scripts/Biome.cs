@@ -1,30 +1,43 @@
 ﻿using UnityEngine;
 
-public class BiomeUtility
+public struct BiomeIndex
 {
-    Cliff cliff;
-
-    Hills hills;
-    Flats flat;
-    public BiomeUtility()
-    {
-        cliff = new Cliff(new FastNoise());
-
-        hills = new Hills(new FastNoise());
-        flat = new Flats(new FastNoise());
-    }
-
-    public static int Index(float cellNoise)
+    public int GetIndex(float cellNoise)
     {
         if(cellNoise > 0.5f)
             return 0;
         else    
             return 1;
     }
+}
+
+public struct BiomeUtility
+{
+    BiomeIndex index;
+
+    Cliff cliff;
+    Hills hills;
+    Flats flat;
+
+    public void InitialiseBiomes()
+    {
+        cliff = new Cliff(new SimplexNoiseGenerator(0));
+        hills = new Hills(new SimplexNoiseGenerator(0));
+        flat = new Flats(new SimplexNoiseGenerator(0));
+
+        index = new BiomeIndex();
+    }
+
+    public void Dispose()
+    {
+        cliff.noise.Dispose();
+        hills.noise.Dispose();
+        flat.noise.Dispose();
+    }
 
     public float AddNoise(float cellNoise, int x, int z)
     {
-        return AddNoise(Index(cellNoise), x, z);
+        return AddNoise(index.GetIndex(cellNoise), x, z);
     }
 
     public float AddNoise(int biomeIndex, int x, int z)
@@ -51,54 +64,43 @@ public interface Biome
 
 public struct Hills : Biome
 {
-    FastNoise noise;
-    public Hills(FastNoise noise)
+    public SimplexNoiseGenerator noise;
+    public Hills(SimplexNoiseGenerator noise)
     {
         this.noise = noise;
-
-        this.noise.SetFrequency(0.005f);
-        this.noise.SetFractalOctaves(5);
-        this.noise.SetNoiseType(FastNoise.NoiseType.SimplexFractal);
     }
 
     public float AddHeight(int x, int z)
     {
-        return noise.GetNoise01(x, z) * 20;
+        return noise.GetSimplex(x, z, 1337, 0.005f) * 20;
     }    
 }
 
 public struct Flats : Biome
 {
-    FastNoise noise;
-    public Flats(FastNoise noise)
+    public SimplexNoiseGenerator noise;
+    public Flats(SimplexNoiseGenerator noise)
     {
         this.noise = noise;
-
-        this.noise.SetFrequency(0.001f);
-        this.noise.SetFractalOctaves(5);
-        this.noise.SetNoiseType(FastNoise.NoiseType.SimplexFractal);
     }
 
     public float AddHeight(int x, int z)
     {
-        return noise.GetNoise01(x, z) * 5;
+        return noise.GetSimplex(x, z, 1337, 0.001f) * 5;
     }     
 }
 
 public struct Cliff : Biome
 {
-    FastNoise noise;
-    public Cliff(FastNoise noise)
+    public SimplexNoiseGenerator noise;
+    public Cliff(SimplexNoiseGenerator noise)
     {
        this.noise = noise;
-
-        this.noise.SetFrequency(0.05f);
-        this.noise.SetNoiseType(FastNoise.NoiseType.Simplex);
     }
 
     public float AddHeight(int x, int z)
     {
-        return (noise.GetNoise01(x, z) * 8) - 4;
+        return (noise.GetSimplex(x, z, 1337, 0.05f) * 8) - 4;
     }    
 }
 
