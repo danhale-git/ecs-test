@@ -2,7 +2,7 @@
 using Unity.Collections;
 using MyComponents;
 
-struct WorleyNoiseGenerator
+public struct WorleyNoiseGenerator
 {
     int X_PRIME;
 	int Y_PRIME;
@@ -71,7 +71,9 @@ struct WorleyNoiseGenerator
 		int xr = FastRound(x);
 		int yr = FastRound(y);
 
-		float[] distance = { 999999, 999999 };
+		NativeArray<float> distance = new NativeArray<float>(2, Allocator.Temp);
+		distance[0] = 999999;
+		distance[1] = 999999;
 
 		//	Store distance[1] index
 		int xc1 = 0, yc1 = 0;
@@ -80,9 +82,15 @@ struct WorleyNoiseGenerator
 		int xc0 = 0, yc0 = 0;
 
 		//	All adjacent cell indices and distances
-		int[] otherX = new int[9];
-		int[] otherY = new int[9];
-		float[] otherDist = { 999999, 999999, 999999, 999999, 999999, 999999, 999999, 999999, 999999 };
+		NativeArray<int> otherX = new NativeArray<int>(9, Allocator.Temp);
+		NativeArray<int> otherY = new NativeArray<int>(9, Allocator.Temp);
+
+		NativeArray<float> otherDist = new NativeArray<float>(9, Allocator.Temp);
+		for(int i = 0; i < 9; i++)
+		{
+			otherDist[i] = 999999;
+		}
+
 		int indexCount = 0;
 
 		float3 currentCellPosition = float3.zero;
@@ -175,6 +183,11 @@ struct WorleyNoiseGenerator
 		cell.adjacentCellValue = adjacentCellValue;
 		cell.currentCellPosition = currentCellPosition;
 		cell.currentCellIndex = currentCellIndex;
+
+		distance.Dispose();
+		otherX.Dispose();
+		otherY.Dispose();
+		otherDist.Dispose();
 
 		//	Data for use in terrain generation
 		return cell;

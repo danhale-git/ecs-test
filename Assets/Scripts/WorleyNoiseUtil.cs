@@ -5,7 +5,7 @@ using MyComponents;
 
 public struct WorleyNoiseUtil
 {
-    public NativeArray<WorleyNoise> GetWorleyNoiseMap(float3 position)
+    public NativeArray<WorleyNoise> GetWorleyNoiseMap(float3 position, WorleyNoiseGenerator noise)
     {
         int squareWidth = TerrainSettings.mapSquareWidth;
         
@@ -20,12 +20,10 @@ public struct WorleyNoiseUtil
             perterbAmp      = TerrainSettings.cellEdgeSmoothing,    //  Gradient Peturb amount
             cellularJitter  = TerrainSettings.cellularJitter,       //  Randomness of cell shapes
 			util 		    = new JobUtil(),				        //	Utilities
-            noise 		    = new WorleyNoiseGenerator(0)	        //	FastNoise.GetSimplex adapted for Jobs
+            noise 		    = noise	                                //	FastNoise.GetSimplex adapted for Jobs
         };
 
         cellJob.Schedule(worleyNoiseMap.Length, 16).Complete();
-
-        cellJob.noise.Dispose();
 
         return worleyNoiseMap;
     }

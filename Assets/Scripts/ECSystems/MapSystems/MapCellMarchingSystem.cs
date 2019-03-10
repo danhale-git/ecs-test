@@ -119,14 +119,14 @@ public class MapCellMarchingSystem : ComponentSystem
     protected override void OnUpdate()
     {
         currentMapSquare = CurrentMapSquare();
-        if(currentMapSquare.Equals(previousMapSquare)) return;
-        else previousMapSquare = currentMapSquare;
+        if(currentMapSquare.Equals(previousMapSquare))
+            return;
+        else
+            previousMapSquare = currentMapSquare;
 
         currentCellIndex = CurrentCellIndex();
         if(currentCellIndex.Equals(previousCellIndex)) return;
         else previousCellIndex = currentCellIndex;
-
-        mapMatrix.ClearDiscoveredSquares();
 
         GenerateCells(currentCellIndex);
 
@@ -150,6 +150,8 @@ public class MapCellMarchingSystem : ComponentSystem
 
         NativeList<CellMapSquare> allSquares = new NativeList<CellMapSquare>(Allocator.Temp);
         float3 startPosition = Util.VoxelOwner(cell.position, squareWidth);
+        
+        mapMatrix.ClearDiscoveredSquares();
         DiscoverMapSquaresRecursive(cellEntity, startPosition, allSquares);
 
         DynamicBuffer<CellMapSquare> cellMapSquareBuffer = entityManager.GetBuffer<CellMapSquare>(cellEntity);
@@ -226,7 +228,7 @@ public class MapCellMarchingSystem : ComponentSystem
 
     void GenerateWorleyNoise(Entity entity, float3 worldPosition)
     {
-        NativeArray<WorleyNoise> worleyNoiseMap = worleyUtil.GetWorleyNoiseMap(worldPosition);
+        NativeArray<WorleyNoise> worleyNoiseMap = worleyUtil.GetWorleyNoiseMap(worldPosition, worleyNoiseGen);
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = entityManager.GetBuffer<WorleyNoise>(entity);
         worleyNoiseBuffer.CopyFrom(worleyNoiseMap);
 
