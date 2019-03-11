@@ -37,7 +37,12 @@ public class MapCellMarchingSystem : ComponentSystem
 
         entityUtil = new EntityUtil(entityManager);
         worleyUtil = new WorleyNoiseUtil();
-        worleyNoiseGen = new WorleyNoiseGenerator(0);
+        worleyNoiseGen = new WorleyNoiseGenerator(
+            TerrainSettings.seed,
+            TerrainSettings.cellFrequency,
+            TerrainSettings.cellEdgeSmoothing,
+            TerrainSettings.cellularJitter
+        );
 
         squareWidth = TerrainSettings.mapSquareWidth;
 

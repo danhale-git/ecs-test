@@ -4,29 +4,37 @@ using MyComponents;
 
 public struct WorleyNoiseGenerator
 {
+	int seed;
+	float frequency;
+	float perterbAmp;
+	float cellularJitter;
+	
+	BiomeIndex biomeIndex;
+    CELL_2D cell_2D;
+
     int X_PRIME;
 	int Y_PRIME;
 
-    CELL_2D cell_2D;
-
-	BiomeIndex biomeIndex;
-
-	public WorleyNoiseGenerator(byte param)
+	public WorleyNoiseGenerator(int seed, float frequency, float perterbAmp, float cellularJitter)
 	{
-		biomeIndex = new BiomeIndex();
+		this.seed = seed;
+		this.frequency = frequency;
+		this.perterbAmp = perterbAmp;
+		this.cellularJitter = cellularJitter;
 
+		biomeIndex = new BiomeIndex();
 		cell_2D = new CELL_2D();
 
 		X_PRIME = 1619;
 		Y_PRIME = 31337;
 	}
 
-    public WorleyNoise GetEdgeData(float x, float y, int m_seed, float m_frequency, float perterbAmp, float cellularJitter)
+    public WorleyNoise GetEdgeData(float x, float y)
 	{
-		if(perterbAmp > 0)SingleGradientPerturb(m_seed, perterbAmp, m_frequency, ref x, ref y);
+		if(perterbAmp > 0)SingleGradientPerturb(seed, perterbAmp, frequency, ref x, ref y);
 
-		x *= m_frequency;
-		y *= m_frequency;
+		x *= frequency;
+		y *= frequency;
 
 		int xr = FastRound(x);
 		int yr = FastRound(y);
@@ -59,7 +67,7 @@ public struct WorleyNoiseGenerator
 				{
 					for (int yi = yr - 1; yi <= yr + 1; yi++)
 					{
-						float2 vec = cell_2D[Hash2D(m_seed, xi, yi) & 255];
+						float2 vec = cell_2D[Hash2D(seed, xi, yi) & 255];
 
 						float vecX = xi - x + vec.x * cellularJitter;
 						float vecY = yi - y + vec.y * cellularJitter;
@@ -95,7 +103,7 @@ public struct WorleyNoiseGenerator
 							xc0 = xi;
 							yc0 = yi;
 
-							currentCellPosition = new float3(cellX, 0, cellY) / m_frequency;
+							currentCellPosition = new float3(cellX, 0, cellY) / frequency;
 							currentCellIndex = new int2(xi, yi);
 						}
 
@@ -108,7 +116,7 @@ public struct WorleyNoiseGenerator
 				}
 
 		//	Current cell
-		float currentCellValue = To01(ValCoord2D(m_seed, xc0, yc0));
+		float currentCellValue = To01(ValCoord2D(seed, xc0, yc0));
 		int currentBiome = biomeIndex.GetIndex(currentCellValue);
 
 		//	Final closest adjacent cell values
@@ -122,7 +130,7 @@ public struct WorleyNoiseGenerator
 			float dist2Edge = otherDist[i] - distance0;
 			if(dist2Edge < adjacentEdgeDistance)
 			{
-				float otherCellValue = To01(ValCoord2D(m_seed, otherX[i], otherY[i]));
+				float otherCellValue = To01(ValCoord2D(seed, otherX[i], otherY[i]));
 				int otherBiome = biomeIndex.GetIndex(otherCellValue);
 
 				///	Assign as final value if not current biome

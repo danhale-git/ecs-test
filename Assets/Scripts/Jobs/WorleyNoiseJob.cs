@@ -9,10 +9,6 @@ using Unity.Entities;
 //[BurstCompile]
 struct WorleyNoiseJob : IJobParallelFor
 {
-    #region Noise
-    
-    #endregion
-    
     public NativeArray<WorleyNoise> worleyNoiseMap;
 
     [ReadOnly] public float3 offset;
@@ -29,6 +25,6 @@ struct WorleyNoiseJob : IJobParallelFor
     {
         float3 position = util.Unflatten2D(i, squareWidth) + offset;
 
-        worleyNoiseMap[i] = noise.GetEdgeData(position.x, position.z, seed, frequency, perterbAmp, cellularJitter);
+        worleyNoiseMap[i] = noise.GetEdgeData(position.x, position.z);
     }
 }
