@@ -15,10 +15,6 @@ public struct WorleyNoiseUtil
             worleyNoiseMap 	= worleyNoiseMap,						//	Flattened 2D array of noise
 			offset 		    = position,						        //	World position of this map square's local 0,0
 			squareWidth	    = squareWidth,						    //	Length of one side of a square/cube
-            seed 		    = TerrainSettings.seed,			        //	Perlin noise seed
-            frequency 	    = TerrainSettings.cellFrequency,	    //	Perlin noise frequency
-            perterbAmp      = TerrainSettings.cellEdgeSmoothing,    //  Gradient Peturb amount
-            cellularJitter  = TerrainSettings.cellularJitter,       //  Randomness of cell shapes
 			util 		    = new JobUtil(),				        //	Utilities
             noise 		    = noise	                                //	FastNoise.GetSimplex adapted for Jobs
         };

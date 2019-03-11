@@ -13,10 +13,6 @@ struct WorleyNoiseJob : IJobParallelFor
 
     [ReadOnly] public float3 offset;
     [ReadOnly] public int squareWidth;
-    [ReadOnly] public int seed;
-    [ReadOnly] public float frequency;
-	[ReadOnly] public float perterbAmp;
-	[ReadOnly] public float cellularJitter;
     [ReadOnly] public JobUtil util;
     [ReadOnly] public WorleyNoiseGenerator noise;
 
