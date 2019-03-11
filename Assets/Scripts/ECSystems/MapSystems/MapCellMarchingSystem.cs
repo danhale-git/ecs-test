@@ -192,7 +192,12 @@ public class MapCellMarchingSystem : ComponentSystem
                 {
                     mapSquareEntity = CreateMapSquareEntity(adjacentPosition);
 
-                    GenerateWorleyNoise(mapSquareEntity, adjacentPosition);
+                    EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.TempJob);
+
+                    GenerateWorleyNoise(mapSquareEntity, adjacentPosition, commandBuffer);
+
+                    commandBuffer.Playback(entityManager);
+                    commandBuffer.Dispose();
                 }
 
                 mapMatrix.SetAsDiscovered(true, adjacentPosition);
@@ -223,18 +228,33 @@ public class MapCellMarchingSystem : ComponentSystem
 
         return entity;
     }
-
+    
     void GenerateWorleyNoise(Entity entity, float3 worldPosition)
     {
-        NativeArray<WorleyNoise> worleyNoiseMap = worleyUtil.GetWorleyNoiseMap(worldPosition, worleyNoiseGen);
-        DynamicBuffer<WorleyNoise> worleyNoiseBuffer = entityManager.GetBuffer<WorleyNoise>(entity);
-        worleyNoiseBuffer.CopyFrom(worleyNoiseMap);
+        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.TempJob);
+        GenerateWorleyNoise(entity, worldPosition, commandBuffer);
+        commandBuffer.Playback(entityManager);
+        commandBuffer.Dispose();
+    } 
+    
+    void GenerateWorleyNoise(Entity entity, float3 worldPosition, EntityCommandBuffer commandBuffer)
+    {
+        
+        WorleyNoiseJob cellJob = new WorleyNoiseJob(){
+            worleyNoiseMap 	= new NativeArray<WorleyNoise>((int)math.pow(squareWidth, 2), Allocator.TempJob),
+			offset 		    = worldPosition,
+			squareWidth	    = squareWidth,
+			util 		    = new JobUtil(),
+            noise 		    = worleyNoiseGen,
 
-        NativeArray<WorleyCell> worleyCellSet = worleyUtil.UniqueWorleyCellSet(worleyNoiseMap);
-        DynamicBuffer<WorleyCell> uniqueWorleyCells = entityManager.GetBuffer<WorleyCell>(entity);
-        uniqueWorleyCells.CopyFrom(worleyCellSet);
+            commandBuffer   = commandBuffer,
+            mapSquareEntity = entity
+        };
 
-        worleyCellSet.Dispose();
+        cellJob.Schedule().Complete();
+
+        NativeArray<WorleyNoise> worleyNoiseMap = cellJob.worleyNoiseMap;        
+
         worleyNoiseMap.Dispose();
     }
 

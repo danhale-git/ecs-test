@@ -19,7 +19,7 @@ public struct WorleyNoiseUtil
             noise 		    = noise	                                //	FastNoise.GetSimplex adapted for Jobs
         };
 
-        cellJob.Schedule(worleyNoiseMap.Length, 16).Complete();
+        cellJob.Schedule().Complete();
 
         return worleyNoiseMap;
     }
