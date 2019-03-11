@@ -7,8 +7,8 @@ public enum TerrainTypes { DIRT, GRASS, CLIFF }
 public static class TerrainSettings
 {
 	public const int mapSquareWidth = 12;
-	public const int viewDistance = 4;
-	public const int cellGenerateDistance = 1;
+	public const int viewDistance = 8;
+	public const int cellGenerateDistance = 2;
 
 	//	Must always be at >= squareWidth
 	public const int terrainHeight = 16;
