@@ -113,7 +113,6 @@ public class MapCellMarchingSystem : ComponentSystem
     {
         mapMatrix.Dispose();
         cellMatrix.Dispose();
-        worleyNoiseGen.Dispose();
     }
 
     protected override void OnUpdate()
