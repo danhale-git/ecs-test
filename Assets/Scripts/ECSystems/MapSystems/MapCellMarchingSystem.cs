@@ -156,7 +156,7 @@ public class MapCellMarchingSystem : ComponentSystem
         float3 startPosition = Util.VoxelOwner(cell.position, squareWidth);
         
         mapMatrix.ClearDiscoveredSquares();
-        DiscoverMapSquaresRecursive(cellEntity, startPosition, allSquares);
+        DiscoverMapSquaresRecursive(cell, startPosition, allSquares);
 
         DynamicBuffer<CellMapSquare> cellMapSquareBuffer = entityManager.GetBuffer<CellMapSquare>(cellEntity);
         cellMapSquareBuffer.CopyFrom(allSquares);
@@ -178,10 +178,8 @@ public class MapCellMarchingSystem : ComponentSystem
     }
 
 
-    void DiscoverMapSquaresRecursive(Entity currentCellEntity, float3 squarePosition, NativeList<CellMapSquare> allSquares)
+    void DiscoverMapSquaresRecursive(WorleyCell currentCell, float3 squarePosition, NativeList<CellMapSquare> allSquares)
     {
-        WorleyCell currentCell = entityManager.GetBuffer<WorleyCell>(currentCellEntity)[0];
-
         Entity mapSquareEntity = GetOrCreateMapSquare(squarePosition);
         mapMatrix.SetAsDiscovered(true, squarePosition);
 
@@ -201,7 +199,7 @@ public class MapCellMarchingSystem : ComponentSystem
         {
             float3 adjacentPosition = squarePosition + (directions[d] * squareWidth);
             if(!mapMatrix.SquareIsDiscovered(adjacentPosition))
-                DiscoverMapSquaresRecursive(currentCellEntity, adjacentPosition, allSquares);
+                DiscoverMapSquaresRecursive(currentCell, adjacentPosition, allSquares);
         }
         directions.Dispose();
     }
