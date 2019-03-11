@@ -9,8 +9,6 @@ using Unity.Entities;
 //[BurstCompile]
 struct WorleyNoiseJob : IJob
 {
-    public NativeArray<WorleyNoise> worleyNoiseMap;
-
     [ReadOnly] public float3 offset;
     [ReadOnly] public int squareWidth;
     [ReadOnly] public JobUtil util;
@@ -22,6 +20,8 @@ struct WorleyNoiseJob : IJob
     //  Fill flattened 2D array with noise matrix
     public void Execute()
     {
+        NativeArray<WorleyNoise> worleyNoiseMap = new NativeArray<WorleyNoise>((int)math.pow(squareWidth, 2), Allocator.TempJob);
+
         for(int i = 0; i < worleyNoiseMap.Length; i++)
         {
             float3 position = util.Unflatten2D(i, squareWidth) + offset;
@@ -38,6 +38,7 @@ struct WorleyNoiseJob : IJob
         DynamicBuffer<WorleyCell> uniqueWorleyCells = commandBuffer.SetBuffer<WorleyCell>(mapSquareEntity);
         uniqueWorleyCells.CopyFrom(worleyCellSet);
 
+        worleyNoiseMap.Dispose();
         worleyCellSet.Dispose();
     }
 

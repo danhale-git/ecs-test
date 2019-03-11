@@ -5,14 +5,13 @@ using MyComponents;
 
 public struct WorleyNoiseUtil
 {
-    public NativeArray<WorleyNoise> GetWorleyNoiseMap(float3 position, WorleyNoiseGenerator noise)
+    /*public NativeArray<WorleyNoise> GetWorleyNoiseMap(float3 position, WorleyNoiseGenerator noise)
     {
         int squareWidth = TerrainSettings.mapSquareWidth;
         
         NativeArray<WorleyNoise> worleyNoiseMap = new NativeArray<WorleyNoise>((int)math.pow(squareWidth, 2), Allocator.TempJob);
 
         WorleyNoiseJob cellJob = new WorleyNoiseJob(){
-            worleyNoiseMap 	= worleyNoiseMap,						//	Flattened 2D array of noise
 			offset 		    = position,						        //	World position of this map square's local 0,0
 			squareWidth	    = squareWidth,						    //	Length of one side of a square/cube
 			util 		    = new JobUtil(),				        //	Utilities
@@ -43,5 +42,5 @@ public struct WorleyNoiseUtil
         }
 
         return cellSet;
-    }
+    } */
 }

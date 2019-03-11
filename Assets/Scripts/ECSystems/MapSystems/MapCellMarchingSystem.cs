@@ -182,6 +182,12 @@ public class MapCellMarchingSystem : ComponentSystem
     void DiscoverMapSquaresRecursive(WorleyCell currentCell, float3 squarePosition, NativeList<CellMapSquare> allSquares)
     {
         NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
+
+        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.TempJob);
+
+        NativeList<Entity> entitiesToDiscover = new NativeList<Entity>(8, Allocator.Temp);
+        NativeList<float3> positionsToDiscover = new NativeList<float3>(8, Allocator.Temp);
+
         for(int d = 0; d < 8; d++)
         {
             float3 adjacentPosition = squarePosition + (directions[d] * squareWidth);
@@ -191,32 +197,39 @@ public class MapCellMarchingSystem : ComponentSystem
                 if(!mapMatrix.array.TryGetItem(adjacentPosition, out mapSquareEntity))
                 {
                     mapSquareEntity = CreateMapSquareEntity(adjacentPosition);
-
-                    EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.TempJob);
-
                     GenerateWorleyNoise(mapSquareEntity, adjacentPosition, commandBuffer);
-
-                    commandBuffer.Playback(entityManager);
-                    commandBuffer.Dispose();
                 }
 
                 mapMatrix.SetAsDiscovered(true, adjacentPosition);
 
-                DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(mapSquareEntity);
+                entitiesToDiscover.Add(mapSquareEntity);
+                positionsToDiscover.Add(adjacentPosition);
+            }
+        }
 
-                if(UniqueCellsContainsCell(uniqueCells, currentCell))
+        directions.Dispose();
+
+        commandBuffer.Playback(entityManager);
+        commandBuffer.Dispose();
+
+        for(int i = 0; i < entitiesToDiscover.Length; i++)
+        {
+            DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(entitiesToDiscover[i]);
+
+            if(UniqueCellsContainsCell(uniqueCells, currentCell))
                 {
                     allSquares.Add(new CellMapSquare{
-                            entity = mapSquareEntity,
+                            entity = entitiesToDiscover[i],
                             edge = MapSquareIsAtEge(uniqueCells, currentCell)
                         }
                     );
 
-                    DiscoverMapSquaresRecursive(currentCell, adjacentPosition, allSquares);
+                    DiscoverMapSquaresRecursive(currentCell, positionsToDiscover[i], allSquares);
                 }
-            }
         }
-        directions.Dispose();
+
+        positionsToDiscover.Dispose();
+        entitiesToDiscover.Dispose();
     }
 
     Entity CreateMapSquareEntity(float3 worldPosition)
@@ -239,9 +252,7 @@ public class MapCellMarchingSystem : ComponentSystem
     
     void GenerateWorleyNoise(Entity entity, float3 worldPosition, EntityCommandBuffer commandBuffer)
     {
-        
         WorleyNoiseJob cellJob = new WorleyNoiseJob(){
-            worleyNoiseMap 	= new NativeArray<WorleyNoise>((int)math.pow(squareWidth, 2), Allocator.TempJob),
 			offset 		    = worldPosition,
 			squareWidth	    = squareWidth,
 			util 		    = new JobUtil(),
@@ -252,10 +263,6 @@ public class MapCellMarchingSystem : ComponentSystem
         };
 
         cellJob.Schedule().Complete();
-
-        NativeArray<WorleyNoise> worleyNoiseMap = cellJob.worleyNoiseMap;        
-
-        worleyNoiseMap.Dispose();
     }
 
     bool UniqueCellsContainsCell(DynamicBuffer<WorleyCell> uniqueCells, WorleyCell cell)
