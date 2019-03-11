@@ -71,21 +71,20 @@ public struct WorleyNoiseGenerator
 		int xr = FastRound(x);
 		int yr = FastRound(y);
 
-		NativeArray<float> distance = new NativeArray<float>(2, Allocator.Temp);
-		distance[0] = 999999;
-		distance[1] = 999999;
+		float distance0 = 999999;
+		float distance1 = 999999;
 
-		//	Store distance[1] index
+		//	Store distance1 index
 		int xc1 = 0, yc1 = 0;
 
-		//	Store distance[0] index in case it is assigned to distance[1] later
+		//	Store distance0 index in case it is assigned to distance1 later
 		int xc0 = 0, yc0 = 0;
 
 		//	All adjacent cell indices and distances
-		NativeArray<int> otherX = new NativeArray<int>(9, Allocator.Temp);
-		NativeArray<int> otherY = new NativeArray<int>(9, Allocator.Temp);
+		NineInts otherX = new NineInts();
+		NineInts otherY = new NineInts();
 
-		NativeArray<float> otherDist = new NativeArray<float>(9, Allocator.Temp);
+		NineFloats otherDist = new NineFloats();
 		for(int i = 0; i < 9; i++)
 		{
 			otherDist[i] = 999999;
@@ -114,25 +113,25 @@ public struct WorleyNoiseGenerator
 						//	Euclidean distance function
 						float newDistance = newDistance = vecX * vecX + vecY * vecY;
 
-						if(newDistance <= distance[1])	//	Math.Min(distance[i], newDistance)
+						if(newDistance <= distance1)	//	Math.Min(distance[i], newDistance)
 						{
-							if(newDistance >= distance[0])	//	Math.Max((newDistance)), distance[i - 1])
+							if(newDistance >= distance0)	//	Math.Max((newDistance)), distance[i - 1])
 							{
-								distance[1] = newDistance;
+								distance1 = newDistance;
 								xc1 = xi;
 								yc1 = yi;
 							}
 							else
 							{
-								distance[1] = distance[0];
+								distance1 = distance0;
 								xc1 = xc0;
 								yc1 = yc0;
 							}
 						}
 
-						if(newDistance <= distance[0])	//	Math.Min(distance[0], newDistance)
+						if(newDistance <= distance0)	//	Math.Min(distance0, newDistance)
 						{
-							distance[0] = newDistance;
+							distance0 = newDistance;
 							xc0 = xi;
 							yc0 = yi;
 
@@ -157,10 +156,10 @@ public struct WorleyNoiseGenerator
 		float adjacentCellValue = 0;
 
 		//	Iterate over all adjacent cells
-		for(int i = 0; i < otherDist.Length; i++)
+		for(int i = 0; i < 9; i++)
 		{	
 			//	Find closest cell within smoothing radius
-			float dist2Edge = otherDist[i] - distance[0];
+			float dist2Edge = otherDist[i] - distance0;
 			if(dist2Edge < adjacentEdgeDistance)
 			{
 				float otherCellValue = To01(ValCoord2D(m_seed, otherX[i], otherY[i]));
@@ -184,13 +183,112 @@ public struct WorleyNoiseGenerator
 		cell.currentCellPosition = currentCellPosition;
 		cell.currentCellIndex = currentCellIndex;
 
-		distance.Dispose();
-		otherX.Dispose();
-		otherY.Dispose();
-		otherDist.Dispose();
-
 		//	Data for use in terrain generation
 		return cell;
+	}
+
+	struct NineInts
+	{
+		int _0;
+		int _1;
+		int _2;
+		int _3;
+		int _4;
+		int _5;
+		int _6;
+		int _7;
+		int _8;
+		
+		public int this[int index]
+		{
+			get
+			{
+				switch(index)
+				{
+					case 0: return _0;
+					case 1: return _1;
+					case 2: return _2;
+					case 3: return _3;
+					case 4: return _4;
+					case 5: return _5;
+					case 6: return _6;
+					case 7: return _7;
+					case 8: return _8;
+
+					default: throw new System.IndexOutOfRangeException();
+				}
+			}
+
+			set
+			{
+				switch(index)
+				{
+					case 0: _0 = value; break;
+					case 1: _1 = value; break;
+					case 2: _2 = value; break;
+					case 3: _3 = value; break;
+					case 4: _4 = value; break;
+					case 5: _5 = value; break;
+					case 6: _6 = value; break;
+					case 7: _7 = value; break;
+					case 8: _8 = value; break;
+
+					default: throw new System.IndexOutOfRangeException();
+				}
+			}
+		}
+	}
+
+	struct NineFloats
+	{
+		float _0;
+		float _1;
+		float _2;
+		float _3;
+		float _4;
+		float _5;
+		float _6;
+		float _7;
+		float _8;
+		
+		public float this[int index]
+		{
+			get
+			{
+				switch(index)
+				{
+					case 0: return _0;
+					case 1: return _1;
+					case 2: return _2;
+					case 3: return _3;
+					case 4: return _4;
+					case 5: return _5;
+					case 6: return _6;
+					case 7: return _7;
+					case 8: return _8;
+
+					default: throw new System.IndexOutOfRangeException();
+				}
+			}
+
+			set
+			{
+				switch(index)
+				{
+					case 0: _0 = value; break;
+					case 1: _1 = value; break;
+					case 2: _2 = value; break;
+					case 3: _3 = value; break;
+					case 4: _4 = value; break;
+					case 5: _5 = value; break;
+					case 6: _6 = value; break;
+					case 7: _7 = value; break;
+					case 8: _8 = value; break;
+
+					default: throw new System.IndexOutOfRangeException();
+				}
+			}
+		}
 	}
 
 	public WorleyCell CellFromIndex(int2 cellIndex)
