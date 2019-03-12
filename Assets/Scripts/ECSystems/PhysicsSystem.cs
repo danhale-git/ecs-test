@@ -11,53 +11,34 @@ using MyComponents;
 public class PhysicsSystem : ComponentSystem
 {
     EntityManager entityManager;
+    MapCellMarchingSystem managerSystem;
     int squareWidth;
 
-    EntityArchetypeQuery moveQuery;
-    EntityArchetypeQuery mapSquareQuery;
-
-    ArchetypeChunkEntityType                    entityType;
-    ArchetypeChunkComponentType<Position>       positionType;
-    ArchetypeChunkComponentType<PhysicsEntity>  physicsType;
+    ComponentGroup moveGroup;
 
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
+        managerSystem = World.Active.GetOrCreateManager<MapCellMarchingSystem>();
         squareWidth = TerrainSettings.mapSquareWidth;
 
-        moveQuery = new EntityArchetypeQuery
+        EntityArchetypeQuery moveQuery = new EntityArchetypeQuery
         {
             Any     = Array.Empty<ComponentType>(),
             None    = Array.Empty<ComponentType>(),
             All     = new ComponentType[] { typeof(PhysicsEntity), typeof(Position) }
         };
-
-        //	All map squares
-		mapSquareQuery = new EntityArchetypeQuery{		
-			Any 	= System.Array.Empty<ComponentType>(),
-			None 	= new ComponentType [] { typeof(Tags.InnerBuffer), typeof(Tags.OuterBuffer), typeof(Tags.EdgeBuffer) },
-			All 	= new ComponentType [] { typeof(MapSquare) }
-			};
+        moveGroup = GetComponentGroup(moveQuery);
     }
 
     protected override void OnUpdate()
     {
-        entityType      = GetArchetypeChunkEntityType();
-        positionType    = GetArchetypeChunkComponentType<Position>();
-        physicsType     = GetArchetypeChunkComponentType<PhysicsEntity>();
+        NativeArray<ArchetypeChunk> chunks = moveGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
-        NativeArray<ArchetypeChunk> chunks;
-        chunks = entityManager.CreateArchetypeChunkArray(
-            moveQuery,
-            Allocator.TempJob
-        );
+        ArchetypeChunkEntityType entityType      = GetArchetypeChunkEntityType();
+        ArchetypeChunkComponentType<Position> positionType    = GetArchetypeChunkComponentType<Position>();
+        ArchetypeChunkComponentType<PhysicsEntity> physicsType     = GetArchetypeChunkComponentType<PhysicsEntity>();
 
-        if(chunks.Length == 0) chunks.Dispose();
-        else MoveEntities(chunks);
-    }
-
-    void MoveEntities(NativeArray<ArchetypeChunk> chunks)
-    {
         for(int c = 0; c < chunks.Length; c++)
         {
             ArchetypeChunk chunk = chunks[c];
@@ -75,7 +56,7 @@ public class PhysicsSystem : ComponentSystem
 
                 //  Current map square doesn't exist, find current map Square
                 if(!entityManager.Exists(physicsComponent.currentMapSquare))
-                    GetMapSquare(nextPosition, out physicsComponent.currentMapSquare);
+                    physicsComponent.currentMapSquare = managerSystem.mapMatrix.array.GetItem(nextPosition);
 
                 //  Get vector describing next position's overlap from this map square
                 float3 currentSquarePosition = entityManager.GetComponentData<MapSquare>(physicsComponent.currentMapSquare).position;               
@@ -104,50 +85,4 @@ public class PhysicsSystem : ComponentSystem
         }
         chunks.Dispose();
     }
-
-    //TODO: This will not be efficient for multiple moving objects
-    //	Get map square by position using chunk iteration
-	bool GetMapSquare(float3 position, out Entity mapSquare)
-	{
-		entityType	 	= GetArchetypeChunkEntityType();
-		positionType	= GetArchetypeChunkComponentType<Position>();
-
-		//	All map squares
-		NativeArray<ArchetypeChunk> chunks = entityManager.CreateArchetypeChunkArray(
-			mapSquareQuery,
-			Allocator.TempJob
-			);
-
-		if(chunks.Length == 0)
-		{
-			chunks.Dispose();
-			mapSquare = new Entity();
-			return false;
-		}
-
-		for(int d = 0; d < chunks.Length; d++)
-		{
-			ArchetypeChunk chunk = chunks[d];
-
-			NativeArray<Entity> entities 	= chunk.GetNativeArray(entityType);
-			NativeArray<Position> positions = chunk.GetNativeArray(positionType);
-
-			for(int e = 0; e < entities.Length; e++)
-			{
-				Entity entity = entities[e];
-
-				//	If position matches return
-				if(	position.x == positions[e].Value.x &&
-					position.z == positions[e].Value.z)
-				{
-					mapSquare = entity;
-					chunks.Dispose();
-					return true;
-				}
-			}
-		}
-
-		chunks.Dispose();
-        throw new Exception("Could not find map square for moving object");
-	}
 }
