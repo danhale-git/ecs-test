@@ -32,7 +32,7 @@ public class Bootstrapper
             ComponentType.Create<PhysicsEntity>(),
             ComponentType.Create<Stats>(),
             ComponentType.Create<Position>(),
-            ComponentType.Create<RenderMeshComponent>()
+            ComponentType.Create<RenderMeshProxy>()
         );
 
         //  Entity

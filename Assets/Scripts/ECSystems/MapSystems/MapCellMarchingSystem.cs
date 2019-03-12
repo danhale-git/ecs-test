@@ -46,7 +46,7 @@ public class MapCellMarchingSystem : ComponentSystem
 
         mapSquareArchetype = entityManager.CreateArchetype(
             ComponentType.Create<Position>(),
-            ComponentType.Create<RenderMeshComponent>(),
+            ComponentType.Create<RenderMeshProxy>(),
             ComponentType.Create<MapSquare>(),
             ComponentType.Create<WorleyNoise>(),
             ComponentType.Create<WorleyCell>(),

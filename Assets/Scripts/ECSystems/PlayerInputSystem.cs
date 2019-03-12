@@ -277,7 +277,7 @@ public class PlayerInputSystem : ComponentSystem
     {
          EntityArchetype cursorCubeArchetype = entityManager.CreateArchetype(
             ComponentType.Create<Position>(),
-            ComponentType.Create<RenderMeshComponent>()
+            ComponentType.Create<RenderMeshProxy>()
 		);
 
         Entity cube = entityManager.CreateEntity(cursorCubeArchetype);
