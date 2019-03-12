@@ -431,6 +431,16 @@ public class FastNoise
 		return ((hash & 4) == 0 ? -a : a) + ((hash & 2) == 0 ? -b : b) + ((hash & 1) == 0 ? -c : c);
 	}
 
+	//	RETURN NOISE BETWEEN 0 & 1
+	public FN_DECIMAL GetNoise01(FN_DECIMAL x, FN_DECIMAL y)
+	{
+		return To01(GetNoise(x, y));
+	}
+	private FN_DECIMAL To01(FN_DECIMAL value)
+	{
+		return (value * 0.5f) + 0.5f;
+	}
+
 	public FN_DECIMAL GetNoise(FN_DECIMAL x, FN_DECIMAL y, FN_DECIMAL z)
 	{
 		x *= m_frequency;
@@ -2031,6 +2041,119 @@ public class FastNoise
 			default:
 				return SingleCellular2Edge(x, y);
 		}
+	}
+
+	public struct EdgeData
+	{
+		public readonly FN_DECIMAL currentCellValue, distance2Edge, adjacentCellValue;
+		public EdgeData(FN_DECIMAL currentCellValue, FN_DECIMAL distance2Edge, FN_DECIMAL adjacentCellValue)
+		{
+			this.currentCellValue = currentCellValue;
+			this.distance2Edge = distance2Edge;
+			this.adjacentCellValue = adjacentCellValue;
+		}
+	}
+
+	//	Get all cellular noise data for pixel
+	public MyComponents.WorleyNoise GetCellProfile(FN_DECIMAL x, FN_DECIMAL y)
+	{
+		x *= m_frequency;
+		y *= m_frequency;
+
+		int xr = FastRound(x);
+		int yr = FastRound(y);
+
+		FN_DECIMAL[] distance = { 999999, 999999 };
+
+		//	Store distance[1] index
+		int xc1 = 0, yc1 = 0;
+
+		//	Store distance[0] index in case it is assigned to distance[1] later
+		int xc0 = 0, yc0 = 0;
+
+		//	All adjacent cell indices and distances
+		int[] otherX = new int[9];
+		int[] otherY = new int[9];
+		FN_DECIMAL[] otherDist = { 999999, 999999, 999999, 999999, 999999, 999999, 999999, 999999, 999999 };
+		int indexCount = 0;
+
+		for (int xi = xr - 1; xi <= xr + 1; xi++)
+				{
+					for (int yi = yr - 1; yi <= yr + 1; yi++)
+					{
+						Float2 vec = CELL_2D[Hash2D(m_seed, xi, yi) & 255];
+
+						FN_DECIMAL vecX = xi - x + vec.x * m_cellularJitter;
+						FN_DECIMAL vecY = yi - y + vec.y * m_cellularJitter;
+
+						FN_DECIMAL newDistance = (Math.Abs(vecX) + Math.Abs(vecY)) + (vecX * vecX + vecY * vecY);
+						
+						if(newDistance <= distance[1])	//	Math.Min(distance[i], newDistance)
+						{
+							if(newDistance >= distance[0])	//	Math.Max((newDistance)), distance[i - 1])
+							{
+								distance[1] = newDistance;
+								xc1 = xi;
+								yc1 = yi;
+							}
+							else
+							{
+								distance[1] = distance[0];
+								xc1 = xc0;
+								yc1 = yc0;
+							}
+						}
+
+						if(newDistance <= distance[0])	//	Math.Min(distance[0], newDistance)
+						{
+							distance[0] = newDistance;
+							xc0 = xi;
+							yc0 = yi;
+						}
+
+						//	Store all adjacent cells
+						otherX[indexCount] = xi;
+						otherY[indexCount] = yi;
+						otherDist[indexCount] = newDistance;
+						indexCount++;			
+					}
+				}
+
+		//	Current cell
+		float currentCellValue = To01(ValCoord2D(m_seed, xc0, yc0));
+		int currentBiome = TerrainSettings.BiomeIndex(currentCellValue);
+
+		//	Final closest adjacent cell values
+		float adjacentEdgeDistance = 999999;
+		float adjacentCellValue = 0;
+
+		//	Iterate over all adjacent cells
+		for(int i = 0; i < otherDist.Length; i++)
+		{	
+			//	Find closest cell within smoothing radius
+			float dist2Edge = otherDist[i] - distance[0];
+			//if(dist2Edge < biomes.smoothRadius &&  dist2Edge < adjacentEdgeDistance)
+			if(dist2Edge < adjacentEdgeDistance)
+			{
+				float otherCellValue = To01(ValCoord2D(m_seed, otherX[i], otherY[i]));
+				int otherBiome = TerrainSettings.BiomeIndex(currentCellValue);
+
+				//	Assign as final value if not current biome
+				if(otherBiome != currentBiome)
+				{
+					adjacentEdgeDistance = dist2Edge;
+					adjacentCellValue = otherCellValue;
+				}
+			}
+		}
+		MyComponents.WorleyNoise cell = new MyComponents.WorleyNoise();
+		
+		cell.currentCellValue = currentCellValue;
+		cell.distance2Edge = adjacentEdgeDistance;
+		cell.adjacentCellValue = adjacentCellValue;
+
+		//	Data for use in terrain generation
+		return cell;
 	}
 
 	private FN_DECIMAL SingleCellular(FN_DECIMAL x, FN_DECIMAL y)

@@ -13,7 +13,7 @@ using MyComponents;
 public class PlayerInputSystem : ComponentSystem
 {
     EntityManager entityManager;
-    MapManagerSystem managerSystem;
+    MapCellMarchingSystem managerSystem;
     int squareWidth;
 
     public static Entity playerEntity;
@@ -42,7 +42,7 @@ public class PlayerInputSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        managerSystem = World.Active.GetOrCreateManager<MapManagerSystem>();
+        managerSystem = World.Active.GetOrCreateManager<MapCellMarchingSystem>();
 
         squareWidth = TerrainSettings.mapSquareWidth;
 
@@ -78,7 +78,14 @@ public class PlayerInputSystem : ComponentSystem
         if(Input.GetButtonDown("Fire1")/* && targetingBlock */)
         {
             if(targetingBlock)
-                ChangeBlock(0, hit.hitBlock, hit.hitBlockOwner);
+            {
+                if(Input.GetKey(KeyCode.LeftShift))
+                {
+                    DebugBlock(1, hit.hitBlock, hit.hitBlockOwner);
+                }
+                else
+                    ChangeBlock(0, hit.hitBlock, hit.hitBlockOwner);
+            }
         }
         else if(Input.GetButtonDown("Fire2")/* && targetingBlock */)
         {
@@ -115,6 +122,28 @@ public class PlayerInputSystem : ComponentSystem
     {
         block.debug = debug;
         MapUpdateSystem.GetOrCreatePendingChangeBuffer(owner, entityManager).Add(new PendingChange { block = block });
+
+        //  //  //
+        DynamicBuffer<WorleyNoise> noise = entityManager.GetBuffer<WorleyNoise>(owner);
+        WorleyNoise centerNoise = noise[Util.Flatten2D(new float3(squareWidth/2, 0, squareWidth/2), squareWidth)];
+        //Debug.Log(centerNoise.currentCellPosition);
+        //Debug.Log(centerNoise.currentCellIndex);
+
+        WorleyNoise clickedNoise = noise[Util.Flatten2D(block.localPosition.x, block.localPosition.z, squareWidth)];
+
+        for(int y = 0; y < 10; y++)
+        {
+            float3 position = centerNoise.currentCellPosition + new float3(0, 50 + y, 0);
+            CustomDebugTools.Cube(Color.red, position);
+        }
+
+        DynamicBuffer<WorleyCell> cellSet = entityManager.GetBuffer<WorleyCell>(owner);
+        for(int i = 0; i < cellSet.Length; i++)
+        {
+            Debug.Log(  "value: "+cellSet[i].value + "\n" +
+                        "index: "+cellSet[i].index + "position: "+cellSet[i].position);
+        }
+        Debug.Log("-----");
     }
 
     //  Return list of voxel positions hit by ray from eye to dir
@@ -126,7 +155,7 @@ public class PlayerInputSystem : ComponentSystem
         float3 previousVoxelOwnerPosition = Util.VoxelOwner(ray.origin, squareWidth);
 
         //  Origin entity does not exist
-        if(!managerSystem.TryGetMapSquareFromMatrix(previousVoxelOwnerPosition, out currentOwner))
+        if(!managerSystem.mapMatrix.array.TryGetItem(previousVoxelOwnerPosition, out currentOwner))
             throw new Exception("Camera is in non-existent map square");
 
         MapSquare               mapSquare = entityManager.GetComponentData<MapSquare>(currentOwner);
@@ -199,7 +228,7 @@ public class PlayerInputSystem : ComponentSystem
             if(!previousVoxelOwnerPosition.Equals(nextVoxelOwnerPosition))
             {
                 //  Update current map square
-                if(!managerSystem.TryGetMapSquareFromMatrix(nextVoxelOwnerPosition, out currentOwner))
+                if(!managerSystem.mapMatrix.array.TryGetItem(nextVoxelOwnerPosition, out currentOwner))
                     continue;
 
                 mapSquare   = entityManager.GetComponentData<MapSquare>(currentOwner);

@@ -11,7 +11,8 @@ public class Bootstrapper
     public static void Initialise()
     {
         Entity playerEntity = CreatePlayer();
-        MapManagerSystem.playerEntity = playerEntity;
+        //MapManagerSystem.playerEntity = playerEntity;//TODO: REMOVE
+        MapCellMarchingSystem.playerEntity = playerEntity;
         CameraSystem.playerEntity = playerEntity;
         PlayerInputSystem.playerEntity = playerEntity;
     }

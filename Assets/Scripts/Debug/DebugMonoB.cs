@@ -7,6 +7,14 @@ using UnityEngine.UI;
 public class DebugMonoB : MonoBehaviour
 {
     public Text debugPanelText;
+    public GameObject squarePrefab;
+    public List<GameObject> allSquares = new List<GameObject>();
+    GameObject canvas;
+
+    void Start()
+    {
+        canvas = FindObjectOfType<Canvas>().gameObject;
+    }
 
     void Update()
     {

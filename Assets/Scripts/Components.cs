@@ -1,5 +1,6 @@
 ﻿using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Collections;
 
 namespace MyComponents
 {
@@ -21,7 +22,6 @@ namespace MyComponents
 
 	#region Map
 
-	public enum CubeComposition { MIXED, SOLID, AIR};
 	public enum SlopeType { NOTSLOPED, FLAT, INNERCORNER, OUTERCORNER }
 	public enum SlopeFacing { NWSE, SWNE }
 
@@ -50,6 +50,39 @@ namespace MyComponents
 		public float noise;
 		public int height;
 		public TerrainTypes type;
+	}
+
+	[InternalBufferCapacity(0)]
+	public struct WorleyNoise : IBufferElementData, System.IComparable<WorleyNoise>
+	{
+		public int CompareTo(WorleyNoise other)
+		{
+			return currentCellValue.CompareTo(other.currentCellValue);
+		}
+
+		public float3 currentCellPosition;
+		public int2 currentCellIndex;
+		public float currentCellValue, distance2Edge, adjacentCellValue;
+	}
+
+	[InternalBufferCapacity(10)]
+	public struct WorleyCell : IBufferElementData, System.IComparable<WorleyCell>
+	{
+		public int CompareTo(WorleyCell other)
+		{
+			return value.CompareTo(other.value);
+		}
+
+		public float value;
+		public int2 index;
+		public float3 position;
+	}
+	
+	[InternalBufferCapacity(0)]
+	public struct CellMapSquare : IBufferElementData
+	{
+		public Entity entity;
+		public sbyte edge;
 	}
 
 	public struct AdjacentSquares : IComponentData
@@ -94,6 +127,19 @@ namespace MyComponents
 			else if(dir.x ==  1 && dir.y == 0 && dir.z == -1) return backRight;
 			else if(dir.x == -1 && dir.y == 0 && dir.z == -1) return backLeft;
 			else throw new System.ArgumentOutOfRangeException("Index out of range 7: " + dir);
+		}
+
+		public NativeArray<int> GetLowestBlocks(Allocator label)
+		{
+			EntityManager entityManager = World.Active.GetOrCreateManager<EntityManager>();
+
+			NativeArray<int> lowestBlocks = new NativeArray<int>(8, label);
+			for(int i = 0; i < 8; i++)
+			{
+				MapSquare adjacentSquare = entityManager.GetComponentData<MapSquare>(this[i]);
+				lowestBlocks[i] = adjacentSquare.bottomBlockBuffer;
+			}
+			return lowestBlocks;
 		}
 	}
 
@@ -148,6 +194,8 @@ namespace MyComponents
 		public Block block;
 	}
 
+	
+
 	#endregion
 }
 
@@ -180,6 +228,6 @@ namespace Tags
 
 namespace UpdateGroups
 {
-	[UpdateAfter(typeof(MapManagerSystem))]
+	[UpdateAfter(typeof(MapHorizontalDrawBufferSystem))]
 	public class NewMapSquareUpdateGroup { }
 }

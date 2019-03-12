@@ -12,6 +12,8 @@ public static class CustomDebugTools
     public static Dictionary<string, string> debugText = new Dictionary<string, string>();
     public static Dictionary<string, int> debugCounts = new Dictionary<string, int>();
 
+    public static MapMatrix<Entity> currentMatrix;
+
     public static void SetDebugText(string key, string value)
     {
         debugText[key] = value;
@@ -25,6 +27,22 @@ public static class CustomDebugTools
         int currenCount = 0;
         debugCounts.TryGetValue(key, out currenCount);
         debugCounts[key] = currenCount + 1;
+    }
+
+    public static string PrintMatrix(Matrix<Entity> matrix)
+    {
+        string mat = "";
+
+        for(int z = matrix.width-1; z >= 0; z--)
+        {
+            for(int x = 0; x < matrix.width; x++)
+            {
+                int index = matrix.PositionToIndex(new int2(x, z));
+                mat += matrix.ItemIsSet(index) ? "x " : "o ";
+            }
+            mat += '\n';
+        }
+        return mat;
     }
 
     static Vector3[] cubeVectors = CubeVectors();
@@ -125,7 +143,7 @@ public static class CustomDebugTools
             new float3(pos.x, 0, pos.z),
             squareWidth,
             color,
-            TerrainSettings.terrainHeight+TerrainSettings.terrainStretch,
+            TerrainSettings.terrainHeight,
             0,
             noSides: false
         );
@@ -142,12 +160,27 @@ public static class CustomDebugTools
             new float3(position.x, 0, position.z),
             squareWidth,
             color,
-            TerrainSettings.terrainHeight+TerrainSettings.terrainStretch,
+            TerrainSettings.terrainHeight,
             0,
             noSides: false
         );
 
         mapSquareLines[2][manager.CreateEntity()] = errorCuboid;
+    }
+
+    //  allLines[2]
+    public static void MarkError(float3 position, Color color, EntityCommandBuffer commandBuffer)
+    {
+        List<DebugLine> errorCuboid = CreateBox(
+            new float3(position.x, 0, position.z),
+            squareWidth,
+            color,
+            TerrainSettings.terrainHeight,
+            0,
+            noSides: false
+        );
+
+        mapSquareLines[2][commandBuffer.CreateEntity()] = errorCuboid;
     }
 
     public static void Line(float3 start, float3 end, Color color)
@@ -210,10 +243,25 @@ public static class CustomDebugTools
 	                            new Vector3(1, 0, 1) };	//	right front top
     }
 
-    public static void Cube(Color color, Vector3 worldPosition)
+    public static void Cube(Color color, Vector3 worldPosition, int scale = 1)
     {
         GameObject capsule = GameObject.CreatePrimitive(PrimitiveType.Cube);
         capsule.GetComponent<Renderer>().material.color = color;
+        capsule.transform.localScale = new float3(scale);
         capsule.transform.position = worldPosition;
+    }
+
+    public static Color NoiseToColor(float noise)
+    {
+        if(noise < 0.1f) return Color.black;
+        else if(noise < 0.2f) return Color.blue;
+        else if(noise < 0.3f) return Color.clear;
+        else if(noise < 0.4f) return Color.cyan;
+        else if(noise < 0.5f) return Color.gray;
+        else if(noise < 0.6f) return Color.green;
+        else if(noise < 0.7f) return Color.grey;
+        else if(noise < 0.8f) return Color.magenta;
+        else if(noise < 0.9f) return Color.red;
+        else return Color.yellow;
     }
 }

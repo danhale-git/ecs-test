@@ -57,41 +57,43 @@ public class MapMeshSystem : ComponentSystem
 		EntityCommandBuffer 		commandBuffer 	= new EntityCommandBuffer(Allocator.Temp);
 		NativeArray<ArchetypeChunk> chunks 			= meshGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
-		ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
-		ArchetypeChunkComponentType<MapSquare> 	squareType		= GetArchetypeChunkComponentType<MapSquare>(true);
-		ArchetypeChunkComponentType<Position> 	positionType	= GetArchetypeChunkComponentType<Position>(true);
-		ArchetypeChunkBufferType<Block> 		blocksType 		= GetArchetypeChunkBufferType<Block>(true);
+		ArchetypeChunkEntityType 						entityType 		= GetArchetypeChunkEntityType();
+		ArchetypeChunkComponentType<MapSquare> 			squareType		= GetArchetypeChunkComponentType<MapSquare>(true);
+		ArchetypeChunkComponentType<Position> 			positionType	= GetArchetypeChunkComponentType<Position>(true);
+		ArchetypeChunkComponentType<AdjacentSquares>	adjacentType	= GetArchetypeChunkComponentType<AdjacentSquares>(true);
+		ArchetypeChunkBufferType<Block> 				blocksType 		= GetArchetypeChunkBufferType<Block>(true);
 
 		for(int c = 0; c < chunks.Length; c++)
 		{
 			ArchetypeChunk chunk = chunks[c];
 
 			//	Get chunk data
-			NativeArray<Entity> 	entities 		= chunk.GetNativeArray(entityType);
-			NativeArray<MapSquare>	squares			= chunk.GetNativeArray(squareType);
-			NativeArray<Position>	positions		= chunk.GetNativeArray(positionType);
-			BufferAccessor<Block> 	blockAccessor 	= chunk.GetBufferAccessor(blocksType);
+			NativeArray<Entity> 			entities 		= chunk.GetNativeArray(entityType);
+			NativeArray<MapSquare>			squares			= chunk.GetNativeArray(squareType);
+			NativeArray<Position>			positions		= chunk.GetNativeArray(positionType);
+			NativeArray<AdjacentSquares>	adjacentSquares	= chunk.GetNativeArray(adjacentType);
+			BufferAccessor<Block> 			blockAccessor 	= chunk.GetBufferAccessor(blocksType);
 
 			//	Iterate over map square entities
-			for(int e = 0; e < entities.Length; e++)
+			//for(int e = 0; e < entities.Length; e++)
+			for(int e = 0; e < 1; e++)
 			{
 				Entity entity = entities[e];
 
-				//	List of adjacent square entities
-				AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(entity);
-
 				//	Check block face exposure and count mesh arrays
 				FaceCounts counts;
-				NativeArray<Faces> faces = CheckBlockFaces(squares[e], blockAccessor[e], adjacentSquares, out counts);
+				NativeArray<Faces> faces = CheckBlockFaces(squares[e], blockAccessor[e], adjacentSquares[e], out counts);
 
 				bool redraw = entityManager.HasComponent<Tags.Redraw>(entity);
 
 				//	If any faces are exposed, generate mesh and update entity Position component
 				if(counts.faceCount != 0)
 				{
+					Mesh mapSquareMesh = GetMesh(entity, squares[e], faces, blockAccessor[e], counts);
+
 					SetMeshComponent(
 						redraw,
-						GetMesh(squares[e], faces, blockAccessor[e], counts),
+						mapSquareMesh,
 						entity,
 						commandBuffer);					
 					
@@ -116,12 +118,9 @@ public class MapMeshSystem : ComponentSystem
 	{
 		NativeArray<Faces> exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
 
-		NativeArray<float3> directions = new NativeArray<float3>(8, Allocator.TempJob);
-		directions.CopyFrom(Util.CardinalDirections());
+		NativeArray<float3> directions = Util.CardinalDirections(Allocator.TempJob);
 
-		NativeArray<int> adjacentOffsets = new NativeArray<int>(8, Allocator.TempJob);
-		for(int i = 0; i < 8; i++)
-			adjacentOffsets[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).bottomBlockBuffer;
+		NativeArray<int> adjacentLowestBlocks = adjacentSquares.GetLowestBlocks(Allocator.TempJob);
 		
 		FacesJob job = new FacesJob(){
 			exposedFaces 	= exposedFaces,
@@ -133,7 +132,7 @@ public class MapMeshSystem : ComponentSystem
 			front 	= entityManager.GetBuffer<Block>(adjacentSquares[2]).AsNativeArray(),
 			back 	= entityManager.GetBuffer<Block>(adjacentSquares[3]).AsNativeArray(),
 
-			adjacentLowestBlocks = adjacentOffsets,
+			adjacentLowestBlocks = adjacentLowestBlocks,
 			
 			squareWidth = squareWidth,
 			directions 	= directions, 
@@ -143,8 +142,14 @@ public class MapMeshSystem : ComponentSystem
 		job.Schedule(mapSquare.blockDrawArrayLength, batchSize).Complete();
 
 		directions.Dispose();
-		adjacentOffsets.Dispose();
+		adjacentLowestBlocks.Dispose();
 
+		counts = CountExposedFaces(blocks, exposedFaces);
+		return exposedFaces;
+	}
+
+	FaceCounts CountExposedFaces(DynamicBuffer<Block> blocks, NativeArray<Faces> exposedFaces)
+	{
 		//	Count vertices and triangles	
 		int faceCount 	= 0;
 		int vertCount 	= 0;
@@ -188,18 +193,19 @@ public class MapMeshSystem : ComponentSystem
 			}
 		}
 
-		counts = new FaceCounts(faceCount, vertCount, triCount);
-
-		return exposedFaces;
+		return new FaceCounts(faceCount, vertCount, triCount);
 	}
 
-	Mesh GetMesh(MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, FaceCounts counts)
+	Mesh GetMesh(Entity entity/*DEBUG */, MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, FaceCounts counts)
 	{
 		//	Determine vertex and triangle arrays using face count
 		NativeArray<float3> vertices 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
 		NativeArray<float3> normals 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
-		NativeArray<int> triangles 		= new NativeArray<int>	 (counts.triCount, Allocator.TempJob);
+		NativeArray<int> 	triangles 	= new NativeArray<int>	 (counts.triCount, Allocator.TempJob);
 		NativeArray<float4> colors 		= new NativeArray<float4>(counts.vertCount, Allocator.TempJob);
+
+		//	DEBUG
+		DynamicBuffer<WorleyNoise> worleyNoise = entityManager.GetBuffer<WorleyNoise>(entity);
 
 		MeshJob job = new MeshJob(){
 			vertices 	= vertices,
@@ -207,15 +213,16 @@ public class MapMeshSystem : ComponentSystem
 			triangles 	= triangles,
 			colors 		= colors,
 
-			mapSquare 	= mapSquare,
+			mapSquare = mapSquare,
+			worleyNoise = worleyNoise,
 
-			blocks 		= blocks,
-			faces 		= faces,
+			blocks 	= blocks,
+			faces 	= faces,
 
 			util 		= new JobUtil(),
 			squareWidth = squareWidth,
 
-			baseVerts 	= new CubeVertices(true)
+			baseVerts = new CubeVertices(true)
 		};
 
 		//	Run job

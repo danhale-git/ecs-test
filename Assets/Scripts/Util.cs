@@ -35,15 +35,33 @@ public static class Util
     {
         return (z * size) + x;
     }
+    public static int Flatten2D(int2 xy, int size)
+    {
+        return (xy.y * size) + xy.x;
+    }
     public static int Flatten2D(float x, float z, int size)
     {
         return ((int)z * size) + (int)x;
+    }
+    public static int Flatten2D(float3 xyz, int size)
+    {
+        return ((int)xyz.z * size) + (int)xyz.x;
     }
 
     public static float To01(float value)
 	{
 		return (value * 0.5f) + 0.5f;
 	}
+
+    public static int2 Float3ToInt2(float3 fl)
+    {
+        return new int2((int)fl.x, (int)fl.z);
+    }
+
+    public static float3 Int2ToFloat3(int2 in2)
+    {
+        return new float3(in2.x, 0, in2.y);
+    }
 
     public static Vector3[] CubeVectors()
     {
@@ -104,9 +122,9 @@ public static class Util
 			new float3(-1,  0, -1)	//  7  back left
 		    };
     }
-    public static NativeArray<float3> CardinalDirectionsNative()
+    public static NativeArray<float3> CardinalDirections(Allocator label)
     {
-        NativeArray<float3> array = new NativeArray<float3>(8, Allocator.Temp);
+        NativeArray<float3> array = new NativeArray<float3>(8, label);
 		array[0] = new float3( 1,  0,  0); //  0  right
 		array[1] = new float3(-1,  0,  0); //  1  left    
 		array[2] = new float3( 0,  0,  1); //  2  front
@@ -191,5 +209,28 @@ public static class Util
     {
         float3 voxel = block.localPosition;
         return Util.Flatten(voxel.x, voxel.y - mapSquare.bottomBlockBuffer, voxel.z, squareWidth);
+    }
+
+    public static NativeList<T> Set<T>(NativeArray<T> raw, Allocator label) where T : struct, System.IComparable<T>
+    {
+        NativeList<T> set = new NativeList<T>(label);
+
+        if(raw.Length == 0) return set;
+
+        raw.Sort();
+
+        int index = 0;
+        set.Add(raw[0]);
+
+        for(int i = 1; i < raw.Length; i++)
+        {
+            if(raw[i].CompareTo(set[index]) != 0)
+            {
+                index++;
+                set.Add(raw[i]);
+            }
+        }
+
+        return set;
     }
 }

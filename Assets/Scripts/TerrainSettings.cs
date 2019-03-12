@@ -6,14 +6,17 @@ public enum TerrainTypes { DIRT, GRASS, CLIFF }
 
 public static class TerrainSettings
 {
-	public static int mapSquareWidth = 12;
-	public static int viewDistance = 5;
+	public const int mapSquareWidth = 12;
+	public const int viewDistance = 8;
+	public const int cellGenerateDistance = 2;
+
 	//	Must always be at >= squareWidth
-	public static int terrainHeight = 16;
-	public static int terrainStretch = 32;
-	public static int seed = 5678;
-	public static float frequency = 0.01f;
-	public static float cellGradientPeturb = 5.0f;
+	public const int terrainHeight = 16;
+	public const int seed = 5678;
+
+	public const float cellFrequency = 0.015f;
+	public const float cellEdgeSmoothing = 10.0f;
+	public const float cellularJitter = 0.15f;
 
 	public static int BiomeIndex(float noise)
 	{
