@@ -13,7 +13,6 @@ public class MapCellMarchingSystem : ComponentSystem
     EntityManager entityManager;
 
     EntityUtil entityUtil;
-    WorleyNoiseUtil worleyUtil;
     WorleyNoiseGenerator worleyNoiseGen;
 
     int squareWidth;
@@ -36,7 +35,6 @@ public class MapCellMarchingSystem : ComponentSystem
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
         entityUtil = new EntityUtil(entityManager);
-        worleyUtil = new WorleyNoiseUtil();
         worleyNoiseGen = new WorleyNoiseGenerator(
             TerrainSettings.seed,
             TerrainSettings.cellFrequency,
