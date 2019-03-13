@@ -28,9 +28,6 @@ struct WorleyNoiseJob : IJob
             worleyNoiseMap[i] = noise.GetEdgeData(position.x, position.z);
         }
 
-        mapSquareEntity.Equals(new Entity());
-        commandBuffer.GetType();
-
         DynamicBuffer<WorleyNoise> worleyNoiseBuffer = commandBuffer.SetBuffer<WorleyNoise>(mapSquareEntity);
         worleyNoiseBuffer.CopyFrom(worleyNoiseMap);
 
