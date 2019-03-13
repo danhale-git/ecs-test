@@ -156,7 +156,8 @@ public class PlayerInputSystem : ComponentSystem
 
         //  Origin entity does not exist
         if(!managerSystem.mapMatrix.array.TryGetItem(previousVoxelOwnerPosition, out currentOwner))
-            throw new Exception("Camera is in non-existent map square");
+            return false;
+            //throw new Exception("Camera is in non-existent map square");
 
         MapSquare               mapSquare = entityManager.GetComponentData<MapSquare>(currentOwner);
         DynamicBuffer<Block>    blocks = entityManager.GetBuffer<Block>(currentOwner);
