@@ -77,6 +77,7 @@ public static class CustomDebugTools
 
         switch(buffer)
         {
+            case 0: color = new Color(1, 1, 1, 0.2f); break;
             case 1: color = new Color(1, 0, 0, 0.2f); break;
             case 2: color = new Color(0, 1, 0, 0.2f); break;
             case 3: color = new Color(0, 0, 1, 0.2f); break;
