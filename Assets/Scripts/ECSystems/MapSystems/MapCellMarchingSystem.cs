@@ -83,7 +83,7 @@ public class MapCellMarchingSystem : ComponentSystem
         WorleyCell startCell = entityManager.GetBuffer<WorleyCell>(initialMapSquare)[0];
 
         InitialiseCellMatrix(startCell.index);
-        GenerateCells(startCell.index);
+        EnqueueCells(startCell.index);
 
         currentCellIndex = CurrentCellIndex();
         //  Initialise 'previous' variables to somomething that doesn't match the current position
@@ -103,7 +103,7 @@ public class MapCellMarchingSystem : ComponentSystem
         cellMatrix.Initialise(1, Allocator.Persistent, rootPosition);
     }
 
-    void GenerateCells(int2 centerIndex)
+    void EnqueueCells(int2 centerIndex)
     {
         int range = TerrainSettings.cellGenerateDistance;
         for(int x = centerIndex.x-range; x <= centerIndex.x+range; x++)
@@ -125,24 +125,34 @@ public class MapCellMarchingSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        ProcessNextCellInQueue();
+        DequeueCell();
 
         currentMapSquare = CurrentMapSquare();
-        if(currentMapSquare.Equals(previousMapSquare))
-            return;
-        else
-            previousMapSquare = currentMapSquare;
+        if(currentMapSquare.Equals(previousMapSquare)) return;
+        else previousMapSquare = currentMapSquare;
 
         currentCellIndex = CurrentCellIndex();
         if(currentCellIndex.Equals(previousCellIndex)) return;
         else previousCellIndex = currentCellIndex;
 
-        GenerateCells(currentCellIndex);
+        EnqueueCells(currentCellIndex);
 
         RemoveOutOfRangeCells();
     }
 
-    void ProcessNextCellInQueue()
+    public float3 CurrentMapSquare()
+    {
+        float3 playerPosition = entityManager.GetComponentData<Position>(playerEntity).Value;
+        return Util.VoxelOwner(playerPosition, squareWidth);
+    }
+
+    public int2 CurrentCellIndex()
+    {
+        WorleyCell currentCell = entityManager.GetBuffer<WorleyCell>(mapMatrix.array.GetItem(currentMapSquare))[0];
+        return currentCell.index;
+    }
+
+    void DequeueCell()
     {
         CustomDebugTools.SetDebugText("cell queue", cellQueue.Count);
         if(cellQueue.Count == 0) return;
@@ -151,17 +161,6 @@ public class MapCellMarchingSystem : ComponentSystem
 
         Entity cellEntity = DiscoverCell(worleyNoiseGen.CellFromIndex(cellIndex));
         cellMatrix.SetItem(cellEntity, cellIndex);
-    }
-
-    public float3 CurrentMapSquare()
-    {
-        float3 playerPosition = entityManager.GetComponentData<Position>(playerEntity).Value;
-        return Util.VoxelOwner(playerPosition, squareWidth);
-    }
-    public int2 CurrentCellIndex()
-    {
-        WorleyCell currentCell = entityManager.GetBuffer<WorleyCell>(mapMatrix.array.GetItem(currentMapSquare))[0];
-        return currentCell.index;
     }
 
     Entity DiscoverCell(WorleyCell cell)
@@ -192,8 +191,7 @@ public class MapCellMarchingSystem : ComponentSystem
 
         return cellEntity;
     }
-
-
+    
     void DiscoverMapSquaresRecursive(WorleyCell currentCell, float3 squarePosition, NativeList<CellMapSquare> allSquares)
     {
         NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
