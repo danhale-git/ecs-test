@@ -177,8 +177,6 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
     public void UpdateDrawBuffer(Entity entity, DrawBufferType buffer, EntityCommandBuffer commandBuffer)
 	{
-        //DrawBufferType buffer = GetDrawBuffer(worldPosition);
-
 		if(entityManager.HasComponent<Tags.EdgeBuffer>(entity))
         {
             if(buffer == DrawBufferType.EDGE) return;
@@ -298,23 +296,28 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
     SubMatrix TrimSubMatrix(SubMatrix subMatrix)
     {
-        int finalWidth = subMatrix.width;
-        float3 finalRoot = subMatrix.rootPosition;
+        float3 center = managerSystem.currentMapSquare;
+        int view = TerrainSettings.viewDistance;
 
-        float3 clampRootTo = managerSystem.currentMapSquare - (TerrainSettings.viewDistance * squareWidth);
+        float3 veiwSubMatrixRoot = new float3(center.x - (view * squareWidth), 0, center.z - (view * squareWidth));
+        int veiwSubMatrixWidth = (view * 2)+ 1;
 
-        int clampWidthTo = TerrainSettings.viewDistance * 2;
+        float3 newRoot = subMatrix.rootPosition;
 
-        float rootX = clampRootTo.x > finalRoot.x ? clampRootTo.x : finalRoot.x;
-        float rootZ = clampRootTo.z > finalRoot.z ? clampRootTo.z : finalRoot.z;
+        if(subMatrix.rootPosition.x < veiwSubMatrixRoot.x) newRoot.x = veiwSubMatrixRoot.x;
+        else newRoot.x = subMatrix.rootPosition.x;
 
-        finalRoot = new float3(rootX, 0, rootZ);
+        if(subMatrix.rootPosition.z < veiwSubMatrixRoot.z) newRoot.z = veiwSubMatrixRoot.z;
+        else newRoot.z = subMatrix.rootPosition.z;
 
-        finalWidth -= (int)math.min(finalRoot.x - subMatrix.rootPosition.x, finalRoot.z - subMatrix.rootPosition.z) / squareWidth;
+        int xDiff = (int)(newRoot.x - subMatrix.rootPosition.x);
+        int zDiff = (int)(newRoot.z - subMatrix.rootPosition.z);
 
-        if(finalWidth > clampWidthTo) finalWidth = clampWidthTo;
+        int newWidth = subMatrix.width - (math.max(xDiff, zDiff) / squareWidth);
 
-        return new SubMatrix(finalRoot, finalWidth);
+        if(newWidth > veiwSubMatrixWidth) newWidth = veiwSubMatrixWidth;
+
+        return new SubMatrix(newRoot, newWidth);
     }
 
     int GetChange(int viewDistance, float boundDistance)

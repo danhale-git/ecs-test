@@ -30,9 +30,13 @@ public class MapCellMarchingSystem : ComponentSystem
     EntityArchetype mapSquareArchetype;
     EntityArchetype worleyCellArchetype;
 
+    NativeQueue<int2> cellQueue;
+
 	protected override void OnCreateManager()
     {
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
+
+        cellQueue = new NativeQueue<int2>(Allocator.Persistent);
 
         entityUtil = new EntityUtil(entityManager);
         worleyNoiseGen = new WorleyNoiseGenerator(
@@ -108,8 +112,7 @@ public class MapCellMarchingSystem : ComponentSystem
                 int2 cellIndex = new int2(x, z);
                 if(cellMatrix.array.ItemIsSet(cellIndex)) continue;
                 
-                Entity cellEntity = DiscoverCell(worleyNoiseGen.CellFromIndex(cellIndex));
-                cellMatrix.SetItem(cellEntity, cellIndex);
+                cellQueue.Enqueue(cellIndex);
             }
     }
 
@@ -117,10 +120,13 @@ public class MapCellMarchingSystem : ComponentSystem
     {
         mapMatrix.Dispose();
         cellMatrix.Dispose();
+        cellQueue.Dispose();
     }
 
     protected override void OnUpdate()
     {
+        ProcessNextCellInQueue();
+
         currentMapSquare = CurrentMapSquare();
         if(currentMapSquare.Equals(previousMapSquare))
             return;
@@ -134,6 +140,17 @@ public class MapCellMarchingSystem : ComponentSystem
         GenerateCells(currentCellIndex);
 
         RemoveOutOfRangeCells();
+    }
+
+    void ProcessNextCellInQueue()
+    {
+        CustomDebugTools.SetDebugText("cell queue", cellQueue.Count);
+        if(cellQueue.Count == 0) return;
+
+        int2 cellIndex = cellQueue.Dequeue();
+
+        Entity cellEntity = DiscoverCell(worleyNoiseGen.CellFromIndex(cellIndex));
+        cellMatrix.SetItem(cellEntity, cellIndex);
     }
 
     public float3 CurrentMapSquare()
