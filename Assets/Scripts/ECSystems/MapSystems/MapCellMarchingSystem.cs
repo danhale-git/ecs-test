@@ -72,6 +72,14 @@ public class MapCellMarchingSystem : ComponentSystem
             ComponentType.Create<CellMapSquare>()
         );
     }
+
+    protected override void OnDestroyManager()
+    {
+        mapMatrix.Dispose();
+        cellMatrix.Dispose();
+
+        cellQueue.Dispose();
+    }
     
     protected override void OnStartRunning()
     {
@@ -114,13 +122,6 @@ public class MapCellMarchingSystem : ComponentSystem
                 
                 cellQueue.Enqueue(cellIndex);
             }
-    }
-
-    protected override void OnDestroyManager()
-    {
-        mapMatrix.Dispose();
-        cellMatrix.Dispose();
-        cellQueue.Dispose();
     }
 
     protected override void OnUpdate()
@@ -171,7 +172,8 @@ public class MapCellMarchingSystem : ComponentSystem
         float3 startPosition = Util.VoxelOwner(cell.position, squareWidth);
         
         mapMatrix.ClearDiscoveredSquares();
-        DiscoverMapSquaresRecursive(cell, startPosition, allSquares);
+        //DiscoverMapSquaresRecursive(cell, startPosition, allSquares);
+        DiscoverMapSquaresRecursive(startPosition, cell, allSquares);
 
         DynamicBuffer<CellMapSquare> cellMapSquareBuffer = entityManager.GetBuffer<CellMapSquare>(cellEntity);
         cellMapSquareBuffer.CopyFrom(allSquares);
@@ -191,8 +193,47 @@ public class MapCellMarchingSystem : ComponentSystem
 
         return cellEntity;
     }
+
+    void DiscoverMapSquaresRecursive(float3 squarePosition, WorleyCell currentCell, NativeList<CellMapSquare> allMapSquares)
+    {
+        NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
+
+        Entity mapSquareEntity = GetOrCreateMapSquare(squarePosition);
+
+        DynamicBuffer<WorleyCell> uniqueCells = entityManager.GetBuffer<WorleyCell>(mapSquareEntity);
+        if(!UniqueCellsContainsCell(uniqueCells, currentCell)) return;
+
+        mapMatrix.SetAsDiscovered(true, squarePosition);
+
+        allMapSquares.Add(new CellMapSquare{
+                entity = mapSquareEntity,
+                edge = MapSquareIsAtEge(uniqueCells, currentCell)
+            }
+        );
+
+        for(int d = 0; d < 8; d++)
+        {
+            float3 adjacentPosition = squarePosition + (directions[d] * squareWidth);
+            if(!mapMatrix.SquareIsDiscovered(adjacentPosition))
+            {
+                //squareQueue.Enqueue(adjacentPosition);
+                DiscoverMapSquaresRecursive(adjacentPosition, currentCell, allMapSquares);
+            }
+        }
+    }
+
+    Entity GetOrCreateMapSquare(float3 position)
+    {
+        Entity mapSquareEntity;
+        if(!mapMatrix.array.TryGetItem(position, out mapSquareEntity))
+        {
+            mapSquareEntity = CreateMapSquareEntity(position);
+            GenerateWorleyNoise(mapSquareEntity, position);
+        }
+        return mapSquareEntity;
+    }
     
-    void DiscoverMapSquaresRecursive(WorleyCell currentCell, float3 squarePosition, NativeList<CellMapSquare> allSquares)
+    /*void DiscoverMapSquaresRecursive(WorleyCell currentCell, float3 squarePosition, NativeList<CellMapSquare> allSquares)
     {
         NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
 
@@ -243,7 +284,7 @@ public class MapCellMarchingSystem : ComponentSystem
 
         positionsToDiscover.Dispose();
         entitiesToDiscover.Dispose();
-    }
+    } */
 
     Entity CreateMapSquareEntity(float3 worldPosition)
     {
