@@ -108,8 +108,7 @@ public class MapCellMarchingSystem : ComponentSystem
 
     void InitialiseMapMatrix(float3 rootPosition)
     {
-        mapMatrix = new Matrix<Entity>();
-        mapMatrix.Initialise(1, Allocator.Persistent, rootPosition, squareWidth);
+        mapMatrix = new Matrix<Entity>(1, Allocator.Persistent, rootPosition, squareWidth);
     }
 
     protected override void OnUpdate()

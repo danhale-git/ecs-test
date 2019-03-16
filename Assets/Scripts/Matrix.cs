@@ -21,9 +21,8 @@ public struct Matrix<T> where T : struct
         if(isSet.IsCreated) isSet.Dispose();
     }
 
-    public void Initialise(int width, Allocator label, float3 rootPosition, int itemWorldSize = 1)
+    public Matrix(int width, Allocator label, float3 rootPosition, int itemWorldSize = 1)
     {
-        Dispose();
         matrix = new NativeArray<T>((int)math.pow(width, 2), label);
         isSet = new NativeArray<sbyte>(matrix.Length, label);
 
@@ -32,11 +31,70 @@ public struct Matrix<T> where T : struct
         this.rootPosition = rootPosition;
         this.itemWorldSize = itemWorldSize;
     }
-    public void Initialise()
+
+    public void AddItem(T item, float3 worldPosition)
     {
-        Dispose();
-        matrix = new NativeArray<T>((int)math.pow(width, 2), label);
-        isSet = new NativeArray<sbyte>(matrix.Length, label);
+        if(!WorldPositionIsInMatrix(worldPosition))
+            RepositionResize(worldPosition);
+
+        int index = WorldPositionToFlatIndex(worldPosition);
+        SetItem(item, index);
+    }
+
+    public void SetItem(T item, int index)
+    {
+        matrix[index] = item;
+        isSet[index] = 1;
+    }
+    
+    public bool TryGetItem(float3 worldPosition, out T item)
+	{
+        if(!WorldPositionIsInMatrix(worldPosition) || !ItemIsSet(worldPosition))
+        {
+            item = new T();
+            return false;
+        }
+
+		item = GetItem(worldPosition);
+        return true;
+	}
+
+    public T GetItem(float3 worldPosition)
+    {
+        int index = WorldPositionToFlatIndex(worldPosition);
+		return GetItem(index);
+    }
+
+    public T GetItem(int index)
+    {
+        return matrix[index];
+    }
+
+    public void UnsetItem(float3 worldPosition)
+    {
+        UnsetItem(worldPosition);
+    }
+
+    public void UnsetItem(int index)
+    {
+        matrix[index] = new T();
+        isSet[index] = 0;
+    }
+
+    public bool ItemIsSet(float3 worldPosition)
+    {
+        if(!WorldPositionIsInMatrix(worldPosition))
+            return false;
+
+        return ItemIsSet(WorldPositionToFlatIndex(worldPosition));
+    }
+
+    public bool ItemIsSet(int index)
+    {
+        if(index < 0 || index >= matrix.Length)
+            return false;
+
+        return isSet[index] > 0;
     }
 
     public float3 RepositionResize(float3 matrixPosition)
@@ -142,7 +200,6 @@ public struct Matrix<T> where T : struct
             float3 newMatrixPosition = oldMatrixPosition + rootIndexOffset;
 
             int newIndex = Util.Flatten2D(newMatrixPosition, newWidth);
-
             if(newIndex < 0 || newIndex >= newMatrix.Length) continue;
 
             newMatrix[newIndex] = matrix[i];
@@ -150,79 +207,9 @@ public struct Matrix<T> where T : struct
         }
 
         width = newWidth;
-        SetMatrix(newMatrix, newIsSet);
-    }
 
-    public void SetMatrix(NativeArray<T> newMatrix, NativeArray<sbyte> newIsSet)
-    {
-        Dispose();
         matrix = newMatrix;
         isSet = newIsSet;
-    }
-
-    public void AddItem(T item, float3 worldPosition)
-    {
-        if(!WorldPositionIsInMatrix(worldPosition))
-            RepositionResize(worldPosition);
-
-        int index = WorldPositionToFlatIndex(worldPosition);
-        SetItem(item, index);
-    }
-
-    public void SetItem(T item, int index)
-    {
-        matrix[index] = item;
-        isSet[index] = 1;
-    }
-    
-    public bool TryGetItem(float3 worldPosition, out T item)
-	{
-        if(!WorldPositionIsInMatrix(worldPosition) || !ItemIsSet(worldPosition))
-        {
-            item = new T();
-            return false;
-        }
-
-		item = GetItem(worldPosition);
-        return true;
-	}
-
-    public T GetItem(float3 worldPosition)
-    {
-        int index = WorldPositionToFlatIndex(worldPosition);
-		return GetItem(index);
-    }
-
-    public T GetItem(int index)
-    {
-        return matrix[index];
-    }
-
-    public void UnsetItem(float3 worldPosition)
-    {
-        UnsetItem(worldPosition);
-    }
-
-    public void UnsetItem(int index)
-    {
-        matrix[index] = new T();
-        isSet[index] = 0;
-    }
-
-    public bool ItemIsSet(float3 worldPosition)
-    {
-        if(!WorldPositionIsInMatrix(worldPosition))
-            return false;
-
-        return ItemIsSet(WorldPositionToFlatIndex(worldPosition));
-    }
-
-    public bool ItemIsSet(int index)
-    {
-        if(index < 0 || index >= matrix.Length)
-            return false;
-
-        return isSet[index] > 0;
     }
 
     bool WorldPositionIsInMatrix(float3 worldPosition, int offset = 0)
