@@ -88,10 +88,9 @@ public class MapCellMarchingSystem : ComponentSystem
         currentMapSquare = CurrentMapSquare();
         InitialiseMapMatrix(currentMapSquare);
 
-        Entity initialMapSquare = CreateMapSquareEntity(currentMapSquare);
-        GenerateWorleyNoise(initialMapSquare, currentMapSquare);
-
+        CreateMapSquareEntity(currentMapSquare);
         currentCellIndex = CurrentCellIndex();
+
         //  Initialise 'previous' variables to somomething that doesn't match the current position
         previousMapSquare = currentMapSquare + (100 * squareWidth);
         previousCellIndex = currentCellIndex + 100;
@@ -105,8 +104,8 @@ public class MapCellMarchingSystem : ComponentSystem
 
     public int2 CurrentCellIndex()
     {
-        WorleyCell currentCell = entityManager.GetBuffer<WorleyCell>(mapMatrix.array.GetItem(currentMapSquare))[0];
-        return currentCell.index;
+        float3 voxel = Util.Float3Round(entityManager.GetComponentData<Position>(playerEntity).Value);
+        return worleyNoiseGen.GetEdgeData(voxel.x, voxel.z).currentCellIndex;
     }
 
     void InitialiseMapMatrix(float3 rootPosition)
@@ -114,12 +113,6 @@ public class MapCellMarchingSystem : ComponentSystem
         mapMatrix = new MapMatrix<Entity>{};
         mapMatrix.Initialise(1, Allocator.Persistent, rootPosition, squareWidth);
     }
-
-    /*void InitialiseCellMatrix(int2 rootPosition)
-    {
-        cellMatrix = new CellMatrix<Entity>{};
-        cellMatrix.Initialise(1, Allocator.Persistent, rootPosition);
-    } */
 
     protected override void OnUpdate()
     {
@@ -132,13 +125,10 @@ public class MapCellMarchingSystem : ComponentSystem
         currentCellIndex = CurrentCellIndex();
         if(currentCellIndex.Equals(previousCellIndex)) return;
         else previousCellIndex = currentCellIndex;
-
-        //RemoveOutOfRangeCells();
     }
 
     void CreateSquares()
     {
-        //EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Persistent);
         NativeArray<ArchetypeChunk> chunks = squaresToCreateGroup.CreateArchetypeChunkArray(Allocator.Persistent);
 
         ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
@@ -160,21 +150,11 @@ public class MapCellMarchingSystem : ComponentSystem
                 DynamicBuffer<SquareToCreate> squaresToCreate = squareBuffers[e];
 
                 for(int i = 0; i < squaresToCreate.Length; i++)
-                {
-                    float3 squarePosition = squaresToCreate[i].squarePosition;
-
-                    
-                    createMapSquareList.Add(squarePosition);
-                        //CreateMapSquareEntity(squarePosition, commandBuffer);
-                }
+                    createMapSquareList.Add(squaresToCreate[i].squarePosition);
 
                 removeComponentList.Add(entity);
-                //commandBuffer.RemoveComponent<SquareToCreate>(entity);
             }
         }
-
-        //commandBuffer.Playback(entityManager);
-        //commandBuffer.Dispose();
 
         for(int i = 0; i < removeComponentList.Length; i++)
         {
@@ -196,16 +176,6 @@ public class MapCellMarchingSystem : ComponentSystem
         createMapSquareList.Dispose();
     }
 
-    /*Entity CreateCellEntity(WorleyCell cell)
-    {
-        Entity cellEntity = entityManager.CreateEntity(worleyCellArchetype);
-
-        DynamicBuffer<WorleyCell> cellBuffer = entityManager.GetBuffer<WorleyCell>(cellEntity);
-        cellBuffer.ResizeUninitialized(1);
-        cellBuffer[0] = cell;
-
-        return cellEntity;
-    } */
 
     /*Entity GetOrCreateMapSquare(float3 position)
     {
@@ -228,17 +198,6 @@ public class MapCellMarchingSystem : ComponentSystem
         return entity;
     }
 
-    /*Entity CreateMapSquareEntity(float3 worldPosition, EntityCommandBuffer commandBuffer)
-    {
-        Entity entity = commandBuffer.CreateEntity(mapSquareArchetype);
-		commandBuffer.SetComponent<Position>(entity, new Position{ Value = worldPosition } );
-
-        if(entity.Index < 0) Debug.Log("buffer "+entity);
-        mapMatrix.SetItem(entity, worldPosition);
-
-        return entity;
-    } */
-    
     void GenerateWorleyNoise(Entity entity, float3 worldPosition)
     {
         EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Persistent);
@@ -261,21 +220,4 @@ public class MapCellMarchingSystem : ComponentSystem
 
         cellJob.Schedule().Complete();
     } 
-
-    /*void RemoveOutOfRangeCells()
-    {
-        for(int c = 0; c < cellMatrix.Length; c++)
-        {
-            if(!cellMatrix.array.ItemIsSet(c))
-                continue;
-
-            Entity cellEntity = cellMatrix.array.GetItem(c);
-            WorleyCell cell = entityManager.GetBuffer<WorleyCell>(cellEntity)[0];
-
-            if(!cellMatrix.array.InDistanceFromGridPosition(cell.index, currentCellIndex, 2))
-            {
-                cellMatrix.array.UnsetItem(cell.index);
-            }
-        }
-    } */
 }
