@@ -56,7 +56,7 @@ public class PhysicsSystem : ComponentSystem
 
                 //  Current map square doesn't exist, find current map Square
                 if(!entityManager.Exists(physicsComponent.currentMapSquare))
-                    physicsComponent.currentMapSquare = managerSystem.mapMatrix.array.GetItem(nextPosition);
+                    physicsComponent.currentMapSquare = managerSystem.mapMatrix.GetItem(nextPosition);
 
                 if(!entityManager.Exists(physicsComponent.currentMapSquare))
                     continue;                

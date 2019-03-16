@@ -89,7 +89,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        SubMatrix subMatrix = LargestSquare(managerSystem.mapMatrix.GetMatrix(), Util.Int2ToFloat3(managerSystem.mapMatrix.array.rootPosition));
+        SubMatrix subMatrix = LargestSquare(managerSystem.mapMatrix, managerSystem.mapMatrix.rootPosition);
 
         subMatrix = TrimSubMatrix(subMatrix);
         
@@ -257,13 +257,13 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 		for(int x = matrix.width-1; x >= 0; x--)
 			for(int z = matrix.width-1; z >= 0; z--)
 			{
-                int index = matrix.PositionToIndex(new int2(x, z));
+                int index = matrix.PositionToIndex(new float3(x, 0, z));
 				//	At edge, matrix.width-1square size is 1 so default to original matrix
 				if(x == matrix.width-1 || z == matrix.width-1) continue;
 
-                int forwardIndex = matrix.PositionToIndex(new int2(x,z+1));
-                int rightIndex = matrix.PositionToIndex(new int2(x+1,z));
-                int diagonalIndex = matrix.PositionToIndex(new int2(x+1,z+1));
+                int forwardIndex = matrix.PositionToIndex(new float3(x, 0,z+1));
+                int rightIndex = matrix.PositionToIndex(new float3(x+1, 0,z));
+                int diagonalIndex = matrix.PositionToIndex(new float3(x+1, 0,z+1));
 
 				//	Square is 1, value is equal to 1 + lowed of the three adjacent squares
 				if(matrix.ItemIsSet(index) &&

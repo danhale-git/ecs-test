@@ -60,14 +60,14 @@ public class MapAdjacentSystem : ComponentSystem
 
 				//	Get adjacent map squares from matrix in MapManagerSystem
 				AdjacentSquares adjacent = new AdjacentSquares{
-					right 		= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[0]),
-					left 		= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[1]),
-					front 		= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[2]),
-					back 		= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[3]),
-					frontRight 	= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[4]),
-					frontLeft 	= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[5]),
-					backRight 	= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[6]),
-					backLeft 	= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[7])
+					right 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[0]),
+					left 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[1]),
+					front 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[2]),
+					back 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[3]),
+					frontRight 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[4]),
+					frontLeft 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[5]),
+					backRight 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[6]),
+					backLeft 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[7])
 				};
 
 				for(int i = 0; i < 8; i++)

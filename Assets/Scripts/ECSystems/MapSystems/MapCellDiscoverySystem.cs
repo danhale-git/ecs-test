@@ -19,8 +19,6 @@ public class MapCellDiscoverySystem : JobComponentSystem
 
     int squareWidth;
 
-    MapMatrix<Entity> mapMatrix;
-
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();

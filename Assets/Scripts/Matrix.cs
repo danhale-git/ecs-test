@@ -10,7 +10,7 @@ public struct Matrix<T> where T : struct
     public int width;
     public Allocator label;
 
-    public int2 rootPosition;
+    public float3 rootPosition;
     public int itemWorldSize;
 
     public int Length{ get{ return matrix.Length; } }
@@ -21,7 +21,7 @@ public struct Matrix<T> where T : struct
         if(isSet.IsCreated) isSet.Dispose();
     }
 
-    public void Initialise(int width, Allocator label, int2 rootPosition, int itemWorldSize = 1)
+    public void Initialise(int width, Allocator label, float3 rootPosition, int itemWorldSize = 1)
     {
         Dispose();
         matrix = new NativeArray<T>((int)math.pow(width, 2), label);
@@ -39,11 +39,11 @@ public struct Matrix<T> where T : struct
         isSet = new NativeArray<sbyte>(matrix.Length, label);
     }
 
-    public int2 RepositionResize(int2 matrixPosition)
+    public float3 RepositionResize(float3 matrixPosition)
     {
         CustomDebugTools.IncrementDebugCount("Matrix march count");
         int x = (int)matrixPosition.x;
-        int z = (int)matrixPosition.y;
+        int z = (int)matrixPosition.z;
 
         float3 rootPositionChange = float3.zero;
         float3 widthChange = float3.zero;
@@ -88,11 +88,11 @@ public struct Matrix<T> where T : struct
         if(widthChange.x+widthChange.z > 0)
             newWidth += math.max((int)widthChange.x, (int)widthChange.z);
 
-        int2 rootIndexOffset = Util.Float3ToInt2(rootPositionChange) * -1;
+        float3 rootIndexOffset = rootPositionChange * -1;
 
         CopyToAdjustedMatrix(rootIndexOffset, newWidth);
 
-        rootPosition += Util.Float3ToInt2(rootPositionChange) * itemWorldSize;
+        rootPosition += rootPositionChange * itemWorldSize;
 
         return rootIndexOffset;
     }
@@ -116,7 +116,7 @@ public struct Matrix<T> where T : struct
             int x       = rightLeftUpDown == 0 ? width-1 : 0;
             int xOffset = rightLeftUpDown == 0 ? -offset : offset;
             for(int z  = 0; z < width; z++)
-                if(ItemIsSet( PositionToIndex(new int2(x+xOffset, z)) ))
+                if(ItemIsSet( PositionToIndex(new float3(x+xOffset, 0, z)) ))
                     return false;
         }
         else
@@ -124,22 +124,22 @@ public struct Matrix<T> where T : struct
             int z       = rightLeftUpDown == 2 ? width-1 : 0;
             int zOffset = rightLeftUpDown == 2 ? -offset : offset;
             for(int x  = 0; x < width; x++)
-                if(ItemIsSet( PositionToIndex(new int2(x, z+zOffset)) ))
+                if(ItemIsSet( PositionToIndex(new float3(x, 0, z+zOffset)) ))
                     return false;
         }
 
         return true;
     }
 
-    public void CopyToAdjustedMatrix(int2 rootIndexOffset, int newWidth)
+    public void CopyToAdjustedMatrix(float3 rootIndexOffset, int newWidth)
     {
         NativeArray<T> newMatrix = new NativeArray<T>((int)math.pow(newWidth, 2), label);
         NativeArray<sbyte> newIsSet = new NativeArray<sbyte>(newMatrix.Length, label);
 
         for(int i = 0; i < matrix.Length; i++)
         {
-            int2 oldMatrixPosition = IndexToPosition(i);
-            int2 newMatrixPosition = oldMatrixPosition + rootIndexOffset;
+            float3 oldMatrixPosition = IndexToPosition(i);
+            float3 newMatrixPosition = oldMatrixPosition + rootIndexOffset;
 
             int newIndex = Util.Flatten2D(newMatrixPosition, newWidth);
 
@@ -160,20 +160,47 @@ public struct Matrix<T> where T : struct
         isSet = newIsSet;
     }
 
+    public void AddItem(T item, float3 worldPosition)
+    {
+        if(!WorldPositionIsInMatrix(worldPosition))
+            RepositionResize(worldPosition);
+
+        int index = WorldPositionToFlatIndex(worldPosition);
+        SetItem(item, index);
+    }
+
     public void SetItem(T item, int index)
     {
         matrix[index] = item;
         isSet[index] = 1;
     }
+    
+    public bool TryGetItem(float3 worldPosition, out T item)
+	{
+        if(!WorldPositionIsInMatrix(worldPosition) || !ItemIsSet(worldPosition))
+        {
+            item = new T();
+            return false;
+        }
 
-    public void UnsetItem(float3 gridPosition)
+		item = GetItem(worldPosition);
+        return true;
+	}
+
+    public T GetItem(float3 worldPosition)
     {
-        UnsetItem(Util.Float3ToInt2(gridPosition));
+        int index = WorldPositionToFlatIndex(worldPosition);
+		return GetItem(index);
     }
 
-    public void UnsetItem(int2 gridPosition)
+    public T GetItem(int index)
     {
-        UnsetItem(GridPositionToFlatIndex(gridPosition));
+        return matrix[index];
+    }
+
+    public void UnsetItem(float3 worldPosition)
+    {
+        UnsetItem(worldPosition);
     }
 
     public void UnsetItem(int index)
@@ -182,12 +209,12 @@ public struct Matrix<T> where T : struct
         isSet[index] = 0;
     }
 
-    public bool ItemIsSet(int2 gridPosition)
+    public bool ItemIsSet(float3 worldPosition)
     {
-        if(!GridPositionIsInMatrix(gridPosition))
+        if(!WorldPositionIsInMatrix(worldPosition))
             return false;
 
-        return ItemIsSet(GridPositionToFlatIndex(gridPosition));
+        return ItemIsSet(WorldPositionToFlatIndex(worldPosition));
     }
 
     public bool ItemIsSet(int index)
@@ -198,105 +225,58 @@ public struct Matrix<T> where T : struct
         return isSet[index] > 0;
     }
 
-    public T GetItem(float3 gridPosition)
-    {
-		return GetItem(Util.Float3ToInt2(gridPosition));
-    }
-
-    public T GetItem(int2 gridPosition)
-    {
-        int index = GridPositionToFlatIndex(gridPosition);
-		return GetItem(index);
-    }
-
-    public T GetItem(int index)
-    {
-        return matrix[index];
-    }
-
-    public bool TryGetItem(float3 gridPositionFloat, out T item)
+    bool WorldPositionIsInMatrix(float3 worldPosition, int offset = 0)
 	{
-        int2 gridPosition = Util.Float3ToInt2(gridPositionFloat);
-
-        if(!GridPositionIsInMatrix(gridPosition) || !ItemIsSet(gridPosition))
-        {
-            item = new T();
-            return false;
-        }
-
-		item = GetItem(GridPositionToFlatIndex(gridPosition));
-        return true;
-	}
-
-    public bool TryGetItem(int2 gridPosition, out T item)
-	{
-        if(!GridPositionIsInMatrix(gridPosition) || !ItemIsSet(gridPosition))
-        {
-            item = new T();
-            return false;
-        }
-
-		item = GetItem(GridPositionToFlatIndex(gridPosition));
-        return true;
-	}
-
-    public bool GridPositionIsInMatrix(int2 gridPosition, int offset = 0)
-	{
-        int2 matrixPosition = GridToMatrixPosition(gridPosition);
+        float3 matrixPosition = WorldToMatrixPosition(worldPosition);
 
         return PositionIsInMatrix(matrixPosition, offset);
 	}
     
-    public bool PositionIsInMatrix(float3 matrixPosition, int offset = 0)
-	{
-        return PositionIsInMatrix(Util.Float3ToInt2(matrixPosition), offset);
-	}
-    
-    public bool PositionIsInMatrix(int2 matrixPosition, int offset = 0)
+    bool PositionIsInMatrix(float3 matrixPosition, int offset = 0)
 	{
         int arrayWidth = width-1;
 
 		if(	matrixPosition.x >= offset && matrixPosition.x <= arrayWidth-offset &&
-			matrixPosition.y >= offset && matrixPosition.y <= arrayWidth-offset )
+			matrixPosition.z >= offset && matrixPosition.z <= arrayWidth-offset )
 			return true;
 		else
 			return false;
 	}
 
-    public bool InDistanceFromGridPosition(int2 inDistanceFromGrid, int2 positionGrid, int offset)
+    bool InDistanceFromWorldPosition(float3 inDistanceFromWorld, float3 positionWorld, int offset)
     {
-        int2 inDistanceFrom = GridToMatrixPosition(inDistanceFromGrid);
-        int2 position = GridToMatrixPosition(positionGrid);
+        float3 inDistanceFrom = WorldToMatrixPosition(inDistanceFromWorld);
+        float3 position = WorldToMatrixPosition(positionWorld);
         return InDistancceFromPosition(inDistanceFrom, position, offset);
     }
 
-    public bool InDistancceFromPosition(int2 inDistanceFrom, int2 position, int offset)
+    bool InDistancceFromPosition(float3 inDistanceFrom, float3 position, int offset)
     {
         if(	inDistanceFrom.x >= position.x - offset &&
-            inDistanceFrom.y >= position.y - offset &&
+            inDistanceFrom.z >= position.z - offset &&
 			inDistanceFrom.x <= position.x + offset &&
-            inDistanceFrom.y <= position.y + offset )
+            inDistanceFrom.z <= position.z + offset )
 			return true;
 		else
 			return false;
     }
 
-    public int GridPositionToFlatIndex(int2 gridPosition)
+    int WorldPositionToFlatIndex(float3 worldPosition)
     {
-        return PositionToIndex(GridToMatrixPosition(gridPosition));
+        return PositionToIndex(WorldToMatrixPosition(worldPosition));
     }
 
-    public int2 GridToMatrixPosition(int2 gridPosition)
+    float3 WorldToMatrixPosition(float3 worldPosition)
     {
-        return (gridPosition - rootPosition) / itemWorldSize;
+        return (worldPosition - rootPosition) / itemWorldSize;
     }
 
-    public int2 FlatIndexToGridPosition(int index)
+    float3 FlatIndexToWorldPosition(int index)
     {
-        return MatrixToGridPosition(IndexToPosition(index));
+        return MatrixToWorldPosition(IndexToPosition(index));
     }
 
-    public int2 MatrixToGridPosition(int2 matrixPosition)
+    float3 MatrixToWorldPosition(float3 matrixPosition)
     {
         return (matrixPosition * itemWorldSize) + rootPosition;
     }
@@ -306,14 +286,8 @@ public struct Matrix<T> where T : struct
         return Util.Flatten2D(matrixPosition, width);
     }
 
-    public int PositionToIndex(int2 matrixPosition)
+    float3 IndexToPosition(int index)
     {
-        return Util.Flatten2D(matrixPosition, width);
-    }
-
-    public int2 IndexToPosition(int index)
-    {
-        float3 returnValue = Util.Unflatten2D(index, width);
-        return new int2((int)returnValue.x, (int)returnValue.z);
+        return Util.Unflatten2D(index, width);
     }
 }

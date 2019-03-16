@@ -12,7 +12,7 @@ public static class CustomDebugTools
     public static Dictionary<string, string> debugText = new Dictionary<string, string>();
     public static Dictionary<string, int> debugCounts = new Dictionary<string, int>();
 
-    public static MapMatrix<Entity> currentMatrix;
+    public static Matrix<Entity> currentMatrix;
 
     public static void SetDebugText(string key, string value)
     {
@@ -37,7 +37,7 @@ public static class CustomDebugTools
         {
             for(int x = 0; x < matrix.width; x++)
             {
-                int index = matrix.PositionToIndex(new int2(x, z));
+                int index = matrix.PositionToIndex(new float3(x, 0, z));
                 mat += matrix.ItemIsSet(index) ? "x " : "o ";
             }
             mat += '\n';

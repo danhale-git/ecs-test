@@ -52,9 +52,6 @@ public class MapSquareCheckSystem : ComponentSystem
 
 			for(int e = 0; e < entities.Length; e++)
 			{
-                //if(ActiveCellCount(cellBuffers[e]) == 0)
-                //    RemoveMapSquare(entities[e], positions[e].Value, commandBuffer);
-
                 entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(entities[e], commandBuffer);
             }
         }
@@ -65,19 +62,9 @@ public class MapSquareCheckSystem : ComponentSystem
 		chunks.Dispose();
     }
 
-    int ActiveCellCount(DynamicBuffer<WorleyCell> uniqueCells)
-    {
-        int activeCells = 0;
-        for(int i = 0; i < uniqueCells.Length; i++)
-            if(managerSystem.cellMatrix.array.ItemIsSet(uniqueCells[i].index))
-                activeCells++;
-                
-        return activeCells;
-    }
-
-    void RemoveMapSquare(Entity squareEntity, float3 squarePosition, EntityCommandBuffer commandBuffer)
+    /*void RemoveMapSquare(Entity squareEntity, float3 squarePosition, EntityCommandBuffer commandBuffer)
     {
         entityUtil.TryAddComponent<Tags.RemoveMapSquare>(squareEntity, commandBuffer);
-        managerSystem.mapMatrix.array.UnsetItem(squarePosition);
-    }
+        managerSystem.mapMatrix.UnsetItem(squarePosition);
+    } */
 }

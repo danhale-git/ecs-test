@@ -19,8 +19,7 @@ public class MapCellMarchingSystem : ComponentSystem
 
     public static Entity playerEntity;
 
-    public MapMatrix<Entity> mapMatrix;
-    public CellMatrix<Entity> cellMatrix;
+    public Matrix<Entity> mapMatrix;
 
     public float3 currentMapSquare;
     float3 previousMapSquare;
@@ -80,7 +79,6 @@ public class MapCellMarchingSystem : ComponentSystem
     protected override void OnDestroyManager()
     {
         mapMatrix.Dispose();
-        cellMatrix.Dispose();
     }
     
     protected override void OnStartRunning()
@@ -110,7 +108,7 @@ public class MapCellMarchingSystem : ComponentSystem
 
     void InitialiseMapMatrix(float3 rootPosition)
     {
-        mapMatrix = new MapMatrix<Entity>{};
+        mapMatrix = new Matrix<Entity>();
         mapMatrix.Initialise(1, Allocator.Persistent, rootPosition, squareWidth);
     }
 
@@ -165,7 +163,7 @@ public class MapCellMarchingSystem : ComponentSystem
         for(int i = 0; i < createMapSquareList.Length; i++)
         {
             float3 squarePosition = createMapSquareList[i];
-            if(!mapMatrix.array.ItemIsSet(Util.Float3ToInt2(squarePosition)))
+            if(!mapMatrix.ItemIsSet(squarePosition))
             {
                 CustomDebugTools.IncrementDebugCount("squares created");
                 CreateMapSquareEntity(squarePosition);
@@ -193,31 +191,8 @@ public class MapCellMarchingSystem : ComponentSystem
         Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 		entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
 
-        mapMatrix.SetItem(entity, worldPosition);
+        mapMatrix.AddItem(entity, worldPosition);
 
         return entity;
     }
-
-    void GenerateWorleyNoise(Entity entity, float3 worldPosition)
-    {
-        EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Persistent);
-        GenerateWorleyNoise(entity, worldPosition, commandBuffer);
-        commandBuffer.Playback(entityManager);
-        commandBuffer.Dispose();
-    } 
-
-    void GenerateWorleyNoise(Entity entity, float3 worldPosition, EntityCommandBuffer commandBuffer)
-    {
-        WorleyNoiseJob cellJob = new WorleyNoiseJob(){
-			offset 		    = worldPosition,
-			squareWidth	    = squareWidth,
-			util 		    = new JobUtil(),
-            noise 		    = worleyNoiseGen,
-
-            commandBuffer   = commandBuffer,
-            mapSquareEntity = entity
-        };
-
-        cellJob.Schedule().Complete();
-    } 
 }
