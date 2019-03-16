@@ -65,7 +65,7 @@ namespace MyComponents
 		public float currentCellValue, distance2Edge, adjacentCellValue;
 	}
 
-	[InternalBufferCapacity(10)]
+	[InternalBufferCapacity(0)]
 	public struct WorleyCell : IBufferElementData, System.IComparable<WorleyCell>
 	{
 		public int CompareTo(WorleyCell other)
@@ -76,6 +76,14 @@ namespace MyComponents
 		public float value;
 		public int2 index;
 		public float3 position;
+
+		public sbyte discovered;
+	}
+
+	[InternalBufferCapacity(0)]
+	public struct SquareToCreate : IBufferElementData
+	{
+		public float3 squarePosition;
 	}
 	
 	[InternalBufferCapacity(0)]
@@ -203,6 +211,9 @@ namespace MyComponents
 
 namespace Tags
 {
+	public struct CellDiscoveryComplete : IComponentData { }
+	public struct GenerateWorleyNoise : IComponentData { }
+
 	public struct GenerateTerrain : IComponentData { }
 	public struct GetAdjacentSquares : IComponentData { }
 	public struct LoadChanges : IComponentData { }

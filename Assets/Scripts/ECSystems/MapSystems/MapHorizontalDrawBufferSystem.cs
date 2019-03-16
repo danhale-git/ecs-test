@@ -263,11 +263,15 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
                 int rightIndex = matrix.PositionToIndex(new int2(x+1,z));
                 int diagonalIndex = matrix.PositionToIndex(new int2(x+1,z+1));
 
-
 				//	Square is 1, value is equal to 1 + lowed of the three adjacent squares
-				if(matrix.ItemIsSet(index)) cacheMatrix[index] = 1 + math.min(cacheMatrix[forwardIndex],
-                                                                        math.min(   cacheMatrix[rightIndex],
-                                                                                        cacheMatrix[diagonalIndex]));
+				if(matrix.ItemIsSet(index) &&
+                    entityManager.Exists(matrix.GetItem(index)) &&
+                    entityManager.HasComponent<Tags.CellDiscoveryComplete>(matrix.GetItem(index)))
+                {
+                    cacheMatrix[index] = 1 + math.min(cacheMatrix[forwardIndex],
+                                                math.min(   cacheMatrix[rightIndex],
+                                                                cacheMatrix[diagonalIndex]));
+                }
 
 				//	Largest square so far, store values
 				if(cacheMatrix[index] > resultSize)

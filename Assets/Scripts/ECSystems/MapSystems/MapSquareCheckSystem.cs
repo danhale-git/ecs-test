@@ -3,8 +3,9 @@ using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Transforms;
 using MyComponents;
+using UnityEngine;
 
-[UpdateAfter(typeof(MapCellMarchingSystem))]
+[UpdateAfter(typeof(MapCellDiscoverySystem))]
 public class MapSquareCheckSystem : ComponentSystem
 {
     EntityManager entityManager;
@@ -51,8 +52,18 @@ public class MapSquareCheckSystem : ComponentSystem
 
 			for(int e = 0; e < entities.Length; e++)
 			{
-                if(ActiveCellCount(cellBuffers[e]) == 0)
-                    RemoveMapSquare(entities[e], positions[e].Value, commandBuffer);
+                //if(ActiveCellCount(cellBuffers[e]) == 0)
+                //    RemoveMapSquare(entities[e], positions[e].Value, commandBuffer);
+
+                float3 position = positions[e].Value;
+
+                /*if(managerSystem.mapMatrix.array.ItemIsSet(Util.Float3ToInt2(position)) &&
+                    !entityManager.Exists(entities[e]))
+                {
+                    Debug.Log("item is set for non existent entity at "+position);
+                }
+                else
+                    Debug.Log("map square is good "+entities[e]); */
 
                 entityUtil.TryAddComponent<Tags.GetAdjacentSquares>(entities[e], commandBuffer);
             }
