@@ -17,7 +17,6 @@ public class MapCellDiscoverySystem : JobComponentSystem
     DiscoveryBarrier discoveryBarrier;
 
     int squareWidth;
-    NativeArray<float3> directions;
 
     MapMatrix<Entity> mapMatrix;
 
@@ -28,7 +27,6 @@ public class MapCellDiscoverySystem : JobComponentSystem
 
         discoveryBarrier = World.Active.GetOrCreateManager<DiscoveryBarrier>();
         squareWidth = TerrainSettings.mapSquareWidth;
-        directions = Util.CardinalDirections(Allocator.Persistent);
     }
 
     protected override JobHandle OnUpdate(JobHandle inputDependencies)
@@ -38,7 +36,7 @@ public class MapCellDiscoverySystem : JobComponentSystem
             uniqueCellsFromEntity = GetBufferFromEntity<WorleyCell>(),
             currentCellIndex = managerSystem.currentCellIndex,
             squareWidth = squareWidth,
-            directions = directions
+            directions = Util.CardinalDirections(Allocator.TempJob)
         };
 
         JobHandle discoveryHandle = discoveryJob.Schedule(this, inputDependencies);
@@ -48,17 +46,19 @@ public class MapCellDiscoverySystem : JobComponentSystem
         return discoveryHandle;
     }
 
-    [RequireSubtractiveComponent(typeof(Tags.CellDiscoveryComplete))]
+    [RequireSubtractiveComponent(typeof(Tags.CellDiscoveryComplete), typeof(Tags.GenerateWorleyNoise))]
     public struct DiscoveryJob : IJobProcessComponentDataWithEntity<MapSquare, Position>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
-        public BufferFromEntity<WorleyCell> uniqueCellsFromEntity;
+        [ReadOnly] public BufferFromEntity<WorleyCell> uniqueCellsFromEntity;
 
-        public int2 currentCellIndex;
+        [ReadOnly] public int2 currentCellIndex;
 
-        public int squareWidth;
-        public NativeArray<float3> directions;
+        [ReadOnly] public int squareWidth;
+
+        [DeallocateOnJobCompletion]
+        [ReadOnly] public NativeArray<float3> directions;
 
         public void Execute(Entity mapSquareEntity, int jobIndex, ref MapSquare mapSquare, ref Position position)
         {
@@ -71,6 +71,9 @@ public class MapCellDiscoverySystem : JobComponentSystem
             {
                 int2 distance = uniqueCells[i].index - currentCellIndex;
                 float magnitude = math.abs(math.sqrt(distance.x*distance.x + distance.y*distance.y));
+
+                //UnityEngine.Debug.Log(uniqueCells[i].index+" - "+currentCellIndex);
+                //UnityEngine.Debug.Log(distance+" "+magnitude);
                 
                 if(magnitude < 2)
                 {
@@ -89,7 +92,9 @@ public class MapCellDiscoverySystem : JobComponentSystem
 
             if(newlyDiscoveredCellCount > 0)
             {
-                DynamicBuffer<SquareToCreate> squaresToCreate = commandBuffer.SetBuffer<SquareToCreate>(jobIndex, mapSquareEntity);
+                //UnityEngine.Debug.Log("New cell in this square");
+                
+                DynamicBuffer<SquareToCreate> squaresToCreate = commandBuffer.AddBuffer<SquareToCreate>(jobIndex, mapSquareEntity);
                 
                 for(int d = 0; d < 8; d++)
                 {
@@ -99,8 +104,7 @@ public class MapCellDiscoverySystem : JobComponentSystem
             }
 
             if(discoveredCellCount == uniqueCells.Length)
-                commandBuffer.SetComponent<Tags.CellDiscoveryComplete>(jobIndex, mapSquareEntity, new Tags.CellDiscoveryComplete());          
-
+                commandBuffer.AddComponent<Tags.CellDiscoveryComplete>(jobIndex, mapSquareEntity, new Tags.CellDiscoveryComplete());          
         }
         
         /*bool UniqueCellsContainsCell(DynamicBuffer<WorleyCell> uniqueCells, WorleyCell cell)

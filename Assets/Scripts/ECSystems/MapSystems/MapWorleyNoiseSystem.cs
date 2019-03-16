@@ -13,6 +13,8 @@ public class MapWorleyNoiseSystem : JobComponentSystem
 {
     EntityManager entityManager;
 
+    WorleyNoiseGenerator worleyNoiseGen;
+
     WorleyBarrier worleyBarrier;
 
     int squareWidth;
@@ -22,6 +24,13 @@ public class MapWorleyNoiseSystem : JobComponentSystem
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         worleyBarrier = World.Active.GetOrCreateManager<WorleyBarrier>();
         squareWidth = TerrainSettings.mapSquareWidth;
+
+        worleyNoiseGen = new WorleyNoiseGenerator(
+            TerrainSettings.seed,
+            TerrainSettings.cellFrequency,
+            TerrainSettings.cellEdgeSmoothing,
+            TerrainSettings.cellularJitter
+        );
     }
 
     protected override JobHandle OnUpdate(JobHandle inputDependencies)
@@ -32,7 +41,7 @@ public class MapWorleyNoiseSystem : JobComponentSystem
             uniqueWorleyCellsFromEntity = GetBufferFromEntity<WorleyCell>(),
             squareWidth = squareWidth,
             util = new JobUtil(),
-            noise = new WorleyNoiseGenerator()
+            noise = worleyNoiseGen
         };
 
         JobHandle worleyHandle = worleyJob.Schedule(this, inputDependencies);
@@ -46,8 +55,10 @@ public class MapWorleyNoiseSystem : JobComponentSystem
     public struct WorleyJob : IJobProcessComponentDataWithEntity<MapSquare, Position>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
-
+        
+        [NativeDisableParallelForRestriction]
         public BufferFromEntity<WorleyNoise> worleyNoiseBufferFromEntity;
+        [NativeDisableParallelForRestriction]        
         public BufferFromEntity<WorleyCell> uniqueWorleyCellsFromEntity;
 
         [ReadOnly] public int squareWidth;
@@ -70,6 +81,8 @@ public class MapWorleyNoiseSystem : JobComponentSystem
             NativeArray<WorleyCell> worleyCellSet = UniqueWorleyCellSet(worleyNoiseMap);
             DynamicBuffer<WorleyCell> uniqueWorleyCells = uniqueWorleyCellsFromEntity[mapSquareEntity];
             uniqueWorleyCells.CopyFrom(worleyCellSet);
+
+            //UnityEngine.Debug.Log("unique length "+worleyCellSet.Length);
 
             worleyNoiseMap.Dispose();
             worleyCellSet.Dispose();
