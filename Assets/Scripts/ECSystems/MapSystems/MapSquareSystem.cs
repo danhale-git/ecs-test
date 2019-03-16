@@ -66,7 +66,7 @@ public class MapSquareSystem : ComponentSystem
 		);
 
         EntityArchetypeQuery squareToCreateQuery = new EntityArchetypeQuery{
-            All = new ComponentType[] { typeof(SquareToCreate) }
+            All = new ComponentType[] { typeof(Tags.CreateAdjacentSquares) }
         };
         squaresToCreateGroup = GetComponentGroup(squareToCreateQuery);
     }
@@ -141,47 +141,46 @@ public class MapSquareSystem : ComponentSystem
         NativeArray<ArchetypeChunk> chunks = squaresToCreateGroup.CreateArchetypeChunkArray(Allocator.Persistent);
 
         ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
-        ArchetypeChunkBufferType<SquareToCreate> squaresToCreateBufferType = GetArchetypeChunkBufferType<SquareToCreate>();
+        ArchetypeChunkComponentType<Position> positionType = GetArchetypeChunkComponentType<Position>();
 
-        NativeList<Entity> removeComponentList = new NativeList<Entity>(Allocator.TempJob);
-        NativeList<float3> createMapSquareList = new NativeList<float3>(Allocator.TempJob);
+        NativeList<Entity> entityList = new NativeList<Entity>(Allocator.TempJob);
+        NativeList<float3> positionList = new NativeList<float3>(Allocator.TempJob);
 
         for(int c = 0; c < chunks.Length; c++)
         {
             ArchetypeChunk chunk = chunks[c];
 
             NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
-            BufferAccessor<SquareToCreate> squareBuffers = chunk.GetBufferAccessor<SquareToCreate>(squaresToCreateBufferType);
+            NativeArray<Position> positions = chunk.GetNativeArray(positionType);
 
             for(int e = 0; e < entities.Length; e++)
             {
-                DynamicBuffer<SquareToCreate> squaresToCreate = squareBuffers[e];
-
-                for(int i = 0; i < squaresToCreate.Length; i++)
-                    createMapSquareList.Add(squaresToCreate[i].squarePosition);
-
-                removeComponentList.Add(entities[e]);
+                entityList.Add(entities[e]);
+                positionList.Add(positions[e].Value);
             }
         }
 
-        for(int i = 0; i < removeComponentList.Length; i++)
+        NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
+        
+        for(int i = 0; i < entityList.Length; i++)
         {
-            if(entityManager.HasComponent<SquareToCreate>(removeComponentList[i]))
-                entityManager.RemoveComponent<SquareToCreate>(removeComponentList[i]);
-        }
+            if(entityManager.HasComponent<Tags.CreateAdjacentSquares>(entityList[i]))
+                entityManager.RemoveComponent<Tags.CreateAdjacentSquares>(entityList[i]);
 
-        for(int i = 0; i < createMapSquareList.Length; i++)
-        {
-            float3 squarePosition = createMapSquareList[i];
-            if(!mapMatrix.ItemIsSet(squarePosition))
+            for(int d = 0; d < 8; d++)
             {
-                CustomDebugTools.IncrementDebugCount("squares created");
-                CreateMapSquareEntity(squarePosition);
+                float3 adjacentPosition = positionList[i] + (directions[d] * squareWidth);
+                if(!mapMatrix.ItemIsSet(adjacentPosition))
+                {
+                    CustomDebugTools.IncrementDebugCount("squares created");
+                    CreateMapSquareEntity(adjacentPosition);
+                }
             }
         }
 
-        removeComponentList.Dispose();
-        createMapSquareList.Dispose();
+        directions.Dispose();
+        entityList.Dispose();
+        positionList.Dispose();
     }
 
     Entity CreateMapSquareEntity(float3 worldPosition)

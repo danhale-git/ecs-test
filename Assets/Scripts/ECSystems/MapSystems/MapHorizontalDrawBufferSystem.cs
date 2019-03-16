@@ -267,7 +267,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
 				//	Square is 1, value is equal to 1 + lowed of the three adjacent squares
 				if(matrix.ItemIsSet(index) &&
-                    entityManager.HasComponent<Tags.CellDiscoveryComplete>(matrix.GetItem(index)))
+                    entityManager.HasComponent<Tags.AllCellsDiscovered>(matrix.GetItem(index)))
                 {
                     cacheMatrix[index] = 1 + math.min(cacheMatrix[forwardIndex],
                                                 math.min(   cacheMatrix[rightIndex],

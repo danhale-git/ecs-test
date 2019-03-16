@@ -32,25 +32,25 @@ public class MapCellDiscoverySystem : JobComponentSystem
 
         DiscoveryJob discoveryJob = new DiscoveryJob(){
             commandBuffer = discoveryBarrier.CreateCommandBuffer().ToConcurrent(),
-            uniqueCellsFromEntity = GetBufferFromEntity<WorleyCell>(),
+            cellBufferArray = GetBufferFromEntity<WorleyCell>(),
             currentCellIndex = MapSquareSystem.currentCellIndex,
             squareWidth = squareWidth,
             directions = Util.CardinalDirections(Allocator.TempJob)
         };
 
-        JobHandle discoveryHandle = discoveryJob.Schedule(this, inputDependencies);
-        discoveryBarrier.AddJobHandleForProducer(discoveryHandle);
+        JobHandle discoveryJobHandle = discoveryJob.Schedule(this, inputDependencies);
+        discoveryBarrier.AddJobHandleForProducer(discoveryJobHandle);
 
-        return discoveryHandle;
+        return discoveryJobHandle;
     }
 
-    [RequireSubtractiveComponent(typeof(Tags.CellDiscoveryComplete), typeof(Tags.GenerateWorleyNoise))]
+    [RequireSubtractiveComponent(typeof(Tags.AllCellsDiscovered), typeof(Tags.GenerateWorleyNoise))]
     public struct DiscoveryJob : IJobProcessComponentDataWithEntity<MapSquare, Position>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
         [NativeDisableParallelForRestriction]
-        public BufferFromEntity<WorleyCell> uniqueCellsFromEntity;
+        public BufferFromEntity<WorleyCell> cellBufferArray;
 
         [ReadOnly] public int2 currentCellIndex;
         [ReadOnly] public int squareWidth;
@@ -58,58 +58,44 @@ public class MapCellDiscoverySystem : JobComponentSystem
         [DeallocateOnJobCompletion]
         [ReadOnly] public NativeArray<float3> directions;
 
-        public void Execute(Entity mapSquareEntity, int jobIndex, ref MapSquare mapSquare, ref Position position)
+        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
         {
-            DynamicBuffer<WorleyCell> uniqueCells = uniqueCellsFromEntity[mapSquareEntity];
-            int newlyDiscovered = DiscoverCells(mapSquareEntity, jobIndex, uniqueCells);
+            DynamicBuffer<WorleyCell> uniqueCells = cellBufferArray[entity];
 
-            if(newlyDiscovered > 0)
-            {
-                DynamicBuffer<SquareToCreate> squaresToCreate = commandBuffer.AddBuffer<SquareToCreate>(jobIndex, mapSquareEntity);
-                CreateAdjacentSquares(squaresToCreate, position.Value);
-            }
-        }
-
-        int DiscoverCells(Entity mapSquareEntity, int jobIndex, DynamicBuffer<WorleyCell> uniqueCells)
-        {
             int totalDiscovered = 0;
             int newlyDiscovered = 0;
 
             for(int i = 0; i < uniqueCells.Length; i++)
-                if(Distance(uniqueCells[i].index, currentCellIndex) < TerrainSettings.cellGenerateDistance)
+                if(DistancFromPlayerCell(uniqueCells[i].index) < TerrainSettings.cellGenerateDistance)
                 {
                     totalDiscovered++;
 
                     if(uniqueCells[i].discovered == 0)
                     {
                         newlyDiscovered++;
-
-                        WorleyCell cell = uniqueCells[i];
-                        cell.discovered = 1;
-                        uniqueCells[i] = cell;
+                        MarkCellAsDiscovered(uniqueCells, i);
                     }
                 }
 
             if(totalDiscovered == uniqueCells.Length)
-                commandBuffer.AddComponent<Tags.CellDiscoveryComplete>(jobIndex, mapSquareEntity, new Tags.CellDiscoveryComplete());
+                commandBuffer.AddComponent<Tags.AllCellsDiscovered>(jobIndex, entity, new Tags.AllCellsDiscovered());
 
-            return newlyDiscovered; 
+            if(newlyDiscovered > 0)
+                commandBuffer.AddComponent(jobIndex, entity, new Tags.CreateAdjacentSquares());
         }
 
-        float Distance(int2 distance, int2 from)
+        void MarkCellAsDiscovered(DynamicBuffer<WorleyCell> uniqueCells, int index)
         {
-            int2 vector = distance - from;
+            WorleyCell cell = uniqueCells[index];
+            cell.discovered = 1;
+            uniqueCells[index] = cell;
+        }
+
+        float DistancFromPlayerCell(int2 cell)
+        {
+            int2 vector = cell - currentCellIndex;
             float magnitude = math.abs(math.sqrt(vector.x*vector.x + vector.y*vector.y));
             return magnitude;
-        }
-
-        void CreateAdjacentSquares(DynamicBuffer<SquareToCreate> buffer, float3 position)
-        {
-            for(int d = 0; d < 8; d++)
-            {
-                float3 adjacentPosition = position + (directions[d] * squareWidth);
-                buffer.Add(new SquareToCreate { squarePosition = adjacentPosition });
-            }
         }
     }
 }

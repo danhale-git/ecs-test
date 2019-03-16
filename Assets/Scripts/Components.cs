@@ -80,12 +80,6 @@ namespace MyComponents
 		public sbyte discovered;
 	}
 
-	[InternalBufferCapacity(0)]
-	public struct SquareToCreate : IBufferElementData
-	{
-		public float3 squarePosition;
-	}
-
 	public struct AdjacentSquares : IComponentData
 	{
 		public Entity right;
@@ -204,8 +198,9 @@ namespace MyComponents
 
 namespace Tags
 {
-	public struct CellDiscoveryComplete : IComponentData { }
+	public struct AllCellsDiscovered : IComponentData { }
 	public struct GenerateWorleyNoise : IComponentData { }
+	public struct CreateAdjacentSquares : IComponentData { }
 
 	public struct GenerateTerrain : IComponentData { }
 	public struct GetAdjacentSquares : IComponentData { }
