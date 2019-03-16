@@ -239,9 +239,11 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
         else return DrawBufferType.NONE;
     } */
 
+    GameObject cubeObject;
+
     SubMatrix LargestSquare(Matrix<Entity> matrix, float3 matrixRootPosition)
 	{
-		//	Copy original matix to cache so it defaults to original matrix values
+        //	Copy original matix to cache so it defaults to original matrix values
 		NativeArray<int> cacheMatrix = new NativeArray<int>(matrix.Length, Allocator.Temp);
         for(int i = 0; i < cacheMatrix.Length; i++)
             cacheMatrix[i] = matrix.ItemIsSet(i) ? 1 : 0;
@@ -265,7 +267,6 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
 				//	Square is 1, value is equal to 1 + lowed of the three adjacent squares
 				if(matrix.ItemIsSet(index) &&
-                    entityManager.Exists(matrix.GetItem(index)) &&
                     entityManager.HasComponent<Tags.CellDiscoveryComplete>(matrix.GetItem(index)))
                 {
                     cacheMatrix[index] = 1 + math.min(cacheMatrix[forwardIndex],
@@ -286,13 +287,9 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
         float3 squareRootPosition = (matrixPostiion * squareWidth) + matrixRootPosition;
 
-		/*for(int x = 0; x < resultSize; x++)
-    		for(int z = 0; z < resultSize; z++)
-            {
-                
-                float3 worldPosition = ((new float3(x, 0, z) + matrixPostiion) * TerrainSettings.mapSquareWidth) + matrixRootPosition;
-                CustomDebugTools.Cube(Color.cyan, worldPosition + (squareWidth/2), squareWidth-1);
-            } */
+        //if(cubeObject != null)
+        //    GameObject.Destroy(cubeObject);
+        //cubeObject = CustomDebugTools.Cube(new Color(0, 1, 1, 0.005f), squareRootPosition + ((resultSize * squareWidth)/2), resultSize * squareWidth);
 
         return new SubMatrix(squareRootPosition, resultSize);
         
