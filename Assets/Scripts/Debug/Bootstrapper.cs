@@ -12,7 +12,7 @@ public class Bootstrapper
     {
         Entity playerEntity = CreatePlayer();
         //MapManagerSystem.playerEntity = playerEntity;//TODO: REMOVE
-        MapCellMarchingSystem.playerEntity = playerEntity;
+        MapSquareSystem.playerEntity = playerEntity;
         CameraSystem.playerEntity = playerEntity;
         PlayerInputSystem.playerEntity = playerEntity;
     }

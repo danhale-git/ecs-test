@@ -11,7 +11,7 @@ using MyComponents;
 public class PhysicsSystem : ComponentSystem
 {
     EntityManager entityManager;
-    MapCellMarchingSystem managerSystem;
+    MapSquareSystem managerSystem;
     int squareWidth;
 
     ComponentGroup moveGroup;
@@ -19,7 +19,7 @@ public class PhysicsSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        managerSystem = World.Active.GetOrCreateManager<MapCellMarchingSystem>();
+        managerSystem = World.Active.GetOrCreateManager<MapSquareSystem>();
         squareWidth = TerrainSettings.mapSquareWidth;
 
         EntityArchetypeQuery moveQuery = new EntityArchetypeQuery

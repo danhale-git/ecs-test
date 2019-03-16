@@ -85,13 +85,6 @@ namespace MyComponents
 	{
 		public float3 squarePosition;
 	}
-	
-	[InternalBufferCapacity(0)]
-	public struct CellMapSquare : IBufferElementData
-	{
-		public Entity entity;
-		public sbyte edge;
-	}
 
 	public struct AdjacentSquares : IComponentData
 	{

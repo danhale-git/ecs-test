@@ -13,14 +13,14 @@ public class MapSquareCheckSystem : ComponentSystem
 
     int squareWidth;
 
-    MapCellMarchingSystem managerSystem;
+    MapSquareSystem managerSystem;
 
     ComponentGroup allSquaresGroup;
 
 	protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        managerSystem = World.Active.GetOrCreateManager<MapCellMarchingSystem>();
+        managerSystem = World.Active.GetOrCreateManager<MapSquareSystem>();
 
         entityUtil = new EntityUtil(entityManager);
 

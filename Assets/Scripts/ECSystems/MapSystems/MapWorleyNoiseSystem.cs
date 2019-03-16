@@ -8,7 +8,7 @@ using MyComponents;
 [UpdateAfter(typeof(MapCellDiscoverySystem))]
 public class WorleyBarrier : BarrierSystem { }
 
-[UpdateAfter(typeof(MapCellMarchingSystem))]
+[UpdateAfter(typeof(MapSquareSystem))]
 public class MapWorleyNoiseSystem : JobComponentSystem
 {
     EntityManager entityManager;

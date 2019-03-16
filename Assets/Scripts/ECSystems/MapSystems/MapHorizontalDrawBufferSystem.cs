@@ -14,7 +14,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
     EntityManager entityManager;
     EntityUtil entityUtil;
 
-    MapCellMarchingSystem managerSystem;
+    MapSquareSystem managerSystem;
 
     int squareWidth;
 
@@ -35,7 +35,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 	protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        managerSystem = World.Active.GetOrCreateManager<MapCellMarchingSystem>();
+        managerSystem = World.Active.GetOrCreateManager<MapSquareSystem>();
 
         squareWidth = TerrainSettings.mapSquareWidth;
 

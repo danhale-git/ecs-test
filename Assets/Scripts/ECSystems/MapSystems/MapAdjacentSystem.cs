@@ -12,7 +12,7 @@ using MyComponents;
 public class MapAdjacentSystem : ComponentSystem
 {
     EntityManager entityManager;
-	MapCellMarchingSystem managerSystem;
+	MapSquareSystem managerSystem;
 
 	int squareWidth;
 
@@ -21,7 +21,7 @@ public class MapAdjacentSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-		managerSystem = World.Active.GetOrCreateManager<MapCellMarchingSystem>();
+		managerSystem = World.Active.GetOrCreateManager<MapSquareSystem>();
 
 		squareWidth = TerrainSettings.mapSquareWidth;
 

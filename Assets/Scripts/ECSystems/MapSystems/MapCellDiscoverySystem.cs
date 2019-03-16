@@ -13,7 +13,7 @@ public class MapCellDiscoverySystem : JobComponentSystem
 {
     const int cellDistance = 3;
     EntityManager entityManager;
-    MapCellMarchingSystem managerSystem;
+    MapSquareSystem managerSystem;
 
     DiscoveryBarrier discoveryBarrier;
 
@@ -22,7 +22,7 @@ public class MapCellDiscoverySystem : JobComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        managerSystem = World.Active.GetOrCreateManager<MapCellMarchingSystem>();
+        managerSystem = World.Active.GetOrCreateManager<MapSquareSystem>();
 
         discoveryBarrier = World.Active.GetOrCreateManager<DiscoveryBarrier>();
         squareWidth = TerrainSettings.mapSquareWidth;

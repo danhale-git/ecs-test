@@ -8,7 +8,7 @@ using Unity.Rendering;
 using MyComponents;
 
 [AlwaysUpdateSystem]
-public class MapCellMarchingSystem : ComponentSystem
+public class MapSquareSystem : ComponentSystem
 {
     EntityManager entityManager;
 
@@ -65,11 +65,6 @@ public class MapCellMarchingSystem : ComponentSystem
 			ComponentType.Create<Tags.DrawMesh>()
 		);
 
-        worleyCellArchetype = entityManager.CreateArchetype(
-            ComponentType.Create<WorleyCell>(),
-            ComponentType.Create<CellMapSquare>()
-        );
-
         EntityArchetypeQuery squareToCreateQuery = new EntityArchetypeQuery{
             All = new ComponentType[] { typeof(SquareToCreate) }
         };
@@ -84,10 +79,16 @@ public class MapCellMarchingSystem : ComponentSystem
     protected override void OnStartRunning()
     {
         currentMapSquare = CurrentMapSquare();
-        InitialiseMapMatrix(currentMapSquare);
+        currentCellIndex = CurrentCellIndex();
+
+        mapMatrix = new Matrix<Entity>(
+            1,
+            Allocator.Persistent,
+            currentMapSquare,
+            squareWidth
+        );
 
         CreateMapSquareEntity(currentMapSquare);
-        currentCellIndex = CurrentCellIndex();
 
         //  Initialise 'previous' variables to somomething that doesn't match the current position
         previousMapSquare = currentMapSquare + (100 * squareWidth);
@@ -106,14 +107,9 @@ public class MapCellMarchingSystem : ComponentSystem
         return worleyNoiseGen.GetEdgeData(voxel.x, voxel.z).currentCellIndex;
     }
 
-    void InitialiseMapMatrix(float3 rootPosition)
-    {
-        mapMatrix = new Matrix<Entity>(1, Allocator.Persistent, rootPosition, squareWidth);
-    }
-
     protected override void OnUpdate()
     {
-        CreateSquares();
+        CreateNewSquares();
 
         currentMapSquare = CurrentMapSquare();
         if(currentMapSquare.Equals(previousMapSquare)) return;
@@ -124,7 +120,7 @@ public class MapCellMarchingSystem : ComponentSystem
         else previousCellIndex = currentCellIndex;
     }
 
-    void CreateSquares()
+    void CreateNewSquares()
     {
         NativeArray<ArchetypeChunk> chunks = squaresToCreateGroup.CreateArchetypeChunkArray(Allocator.Persistent);
 
@@ -143,13 +139,12 @@ public class MapCellMarchingSystem : ComponentSystem
 
             for(int e = 0; e < entities.Length; e++)
             {
-                Entity entity = entities[e];
                 DynamicBuffer<SquareToCreate> squaresToCreate = squareBuffers[e];
 
                 for(int i = 0; i < squaresToCreate.Length; i++)
                     createMapSquareList.Add(squaresToCreate[i].squarePosition);
 
-                removeComponentList.Add(entity);
+                removeComponentList.Add(entities[e]);
             }
         }
 
@@ -172,18 +167,6 @@ public class MapCellMarchingSystem : ComponentSystem
         removeComponentList.Dispose();
         createMapSquareList.Dispose();
     }
-
-
-    /*Entity GetOrCreateMapSquare(float3 position)
-    {
-        Entity mapSquareEntity;
-        if(!mapMatrix.array.TryGetItem(position, out mapSquareEntity))
-        {
-            mapSquareEntity = CreateMapSquareEntity(position);
-            GenerateWorleyNoise(mapSquareEntity, position);
-        }
-        return mapSquareEntity;
-    } */
 
     Entity CreateMapSquareEntity(float3 worldPosition)
     {
