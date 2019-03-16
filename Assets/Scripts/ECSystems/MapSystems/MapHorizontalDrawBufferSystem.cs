@@ -91,9 +91,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
     protected override void OnUpdate()
     {
         SubMatrix subMatrix = FitView(squareSystem.mapMatrix, ViewSubMatrix());
-        
         SetNewSquares(subMatrix);
-
         CheckAllSquares(subMatrix);
     }
 
@@ -165,8 +163,8 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
                 DrawBufferType buffer = GetDrawBuffer(subMatrix, position);
                 UpdateDrawBuffer(entity, buffer, commandBuffer);
 
-                if(!inRadius)
-                    RedrawMapSquare(entity, commandBuffer);
+                //if(!inRadius)
+                //    RedrawMapSquare(entity, commandBuffer);
 
                 mapSquareCount++;
 			}
@@ -287,7 +285,6 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 			}
 
         return new SubMatrix(squareRootPosition, resultSize);
-        
 	}
 
     SubMatrix ViewSubMatrix()
