@@ -244,12 +244,13 @@ public static class CustomDebugTools
 	                            new Vector3(1, 0, 1) };	//	right front top
     }
 
-    public static void Cube(Color color, Vector3 worldPosition, int scale = 1)
+    public static GameObject Cube(Color color, Vector3 worldPosition, int scale = 1)
     {
-        GameObject capsule = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        capsule.GetComponent<Renderer>().material.color = color;
-        capsule.transform.localScale = new float3(scale);
-        capsule.transform.position = worldPosition;
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cube.GetComponent<Renderer>().material.color = color;
+        cube.transform.localScale = new float3(scale);
+        cube.transform.position = worldPosition;
+        return cube;
     }
 
     public static Color NoiseToColor(float noise)
