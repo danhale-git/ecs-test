@@ -18,17 +18,17 @@ public class MapSquareSystem : ComponentSystem
     int squareWidth;
 
     public static Entity playerEntity;
-
     public Matrix<Entity> mapMatrix;
 
-    public float3 currentMapSquare;
+    public static float3 currentMapSquare;
+    public static bool mapSquareChanged;
     float3 previousMapSquare;
-    public int2 currentCellIndex;
+
+    public static int2 currentCellIndex;
+    public static bool cellChanged;
     int2 previousCellIndex;
 
     EntityArchetype mapSquareArchetype;
-    EntityArchetype worleyCellArchetype;
-
     ComponentGroup squaresToCreateGroup;
 
 	protected override void OnCreateManager()
@@ -112,12 +112,28 @@ public class MapSquareSystem : ComponentSystem
         CreateNewSquares();
 
         currentMapSquare = CurrentMapSquare();
-        if(currentMapSquare.Equals(previousMapSquare)) return;
-        else previousMapSquare = currentMapSquare;
+        if(currentMapSquare.Equals(previousMapSquare))
+        {
+            if(mapSquareChanged) mapSquareChanged = false;
+            return;
+        }
+        else
+        {
+            mapSquareChanged = true;
+            previousMapSquare = currentMapSquare;
+        }
 
         currentCellIndex = CurrentCellIndex();
-        if(currentCellIndex.Equals(previousCellIndex)) return;
-        else previousCellIndex = currentCellIndex;
+        if(currentCellIndex.Equals(previousCellIndex))
+        {
+            if(cellChanged) cellChanged = false;
+            return;
+        }
+        else
+        {
+            cellChanged = true;
+            previousCellIndex = currentCellIndex;
+        }
     }
 
     void CreateNewSquares()

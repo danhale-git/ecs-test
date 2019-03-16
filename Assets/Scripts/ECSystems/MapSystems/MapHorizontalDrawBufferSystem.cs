@@ -297,7 +297,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
     SubMatrix TrimSubMatrix(SubMatrix subMatrix)
     {
-        float3 center = managerSystem.currentMapSquare;
+        float3 center = MapSquareSystem.currentMapSquare;
         int view = TerrainSettings.viewDistance;
 
         float3 veiwSubMatrixRoot = new float3(center.x - (view * squareWidth), 0, center.z - (view * squareWidth));

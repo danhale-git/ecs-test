@@ -12,17 +12,17 @@ public class WorleyBarrier : BarrierSystem { }
 public class MapWorleyNoiseSystem : JobComponentSystem
 {
     EntityManager entityManager;
-
-    WorleyNoiseGenerator worleyNoiseGen;
-
     WorleyBarrier worleyBarrier;
 
     int squareWidth;
+
+    WorleyNoiseGenerator worleyNoiseGen;
 
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         worleyBarrier = World.Active.GetOrCreateManager<WorleyBarrier>();
+
         squareWidth = TerrainSettings.mapSquareWidth;
 
         worleyNoiseGen = new WorleyNoiseGenerator(
@@ -45,7 +45,6 @@ public class MapWorleyNoiseSystem : JobComponentSystem
         };
 
         JobHandle worleyHandle = worleyJob.Schedule(this, inputDependencies);
-
         worleyBarrier.AddJobHandleForProducer(worleyHandle);
 
         return worleyHandle;
