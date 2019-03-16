@@ -8,7 +8,7 @@ using MyComponents;
 [UpdateAfter(typeof(MapHorizontalDrawAreaSystem))]
 public class HorizontalDrawAreaBarrier : BarrierSystem { }
 
-[UpdateAfter(typeof(MapCellDiscoverySystem))]
+[UpdateAfter(typeof(MapHorizontalDrawBufferSystem))]
 public class MapHorizontalDrawAreaSystem : JobComponentSystem
 {
 	public enum DrawBufferType { NONE, INNER, OUTER, EDGE }
@@ -47,35 +47,45 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
         SubMatrix viewSubMatrix = ViewSubMatrix();
         SubMatrix subMatrix = FitView(squareSystem.mapMatrix, viewSubMatrix);
 
-        SetNewSquaresJob newSquaresJob = new SetNewSquaresJob{
-            commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
-            viewSubMatrix = viewSubMatrix,
-            drawBufferUtil = new DrawBufferUtil(squareWidth)
-        };
+        DrawBufferUtil drawBufferUtil = new DrawBufferUtil(squareWidth);
 
-        CheckInnerSquaresJob innerSquaresJob = new CheckInnerSquaresJob{
-            commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
-            viewSubMatrix = viewSubMatrix,
-            drawBufferUtil = new DrawBufferUtil(squareWidth)
-        };
+        //NativeArray<Entity> allEntities = entityManager.GetAllEntities(Allocator.Temp);
+        //for(int i = 0; i < allEntities.Length; i++)
+        //{
+        //    DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, entityManager.GetComponentData<Position>(allEntities[i]).Value);
+        //    if(entityManager.HasComponent<MapSquare>(allEntities[i]))
+        //        CustomDebugTools.HorizontalBufferDebug(allEntities[i], (int)buffer);
+        //} 
 
-        CheckOuterSquaresJob outerSquaresJob = new CheckOuterSquaresJob{
+        JobHandle newSquaresJob = new SetNewSquaresJob{
             commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
-            viewSubMatrix = viewSubMatrix,
+            subMatrix = subMatrix,
             drawBufferUtil = new DrawBufferUtil(squareWidth)
-        };
+        }.Schedule(this, inputDependencies);
 
-        CheckEdgeSquaresJob edgeSquaresJob = new CheckEdgeSquaresJob{
+        JobHandle innerSquaresJob = new CheckInnerSquaresJob{
             commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
-            viewSubMatrix = viewSubMatrix,
+            subMatrix = subMatrix,
             drawBufferUtil = new DrawBufferUtil(squareWidth)
-        };
+        }.Schedule(this, newSquaresJob);
+
+        JobHandle outerSquaresJob = new CheckOuterSquaresJob{
+            commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
+            subMatrix = subMatrix,
+            drawBufferUtil = new DrawBufferUtil(squareWidth)
+        }.Schedule(this, innerSquaresJob);
+
+        JobHandle edgeSquaresJob = new CheckEdgeSquaresJob{
+            commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
+            subMatrix = subMatrix,
+            drawBufferUtil = new DrawBufferUtil(squareWidth)
+        }.Schedule(this, outerSquaresJob);
 
         NativeArray<JobHandle> jobHandles = new NativeArray<JobHandle>(4, Allocator.Temp);
-        jobHandles[0] = newSquaresJob.Schedule(this, inputDependencies);
-        jobHandles[1] = innerSquaresJob.Schedule(this, inputDependencies);
-        jobHandles[2] = outerSquaresJob.Schedule(this, inputDependencies);
-        jobHandles[3] = edgeSquaresJob.Schedule(this, inputDependencies);
+        jobHandles[0] = newSquaresJob;
+        jobHandles[1] = innerSquaresJob;
+        jobHandles[2] = outerSquaresJob;
+        jobHandles[3] = edgeSquaresJob;
 
         JobHandle dependencies = JobHandle.CombineDependencies(jobHandles);
         jobHandles.Dispose();
@@ -100,14 +110,14 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
-        [ReadOnly] public SubMatrix viewSubMatrix;
+        [ReadOnly] public SubMatrix subMatrix;
         [ReadOnly] public DrawBufferUtil drawBufferUtil;
 
         public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
         {
-            bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(viewSubMatrix, position.Value);
+            bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
-            DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(viewSubMatrix, position.Value);
+            DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, position.Value);
 
             SetDrawBuffer(entity, buffer, commandBuffer, jobIndex);
         }
@@ -136,14 +146,14 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
-        [ReadOnly] public SubMatrix viewSubMatrix;
+        [ReadOnly] public SubMatrix subMatrix;
         [ReadOnly] public DrawBufferUtil drawBufferUtil;
 
         public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
         {
-            bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(viewSubMatrix, position.Value);
+            bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
-            DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(viewSubMatrix, position.Value);
+            DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, position.Value);
 
             if(buffer == DrawBufferType.INNER) return;
             commandBuffer.RemoveComponent<Tags.InnerBuffer>(jobIndex, entity);
@@ -161,14 +171,14 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
-        [ReadOnly] public SubMatrix viewSubMatrix;
+        [ReadOnly] public SubMatrix subMatrix;
         [ReadOnly] public DrawBufferUtil drawBufferUtil;
 
         public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
         {
-            bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(viewSubMatrix, position.Value);
+            bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
-            DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(viewSubMatrix, position.Value);
+            DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, position.Value);
 
             if(buffer == DrawBufferType.OUTER) return;
             commandBuffer.RemoveComponent<Tags.OuterBuffer>(jobIndex, entity);
@@ -186,14 +196,14 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
-        [ReadOnly] public SubMatrix viewSubMatrix;
+        [ReadOnly] public SubMatrix subMatrix;
         [ReadOnly] public DrawBufferUtil drawBufferUtil;
 
         public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
         {
-            bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(viewSubMatrix, position.Value);
+            bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
-            DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(viewSubMatrix, position.Value);
+            DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, position.Value);
 
             if(buffer == DrawBufferType.EDGE) return;
             commandBuffer.RemoveComponent<Tags.EdgeBuffer>(jobIndex, entity);
@@ -247,8 +257,6 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
         public void SetDrawBuffer(Entity entity, DrawBufferType buffer, EntityCommandBuffer.Concurrent commandBuffer, int jobIndex)
         {
-            commandBuffer.AddComponent<Tags.EdgeBuffer>(jobIndex, entity, new Tags.EdgeBuffer());
-
             switch(buffer)
             {
                 case DrawBufferType.INNER:
@@ -266,12 +274,6 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
             CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
         }
-
-        /*void RedrawMapSquare(Entity entity, EntityCommandBuffer.Concurrent commandBuffer)
-        {
-            entityUtil.TryRemoveSharedComponent<RenderMesh>(entity, commandBuffer);
-            entityUtil.TryAddComponent<Tags.DrawMesh>(entity, commandBuffer);
-        } */
     }
     
     SubMatrix FitView(Matrix<Entity> matrix, SubMatrix subMatrix)

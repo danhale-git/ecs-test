@@ -21,7 +21,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
     ComponentGroup allSquaresGroup;
     ComponentGroup newSquaresGroup;
 
-    struct SubMatrix
+    public struct SubMatrix
     {
         public readonly float3 rootPosition;
         public readonly int width;
@@ -55,51 +55,12 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 		};
 		newSquaresGroup = GetComponentGroup(newSquaresQuery);
     }
-    
-    DrawBufferType GetDrawBuffer(SubMatrix square, float3 bufferWorldPosition)
-    {
-
-        if (IsOutsideSubMatrix(square, bufferWorldPosition)) return DrawBufferType.EDGE;
-        else if (IsDistanceFromSubMatrixEdge(square, bufferWorldPosition, 0)) return DrawBufferType.EDGE;
-        else if (IsDistanceFromSubMatrixEdge(square, bufferWorldPosition, 1)) return DrawBufferType.OUTER;
-        else if (IsDistanceFromSubMatrixEdge(square, bufferWorldPosition, 2)) return DrawBufferType.INNER;
-        else return DrawBufferType.NONE;
-    }
-
-    bool IsDistanceFromSubMatrixEdge(SubMatrix square, float3 bufferWorldPosition, int distance = 0)
-	{
-        float3 localPosition = (bufferWorldPosition - square.rootPosition) / squareWidth;
-
-        if( (localPosition.x == 0+distance || localPosition.x == (square.width-1)-distance) ||
-            (localPosition.z == 0+distance || localPosition.z == (square.width-1)-distance) )
-            return true;
-        else
-            return false;
-	}
-
-    bool IsOutsideSubMatrix(SubMatrix square, float3 bufferWorldPosition)
-	{
-        float3 localPosition = (bufferWorldPosition - square.rootPosition) / squareWidth;
-
-        if( localPosition.x < 0 || localPosition.x >= square.width ||
-            localPosition.z < 0 || localPosition.z >= square.width )
-            return true;
-        else
-            return false;
-	}
 
     protected override void OnUpdate()
     {
         SubMatrix subMatrix = FitView(squareSystem.mapMatrix, ViewSubMatrix());
         SetNewSquares(subMatrix);
         CheckAllSquares(subMatrix);
-    }
-
-    bool SquareCanBeDrawn(Matrix<Entity> matrix, float3 worldPosition)
-    {
-        Entity entity;
-        if(!matrix.TryGetItem(worldPosition, out entity)) return false;
-        return (matrix.ItemIsSet(worldPosition) && entityManager.HasComponent<Tags.AllCellsDiscovered>(entity));
     }
 
     void SetNewSquares(SubMatrix subMatrix)
@@ -117,16 +78,18 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 			NativeArray<Entity> entities 	= chunk.GetNativeArray(entityType);
 			NativeArray<Position> positions = chunk.GetNativeArray(positionType);
 
+            DrawBufferUtil drawBufferUtil = new DrawBufferUtil(squareWidth);
+
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity   = entities[e];
 				float3 position = positions[e].Value;
 
-                bool inRadius = !IsOutsideSubMatrix(subMatrix, position);
+                bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position);
 
-                DrawBufferType buffer = GetDrawBuffer(subMatrix, position);
+                DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, position);
 
-                SetDrawBuffer(entity, buffer, commandBuffer);
+                drawBufferUtil.SetDrawBuffer(entity, buffer, commandBuffer);
 			}
 		}
 
@@ -153,14 +116,16 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 			NativeArray<Entity> entities 	= chunk.GetNativeArray(entityType);
 			NativeArray<Position> positions = chunk.GetNativeArray(positionType);
 
+            DrawBufferUtil drawBufferUtil = new DrawBufferUtil(squareWidth);
+
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity   = entities[e];
 				float3 position = positions[e].Value;
 
-                bool inRadius = !IsOutsideSubMatrix(subMatrix, position);
+                bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position);
 
-                DrawBufferType buffer = GetDrawBuffer(subMatrix, position);
+                DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, position);
                 UpdateDrawBuffer(entity, buffer, commandBuffer);
 
                 //if(!inRadius)
@@ -329,5 +294,71 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
             return (int)(boundDistance - viewDistance);
         else
             return 0;
+    }
+    
+    public struct DrawBufferUtil
+    {
+        int squareWidth;
+        public DrawBufferUtil(int squareWidth)
+        {
+            this.squareWidth = squareWidth;
+        }
+
+        public DrawBufferType GetDrawBuffer(SubMatrix square, float3 bufferWorldPosition)
+        {
+            if (IsOutsideSubMatrix(square, bufferWorldPosition)) return DrawBufferType.EDGE;
+            else if (IsDistanceFromSubMatrixEdge(square, bufferWorldPosition, 0)) return DrawBufferType.EDGE;
+            else if (IsDistanceFromSubMatrixEdge(square, bufferWorldPosition, 1)) return DrawBufferType.OUTER;
+            else if (IsDistanceFromSubMatrixEdge(square, bufferWorldPosition, 2)) return DrawBufferType.INNER;
+            else return DrawBufferType.NONE;
+        }
+
+        public bool IsDistanceFromSubMatrixEdge(SubMatrix square, float3 bufferWorldPosition, int distance = 0)
+        {
+            float3 localPosition = (bufferWorldPosition - square.rootPosition) / squareWidth;
+
+            if( (localPosition.x == 0+distance || localPosition.x == (square.width-1)-distance) ||
+                (localPosition.z == 0+distance || localPosition.z == (square.width-1)-distance) )
+                return true;
+            else
+                return false;
+        }
+
+        public bool IsOutsideSubMatrix(SubMatrix square, float3 bufferWorldPosition)
+        {
+            float3 localPosition = (bufferWorldPosition - square.rootPosition) / squareWidth;
+
+            if( localPosition.x < 0 || localPosition.x >= square.width ||
+                localPosition.z < 0 || localPosition.z >= square.width )
+                return true;
+            else
+                return false;
+        }
+
+        public void SetDrawBuffer(Entity entity, DrawBufferType buffer, EntityCommandBuffer commandBuffer)
+        {
+            switch(buffer)
+            {
+                case DrawBufferType.INNER:
+                    commandBuffer.AddComponent<Tags.InnerBuffer>(entity, new Tags.InnerBuffer());
+                    break;
+                case DrawBufferType.OUTER:
+                    commandBuffer.AddComponent<Tags.OuterBuffer>(entity, new Tags.OuterBuffer());
+                    break;
+                case DrawBufferType.EDGE:
+                    commandBuffer.AddComponent<Tags.EdgeBuffer>(entity, new Tags.EdgeBuffer());
+                    break;
+                default:
+                    break;
+            }
+
+            CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
+        }
+
+        /*void RedrawMapSquare(Entity entity, EntityCommandBuffer.Concurrent commandBuffer)
+        {
+            entityUtil.TryRemoveSharedComponent<RenderMesh>(entity, commandBuffer);
+            entityUtil.TryAddComponent<Tags.DrawMesh>(entity, commandBuffer);
+        } */
     }
 }
