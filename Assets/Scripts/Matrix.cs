@@ -208,6 +208,8 @@ public struct Matrix<T> where T : struct
 
         width = newWidth;
 
+        Dispose();
+
         matrix = newMatrix;
         isSet = newIsSet;
     }
