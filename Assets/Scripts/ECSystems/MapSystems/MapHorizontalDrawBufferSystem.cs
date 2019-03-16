@@ -6,7 +6,7 @@ using Unity.Rendering;
 using UnityEngine;
 using MyComponents;
 
-[UpdateAfter(typeof(MapSquareCheckSystem))]
+[UpdateAfter(typeof(MapCellDiscoverySystem))]
 public class MapHorizontalDrawBufferSystem : ComponentSystem
 {
 	public enum DrawBufferType { NONE, INNER, OUTER, EDGE }
@@ -14,7 +14,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
     EntityManager entityManager;
     EntityUtil entityUtil;
 
-    MapSquareSystem managerSystem;
+    MapSquareSystem squareSystem;
 
     int squareWidth;
 
@@ -25,6 +25,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
     {
         public readonly float3 rootPosition;
         public readonly int width;
+        public int Length { get { return (int)math.pow(width, 2);} }
         public SubMatrix(float3 rootPosition, int width)
         {
             this.rootPosition = rootPosition;
@@ -35,7 +36,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 	protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        managerSystem = World.Active.GetOrCreateManager<MapSquareSystem>();
+        squareSystem = World.Active.GetOrCreateManager<MapSquareSystem>();
 
         squareWidth = TerrainSettings.mapSquareWidth;
 
@@ -89,14 +90,18 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        SubMatrix subMatrix = LargestSquare(managerSystem.mapMatrix, managerSystem.mapMatrix.rootPosition);
-
-        subMatrix = TrimSubMatrix(subMatrix);
+        SubMatrix subMatrix = FitView(squareSystem.mapMatrix, ViewSubMatrix());
         
         SetNewSquares(subMatrix);
 
         CheckAllSquares(subMatrix);
-        
+    }
+
+    bool SquareCanBeDrawn(Matrix<Entity> matrix, float3 worldPosition)
+    {
+        Entity entity;
+        if(!matrix.TryGetItem(worldPosition, out entity)) return false;
+        return (matrix.ItemIsSet(worldPosition) && entityManager.HasComponent<Tags.AllCellsDiscovered>(entity));
     }
 
     void SetNewSquares(SubMatrix subMatrix)
@@ -207,7 +212,6 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
     public void SetDrawBuffer(Entity entity, DrawBufferType buffer, EntityCommandBuffer commandBuffer)
     {
-        //DrawBufferType buffer = GetDrawBuffer(worldPosition);
         switch(buffer)
         {
             case DrawBufferType.INNER:
@@ -226,23 +230,13 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
         CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
     }
 
-    /*DrawBufferType GetDrawBuffer(float3 bufferWorldPosition)
-    {
-        float3 centerPosition = managerSystem.mapMatrix.GridToMatrixPosition(managerSystem.currentMapSquare);
-        float3 bufferPosition = managerSystem.mapMatrix.GridToMatrixPosition(bufferWorldPosition);
-        int view = TerrainSettings.viewDistance;
-
-        if      (managerSystem.mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
-        else if (managerSystem.mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view-1)) return DrawBufferType.OUTER;
-        else if (managerSystem.mapMatrix.IsOffsetFromPosition(bufferPosition, centerPosition, view-2)) return DrawBufferType.INNER;
-        else if (!managerSystem.mapMatrix.InDistancceFromPosition(bufferPosition, centerPosition, view)) return DrawBufferType.EDGE;
-        else return DrawBufferType.NONE;
-    } */
-
-    GameObject cubeObject;
-
-    SubMatrix LargestSquare(Matrix<Entity> matrix, float3 matrixRootPosition)
+    SubMatrix FitView(Matrix<Entity> matrix, SubMatrix subMatrix)
 	{
+        float3 subMatrixEdge = matrix.WorldToMatrixPosition(subMatrix.rootPosition) + subMatrix.width;
+
+        if(subMatrixEdge.x >= matrix.width) subMatrixEdge.x = matrix.width - 1;
+        if(subMatrixEdge.z >= matrix.width) subMatrixEdge.z = matrix.width - 1;
+
         //	Copy original matix to cache so it defaults to original matrix values
 		NativeArray<int> cacheMatrix = new NativeArray<int>(matrix.Length, Allocator.Temp);
         for(int i = 0; i < cacheMatrix.Length; i++)
@@ -253,11 +247,13 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 		int resultZ = 0;
 		int resultSize = 0;
 		
+        float3 squareRootPosition = float3.zero;
 
-		for(int x = matrix.width-1; x >= 0; x--)
-			for(int z = matrix.width-1; z >= 0; z--)
+		for(int x = (int)subMatrixEdge.x; x >= 0; x--)
+			for(int z = (int)subMatrixEdge.z; z >= 0; z--)
 			{
                 int index = matrix.PositionToIndex(new float3(x, 0, z));
+
 				//	At edge, matrix.width-1square size is 1 so default to original matrix
 				if(x == matrix.width-1 || z == matrix.width-1) continue;
 
@@ -281,19 +277,28 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 					resultZ = z;
 					resultSize = cacheMatrix[index];
 				}
+
+                float3 matrixPostiion = new float3(resultX, 0, resultZ);
+
+                squareRootPosition = (matrixPostiion * squareWidth) + matrix.rootPosition;
+
+                if(squareRootPosition.x < subMatrix.rootPosition.x || squareRootPosition.z < subMatrix.rootPosition.z)
+                    break;
 			}
-
-        float3 matrixPostiion = new float3(resultX, 0, resultZ);
-
-        float3 squareRootPosition = (matrixPostiion * squareWidth) + matrixRootPosition;
-
-        //if(cubeObject != null)
-        //    GameObject.Destroy(cubeObject);
-        //cubeObject = CustomDebugTools.Cube(new Color(0, 1, 1, 0.005f), squareRootPosition + ((resultSize * squareWidth)/2), resultSize * squareWidth);
 
         return new SubMatrix(squareRootPosition, resultSize);
         
 	}
+
+    SubMatrix ViewSubMatrix()
+    {
+        float3 center = MapSquareSystem.currentMapSquare;
+        int view = TerrainSettings.viewDistance;
+
+        float3 veiwSubMatrixRoot = new float3(center.x - (view * squareWidth), 0, center.z - (view * squareWidth));
+        int veiwSubMatrixWidth = (view * 2)+ 1;
+        return new SubMatrix(veiwSubMatrixRoot, veiwSubMatrixWidth);
+    }
 
     SubMatrix TrimSubMatrix(SubMatrix subMatrix)
     {

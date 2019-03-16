@@ -255,7 +255,7 @@ public struct Matrix<T> where T : struct
         return PositionToIndex(WorldToMatrixPosition(worldPosition));
     }
 
-    float3 WorldToMatrixPosition(float3 worldPosition)
+    public float3 WorldToMatrixPosition(float3 worldPosition)
     {
         return (worldPosition - rootPosition) / itemWorldSize;
     }
