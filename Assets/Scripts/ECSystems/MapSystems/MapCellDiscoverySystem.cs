@@ -11,6 +11,7 @@ public class DiscoveryBarrier : BarrierSystem { }
 [UpdateAfter(typeof(MapWorleyNoiseSystem))]
 public class MapCellDiscoverySystem : JobComponentSystem
 {
+    const int cellDistance = 3;
     EntityManager entityManager;
     MapCellMarchingSystem managerSystem;
 
@@ -72,10 +73,7 @@ public class MapCellDiscoverySystem : JobComponentSystem
                 int2 distance = uniqueCells[i].index - currentCellIndex;
                 float magnitude = math.abs(math.sqrt(distance.x*distance.x + distance.y*distance.y));
 
-                //UnityEngine.Debug.Log(uniqueCells[i].index+" - "+currentCellIndex);
-                //UnityEngine.Debug.Log(distance+" "+magnitude);
-                
-                if(magnitude < 2)
+                if(magnitude < cellDistance)
                 {
                     discoveredCellCount++;
 
@@ -92,15 +90,13 @@ public class MapCellDiscoverySystem : JobComponentSystem
 
             if(newlyDiscoveredCellCount > 0)
             {
-                //UnityEngine.Debug.Log("New cell in this square");
-                
                 DynamicBuffer<SquareToCreate> squaresToCreate = commandBuffer.AddBuffer<SquareToCreate>(jobIndex, mapSquareEntity);
                 
                 for(int d = 0; d < 8; d++)
                 {
                     float3 adjacentPosition = position.Value + (directions[d] * squareWidth);
                     squaresToCreate.Add(new SquareToCreate { squarePosition = adjacentPosition });
-                } 
+                }
             }
 
             if(discoveredCellCount == uniqueCells.Length)

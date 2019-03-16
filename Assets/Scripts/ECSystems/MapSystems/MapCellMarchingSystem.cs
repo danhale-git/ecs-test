@@ -178,7 +178,7 @@ public class MapCellMarchingSystem : ComponentSystem
 
         for(int i = 0; i < removeComponentList.Length; i++)
         {
-            if(entityManager.HasChunkComponent<SquareToCreate>(removeComponentList[i]))
+            if(entityManager.HasComponent<SquareToCreate>(removeComponentList[i]))
                 entityManager.RemoveComponent<SquareToCreate>(removeComponentList[i]);
         }
 
@@ -186,7 +186,10 @@ public class MapCellMarchingSystem : ComponentSystem
         {
             float3 squarePosition = createMapSquareList[i];
             if(!mapMatrix.array.ItemIsSet(Util.Float3ToInt2(squarePosition)))
+            {
+                CustomDebugTools.IncrementDebugCount("squares created");
                 CreateMapSquareEntity(squarePosition);
+            }
         }
 
         removeComponentList.Dispose();
@@ -258,48 +261,6 @@ public class MapCellMarchingSystem : ComponentSystem
 
         cellJob.Schedule().Complete();
     } 
-
-    /*public void GenerateWorleyNoise(Entity entity, float3 worldPosition)
-    {
-        NativeArray<WorleyNoise> worleyNoiseMap = new NativeArray<WorleyNoise>((int)math.pow(squareWidth, 2), Allocator.TempJob);
-
-        for(int i = 0; i < worleyNoiseMap.Length; i++)
-        {
-            float3 position = Util.Unflatten2D(i, squareWidth) + worldPosition;
-            worleyNoiseMap[i] = worleyNoiseGen.GetEdgeData(position.x, position.z);
-        }
-
-        DynamicBuffer<WorleyNoise> worleyNoiseBuffer = entityManager.GetBuffer<WorleyNoise>(entity);
-        worleyNoiseBuffer.CopyFrom(worleyNoiseMap);
-
-        NativeArray<WorleyCell> worleyCellSet = UniqueWorleyCellSet(worleyNoiseMap);
-        DynamicBuffer<WorleyCell> uniqueWorleyCells = entityManager.GetBuffer<WorleyCell>(entity);
-        uniqueWorleyCells.CopyFrom(worleyCellSet);
-
-        worleyNoiseMap.Dispose();
-        worleyCellSet.Dispose();
-    }
-
-    public NativeArray<WorleyCell> UniqueWorleyCellSet(NativeArray<WorleyNoise> worleyNoiseMap)
-    {
-        NativeList<WorleyNoise> noiseSet = Util.Set<WorleyNoise>(worleyNoiseMap, Allocator.Temp);
-        NativeArray<WorleyCell> cellSet = new NativeArray<WorleyCell>(noiseSet.Length, Allocator.TempJob);
-
-        for(int i = 0; i < noiseSet.Length; i++)
-        {
-            WorleyNoise worleyNoise = noiseSet[i];
-
-            WorleyCell cell = new WorleyCell {
-                value = worleyNoise.currentCellValue,
-                index = worleyNoise.currentCellIndex,
-                position = worleyNoise.currentCellPosition
-            };
-
-            cellSet[i] = cell;
-        }
-
-        return cellSet;
-    } */
 
     /*void RemoveOutOfRangeCells()
     {
