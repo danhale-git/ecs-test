@@ -12,7 +12,7 @@ using MyComponents;
 public class MapAdjacentSystem : ComponentSystem
 {
     EntityManager entityManager;
-	MapCellMarchingSystem managerSystem;
+	MapSquareSystem managerSystem;
 
 	int squareWidth;
 
@@ -21,12 +21,12 @@ public class MapAdjacentSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-		managerSystem = World.Active.GetOrCreateManager<MapCellMarchingSystem>();
+		managerSystem = World.Active.GetOrCreateManager<MapSquareSystem>();
 
 		squareWidth = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery adjacentQuery = new EntityArchetypeQuery{
-            None 	= new ComponentType[] { typeof(Tags.EdgeBuffer) },
+            None 	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.SetHorizontalDrawBuffer) },
 			All 	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GetAdjacentSquares) }
 		};
 		adjacentGroup = GetComponentGroup(adjacentQuery);
@@ -52,7 +52,7 @@ public class MapAdjacentSystem : ComponentSystem
 
 			NativeArray<Entity> 	entities    = chunk.GetNativeArray(entityType);
             NativeArray<Position> 	positions 	= chunk.GetNativeArray(positionType);
-	
+
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity 	= entities[e];
@@ -60,22 +60,22 @@ public class MapAdjacentSystem : ComponentSystem
 
 				//	Get adjacent map squares from matrix in MapManagerSystem
 				AdjacentSquares adjacent = new AdjacentSquares{
-					right 		= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[0]),
-					left 		= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[1]),
-					front 		= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[2]),
-					back 		= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[3]),
-					frontRight 	= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[4]),
-					frontLeft 	= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[5]),
-					backRight 	= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[6]),
-					backLeft 	= managerSystem.mapMatrix.array.GetItem(position + adjacentPositions[7])
+					right 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[0]),
+					left 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[1]),
+					front 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[2]),
+					back 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[3]),
+					frontRight 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[4]),
+					frontLeft 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[5]),
+					backRight 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[6]),
+					backLeft 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[7])
 				};
 
 				for(int i = 0; i < 8; i++)
 				{
 					if(!entityManager.Exists(adjacent[i]))
 					{
-						CustomDebugTools.Cube(Color.red, (position + adjacentPositions[i])+(squareWidth/2), squareWidth);
-		        		CustomDebugTools.Cube(Color.green, position + (squareWidth/2), squareWidth-2);
+						CustomDebugTools.Cube(Color.red, (position + adjacentPositions[i])+(squareWidth/2), squareWidth/2);
+		        		CustomDebugTools.Cube(Color.green, position + (squareWidth/2), squareWidth/2 +1);
 					
 						throw new System.Exception("Adjacent Entity does not exist at "+(position + adjacentPositions[i]));
 					}

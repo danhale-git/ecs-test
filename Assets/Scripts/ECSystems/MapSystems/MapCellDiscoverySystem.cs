@@ -12,116 +12,90 @@ public class DiscoveryBarrier : BarrierSystem { }
 public class MapCellDiscoverySystem : JobComponentSystem
 {
     EntityManager entityManager;
-    MapCellMarchingSystem managerSystem;
-
     DiscoveryBarrier discoveryBarrier;
 
     int squareWidth;
-
-    MapMatrix<Entity> mapMatrix;
+    int cellDistance;
 
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        managerSystem = World.Active.GetOrCreateManager<MapCellMarchingSystem>();
-
         discoveryBarrier = World.Active.GetOrCreateManager<DiscoveryBarrier>();
+
         squareWidth = TerrainSettings.mapSquareWidth;
+        cellDistance = TerrainSettings.cellGenerateDistance;
     }
 
     protected override JobHandle OnUpdate(JobHandle inputDependencies)
     {
+        if(!MapSquareSystem.cellChanged) return inputDependencies;
+
         DiscoveryJob discoveryJob = new DiscoveryJob(){
             commandBuffer = discoveryBarrier.CreateCommandBuffer().ToConcurrent(),
-            uniqueCellsFromEntity = GetBufferFromEntity<WorleyCell>(),
-            currentCellIndex = managerSystem.currentCellIndex,
+            cellBufferArray = GetBufferFromEntity<WorleyCell>(),
+            currentCellIndex = MapSquareSystem.currentCellIndex,
             squareWidth = squareWidth,
             directions = Util.CardinalDirections(Allocator.TempJob)
         };
 
-        JobHandle discoveryHandle = discoveryJob.Schedule(this, inputDependencies);
+        JobHandle discoveryJobHandle = discoveryJob.Schedule(this, inputDependencies);
+        discoveryBarrier.AddJobHandleForProducer(discoveryJobHandle);
 
-        discoveryBarrier.AddJobHandleForProducer(discoveryHandle);
-
-        return discoveryHandle;
+        return discoveryJobHandle;
     }
 
-    [RequireSubtractiveComponent(typeof(Tags.CellDiscoveryComplete), typeof(Tags.GenerateWorleyNoise))]
+    [RequireSubtractiveComponent(typeof(Tags.AllCellsDiscovered), typeof(Tags.GenerateWorleyNoise))]
     public struct DiscoveryJob : IJobProcessComponentDataWithEntity<MapSquare, Position>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
-        [ReadOnly] public BufferFromEntity<WorleyCell> uniqueCellsFromEntity;
+        [NativeDisableParallelForRestriction]
+        public BufferFromEntity<WorleyCell> cellBufferArray;
 
         [ReadOnly] public int2 currentCellIndex;
-
         [ReadOnly] public int squareWidth;
 
         [DeallocateOnJobCompletion]
         [ReadOnly] public NativeArray<float3> directions;
 
-        public void Execute(Entity mapSquareEntity, int jobIndex, ref MapSquare mapSquare, ref Position position)
+        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
         {
-            DynamicBuffer<WorleyCell> uniqueCells = uniqueCellsFromEntity[mapSquareEntity];
+            DynamicBuffer<WorleyCell> uniqueCells = cellBufferArray[entity];
 
-            int discoveredCellCount = 0;
-            int newlyDiscoveredCellCount = 0;
+            int totalDiscovered = 0;
+            int newlyDiscovered = 0;
 
             for(int i = 0; i < uniqueCells.Length; i++)
-            {
-                int2 distance = uniqueCells[i].index - currentCellIndex;
-                float magnitude = math.abs(math.sqrt(distance.x*distance.x + distance.y*distance.y));
-
-                //UnityEngine.Debug.Log(uniqueCells[i].index+" - "+currentCellIndex);
-                //UnityEngine.Debug.Log(distance+" "+magnitude);
-                
-                if(magnitude < 2)
+                if(DistancFromPlayerCell(uniqueCells[i].index) < TerrainSettings.cellGenerateDistance)
                 {
-                    discoveredCellCount++;
+                    totalDiscovered++;
 
                     if(uniqueCells[i].discovered == 0)
                     {
-                        newlyDiscoveredCellCount++;
-
-                        WorleyCell cell = uniqueCells[i];
-                        cell.discovered = 1;
-                        uniqueCells[i] = cell;
+                        newlyDiscovered++;
+                        MarkCellAsDiscovered(uniqueCells, i);
                     }
                 }
-            }
 
-            if(newlyDiscoveredCellCount > 0)
-            {
-                //UnityEngine.Debug.Log("New cell in this square");
-                
-                DynamicBuffer<SquareToCreate> squaresToCreate = commandBuffer.AddBuffer<SquareToCreate>(jobIndex, mapSquareEntity);
-                
-                for(int d = 0; d < 8; d++)
-                {
-                    float3 adjacentPosition = position.Value + (directions[d] * squareWidth);
-                    squaresToCreate.Add(new SquareToCreate { squarePosition = adjacentPosition });
-                } 
-            }
+            if(totalDiscovered == uniqueCells.Length)
+                commandBuffer.AddComponent<Tags.AllCellsDiscovered>(jobIndex, entity, new Tags.AllCellsDiscovered());
 
-            if(discoveredCellCount == uniqueCells.Length)
-                commandBuffer.AddComponent<Tags.CellDiscoveryComplete>(jobIndex, mapSquareEntity, new Tags.CellDiscoveryComplete());          
-        }
-        
-        /*bool UniqueCellsContainsCell(DynamicBuffer<WorleyCell> uniqueCells, WorleyCell cell)
-        {
-            for(int i = 0; i < uniqueCells.Length; i++)
-                if(uniqueCells[i].index.Equals(cell.index))
-                    return true;
-
-            return false;
+            if(newlyDiscovered > 0)
+                commandBuffer.AddComponent(jobIndex, entity, new Tags.CreateAdjacentSquares());
         }
 
-        sbyte MapSquareIsAtEge(DynamicBuffer<WorleyCell> uniqueCells, WorleyCell cell)
+        void MarkCellAsDiscovered(DynamicBuffer<WorleyCell> uniqueCells, int index)
         {
-            if(uniqueCells.Length == 1 && uniqueCells[0].value == cell.value)
-                return 0;
-            else
-                return 1;
-        } */
+            WorleyCell cell = uniqueCells[index];
+            cell.discovered = 1;
+            uniqueCells[index] = cell;
+        }
+
+        float DistancFromPlayerCell(int2 cell)
+        {
+            int2 vector = cell - currentCellIndex;
+            float magnitude = math.abs(math.sqrt(vector.x*vector.x + vector.y*vector.y));
+            return magnitude;
+        }
     }
 }

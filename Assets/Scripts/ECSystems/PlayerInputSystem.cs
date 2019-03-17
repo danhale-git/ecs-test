@@ -13,7 +13,7 @@ using MyComponents;
 public class PlayerInputSystem : ComponentSystem
 {
     EntityManager entityManager;
-    MapCellMarchingSystem managerSystem;
+    MapSquareSystem squareSystem;
     int squareWidth;
 
     public static Entity playerEntity;
@@ -42,7 +42,7 @@ public class PlayerInputSystem : ComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        managerSystem = World.Active.GetOrCreateManager<MapCellMarchingSystem>();
+        squareSystem = World.Active.GetOrCreateManager<MapSquareSystem>();
 
         squareWidth = TerrainSettings.mapSquareWidth;
 
@@ -58,6 +58,8 @@ public class PlayerInputSystem : ComponentSystem
     protected override void OnUpdate()
     {
         if(Time.fixedTime < 0.5) return;
+
+        if(!squareSystem.mapMatrix.ItemIsSet(MapSquareSystem.currentMapSquare)) return;
         
         MovePlayer();
 
@@ -155,7 +157,7 @@ public class PlayerInputSystem : ComponentSystem
         float3 previousVoxelOwnerPosition = Util.VoxelOwner(ray.origin, squareWidth);
 
         //  Origin entity does not exist
-        if(!managerSystem.mapMatrix.array.TryGetItem(previousVoxelOwnerPosition, out currentOwner))
+        if(!squareSystem.mapMatrix.TryGetItem(previousVoxelOwnerPosition, out currentOwner))
             return false;
             //throw new Exception("Camera is in non-existent map square");
 
@@ -229,7 +231,7 @@ public class PlayerInputSystem : ComponentSystem
             if(!previousVoxelOwnerPosition.Equals(nextVoxelOwnerPosition))
             {
                 //  Update current map square
-                if(!managerSystem.mapMatrix.array.TryGetItem(nextVoxelOwnerPosition, out currentOwner))
+                if(!squareSystem.mapMatrix.TryGetItem(nextVoxelOwnerPosition, out currentOwner))
                     continue;
 
                 mapSquare   = entityManager.GetComponentData<MapSquare>(currentOwner);
@@ -271,7 +273,9 @@ public class PlayerInputSystem : ComponentSystem
             previousBlock = block;
             previousVoxelOwnerPosition = nextVoxelOwnerPosition;
         }
-        throw new Exception("Ray traversed 1000 voxels without finding anything");
+        //throw new Exception("Ray traversed 1000 voxels without finding anything");
+        Debug.Log("Ray traversed 1000 voxels without finding anything");
+        return false;
     }
 
     Entity CreateCursorCube(float scale, Color color)

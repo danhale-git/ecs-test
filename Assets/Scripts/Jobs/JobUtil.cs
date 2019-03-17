@@ -95,4 +95,27 @@ public struct JobUtil
 		int z = (int)math.floor(position.z / squareWidth);
 		return new float3(x*squareWidth, 0, z*squareWidth);
 	}
+
+    public NativeList<T> Set<T>(NativeArray<T> raw, Allocator label) where T : struct, System.IComparable<T>
+    {
+        NativeList<T> set = new NativeList<T>(label);
+
+        if(raw.Length == 0) return set;
+
+        raw.Sort();
+
+        int index = 0;
+        set.Add(raw[0]);
+
+        for(int i = 1; i < raw.Length; i++)
+        {
+            if(raw[i].CompareTo(set[index]) != 0)
+            {
+                index++;
+                set.Add(raw[i]);
+            }
+        }
+
+        return set;
+    }
 }

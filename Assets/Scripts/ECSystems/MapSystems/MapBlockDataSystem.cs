@@ -24,7 +24,7 @@ public class MapBlockDataSystem : ComponentSystem
 		squareWidth = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery mapSquareQuery = new EntityArchetypeQuery{
-			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
+			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer), typeof(Tags.SetDrawBuffer) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateBlocks) }
 		};
 		generateBlocksGroup = GetComponentGroup(mapSquareQuery);

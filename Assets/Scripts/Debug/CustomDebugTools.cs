@@ -12,7 +12,7 @@ public static class CustomDebugTools
     public static Dictionary<string, string> debugText = new Dictionary<string, string>();
     public static Dictionary<string, int> debugCounts = new Dictionary<string, int>();
 
-    public static MapMatrix<Entity> currentMatrix;
+    public static Matrix<Entity> currentMatrix;
 
     public static void SetDebugText(string key, string value)
     {
@@ -37,7 +37,7 @@ public static class CustomDebugTools
         {
             for(int x = 0; x < matrix.width; x++)
             {
-                int index = matrix.PositionToIndex(new int2(x, z));
+                int index = matrix.PositionToIndex(new float3(x, 0, z));
                 mat += matrix.ItemIsSet(index) ? "x " : "o ";
             }
             mat += '\n';
@@ -69,11 +69,18 @@ public static class CustomDebugTools
     }
 
     //  allLines[0]
-    public static void HorizontalBufferDebug(Entity entity, int buffer)
+    public static void HorizontalBufferDebug(Entity entity)
     {
         EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
 
         Color color;
+
+        int buffer = 0;
+
+        if(manager.HasComponent<Tags.InnerBuffer>(entity)) buffer = 1;
+        if(manager.HasComponent<Tags.OuterBuffer>(entity)) buffer = 2;
+        if(manager.HasComponent<Tags.EdgeBuffer>(entity)) buffer = 3;
+
 
         switch(buffer)
         {
@@ -244,12 +251,13 @@ public static class CustomDebugTools
 	                            new Vector3(1, 0, 1) };	//	right front top
     }
 
-    public static void Cube(Color color, Vector3 worldPosition, int scale = 1)
+    public static GameObject Cube(Color color, Vector3 worldPosition, int scale = 1)
     {
-        GameObject capsule = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        capsule.GetComponent<Renderer>().material.color = color;
-        capsule.transform.localScale = new float3(scale);
-        capsule.transform.position = worldPosition;
+        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        cube.GetComponent<Renderer>().material.color = color;
+        cube.transform.localScale = new float3(scale);
+        cube.transform.position = worldPosition;
+        return cube;
     }
 
     public static Color NoiseToColor(float noise)

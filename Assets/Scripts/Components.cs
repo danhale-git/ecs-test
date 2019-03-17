@@ -65,7 +65,7 @@ namespace MyComponents
 		public float currentCellValue, distance2Edge, adjacentCellValue;
 	}
 
-	[InternalBufferCapacity(10)]
+	[InternalBufferCapacity(0)]
 	public struct WorleyCell : IBufferElementData, System.IComparable<WorleyCell>
 	{
 		public int CompareTo(WorleyCell other)
@@ -76,13 +76,8 @@ namespace MyComponents
 		public float value;
 		public int2 index;
 		public float3 position;
-	}
-	
-	[InternalBufferCapacity(0)]
-	public struct CellMapSquare : IBufferElementData
-	{
-		public Entity entity;
-		public sbyte edge;
+
+		public sbyte discovered;
 	}
 
 	public struct AdjacentSquares : IComponentData
@@ -203,6 +198,11 @@ namespace MyComponents
 
 namespace Tags
 {
+	public struct AllCellsDiscovered : IComponentData { }
+	public struct GenerateWorleyNoise : IComponentData { }
+	public struct CreateAdjacentSquares : IComponentData { }
+
+	public struct SetHorizontalDrawBuffer : IComponentData { }
 	public struct GenerateTerrain : IComponentData { }
 	public struct GetAdjacentSquares : IComponentData { }
 	public struct LoadChanges : IComponentData { }
@@ -228,6 +228,7 @@ namespace Tags
 
 namespace UpdateGroups
 {
-	[UpdateAfter(typeof(MapHorizontalDrawBufferSystem))]
+	//[UpdateAfter(typeof(MapHorizontalDrawBufferSystem))]
+	[UpdateAfter(typeof(MapHorizontalDrawAreaSystem))]
 	public class NewMapSquareUpdateGroup { }
 }

@@ -8,21 +8,21 @@ using MyComponents;
 [UpdateAfter(typeof(MapCellDiscoverySystem))]
 public class WorleyBarrier : BarrierSystem { }
 
-[UpdateAfter(typeof(MapCellMarchingSystem))]
+[UpdateAfter(typeof(MapSquareSystem))]
 public class MapWorleyNoiseSystem : JobComponentSystem
 {
     EntityManager entityManager;
-
-    WorleyNoiseGenerator worleyNoiseGen;
-
     WorleyBarrier worleyBarrier;
 
     int squareWidth;
+
+    WorleyNoiseGenerator worleyNoiseGen;
 
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         worleyBarrier = World.Active.GetOrCreateManager<WorleyBarrier>();
+
         squareWidth = TerrainSettings.mapSquareWidth;
 
         worleyNoiseGen = new WorleyNoiseGenerator(
@@ -45,7 +45,6 @@ public class MapWorleyNoiseSystem : JobComponentSystem
         };
 
         JobHandle worleyHandle = worleyJob.Schedule(this, inputDependencies);
-
         worleyBarrier.AddJobHandleForProducer(worleyHandle);
 
         return worleyHandle;
@@ -67,22 +66,11 @@ public class MapWorleyNoiseSystem : JobComponentSystem
 
         public void Execute(Entity mapSquareEntity, int jobIndex, ref MapSquare mapSquare, ref Position position)
         {
-            NativeArray<WorleyNoise> worleyNoiseMap = new NativeArray<WorleyNoise>((int)math.pow(squareWidth, 2), Allocator.TempJob);
-
-            for(int i = 0; i < worleyNoiseMap.Length; i++)
-            {
-                float3 squarePosition = util.Unflatten2D(i, squareWidth) + position.Value;
-                worleyNoiseMap[i] = noise.GetEdgeData(squarePosition.x, squarePosition.z);
-            }
-
-            DynamicBuffer<WorleyNoise> worleyNoiseBuffer = worleyNoiseBufferFromEntity[mapSquareEntity];
-            worleyNoiseBuffer.CopyFrom(worleyNoiseMap);
+            NativeArray<WorleyNoise> worleyNoiseMap = GenerateNoiseMap(position.Value);
+            worleyNoiseBufferFromEntity[mapSquareEntity].CopyFrom(worleyNoiseMap);
 
             NativeArray<WorleyCell> worleyCellSet = UniqueWorleyCellSet(worleyNoiseMap);
-            DynamicBuffer<WorleyCell> uniqueWorleyCells = uniqueWorleyCellsFromEntity[mapSquareEntity];
-            uniqueWorleyCells.CopyFrom(worleyCellSet);
-
-            //UnityEngine.Debug.Log("unique length "+worleyCellSet.Length);
+            uniqueWorleyCellsFromEntity[mapSquareEntity].CopyFrom(worleyCellSet);
 
             worleyNoiseMap.Dispose();
             worleyCellSet.Dispose();
@@ -90,10 +78,22 @@ public class MapWorleyNoiseSystem : JobComponentSystem
             commandBuffer.RemoveComponent<Tags.GenerateWorleyNoise>(jobIndex, mapSquareEntity);
         }
 
+        public NativeArray<WorleyNoise> GenerateNoiseMap(float3 offset)
+        {
+            NativeArray<WorleyNoise> worleyNoiseMap = new NativeArray<WorleyNoise>((int)math.pow(squareWidth, 2), Allocator.Temp);
+
+            for(int i = 0; i < worleyNoiseMap.Length; i++)
+            {
+                float3 squarePosition = util.Unflatten2D(i, squareWidth) + offset;
+                worleyNoiseMap[i] = noise.GetEdgeData(squarePosition.x, squarePosition.z);
+            }
+            return worleyNoiseMap;
+        }
+
         public NativeArray<WorleyCell> UniqueWorleyCellSet(NativeArray<WorleyNoise> worleyNoiseMap)
         {
-            NativeList<WorleyNoise> noiseSet = Util.Set<WorleyNoise>(worleyNoiseMap, Allocator.Temp);
-            NativeArray<WorleyCell> cellSet = new NativeArray<WorleyCell>(noiseSet.Length, Allocator.TempJob);
+            NativeList<WorleyNoise> noiseSet = util.Set<WorleyNoise>(worleyNoiseMap, Allocator.Temp);
+            NativeArray<WorleyCell> cellSet = new NativeArray<WorleyCell>(noiseSet.Length, Allocator.Temp);
 
             for(int i = 0; i < noiseSet.Length; i++)
             {
