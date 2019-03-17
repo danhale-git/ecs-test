@@ -23,13 +23,13 @@ public class MapVerticalDrawBufferSystem : ComponentSystem
 
 		EntityArchetypeQuery drawBufferQuery = new EntityArchetypeQuery{
             None 	= new ComponentType[] { typeof(Tags.EdgeBuffer) },
-			All 	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetDrawBuffer) }
+			All 	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetDrawBuffer), typeof(AdjacentSquares) }
 		};
 		drawBufferGroup = GetComponentGroup(drawBufferQuery);
 
         EntityArchetypeQuery blockBufferQuery = new EntityArchetypeQuery{
             None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetBlockBuffer) }
+			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetBlockBuffer), typeof(AdjacentSquares) }
 		};
 		blockBufferGroup = GetComponentGroup(blockBufferQuery);
     }

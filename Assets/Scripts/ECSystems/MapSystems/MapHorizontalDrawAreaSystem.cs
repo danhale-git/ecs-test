@@ -42,7 +42,7 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
     protected override JobHandle OnUpdate(JobHandle inputDependencies)
     {
-        return inputDependencies;
+        ///return inputDependencies;
         
         SubMatrix viewSubMatrix = ViewSubMatrix();
         SubMatrix subMatrix = FitView(squareSystem.mapMatrix, viewSubMatrix);
@@ -92,6 +92,8 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
         drawAreaBarrier.AddJobHandleForProducer(dependencies);
 
+        dependencies.Complete();
+
         return dependencies;
     }
     
@@ -120,6 +122,8 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
             DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, position.Value);
 
             SetDrawBuffer(entity, buffer, commandBuffer, jobIndex);
+
+            commandBuffer.RemoveComponent<Tags.SetHorizontalDrawBuffer>(jobIndex, entity);
         }
 
         public void SetDrawBuffer(Entity entity, DrawBufferType buffer, EntityCommandBuffer.Concurrent commandBuffer, int jobIndex)
@@ -271,8 +275,6 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
                 default:
                     break;
             }
-
-            CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
         }
     }
     

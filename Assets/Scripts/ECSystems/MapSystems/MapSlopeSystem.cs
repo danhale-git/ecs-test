@@ -24,7 +24,7 @@ public class MapSlopeSystem : ComponentSystem
         //  Chunks that need blocks generating
         EntityArchetypeQuery slopeQuery = new EntityArchetypeQuery{
             None    = new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
-            All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.SetSlopes) }
+            All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.SetSlopes), typeof(AdjacentSquares) }
         };
 		slopeGroup = GetComponentGroup(slopeQuery);
     }
@@ -35,9 +35,9 @@ public class MapSlopeSystem : ComponentSystem
 		NativeArray<ArchetypeChunk> chunks 			= slopeGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
 		ArchetypeChunkEntityType                entityType = GetArchetypeChunkEntityType();
-    	ArchetypeChunkComponentType<MapSquare>	squareType = GetArchetypeChunkComponentType<MapSquare>(true);
+    	ArchetypeChunkComponentType<MapSquare>	squareType = GetArchetypeChunkComponentType<MapSquare>();
 		ArchetypeChunkBufferType<Block> 		blocksType = GetArchetypeChunkBufferType<Block>();
-		ArchetypeChunkBufferType<Topology> 		heightType = GetArchetypeChunkBufferType<Topology>(true);
+		ArchetypeChunkBufferType<Topology> 		heightType = GetArchetypeChunkBufferType<Topology>();
 
         for(int c = 0; c < chunks.Length; c++)
         {
@@ -51,6 +51,8 @@ public class MapSlopeSystem : ComponentSystem
             for(int e = 0; e < entities.Length; e++)
             {
                 Entity entity = entities[e];
+
+				if(blockAccessor[e].Length == 0)Debug.Log("broke!");
 
                 //	List of adjacent square entities
 				AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(entity);

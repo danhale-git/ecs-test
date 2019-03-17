@@ -46,7 +46,7 @@ public class MapMeshSystem : ComponentSystem
 
 		EntityArchetypeQuery squareQuery = new EntityArchetypeQuery{
 			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer), typeof(Tags.InnerBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.DrawMesh) }
+			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.DrawMesh), typeof(AdjacentSquares) }
 		};
 		meshGroup = GetComponentGroup(squareQuery);
 	}

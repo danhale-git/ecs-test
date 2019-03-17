@@ -55,6 +55,7 @@ public class MapSquareSystem : ComponentSystem
             ComponentType.Create<Block>(),
 
             ComponentType.Create<Tags.GenerateWorleyNoise>(),
+            ComponentType.Create<Tags.SetHorizontalDrawBuffer>(),            
             ComponentType.Create<Tags.GenerateTerrain>(),
             ComponentType.Create<Tags.GetAdjacentSquares>(),
             ComponentType.Create<Tags.LoadChanges>(),

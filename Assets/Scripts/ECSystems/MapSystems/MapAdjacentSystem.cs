@@ -26,7 +26,7 @@ public class MapAdjacentSystem : ComponentSystem
 		squareWidth = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery adjacentQuery = new EntityArchetypeQuery{
-            None 	= new ComponentType[] { typeof(Tags.EdgeBuffer) },
+            None 	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.SetHorizontalDrawBuffer) },
 			All 	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GetAdjacentSquares) }
 		};
 		adjacentGroup = GetComponentGroup(adjacentQuery);
@@ -52,11 +52,15 @@ public class MapAdjacentSystem : ComponentSystem
 
 			NativeArray<Entity> 	entities    = chunk.GetNativeArray(entityType);
             NativeArray<Position> 	positions 	= chunk.GetNativeArray(positionType);
-	
+
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity 	= entities[e];
 				float3 position = positions[e].Value;
+
+				CustomDebugTools.HorizontalBufferDebug(
+					entity
+				);//DEBUG
 
 				//	Get adjacent map squares from matrix in MapManagerSystem
 				AdjacentSquares adjacent = new AdjacentSquares{
@@ -74,8 +78,8 @@ public class MapAdjacentSystem : ComponentSystem
 				{
 					if(!entityManager.Exists(adjacent[i]))
 					{
-						CustomDebugTools.Cube(Color.red, (position + adjacentPositions[i])+(squareWidth/2), squareWidth);
-		        		CustomDebugTools.Cube(Color.green, position + (squareWidth/2), squareWidth-2);
+						CustomDebugTools.Cube(Color.red, (position + adjacentPositions[i])+(squareWidth/2), squareWidth/2);
+		        		CustomDebugTools.Cube(Color.green, position + (squareWidth/2), squareWidth/2 +1);
 					
 						throw new System.Exception("Adjacent Entity does not exist at "+(position + adjacentPositions[i]));
 					}

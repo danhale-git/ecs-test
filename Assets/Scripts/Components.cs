@@ -202,6 +202,7 @@ namespace Tags
 	public struct GenerateWorleyNoise : IComponentData { }
 	public struct CreateAdjacentSquares : IComponentData { }
 
+	public struct SetHorizontalDrawBuffer : IComponentData { }
 	public struct GenerateTerrain : IComponentData { }
 	public struct GetAdjacentSquares : IComponentData { }
 	public struct LoadChanges : IComponentData { }
@@ -227,7 +228,7 @@ namespace Tags
 
 namespace UpdateGroups
 {
-	[UpdateAfter(typeof(MapHorizontalDrawBufferSystem))]
-	//[UpdateAfter(typeof(MapHorizontalDrawAreaSystem))]
+	//[UpdateAfter(typeof(MapHorizontalDrawBufferSystem))]
+	[UpdateAfter(typeof(MapHorizontalDrawAreaSystem))]
 	public class NewMapSquareUpdateGroup { }
 }
