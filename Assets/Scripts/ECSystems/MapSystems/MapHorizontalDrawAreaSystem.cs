@@ -8,7 +8,7 @@ using MyComponents;
 [UpdateAfter(typeof(MapHorizontalDrawAreaSystem))]
 public class HorizontalDrawAreaBarrier : BarrierSystem { }
 
-[UpdateAfter(typeof(MapHorizontalDrawBufferSystem))]
+[UpdateAfter(typeof(MapCellDiscoverySystem))]
 public class MapHorizontalDrawAreaSystem : JobComponentSystem
 {
 	public enum DrawBufferType { NONE, INNER, OUTER, EDGE }
@@ -47,15 +47,7 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
         SubMatrix viewSubMatrix = ViewSubMatrix();
         SubMatrix subMatrix = FitView(squareSystem.mapMatrix, viewSubMatrix);
 
-        DrawBufferUtil drawBufferUtil = new DrawBufferUtil(squareWidth);
-
-        //NativeArray<Entity> allEntities = entityManager.GetAllEntities(Allocator.Temp);
-        //for(int i = 0; i < allEntities.Length; i++)
-        //{
-        //    DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, entityManager.GetComponentData<Position>(allEntities[i]).Value);
-        //    if(entityManager.HasComponent<MapSquare>(allEntities[i]))
-        //        CustomDebugTools.HorizontalBufferDebug(allEntities[i], (int)buffer);
-        //} 
+        
 
         JobHandle newSquaresJob = new SetNewSquaresJob{
             commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
@@ -94,7 +86,20 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
         dependencies.Complete();
 
+        DebugHorizontalBuffers();
+
         return dependencies;
+    }
+
+    void DebugHorizontalBuffers()
+    {
+        NativeArray<Entity> allEntities = entityManager.GetAllEntities(Allocator.Temp);
+        for(int i = 0; i < allEntities.Length; i++)
+        {
+            if(entityManager.HasComponent<MapSquare>(allEntities[i]))
+                CustomDebugTools.HorizontalBufferDebug(allEntities[i]);
+        }
+        allEntities.Dispose();
     }
     
     SubMatrix ViewSubMatrix()
@@ -107,7 +112,7 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
         return new SubMatrix(veiwSubMatrixRoot, veiwSubMatrixWidth);
     }
 
-    [RequireSubtractiveComponent(typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer), typeof(Tags.InnerBuffer))]
+    [RequireComponentTag(typeof(Tags.SetHorizontalDrawBuffer))]
     public struct SetNewSquaresJob : IJobProcessComponentDataWithEntity<MapSquare, Position>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
