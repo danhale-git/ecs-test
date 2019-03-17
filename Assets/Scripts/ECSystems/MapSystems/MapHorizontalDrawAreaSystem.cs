@@ -260,12 +260,12 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
         }
     }
     
-    SubMatrix FitView(Matrix<Entity> matrix, SubMatrix subMatrix)
+    SubMatrix FitView(Matrix<Entity> matrix, SubMatrix clampMatrix)
 	{
-        float3 subMatrixEdge = matrix.WorldToMatrixPosition(subMatrix.rootPosition) + subMatrix.width;
+        float3 clampMatrixTopRight = matrix.WorldToMatrixPosition(clampMatrix.rootPosition) + clampMatrix.width;
 
-        if(subMatrixEdge.x >= matrix.width) subMatrixEdge.x = matrix.width - 1;
-        if(subMatrixEdge.z >= matrix.width) subMatrixEdge.z = matrix.width - 1;
+        if(clampMatrixTopRight.x >= matrix.width) clampMatrixTopRight.x = matrix.width - 1;
+        if(clampMatrixTopRight.z >= matrix.width) clampMatrixTopRight.z = matrix.width - 1;
 
         //	Copy original matix to cache so it defaults to original matrix values
 		NativeArray<int> cacheMatrix = new NativeArray<int>(matrix.Length, Allocator.Temp);
@@ -279,8 +279,8 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 		
         float3 squareRootPosition = float3.zero;
 
-		for(int x = (int)subMatrixEdge.x; x >= 0; x--)
-			for(int z = (int)subMatrixEdge.z; z >= 0; z--)
+		for(int x = (int)clampMatrixTopRight.x; x >= 0; x--)
+			for(int z = (int)clampMatrixTopRight.z; z >= 0; z--)
 			{
                 int index = matrix.PositionToIndex(new float3(x, 0, z));
 
@@ -293,8 +293,7 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
                 int diagonalIndex = matrix.PositionToIndex(new float3(x+1, 0,z+1));
 
 				//	Square is 1, value is equal to 1 + lowed of the three adjacent squares
-				if(matrix.ItemIsSet(index) &&
-                    entityManager.HasComponent<Tags.AllCellsDiscovered>(matrix.GetItem(index)))
+				if(SquareIsEligible(matrix, index))
                 {
                     cacheMatrix[index] = 1 + math.min(cacheMatrix[forwardIndex],
                                                 math.min(   cacheMatrix[rightIndex],
@@ -310,10 +309,21 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 				}
 
                 float3 matrixPostiion = new float3(resultX, 0, resultZ);
-
                 squareRootPosition = (matrixPostiion * squareWidth) + matrix.rootPosition;
+
+                if( squareRootPosition.x < clampMatrix.rootPosition.x ||
+                    squareRootPosition.z < clampMatrix.rootPosition.z)
+                    break;
 			}
 
         return new SubMatrix(squareRootPosition, resultSize);
 	}
+
+    bool SquareIsEligible(Matrix<Entity> matrix, int index)
+    {
+        return (matrix.ItemIsSet(index) &&
+                entityManager.HasComponent<Tags.AllCellsDiscovered>(matrix.GetItem(index)));
+    }
+
+
 }
