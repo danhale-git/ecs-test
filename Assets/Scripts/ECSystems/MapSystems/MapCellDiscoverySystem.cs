@@ -34,8 +34,7 @@ public class MapCellDiscoverySystem : JobComponentSystem
             commandBuffer = discoveryBarrier.CreateCommandBuffer().ToConcurrent(),
             cellBufferArray = GetBufferFromEntity<WorleyCell>(),
             currentCellIndex = MapSquareSystem.currentCellIndex,
-            squareWidth = squareWidth,
-            directions = Util.CardinalDirections(Allocator.TempJob)
+            squareWidth = squareWidth
         };
 
         JobHandle discoveryJobHandle = discoveryJob.Schedule(this, inputDependencies);
@@ -45,7 +44,7 @@ public class MapCellDiscoverySystem : JobComponentSystem
     }
 
     [RequireSubtractiveComponent(typeof(Tags.AllCellsDiscovered), typeof(Tags.GenerateWorleyNoise))]
-    public struct DiscoveryJob : IJobProcessComponentDataWithEntity<MapSquare, Position>
+    public struct DiscoveryJob : IJobProcessComponentDataWithEntity<MapSquare>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
@@ -55,10 +54,7 @@ public class MapCellDiscoverySystem : JobComponentSystem
         [ReadOnly] public int2 currentCellIndex;
         [ReadOnly] public int squareWidth;
 
-        [DeallocateOnJobCompletion]
-        [ReadOnly] public NativeArray<float3> directions;
-
-        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
+        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare)
         {
             DynamicBuffer<WorleyCell> uniqueCells = cellBufferArray[entity];
 

@@ -108,6 +108,8 @@ public class MapWorleyNoiseSystem : JobComponentSystem
                 cellSet[i] = cell;
             }
 
+            noiseSet.Dispose();
+
             return cellSet;
         }
      }

@@ -161,6 +161,8 @@ public class MapSquareSystem : ComponentSystem
             }
         }
 
+        chunks.Dispose();
+
         NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
         
         for(int i = 0; i < entityList.Length; i++)
