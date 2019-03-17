@@ -52,7 +52,6 @@ public class MapSlopeSystem : ComponentSystem
             {
                 Entity entity = entities[e];
 
-				if(blockAccessor[e].Length == 0)Debug.Log("broke!");
 
                 //	List of adjacent square entities
 				AdjacentSquares adjacentSquares = entityManager.GetComponentData<AdjacentSquares>(entity);
