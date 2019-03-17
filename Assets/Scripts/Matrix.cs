@@ -35,7 +35,7 @@ public struct Matrix<T> where T : struct
     public void AddItem(T item, float3 worldPosition)
     {
         if(!WorldPositionIsInMatrix(worldPosition))
-            RepositionResize(worldPosition);
+            RepositionResize(WorldToMatrixPosition(worldPosition));
 
         int index = WorldPositionToFlatIndex(worldPosition);
         SetItem(item, index);

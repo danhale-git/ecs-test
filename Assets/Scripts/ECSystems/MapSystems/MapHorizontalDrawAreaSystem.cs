@@ -42,12 +42,8 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
     protected override JobHandle OnUpdate(JobHandle inputDependencies)
     {
-        ///return inputDependencies;
-        
         SubMatrix viewSubMatrix = ViewSubMatrix();
         SubMatrix subMatrix = FitView(squareSystem.mapMatrix, viewSubMatrix);
-
-        
 
         JobHandle newSquaresJob = new SetNewSquaresJob{
             commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
@@ -289,7 +285,8 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
                 int index = matrix.PositionToIndex(new float3(x, 0, z));
 
 				//	At edge, matrix.width-1square size is 1 so default to original matrix
-				if(x == matrix.width-1 || z == matrix.width-1) continue;
+				if(x == matrix.width-1 || z == matrix.width-1)
+                    continue;
 
                 int forwardIndex = matrix.PositionToIndex(new float3(x, 0,z+1));
                 int rightIndex = matrix.PositionToIndex(new float3(x+1, 0,z));
@@ -315,16 +312,7 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
                 float3 matrixPostiion = new float3(resultX, 0, resultZ);
 
                 squareRootPosition = (matrixPostiion * squareWidth) + matrix.rootPosition;
-
-                if(squareRootPosition.x < subMatrix.rootPosition.x || squareRootPosition.z < subMatrix.rootPosition.z)
-                {
-                    break;
-                }
 			}
-
-        //UnityEngine.Debug.Log("squareRootPosition "+squareRootPosition);
-        //UnityEngine.Debug.Log("resultSize "+resultSize);
-        
 
         return new SubMatrix(squareRootPosition, resultSize);
 	}
