@@ -2,9 +2,7 @@
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Burst;
 
-[BurstCompile]
 struct SimplexNoiseJob : IJobParallelFor
 {
     #region Noise
