@@ -46,24 +46,26 @@ public class MapSquareSystem : ComponentSystem
         squareWidth = TerrainSettings.mapSquareWidth;
 
         mapSquareArchetype = entityManager.CreateArchetype(
-            ComponentType.Create<Position>(),
-            ComponentType.Create<RenderMeshProxy>(),
-            ComponentType.Create<MapSquare>(),
-            ComponentType.Create<WorleyNoise>(),
-            ComponentType.Create<WorleyCell>(),
-            ComponentType.Create<Topology>(),
-            ComponentType.Create<Block>(),
+            ComponentType.ReadWrite<Translation>(),
+            ComponentType.ReadWrite<RenderMeshProxy>(),
+            ComponentType.ReadWrite<MapSquare>(),
+            ComponentType.ReadWrite<WorleyNoise>(),
+            ComponentType.ReadWrite<WorleyCell>(),
+            ComponentType.ReadWrite<Topology>(),
+            ComponentType.ReadWrite<Block>(),
 
-            ComponentType.Create<Tags.GenerateWorleyNoise>(),
-            ComponentType.Create<Tags.SetHorizontalDrawBuffer>(),            
-            ComponentType.Create<Tags.GenerateTerrain>(),
-            ComponentType.Create<Tags.GetAdjacentSquares>(),
-            ComponentType.Create<Tags.LoadChanges>(),
-            ComponentType.Create<Tags.SetDrawBuffer>(),
-            ComponentType.Create<Tags.SetBlockBuffer>(),
-            ComponentType.Create<Tags.GenerateBlocks>(),
-            ComponentType.Create<Tags.SetSlopes>(),
-			ComponentType.Create<Tags.DrawMesh>()
+            ComponentType.ReadWrite<Tags.GenerateWorleyNoise>(),
+            ComponentType.ReadWrite<Tags.SetHorizontalDrawBuffer>(),            
+            ComponentType.ReadWrite<Tags.GenerateTerrain>(),
+            ComponentType.ReadWrite<Tags.GetAdjacentSquares>(),
+            ComponentType.ReadWrite<Tags.LoadChanges>(),
+            ComponentType.ReadWrite<Tags.SetDrawBuffer>(),
+            ComponentType.ReadWrite<Tags.SetBlockBuffer>(),
+            ComponentType.ReadWrite<Tags.GenerateBlocks>(),
+            ComponentType.ReadWrite<Tags.SetSlopes>(),
+			ComponentType.ReadWrite<Tags.DrawMesh>(),
+
+            ComponentType.ReadWrite<LocalToWorld>()
 		);
 
         EntityArchetypeQuery squareToCreateQuery = new EntityArchetypeQuery{
@@ -98,13 +100,13 @@ public class MapSquareSystem : ComponentSystem
 
     public float3 CurrentMapSquare()
     {
-        float3 playerPosition = entityManager.GetComponentData<Position>(playerEntity).Value;
+        float3 playerPosition = entityManager.GetComponentData<Translation>(playerEntity).Value;
         return Util.VoxelOwner(playerPosition, squareWidth);
     }
 
     public int2 CurrentCellIndex()
     {
-        float3 voxel = Util.Float3Round(entityManager.GetComponentData<Position>(playerEntity).Value);
+        float3 voxel = Util.Float3Round(entityManager.GetComponentData<Translation>(playerEntity).Value);
         return worleyNoiseGen.GetEdgeData(voxel.x, voxel.z).currentCellIndex;
     }
 
@@ -142,7 +144,7 @@ public class MapSquareSystem : ComponentSystem
         NativeArray<ArchetypeChunk> chunks = squaresToCreateGroup.CreateArchetypeChunkArray(Allocator.Persistent);
 
         ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
-        ArchetypeChunkComponentType<Position> positionType = GetArchetypeChunkComponentType<Position>();
+        ArchetypeChunkComponentType<Translation> positionType = GetArchetypeChunkComponentType<Translation>();
 
         NativeList<Entity> entityList = new NativeList<Entity>(Allocator.TempJob);
         NativeList<float3> positionList = new NativeList<float3>(Allocator.TempJob);
@@ -152,7 +154,7 @@ public class MapSquareSystem : ComponentSystem
             ArchetypeChunk chunk = chunks[c];
 
             NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
-            NativeArray<Position> positions = chunk.GetNativeArray(positionType);
+            NativeArray<Translation> positions = chunk.GetNativeArray(positionType);
 
             for(int e = 0; e < entities.Length; e++)
             {
@@ -189,7 +191,7 @@ public class MapSquareSystem : ComponentSystem
     Entity CreateMapSquareEntity(float3 worldPosition)
     {
         Entity entity = entityManager.CreateEntity(mapSquareArchetype);
-		entityManager.SetComponentData<Position>(entity, new Position{ Value = worldPosition } );
+		entityManager.SetComponentData<Translation>(entity, new Translation{ Value = worldPosition } );
 
         mapMatrix.AddItem(entity, worldPosition);
 

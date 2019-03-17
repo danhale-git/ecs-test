@@ -13,7 +13,7 @@ using UnityEditor;
 //	Generate 3D mesh from block data
 [UpdateAfter(typeof(MapSlopeSystem))]
 [UpdateAfter(typeof(MapBufferChangeSystem))]
-[UpdateBefore(typeof(EndFrameTransformSystem))]
+[UpdateBefore(typeof(TransformSystemGroup))]
 public class MapMeshSystem : ComponentSystem
 {
 	//	Parralel job batch size
@@ -26,6 +26,7 @@ public class MapMeshSystem : ComponentSystem
 	ComponentGroup meshGroup;
 
 	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ShaderGraphTest.mat");
+	//public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Default.mat");
 
 	struct FaceCounts
 	{
@@ -59,7 +60,7 @@ public class MapMeshSystem : ComponentSystem
 
 		ArchetypeChunkEntityType 						entityType 		= GetArchetypeChunkEntityType();
 		ArchetypeChunkComponentType<MapSquare> 			squareType		= GetArchetypeChunkComponentType<MapSquare>(true);
-		ArchetypeChunkComponentType<Position> 			positionType	= GetArchetypeChunkComponentType<Position>(true);
+		ArchetypeChunkComponentType<Translation> 			positionType	= GetArchetypeChunkComponentType<Translation>(true);
 		ArchetypeChunkComponentType<AdjacentSquares>	adjacentType	= GetArchetypeChunkComponentType<AdjacentSquares>(true);
 		ArchetypeChunkBufferType<Block> 				blocksType 		= GetArchetypeChunkBufferType<Block>(true);
 
@@ -70,7 +71,7 @@ public class MapMeshSystem : ComponentSystem
 			//	Get chunk data
 			NativeArray<Entity> 			entities 		= chunk.GetNativeArray(entityType);
 			NativeArray<MapSquare>			squares			= chunk.GetNativeArray(squareType);
-			NativeArray<Position>			positions		= chunk.GetNativeArray(positionType);
+			NativeArray<Translation>			positions		= chunk.GetNativeArray(positionType);
 			NativeArray<AdjacentSquares>	adjacentSquares	= chunk.GetNativeArray(adjacentType);
 			BufferAccessor<Block> 			blockAccessor 	= chunk.GetBufferAccessor(blocksType);
 
@@ -242,7 +243,7 @@ public class MapMeshSystem : ComponentSystem
 		//	Tri native array to array
 		int[] trianglesArray = new int[triangles.Length];
 		triangles.CopyTo(trianglesArray);
-		
+
 		vertices.Dispose();
 		normals.Dispose();
 		colors.Dispose();
@@ -278,7 +279,7 @@ public class MapMeshSystem : ComponentSystem
 
 	void SetPosition(Entity entity, MapSquare mapSquare, float3 currentPosition, EntityCommandBuffer commandBuffer)
 	{
-		Position newPosition = new Position { Value = new float3(currentPosition.x, mapSquare.bottomBlockBuffer, currentPosition.z) };
-		commandBuffer.SetComponent<Position>(entity, newPosition);
+		Translation newPosition = new Translation { Value = new float3(currentPosition.x, mapSquare.bottomBlockBuffer, currentPosition.z) };
+		commandBuffer.SetComponent<Translation>(entity, newPosition);
 	}
 } 

@@ -6,7 +6,7 @@ using Unity.Transforms;
 using MyComponents;
 
 [UpdateAfter(typeof(MapHorizontalDrawAreaSystem))]
-public class HorizontalDrawAreaBarrier : BarrierSystem { }
+public class HorizontalDrawAreaBarrier : EntityCommandBufferSystem { }
 
 [UpdateAfter(typeof(MapCellDiscoverySystem))]
 public class MapHorizontalDrawAreaSystem : JobComponentSystem
@@ -112,14 +112,14 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
     }
 
     [RequireComponentTag(typeof(Tags.SetHorizontalDrawBuffer))]
-    public struct SetNewSquaresJob : IJobProcessComponentDataWithEntity<MapSquare, Position>
+    public struct SetNewSquaresJob : IJobProcessComponentDataWithEntity<MapSquare, Translation>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
         [ReadOnly] public SubMatrix subMatrix;
         [ReadOnly] public DrawBufferUtil drawBufferUtil;
 
-        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
+        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
             bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
@@ -132,14 +132,14 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
     }
 
     [RequireComponentTag(typeof(Tags.InnerBuffer))]
-    public struct CheckInnerSquaresJob: IJobProcessComponentDataWithEntity<MapSquare, Position>
+    public struct CheckInnerSquaresJob: IJobProcessComponentDataWithEntity<MapSquare, Translation>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
         [ReadOnly] public SubMatrix subMatrix;
         [ReadOnly] public DrawBufferUtil drawBufferUtil;
 
-        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
+        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
             bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
@@ -157,14 +157,14 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
     }
 
     [RequireComponentTag(typeof(Tags.OuterBuffer))]
-    public struct CheckOuterSquaresJob: IJobProcessComponentDataWithEntity<MapSquare, Position>
+    public struct CheckOuterSquaresJob: IJobProcessComponentDataWithEntity<MapSquare, Translation>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
         [ReadOnly] public SubMatrix subMatrix;
         [ReadOnly] public DrawBufferUtil drawBufferUtil;
 
-        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
+        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
             bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
@@ -182,14 +182,14 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
     }
 
     [RequireComponentTag(typeof(Tags.EdgeBuffer))]
-    public struct CheckEdgeSquaresJob: IJobProcessComponentDataWithEntity<MapSquare, Position>
+    public struct CheckEdgeSquaresJob: IJobProcessComponentDataWithEntity<MapSquare, Translation>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
         [ReadOnly] public SubMatrix subMatrix;
         [ReadOnly] public DrawBufferUtil drawBufferUtil;
 
-        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
+        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
             bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
@@ -317,8 +317,14 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
                 squareRootPosition = (matrixPostiion * squareWidth) + matrix.rootPosition;
 
                 if(squareRootPosition.x < subMatrix.rootPosition.x || squareRootPosition.z < subMatrix.rootPosition.z)
+                {
                     break;
+                }
 			}
+
+        //UnityEngine.Debug.Log("squareRootPosition "+squareRootPosition);
+        //UnityEngine.Debug.Log("resultSize "+resultSize);
+        
 
         return new SubMatrix(squareRootPosition, resultSize);
 	}

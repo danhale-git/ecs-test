@@ -6,7 +6,7 @@ using Unity.Transforms;
 using MyComponents;
 
 [UpdateAfter(typeof(MapCellDiscoverySystem))]
-public class WorleyBarrier : BarrierSystem { }
+public class WorleyBarrier : EntityCommandBufferSystem { }
 
 [UpdateAfter(typeof(MapSquareSystem))]
 public class MapWorleyNoiseSystem : JobComponentSystem
@@ -51,7 +51,7 @@ public class MapWorleyNoiseSystem : JobComponentSystem
     }
 
     [RequireComponentTag(typeof(Tags.GenerateWorleyNoise))]
-    public struct WorleyJob : IJobProcessComponentDataWithEntity<MapSquare, Position>
+    public struct WorleyJob : IJobProcessComponentDataWithEntity<MapSquare, Translation>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
         
@@ -64,7 +64,7 @@ public class MapWorleyNoiseSystem : JobComponentSystem
         [ReadOnly] public JobUtil util;
         [ReadOnly] public WorleyNoiseGenerator noise;
 
-        public void Execute(Entity mapSquareEntity, int jobIndex, ref MapSquare mapSquare, ref Position position)
+        public void Execute(Entity mapSquareEntity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
             NativeArray<WorleyNoise> worleyNoiseMap = GenerateNoiseMap(position.Value);
             worleyNoiseBufferFromEntity[mapSquareEntity].CopyFrom(worleyNoiseMap);

@@ -6,7 +6,7 @@ using Unity.Transforms;
 using MyComponents;
 
 [UpdateAfter(typeof(MapCellDiscoverySystem))]
-public class DiscoveryBarrier : BarrierSystem { }
+public class DiscoveryBarrier : EntityCommandBufferSystem { }
 
 [UpdateAfter(typeof(MapWorleyNoiseSystem))]
 public class MapCellDiscoverySystem : JobComponentSystem
@@ -43,7 +43,7 @@ public class MapCellDiscoverySystem : JobComponentSystem
         return discoveryJobHandle;
     }
 
-    [RequireSubtractiveComponent(typeof(Tags.AllCellsDiscovered), typeof(Tags.GenerateWorleyNoise))]
+    [ExcludeComponent(typeof(Tags.AllCellsDiscovered), typeof(Tags.GenerateWorleyNoise))]
     public struct DiscoveryJob : IJobProcessComponentDataWithEntity<MapSquare>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
