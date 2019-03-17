@@ -58,10 +58,6 @@ public class MapAdjacentSystem : ComponentSystem
 				Entity entity 	= entities[e];
 				float3 position = positions[e].Value;
 
-				CustomDebugTools.HorizontalBufferDebug(
-					entity
-				);//DEBUG
-
 				//	Get adjacent map squares from matrix in MapManagerSystem
 				AdjacentSquares adjacent = new AdjacentSquares{
 					right 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[0]),

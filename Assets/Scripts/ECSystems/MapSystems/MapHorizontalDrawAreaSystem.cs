@@ -84,15 +84,14 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
         drawAreaBarrier.AddJobHandleForProducer(dependencies);
 
-        dependencies.Complete();
-
-        DebugHorizontalBuffers();
+        DebugHorizontalBuffers(dependencies);
 
         return dependencies;
     }
 
-    void DebugHorizontalBuffers()
+    void DebugHorizontalBuffers(JobHandle completeFirst)
     {
+        completeFirst.Complete();
         NativeArray<Entity> allEntities = entityManager.GetAllEntities(Allocator.Temp);
         for(int i = 0; i < allEntities.Length; i++)
         {
@@ -126,27 +125,9 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
             DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, position.Value);
 
-            SetDrawBuffer(entity, buffer, commandBuffer, jobIndex);
+            drawBufferUtil.SetDrawBuffer(entity, buffer, commandBuffer, jobIndex);
 
             commandBuffer.RemoveComponent<Tags.SetHorizontalDrawBuffer>(jobIndex, entity);
-        }
-
-        public void SetDrawBuffer(Entity entity, DrawBufferType buffer, EntityCommandBuffer.Concurrent commandBuffer, int jobIndex)
-        {
-            switch(buffer)
-            {
-                case DrawBufferType.INNER:
-                    commandBuffer.AddComponent<Tags.InnerBuffer>(jobIndex, entity, new Tags.InnerBuffer());
-                    break;
-                case DrawBufferType.OUTER:
-                    commandBuffer.AddComponent<Tags.OuterBuffer>(jobIndex, entity, new Tags.OuterBuffer());
-                    break;
-                case DrawBufferType.EDGE:
-                    commandBuffer.AddComponent<Tags.EdgeBuffer>(jobIndex, entity, new Tags.EdgeBuffer());
-                    break;
-                default:
-                    break;
-            }
         }
     }
 
