@@ -32,7 +32,9 @@ public class Bootstrapper
             ComponentType.ReadWrite<PhysicsEntity>(),
             ComponentType.ReadWrite<Stats>(),
             ComponentType.ReadWrite<Translation>(),
-            ComponentType.ReadWrite<RenderMeshProxy>()
+            ComponentType.ReadWrite<RenderMeshProxy>(),
+
+            ComponentType.ReadWrite<LocalToWorld>()
         );
 
         //  Entity
