@@ -1,4 +1,4 @@
-﻿using Unity.Entities;
+﻿/*using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Collections;
 using Unity.Transforms;
@@ -355,10 +355,11 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
             CustomDebugTools.HorizontalBufferDebug(entity);
         }
 
-        /*void RedrawMapSquare(Entity entity, EntityCommandBuffer.Concurrent commandBuffer)
+        void RedrawMapSquare(Entity entity, EntityCommandBuffer.Concurrent commandBuffer)
         {
             entityUtil.TryRemoveSharedComponent<RenderMesh>(entity, commandBuffer);
             entityUtil.TryAddComponent<Tags.DrawMesh>(entity, commandBuffer);
-        } */
+        } 
     }
 }
+ */
