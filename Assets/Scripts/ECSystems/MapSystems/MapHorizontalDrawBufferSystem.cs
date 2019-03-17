@@ -58,9 +58,9 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        SubMatrix subMatrix = FitView(squareSystem.mapMatrix, ViewSubMatrix());
-        SetNewSquares(subMatrix);
-        CheckAllSquares(subMatrix);
+        //SubMatrix subMatrix = FitView(squareSystem.mapMatrix, ViewSubMatrix());
+        //SetNewSquares(subMatrix);
+        //CheckAllSquares(subMatrix);
     }
 
     void SetNewSquares(SubMatrix subMatrix)
@@ -164,7 +164,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
         if(buffer == DrawBufferType.NONE) return;
         else SetDrawBuffer(entity, buffer, commandBuffer);
 
-        CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
+        CustomDebugTools.HorizontalBufferDebug(entity);
 	}     
 
     void RedrawMapSquare(Entity entity, EntityCommandBuffer commandBuffer)
@@ -190,7 +190,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
                 break;
         }
 
-        CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
+        CustomDebugTools.HorizontalBufferDebug(entity);
     }
 
     SubMatrix FitView(Matrix<Entity> matrix, SubMatrix subMatrix)
@@ -352,7 +352,7 @@ public class MapHorizontalDrawBufferSystem : ComponentSystem
                     break;
             }
 
-            CustomDebugTools.HorizontalBufferDebug(entity, (int)buffer);
+            CustomDebugTools.HorizontalBufferDebug(entity);
         }
 
         /*void RedrawMapSquare(Entity entity, EntityCommandBuffer.Concurrent commandBuffer)

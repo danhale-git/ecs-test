@@ -69,11 +69,18 @@ public static class CustomDebugTools
     }
 
     //  allLines[0]
-    public static void HorizontalBufferDebug(Entity entity, int buffer)
+    public static void HorizontalBufferDebug(Entity entity)
     {
         EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
 
         Color color;
+
+        int buffer = 0;
+
+        if(manager.HasComponent<Tags.InnerBuffer>(entity)) buffer = 1;
+        if(manager.HasComponent<Tags.OuterBuffer>(entity)) buffer = 2;
+        if(manager.HasComponent<Tags.EdgeBuffer>(entity)) buffer = 3;
+
 
         switch(buffer)
         {
