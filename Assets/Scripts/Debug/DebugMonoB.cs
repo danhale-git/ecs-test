@@ -25,11 +25,11 @@ public class DebugMonoB : MonoBehaviour
     void UpdateDebugPanel()
     {
         string newText = "";
-        foreach(KeyValuePair<string, string> kvp in CustomDebugTools.debugText)
+        foreach(KeyValuePair<string, string> kvp in DebugTools.debugText)
         {
             newText += kvp.Key+": "+kvp.Value+"\n";
         }
-        foreach(KeyValuePair<string, int> kvp in CustomDebugTools.debugCounts)
+        foreach(KeyValuePair<string, int> kvp in DebugTools.debugCounts)
         {
             newText += kvp.Key+": "+kvp.Value.ToString()+"\n";
         }
@@ -42,16 +42,16 @@ public class DebugMonoB : MonoBehaviour
 
         EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
 
-        for(int i = 0; i < CustomDebugTools.mapSquareLines.Count; i++)
+        for(int i = 0; i < debugSystem.mapSquareLines.Count; i++)
         {
-            Dictionary<Entity, List<CustomDebugTools.DebugLine>> dict = CustomDebugTools.mapSquareLines[i];
-            Dictionary<Entity, List<CustomDebugTools.DebugLine>> dictCopy = new Dictionary<Entity, List<CustomDebugTools.DebugLine>>();
-            foreach(KeyValuePair<Entity, List<CustomDebugTools.DebugLine>> kvp in dict)
+            Dictionary<Entity, List<DebugLineUtil.DebugLine>> dict = debugSystem.mapSquareLines[i];
+            Dictionary<Entity, List<DebugLineUtil.DebugLine>> dictCopy = new Dictionary<Entity, List<DebugLineUtil.DebugLine>>();
+            foreach(KeyValuePair<Entity, List<DebugLineUtil.DebugLine>> kvp in dict)
             {
                 if(manager.Exists(kvp.Key))
                 {
                     dictCopy.Add(kvp.Key, kvp.Value);
-                    foreach(CustomDebugTools.DebugLine line in kvp.Value)
+                    foreach(DebugLineUtil.DebugLine line in kvp.Value)
                     {
                         Gizmos.color = line.c;
                         Gizmos.DrawLine(line.a, line.b);
@@ -59,13 +59,7 @@ public class DebugMonoB : MonoBehaviour
                 }
             }
 
-            CustomDebugTools.mapSquareLines[i] = dictCopy;
-        }
-
-        foreach(CustomDebugTools.DebugLine line in CustomDebugTools.lines)
-        {
-            Gizmos.color = line.c;
-            Gizmos.DrawLine(line.a, line.b);
+            debugSystem.mapSquareLines[i] = dictCopy;
         }
     }
 }

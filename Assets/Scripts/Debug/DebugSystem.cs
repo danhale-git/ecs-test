@@ -19,7 +19,7 @@ public class DebugSystem : ComponentSystem
 
     DebugLineUtil lineUtil;
 
-    public static List<Dictionary<Entity, List<DebugLineUtil.DebugLine>>> mapSquareLines = new List<Dictionary<Entity, List<DebugLineUtil.DebugLine>>>()
+    public List<Dictionary<Entity, List<DebugLineUtil.DebugLine>>> mapSquareLines = new List<Dictionary<Entity, List<DebugLineUtil.DebugLine>>>()
     {
         new Dictionary<Entity, List<DebugLineUtil.DebugLine>>(),  //  Horizontal Buffer
         new Dictionary<Entity, List<DebugLineUtil.DebugLine>>(),  //  Block buffer
@@ -51,6 +51,7 @@ public class DebugSystem : ComponentSystem
 		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);
 
 		ArchetypeChunkEntityType                    entityType	    = GetArchetypeChunkEntityType();
+        ArchetypeChunkComponentType<MapSquare>      mapSquareType   = GetArchetypeChunkComponentType<MapSquare>();        
         ArchetypeChunkComponentType<Translation>    positionType    = GetArchetypeChunkComponentType<Translation>();
         ArchetypeChunkBufferType<WorleyCell>        bufferType      = GetArchetypeChunkBufferType<WorleyCell>();
 
@@ -59,12 +60,20 @@ public class DebugSystem : ComponentSystem
 			ArchetypeChunk chunk = chunks[c];
 
 			NativeArray<Entity>         entities    = chunk.GetNativeArray(entityType);
-            NativeArray<Translation>       positions   = chunk.GetNativeArray<Translation>(positionType);
+            NativeArray<MapSquare>      mapSquares  = chunk.GetNativeArray<MapSquare>(mapSquareType);
+            NativeArray<Translation>    positions   = chunk.GetNativeArray<Translation>(positionType);
             BufferAccessor<WorleyCell>  cellBuffers = chunk.GetBufferAccessor<WorleyCell>(bufferType);
 
 			for(int e = 0; e < entities.Length; e++)
 			{
+                Entity entity = entities[e];
+                float3 position = positions[e].Value;
+                MapSquare mapSquare = mapSquares[e];
 
+                DebugHorizontalBuffer(entity, position);
+
+                if(!entityManager.HasComponent<Tags.EdgeBuffer>(entity))
+                    BlockBufferDebug(entity, position, mapSquare);
             }
         }
 
@@ -85,6 +94,14 @@ public class DebugSystem : ComponentSystem
             noSides: true,
             topOnly: true
         );
+    }
+
+    Color HorizontalBufferToColor(Entity entity)
+    {
+        if(entityManager.HasComponent<Tags.InnerBuffer>(entity)) return new Color(0, 1, 0, 0.2f);
+        if(entityManager.HasComponent<Tags.OuterBuffer>(entity)) return new Color(1, 0, 0, 0.2f);
+        if(entityManager.HasComponent<Tags.EdgeBuffer>(entity)) return new Color(0, 0, 1, 0.1f);
+        else return new Color(1, 1, 1, 0.2f);
     }
 
     public void BlockBufferDebug(Entity entity, float3 position, MapSquare mapSquare)
@@ -121,22 +138,5 @@ public class DebugSystem : ComponentSystem
             0,
             noSides: false
         );
-    }
-
-    Color HorizontalBufferToColor(Entity entity)
-    {
-        if(entityManager.HasComponent<Tags.InnerBuffer>(entity)) return new Color(1, 1, 1, 0.2f);
-        if(entityManager.HasComponent<Tags.OuterBuffer>(entity)) return new Color(1, 0, 0, 0.2f);
-        if(entityManager.HasComponent<Tags.EdgeBuffer>(entity)) return new Color(0, 1, 0, 0.2f);
-        else return new Color(0, 0, 1, 0.2f);
-    }
-
-    public static GameObject Cube(Vector3 worldPosition, Color color, int scale = 1)
-    {
-        GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        cube.GetComponent<Renderer>().material.color = color;
-        cube.transform.localScale = new float3(scale);
-        cube.transform.position = worldPosition;
-        return cube;
     }
 }

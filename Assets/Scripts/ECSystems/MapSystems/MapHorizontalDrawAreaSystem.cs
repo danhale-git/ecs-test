@@ -80,21 +80,7 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
         drawAreaBarrier.AddJobHandleForProducer(dependencies);
 
-        DebugHorizontalBuffers(dependencies);
-
         return dependencies;
-    }
-
-    void DebugHorizontalBuffers(JobHandle completeFirst)
-    {
-        completeFirst.Complete();
-        NativeArray<Entity> allEntities = entityManager.GetAllEntities(Allocator.Temp);
-        for(int i = 0; i < allEntities.Length; i++)
-        {
-            if(entityManager.HasComponent<MapSquare>(allEntities[i]))
-                CustomDebugTools.HorizontalBufferDebug(allEntities[i]);
-        }
-        allEntities.Dispose();
     }
     
     SubMatrix ViewSubMatrix()

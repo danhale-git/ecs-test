@@ -74,8 +74,8 @@ public class MapAdjacentSystem : ComponentSystem
 				{
 					if(!entityManager.Exists(adjacent[i]))
 					{
-						CustomDebugTools.Cube(Color.red, (position + adjacentPositions[i])+(squareWidth/2), squareWidth/2);
-		        		CustomDebugTools.Cube(Color.green, position + (squareWidth/2), squareWidth/2 +1);
+						DebugTools.Cube(Color.red, (position + adjacentPositions[i])+(squareWidth/2), squareWidth/2);
+		        		DebugTools.Cube(Color.green, position + (squareWidth/2), squareWidth/2 +1);
 					
 						throw new System.Exception("Adjacent Entity does not exist at "+(position + adjacentPositions[i]));
 					}
