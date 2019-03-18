@@ -91,7 +91,7 @@ public static class CustomDebugTools
             default: return;
         }
 
-        float3 pos = manager.GetComponentData<Position>(entity).Value;
+        float3 pos = manager.GetComponentData<Translation>(entity).Value;
         List<DebugLine> rect = CreateBox(
             new float3(pos.x, 0, pos.z),
             squareWidth * 0.95f,
@@ -110,7 +110,7 @@ public static class CustomDebugTools
     {
         EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
 
-        float3 pos = manager.GetComponentData<Position>(entity).Value;
+        float3 pos = manager.GetComponentData<Translation>(entity).Value;
         List<DebugLine> blockBufferRects = CreateBox(
             new float3(pos.x, 0, pos.z),
             squareWidth * 0.99f,
@@ -127,7 +127,7 @@ public static class CustomDebugTools
     {
         EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
 
-        float3 pos = manager.GetComponentData<Position>(entity).Value;
+        float3 pos = manager.GetComponentData<Translation>(entity).Value;
         List<DebugLine> blockBufferRects = CreateBox(
             new float3(pos.x, 0, pos.z),
             squareWidth * 0.99f,
@@ -146,7 +146,7 @@ public static class CustomDebugTools
         if(color == null) color = Color.red;
         EntityManager manager = World.Active.GetOrCreateManager<EntityManager>();
 
-        float3 pos = manager.GetComponentData<Position>(entity).Value;
+        float3 pos = manager.GetComponentData<Translation>(entity).Value;
         List<DebugLine> errorCuboid = CreateBox(
             new float3(pos.x, 0, pos.z),
             squareWidth,

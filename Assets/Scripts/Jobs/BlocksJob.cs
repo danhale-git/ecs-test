@@ -2,11 +2,9 @@
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Burst;
 using Unity.Entities;
 using MyComponents;
 
-//[BurstCompile]
 struct BlocksJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<Block> blocks;

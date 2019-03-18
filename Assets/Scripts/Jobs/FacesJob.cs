@@ -6,7 +6,6 @@ using Unity.Burst;
 using Unity.Entities;
 using MyComponents;
 
-//[BurstCompile]
 struct FacesJob : IJobParallelFor
 {
 	[NativeDisableParallelForRestriction] public NativeArray<Faces> exposedFaces;

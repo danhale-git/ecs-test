@@ -38,7 +38,7 @@ public class MapAdjacentSystem : ComponentSystem
         NativeArray<ArchetypeChunk> chunks 			= adjacentGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
         ArchetypeChunkEntityType 				entityType 		= GetArchetypeChunkEntityType();
-        ArchetypeChunkComponentType<Position> 	positionType 	= GetArchetypeChunkComponentType<Position>(true);
+        ArchetypeChunkComponentType<Translation> 	positionType 	= GetArchetypeChunkComponentType<Translation>(true);
 
 		//	Map square position offsets in 8 cardinal directions
 		float3[] adjacentPositions = new float3[8];
@@ -51,7 +51,7 @@ public class MapAdjacentSystem : ComponentSystem
 			ArchetypeChunk chunk = chunks[c];
 
 			NativeArray<Entity> 	entities    = chunk.GetNativeArray(entityType);
-            NativeArray<Position> 	positions 	= chunk.GetNativeArray(positionType);
+            NativeArray<Translation> 	positions 	= chunk.GetNativeArray(positionType);
 
 			for(int e = 0; e < entities.Length; e++)
 			{

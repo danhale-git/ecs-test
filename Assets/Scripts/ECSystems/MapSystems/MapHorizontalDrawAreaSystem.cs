@@ -6,7 +6,7 @@ using Unity.Transforms;
 using MyComponents;
 
 [UpdateAfter(typeof(MapHorizontalDrawAreaSystem))]
-public class HorizontalDrawAreaBarrier : BarrierSystem { }
+public class HorizontalDrawAreaBarrier : EntityCommandBufferSystem { }
 
 [UpdateAfter(typeof(MapCellDiscoverySystem))]
 public class MapHorizontalDrawAreaSystem : JobComponentSystem
@@ -42,12 +42,8 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
     protected override JobHandle OnUpdate(JobHandle inputDependencies)
     {
-        ///return inputDependencies;
-        
-        SubMatrix viewSubMatrix = ViewSubMatrix();
-        SubMatrix subMatrix = FitView(squareSystem.mapMatrix, viewSubMatrix);
-
-        
+        SubMatrix playerViewSubMatrix = ViewSubMatrix();
+        SubMatrix subMatrix = LargestDiscoveredGridAroundPlayer(squareSystem.mapMatrix, playerViewSubMatrix);
 
         JobHandle newSquaresJob = new SetNewSquaresJob{
             commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
@@ -112,14 +108,14 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
     }
 
     [RequireComponentTag(typeof(Tags.SetHorizontalDrawBuffer))]
-    public struct SetNewSquaresJob : IJobProcessComponentDataWithEntity<MapSquare, Position>
+    public struct SetNewSquaresJob : IJobProcessComponentDataWithEntity<MapSquare, Translation>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
         [ReadOnly] public SubMatrix subMatrix;
         [ReadOnly] public DrawBufferUtil drawBufferUtil;
 
-        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
+        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
             bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
@@ -132,14 +128,14 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
     }
 
     [RequireComponentTag(typeof(Tags.InnerBuffer))]
-    public struct CheckInnerSquaresJob: IJobProcessComponentDataWithEntity<MapSquare, Position>
+    public struct CheckInnerSquaresJob: IJobProcessComponentDataWithEntity<MapSquare, Translation>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
         [ReadOnly] public SubMatrix subMatrix;
         [ReadOnly] public DrawBufferUtil drawBufferUtil;
 
-        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
+        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
             bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
@@ -157,14 +153,14 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
     }
 
     [RequireComponentTag(typeof(Tags.OuterBuffer))]
-    public struct CheckOuterSquaresJob: IJobProcessComponentDataWithEntity<MapSquare, Position>
+    public struct CheckOuterSquaresJob: IJobProcessComponentDataWithEntity<MapSquare, Translation>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
         [ReadOnly] public SubMatrix subMatrix;
         [ReadOnly] public DrawBufferUtil drawBufferUtil;
 
-        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
+        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
             bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
@@ -182,14 +178,14 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
     }
 
     [RequireComponentTag(typeof(Tags.EdgeBuffer))]
-    public struct CheckEdgeSquaresJob: IJobProcessComponentDataWithEntity<MapSquare, Position>
+    public struct CheckEdgeSquaresJob: IJobProcessComponentDataWithEntity<MapSquare, Translation>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
         [ReadOnly] public SubMatrix subMatrix;
         [ReadOnly] public DrawBufferUtil drawBufferUtil;
 
-        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Position position)
+        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
             bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
@@ -204,6 +200,69 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
             //if(!inRadius)
             //    drawBufferUtil.RedrawMapSquare(entity, commandBuffer);
         }
+    }
+    
+    SubMatrix LargestDiscoveredGridAroundPlayer(Matrix<Entity> matrix, SubMatrix clampMatrix)
+	{
+        float3 clampTopRight = matrix.WorldToMatrixPosition(clampMatrix.rootPosition) + clampMatrix.width;
+
+        if(clampTopRight.x >= matrix.width) clampTopRight.x = matrix.width - 1;
+        if(clampTopRight.z >= matrix.width) clampTopRight.z = matrix.width - 1;
+
+        //	Copy original matix to cache so it defaults to original matrix values
+		NativeArray<int> cacheMatrix = new NativeArray<int>(matrix.Length, Allocator.Temp);
+        for(int i = 0; i < cacheMatrix.Length; i++)
+            cacheMatrix[i] = SquareIsEligible(matrix, i) ? 1 : 0;
+
+		int finalGridWidth = 0;
+        float3 finalGridRoot = float3.zero;
+
+		for(int x = (int)clampTopRight.x; x >= 0; x--)
+			for(int z = (int)clampTopRight.z; z >= 0; z--)
+			{
+				if(TopOrRightEdge(matrix.width, x, z))
+                    continue;
+
+                float3 matrixPosition = new float3(x, 0, z);
+                int index = matrix.PositionToIndex(matrixPosition);
+
+				if(cacheMatrix[index] > 0)
+                    cacheMatrix[index] = 1 + LowestAdjacentValue(matrix, cacheMatrix, x, z);
+
+				if(cacheMatrix[index] > finalGridWidth)
+				{
+					finalGridWidth = cacheMatrix[index];
+                    finalGridRoot = matrix.MatrixToWorldPosition(matrixPosition);
+
+                    if( finalGridRoot.x < clampMatrix.rootPosition.x ||
+                        finalGridRoot.z < clampMatrix.rootPosition.z)
+                        break;
+				}
+			}
+
+        return new SubMatrix(finalGridRoot, finalGridWidth);
+	}
+
+    bool SquareIsEligible(Matrix<Entity> matrix, int index)
+    {
+        return (matrix.ItemIsSet(index) &&
+                entityManager.HasComponent<Tags.AllCellsDiscovered>(matrix.GetItem(index)));
+    }
+
+    bool TopOrRightEdge(int width, int x, int z)
+    {
+        return (x == width-1 || z == width-1);
+    }
+
+    int LowestAdjacentValue(Matrix<Entity> matrix, NativeArray<int> cacheMatrix, int x, int z)
+    {
+        int forwardIndex    = matrix.PositionToIndex(new float3(x,   0, z+1));
+        int rightIndex      = matrix.PositionToIndex(new float3(x+1, 0, z  ));
+        int diagonalIndex   = matrix.PositionToIndex(new float3(x+1, 0, z+1));
+
+        return  math.min(cacheMatrix[forwardIndex],
+                    math.min(cacheMatrix[rightIndex],
+                                cacheMatrix[diagonalIndex]));
     }
 
     public struct DrawBufferUtil
@@ -263,63 +322,4 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
             }
         }
     }
-    
-    SubMatrix FitView(Matrix<Entity> matrix, SubMatrix subMatrix)
-	{
-        float3 subMatrixEdge = matrix.WorldToMatrixPosition(subMatrix.rootPosition) + subMatrix.width;
-
-        if(subMatrixEdge.x >= matrix.width) subMatrixEdge.x = matrix.width - 1;
-        if(subMatrixEdge.z >= matrix.width) subMatrixEdge.z = matrix.width - 1;
-
-        //	Copy original matix to cache so it defaults to original matrix values
-		NativeArray<int> cacheMatrix = new NativeArray<int>(matrix.Length, Allocator.Temp);
-        for(int i = 0; i < cacheMatrix.Length; i++)
-            cacheMatrix[i] = matrix.ItemIsSet(i) ? 1 : 0;
-
-		//	Resulting matrix origin and dimensions
-		int resultX = 0;
-		int resultZ = 0;
-		int resultSize = 0;
-		
-        float3 squareRootPosition = float3.zero;
-
-		for(int x = (int)subMatrixEdge.x; x >= 0; x--)
-			for(int z = (int)subMatrixEdge.z; z >= 0; z--)
-			{
-                int index = matrix.PositionToIndex(new float3(x, 0, z));
-
-				//	At edge, matrix.width-1square size is 1 so default to original matrix
-				if(x == matrix.width-1 || z == matrix.width-1) continue;
-
-                int forwardIndex = matrix.PositionToIndex(new float3(x, 0,z+1));
-                int rightIndex = matrix.PositionToIndex(new float3(x+1, 0,z));
-                int diagonalIndex = matrix.PositionToIndex(new float3(x+1, 0,z+1));
-
-				//	Square is 1, value is equal to 1 + lowed of the three adjacent squares
-				if(matrix.ItemIsSet(index) &&
-                    entityManager.HasComponent<Tags.AllCellsDiscovered>(matrix.GetItem(index)))
-                {
-                    cacheMatrix[index] = 1 + math.min(cacheMatrix[forwardIndex],
-                                                math.min(   cacheMatrix[rightIndex],
-                                                                cacheMatrix[diagonalIndex]));
-                }
-
-				//	Largest square so far, store values
-				if(cacheMatrix[index] > resultSize)
-				{
-					resultX = x;
-					resultZ = z;
-					resultSize = cacheMatrix[index];
-				}
-
-                float3 matrixPostiion = new float3(resultX, 0, resultZ);
-
-                squareRootPosition = (matrixPostiion * squareWidth) + matrix.rootPosition;
-
-                if(squareRootPosition.x < subMatrix.rootPosition.x || squareRootPosition.z < subMatrix.rootPosition.z)
-                    break;
-			}
-
-        return new SubMatrix(squareRootPosition, resultSize);
-	}
 }

@@ -6,7 +6,6 @@ using Unity.Burst;
 using MyComponents;
 using Unity.Entities;
 
-//[BurstCompile]
 struct WorleyNoiseJob : IJob
 {
     [ReadOnly] public float3 offset;

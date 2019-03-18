@@ -34,7 +34,7 @@ public class CameraSystem : ComponentSystem
 
     void MoveCamera()
     {
-        float3 playerPosition   = entityManager.GetComponentData<Position>(playerEntity).Value;
+        float3 playerPosition   = entityManager.GetComponentData<Translation>(playerEntity).Value;
 
         float3 oldPosition      = camera.transform.position;
         Quaternion oldRotation  = camera.transform.rotation;

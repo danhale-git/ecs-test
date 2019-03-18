@@ -1,5 +1,4 @@
-﻿using Unity.Burst;
-using Unity.Jobs;
+﻿using Unity.Jobs;
 using Unity.Entities;
 using Unity.Collections;
 using MyComponents;

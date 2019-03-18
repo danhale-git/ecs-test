@@ -36,12 +36,12 @@ public class MapLoadSystem : ComponentSystem
         NativeArray<ArchetypeChunk> chunks          = loadGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
         ArchetypeChunkEntityType                entityType      = GetArchetypeChunkEntityType();
-        ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>(true);
+        ArchetypeChunkComponentType<Translation>   positionType    = GetArchetypeChunkComponentType<Translation>(true);
 
         for(int c = 0; c < chunks.Length; c++)
         {
             NativeArray<Entity>     entities    = chunks[c].GetNativeArray(entityType);
-            NativeArray<Position>   positions   = chunks[c].GetNativeArray(positionType);
+            NativeArray<Translation>   positions   = chunks[c].GetNativeArray(positionType);
 
             for(int e = 0; e < entities.Length; e++)
             {

@@ -7,7 +7,6 @@ using Unity.Burst;
 using Unity.Entities;
 using MyComponents;
 
-//[BurstCompile]
 //DisposeSentinal errors
 struct MeshJob : IJobParallelFor
 {

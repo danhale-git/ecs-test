@@ -28,11 +28,13 @@ public class Bootstrapper
 
         //  Archetype
         EntityArchetype playerArchetype = entityManager.CreateArchetype(
-            ComponentType.Create<Tags.PlayerEntity>(),
-            ComponentType.Create<PhysicsEntity>(),
-            ComponentType.Create<Stats>(),
-            ComponentType.Create<Position>(),
-            ComponentType.Create<RenderMeshProxy>()
+            ComponentType.ReadWrite<Tags.PlayerEntity>(),
+            ComponentType.ReadWrite<PhysicsEntity>(),
+            ComponentType.ReadWrite<Stats>(),
+            ComponentType.ReadWrite<Translation>(),
+            ComponentType.ReadWrite<RenderMeshProxy>(),
+
+            ComponentType.ReadWrite<LocalToWorld>()
         );
 
         //  Entity
@@ -47,7 +49,7 @@ public class Bootstrapper
 		entityManager.AddSharedComponentData<RenderMesh>(playerEntity, renderer);
 
         //  Position
-        entityManager.SetComponentData<Position>(playerEntity, new Position());
+        entityManager.SetComponentData<Translation>(playerEntity, new Translation());
 
         //  Stats
         Stats stats = new Stats { speed = 20.0f };

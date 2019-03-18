@@ -26,7 +26,7 @@ public class PhysicsSystem : ComponentSystem
         {
             Any     = Array.Empty<ComponentType>(),
             None    = Array.Empty<ComponentType>(),
-            All     = new ComponentType[] { typeof(PhysicsEntity), typeof(Position) }
+            All     = new ComponentType[] { typeof(PhysicsEntity), typeof(Translation) }
         };
         moveGroup = GetComponentGroup(moveQuery);
     }
@@ -36,7 +36,7 @@ public class PhysicsSystem : ComponentSystem
         NativeArray<ArchetypeChunk> chunks = moveGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
         ArchetypeChunkEntityType entityType      = GetArchetypeChunkEntityType();
-        ArchetypeChunkComponentType<Position> positionType    = GetArchetypeChunkComponentType<Position>();
+        ArchetypeChunkComponentType<Translation> positionType    = GetArchetypeChunkComponentType<Translation>();
         ArchetypeChunkComponentType<PhysicsEntity> physicsType     = GetArchetypeChunkComponentType<PhysicsEntity>();
 
         for(int c = 0; c < chunks.Length; c++)
@@ -44,7 +44,7 @@ public class PhysicsSystem : ComponentSystem
             ArchetypeChunk chunk = chunks[c];
 
             NativeArray<Entity>         entities    = chunk.GetNativeArray(entityType);
-            NativeArray<Position>       positions   = chunk.GetNativeArray(positionType);
+            NativeArray<Translation>       positions   = chunk.GetNativeArray(positionType);
             NativeArray<PhysicsEntity>  physics     = chunk.GetNativeArray(physicsType);
             
             for(int e = 0; e < entities.Length; e++)
@@ -82,7 +82,7 @@ public class PhysicsSystem : ComponentSystem
                 //  Adjust for model size
                 yOffset += physics[e].size.y/2;
 
-                positions[e] = new Position { Value = new float3(nextPosition.x, yOffset, nextPosition.z) };
+                positions[e] = new Translation { Value = new float3(nextPosition.x, yOffset, nextPosition.z) };
                 physics[e] = physicsComponent;
             }
         }

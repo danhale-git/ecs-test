@@ -70,11 +70,11 @@ public class PlayerInputSystem : ComponentSystem
         if(targetingBlock)
         {
             //float3 world = hit
-            Position newPosition = new Position{ Value = hit.worldPosition + (hit.normal / 5) };
-            entityManager.SetComponentData<Position>(cursorCube, newPosition);
+            Translation newPosition = new Translation{ Value = hit.worldPosition + (hit.normal / 5) };
+            entityManager.SetComponentData<Translation>(cursorCube, newPosition);
 
-            Position debugPos1 = new Position{ Value = hit.worldPosition + hit.normal };
-            entityManager.SetComponentData<Position>(cursorCubeDebug1, debugPos1);
+            Translation debugPos1 = new Translation{ Value = hit.worldPosition + hit.normal };
+            entityManager.SetComponentData<Translation>(cursorCubeDebug1, debugPos1);
         }
 
         if(Input.GetButtonDown("Fire1")/* && targetingBlock */)
@@ -98,7 +98,7 @@ public class PlayerInputSystem : ComponentSystem
 
     void MovePlayer()
     {
-        float3          playerPosition      = entityManager.GetComponentData<Position>(playerEntity).Value;
+        float3          playerPosition      = entityManager.GetComponentData<Translation>(playerEntity).Value;
         PhysicsEntity   physicsComponent    = entityManager.GetComponentData<PhysicsEntity>(playerEntity);
         Stats           stats               = entityManager.GetComponentData<Stats>(playerEntity);
 
@@ -281,8 +281,8 @@ public class PlayerInputSystem : ComponentSystem
     Entity CreateCursorCube(float scale, Color color)
     {
          EntityArchetype cursorCubeArchetype = entityManager.CreateArchetype(
-            ComponentType.Create<Position>(),
-            ComponentType.Create<RenderMeshProxy>()
+            ComponentType.ReadWrite<Translation>(),
+            ComponentType.ReadWrite<RenderMeshProxy>()
 		);
 
         Entity cube = entityManager.CreateEntity(cursorCubeArchetype);

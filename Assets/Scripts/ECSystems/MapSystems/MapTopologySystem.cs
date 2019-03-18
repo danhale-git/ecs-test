@@ -51,14 +51,14 @@ public class MapTopologySystem : ComponentSystem
         NativeArray<ArchetypeChunk> chunks          = terrainGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
         ArchetypeChunkEntityType                entityType      = GetArchetypeChunkEntityType();
-        ArchetypeChunkComponentType<Position>   positionType    = GetArchetypeChunkComponentType<Position>(true);
+        ArchetypeChunkComponentType<Translation>   positionType    = GetArchetypeChunkComponentType<Translation>(true);
 
         for(int c = 0; c < chunks.Length; c++)
         {
             ArchetypeChunk chunk = chunks[c];
 
             NativeArray<Entity>     entities    = chunk.GetNativeArray(entityType);
-            NativeArray<Position>   positions   = chunk.GetNativeArray(positionType);
+            NativeArray<Translation>   positions   = chunk.GetNativeArray(positionType);
             
             for(int e = 0; e < entities.Length; e++)
             {
