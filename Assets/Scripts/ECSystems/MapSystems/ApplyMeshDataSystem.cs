@@ -67,11 +67,17 @@ public class ApplyMeshDataSystem : ComponentSystem
 				if(redraw) commandBuffer.RemoveComponent(entity, typeof(Tags.Redraw));
 				commandBuffer.RemoveComponent(entity, typeof(Tags.ApplyMesh));
 
+				commandBuffer.RemoveComponent(entity, typeof(VertBuffer));
+				commandBuffer.RemoveComponent(entity, typeof(NormBuffer));
+				commandBuffer.RemoveComponent(entity, typeof(TriBuffer));
+				commandBuffer.RemoveComponent(entity, typeof(ColorBuffer));
             }
         }
 
         commandBuffer.Playback(entityManager);
         commandBuffer.Dispose();
+
+        chunks.Dispose();
     }
 
     Mesh MakeMesh(DynamicBuffer<VertBuffer> vertices, DynamicBuffer<NormBuffer> normals, DynamicBuffer<TriBuffer> triangles, DynamicBuffer<ColorBuffer> colors)
