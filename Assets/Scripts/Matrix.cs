@@ -99,7 +99,7 @@ public struct Matrix<T> where T : struct
 
     public float3 RepositionResize(float3 matrixPosition)
     {
-        CustomDebugTools.IncrementDebugCount("Matrix march count");
+        DebugTools.IncrementDebugCount("Matrix march count");
         int x = (int)matrixPosition.x;
         int z = (int)matrixPosition.z;
 

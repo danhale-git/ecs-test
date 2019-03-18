@@ -136,7 +136,7 @@ public class PlayerInputSystem : ComponentSystem
         for(int y = 0; y < 10; y++)
         {
             float3 position = centerNoise.currentCellPosition + new float3(0, 50 + y, 0);
-            CustomDebugTools.Cube(Color.red, position);
+            DebugTools.Cube(Color.red, position);
         }
 
         DynamicBuffer<WorleyCell> cellSet = entityManager.GetBuffer<WorleyCell>(owner);

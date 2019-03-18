@@ -177,7 +177,7 @@ public class MapSquareSystem : ComponentSystem
                 float3 adjacentPosition = positionList[i] + (directions[d] * squareWidth);
                 if(!mapMatrix.ItemIsSet(adjacentPosition))
                 {
-                    CustomDebugTools.IncrementDebugCount("squares created");
+                    DebugTools.IncrementDebugCount("squares created");
                     CreateMapSquareEntity(adjacentPosition);
                 }
             }
