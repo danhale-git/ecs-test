@@ -7,16 +7,22 @@ using UnityEngine.UI;
 public class DebugMonoB : MonoBehaviour
 {
     public Text debugPanelText;
-    public GameObject squarePrefab;
-    public List<GameObject> allSquares = new List<GameObject>();
     GameObject canvas;
+
+    DebugSystem debugSystem;
 
     void Start()
     {
         canvas = FindObjectOfType<Canvas>().gameObject;
+        debugSystem = World.Active.GetOrCreateManager<DebugSystem>();
     }
 
     void Update()
+    {
+        UpdateDebugPanel();
+    }
+
+    void UpdateDebugPanel()
     {
         string newText = "";
         foreach(KeyValuePair<string, string> kvp in CustomDebugTools.debugText)
@@ -27,7 +33,6 @@ public class DebugMonoB : MonoBehaviour
         {
             newText += kvp.Key+": "+kvp.Value.ToString()+"\n";
         }
-
         debugPanelText.text = newText;
     }
 
