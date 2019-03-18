@@ -173,6 +173,25 @@ namespace MyComponents
 		}
 	}
 
+	[InternalBufferCapacity(0)]
+	public struct VertBuffer : IBufferElementData
+	{
+		public float3 vertex;
+	}
+	[InternalBufferCapacity(0)]
+	public struct NormBuffer : IBufferElementData
+	{
+		public float3 normal;
+	}[InternalBufferCapacity(0)]
+	public struct TriBuffer : IBufferElementData
+	{
+		public int triangle;
+	}[InternalBufferCapacity(0)]
+	public struct ColorBuffer : IBufferElementData
+	{
+		public float4 color;
+	}
+
 	[InternalBufferCapacity(100)]
 	public struct PendingChange : IBufferElementData
 	{
@@ -211,6 +230,7 @@ namespace Tags
 	public struct GenerateBlocks : IComponentData { }
 	public struct SetSlopes : IComponentData { }
 	public struct DrawMesh : IComponentData { }
+	public struct ApplyMesh : IComponentData { }
 	
 	public struct Redraw : IComponentData { }
 	public struct BufferChanged : IComponentData { }
