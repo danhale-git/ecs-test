@@ -59,9 +59,19 @@ public class ApplyMeshDataSystem : ComponentSystem
 			{
 				Entity entity = entities[e];
 
+				bool redraw = entityManager.HasComponent<Tags.Redraw>(entity);
+
+                Mesh mesh = MakeMesh(vertBuffers[e], triBuffers[e], normBuffers[e], colorBuffers[e]);
+                SetMeshComponent(redraw, mesh, entity, commandBuffer);
+
+				if(redraw) commandBuffer.RemoveComponent(entity, typeof(Tags.Redraw));
+				commandBuffer.RemoveComponent(entity, typeof(Tags.ApplyMesh));
 
             }
         }
+
+        commandBuffer.Playback(entityManager);
+        commandBuffer.Dispose();
     }
 
     Mesh MakeMesh(DynamicBuffer<VertBuffer> vertices, DynamicBuffer<NormBuffer> normals, DynamicBuffer<TriBuffer> triangles, DynamicBuffer<ColorBuffer> colors)

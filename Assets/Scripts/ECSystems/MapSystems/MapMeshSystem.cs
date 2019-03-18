@@ -85,23 +85,23 @@ public class MapMeshSystem : ComponentSystem
 				FaceCounts counts;
 				NativeArray<Faces> faces = CheckBlockFaces(squares[e], blockAccessor[e], adjacentSquares[e], out counts);
 
-				bool redraw = entityManager.HasComponent<Tags.Redraw>(entity);
 
 				//	If any faces are exposed, generate mesh and update entity Position component
 				if(counts.faceCount != 0)
 				{
-					Mesh mapSquareMesh = GetMesh(entity, squares[e], faces, blockAccessor[e], counts);
+					GetMesh(entity, squares[e], faces, blockAccessor[e], counts, commandBuffer);
 
-					SetMeshComponent(
+					commandBuffer.AddComponent<Tags.ApplyMesh>(entity, new Tags.ApplyMesh());
+
+					/*SetMeshComponent(
 						redraw,
 						mapSquareMesh,
 						entity,
 						commandBuffer);					
 					
-					SetPosition(entity, squares[e], positions[e].Value, commandBuffer);
+					SetPosition(entity, squares[e], positions[e].Value, commandBuffer); */
 				}
 
-				if(redraw) commandBuffer.RemoveComponent(entity, typeof(Tags.Redraw));
 
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 				
@@ -197,7 +197,7 @@ public class MapMeshSystem : ComponentSystem
 		return new FaceCounts(faceCount, vertCount, triCount);
 	}
 
-	Mesh GetMesh(Entity entity/*DEBUG */, MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, FaceCounts counts)
+	void GetMesh(Entity entity/*DEBUG */, MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, FaceCounts counts, EntityCommandBuffer commandBuffer)
 	{
 		//	Determine vertex and triangle arrays using face count
 		NativeArray<float3> vertices 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
@@ -229,57 +229,32 @@ public class MapMeshSystem : ComponentSystem
 		//	Run job
 		job.Schedule(mapSquare.blockDrawArrayLength, batchSize).Complete();
 
-		//	Convert vertices and colors from float3/float4 to Vector3/Color
-		Vector3[] verticesArray = new Vector3[vertices.Length];
-		Vector3[] normalsArray 	= new Vector3[vertices.Length];
-		Color[] colorsArray 	= new Color[colors.Length];
-		for(int i = 0; i < vertices.Length; i++)
+		DynamicBuffer<VertBuffer> vertBuffer = commandBuffer.AddBuffer<VertBuffer>(entity);
+		vertBuffer.ResizeUninitialized(counts.vertCount);
+		DynamicBuffer<NormBuffer> normBuffer = commandBuffer.AddBuffer<NormBuffer>(entity);
+		normBuffer.ResizeUninitialized(counts.vertCount);
+		DynamicBuffer<ColorBuffer> colorBuffer = commandBuffer.AddBuffer<ColorBuffer>(entity);
+		colorBuffer.ResizeUninitialized(counts.vertCount);
+
+		DynamicBuffer<TriBuffer> triBuffer = commandBuffer.AddBuffer<TriBuffer>(entity);
+		triBuffer.ResizeUninitialized(counts.triCount);
+
+		for(int i = 0; i < counts.vertCount; i++)
 		{
-			verticesArray[i] 	= vertices[i];
-			normalsArray[i] 	= normals[i];
-			colorsArray[i] 		= new Color(colors[i].x, colors[i].y, colors[i].z, colors[i].w);
+			vertBuffer[i] = new VertBuffer{ vertex = vertices[i] };
+			normBuffer[i] = new NormBuffer{ normal = normals[i] };
+			colorBuffer[i] = new ColorBuffer{ color = colors[i] };
+
 		}
 
-		//	Tri native array to array
-		int[] trianglesArray = new int[triangles.Length];
-		triangles.CopyTo(trianglesArray);
+		for(int i = 0; i < counts.triCount; i++)
+		{
+			triBuffer[i] = new TriBuffer{ triangle = triangles[i] };
+		}
 
 		vertices.Dispose();
 		normals.Dispose();
 		colors.Dispose();
 		triangles.Dispose();
-
-		return MakeMesh(verticesArray, normalsArray, trianglesArray, colorsArray);
-	}
-
-	Mesh MakeMesh(Vector3[] vertices, Vector3[] normals, int[] triangles, Color[] colors)
-	{
-		Mesh mesh 		= new Mesh();
-		mesh.vertices 	= vertices;
-		mesh.normals 	= normals;
-		mesh.colors 	= colors;
-		mesh.SetTriangles(triangles, 0);
-
-		mesh.RecalculateNormals();
-
-		return mesh;
-	}
-
-	// Apply mesh to MapSquare entity
-	void SetMeshComponent(bool redraw, Mesh mesh, Entity entity, EntityCommandBuffer commandBuffer)
-	{
-		if(redraw) commandBuffer.RemoveComponent<RenderMesh>(entity);
-
-		RenderMesh renderer = new RenderMesh();
-		renderer.mesh = mesh;
-		renderer.material = material;
-
-		commandBuffer.AddSharedComponent(entity, renderer);
-	}
-
-	void SetPosition(Entity entity, MapSquare mapSquare, float3 currentPosition, EntityCommandBuffer commandBuffer)
-	{
-		Translation newPosition = new Translation { Value = new float3(currentPosition.x, mapSquare.bottomBlockBuffer, currentPosition.z) };
-		commandBuffer.SetComponent<Translation>(entity, newPosition);
 	}
 } 
