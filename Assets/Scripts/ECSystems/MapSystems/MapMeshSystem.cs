@@ -76,12 +76,6 @@ public class MapMeshSystem : ComponentSystem
 				DynamicBuffer<Faces> facesBuffer = commandBuffer.AddBuffer<Faces>(entity);
 				facesBuffer.CopyFrom(faces);
 
-				/*if(counts.faceCount != 0)
-				{
-					GetMesh(entity, squares[e], faces, blockAccessor[e], counts, commandBuffer);
-				} */
-
-
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 				
 				faces.Dispose();
@@ -173,66 +167,5 @@ public class MapMeshSystem : ComponentSystem
 		}
 
 		return new FaceCounts(faceCount, vertCount, triCount);
-	}
-
-	void GetMesh(Entity entity/*DEBUG */, MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, FaceCounts counts, EntityCommandBuffer commandBuffer)
-	{
-		//	Determine vertex and triangle arrays using face count
-		NativeArray<float3> vertices 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
-		NativeArray<float3> normals 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
-		NativeArray<int> 	triangles 	= new NativeArray<int>	 (counts.triCount, Allocator.TempJob);
-		NativeArray<float4> colors 		= new NativeArray<float4>(counts.vertCount, Allocator.TempJob);
-
-		//	DEBUG
-		DynamicBuffer<WorleyNoise> worleyNoise = entityManager.GetBuffer<WorleyNoise>(entity);
-
-		MeshJob job = new MeshJob(){
-			vertices 	= vertices,
-			normals 	= normals,
-			triangles 	= triangles,
-			colors 		= colors,
-
-			mapSquare = mapSquare,
-			worleyNoise = worleyNoise,
-
-			blocks 	= blocks,
-			faces 	= faces,
-
-			util 		= new JobUtil(),
-			squareWidth = squareWidth,
-
-			baseVerts = new CubeVertices(true)
-		};
-
-		//	Run job
-		job.Schedule(mapSquare.blockDrawArrayLength, batchSize).Complete();
-
-		DynamicBuffer<VertBuffer> vertBuffer = commandBuffer.AddBuffer<VertBuffer>(entity);
-		vertBuffer.ResizeUninitialized(counts.vertCount);
-		DynamicBuffer<NormBuffer> normBuffer = commandBuffer.AddBuffer<NormBuffer>(entity);
-		normBuffer.ResizeUninitialized(counts.vertCount);
-		DynamicBuffer<ColorBuffer> colorBuffer = commandBuffer.AddBuffer<ColorBuffer>(entity);
-		colorBuffer.ResizeUninitialized(counts.vertCount);
-
-		DynamicBuffer<TriBuffer> triBuffer = commandBuffer.AddBuffer<TriBuffer>(entity);
-		triBuffer.ResizeUninitialized(counts.triCount);
-
-		for(int i = 0; i < counts.vertCount; i++)
-		{
-			vertBuffer[i] = new VertBuffer{ vertex = vertices[i] };
-			normBuffer[i] = new NormBuffer{ normal = normals[i] };
-			colorBuffer[i] = new ColorBuffer{ color = colors[i] };
-
-		}
-
-		for(int i = 0; i < counts.triCount; i++)
-		{
-			triBuffer[i] = new TriBuffer{ triangle = triangles[i] };
-		}
-
-		vertices.Dispose();
-		normals.Dispose();
-		colors.Dispose();
-		triangles.Dispose();
 	}
 } 
