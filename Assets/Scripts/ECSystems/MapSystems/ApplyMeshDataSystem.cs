@@ -90,9 +90,13 @@ public class ApplyMeshDataSystem : ComponentSystem
 		for(int i = 0; i < vertices.Length; i++)
 		{
 			verticesArray[i] 	= vertices[i].vertex;
-            trianglesArray[i]   = triangles[i].triangle;
 			normalsArray[i] 	= normals[i].normal;
 			colorsArray[i] 		= new Color(colors[i].color.x, colors[i].color.y, colors[i].color.z, colors[i].color.w);
+		}
+
+		for(int i = 0; i < triangles.Length; i++)
+		{
+            trianglesArray[i]   = triangles[i].triangle;
 		}
 
 		Mesh mesh 		= new Mesh();
