@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEditor;
 using MyComponents;
 
-[UpdateAfter(typeof(MapMeshSystem))]
+[UpdateAfter(typeof(MapGenerateMeshDataSystem))]
 public class ApplyMeshDataSystem : ComponentSystem
 {
     EntityManager entityManager;

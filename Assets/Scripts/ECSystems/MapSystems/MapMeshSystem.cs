@@ -72,11 +72,14 @@ public class MapMeshSystem : ComponentSystem
 				FaceCounts counts;
 				NativeArray<Faces> faces = CheckBlockFaces(squares[e], blockAccessor[e], adjacentSquares[e], out counts);
 
+				commandBuffer.AddComponent<FaceCounts>(entity, counts);
+				DynamicBuffer<Faces> facesBuffer = commandBuffer.AddBuffer<Faces>(entity);
+				facesBuffer.CopyFrom(faces);
 
-				if(counts.faceCount != 0)
+				/*if(counts.faceCount != 0)
 				{
 					GetMesh(entity, squares[e], faces, blockAccessor[e], counts, commandBuffer);
-				}
+				} */
 
 
 				commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));

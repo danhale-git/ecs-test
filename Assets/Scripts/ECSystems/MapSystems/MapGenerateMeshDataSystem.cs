@@ -8,25 +8,30 @@ using MyComponents;
 [UpdateAfter(typeof(MapGenerateMeshDataSystem))]
 public class MapGenerateMeshDataBufferSystem : EntityCommandBufferSystem { }
 
+[UpdateAfter(typeof(MapMeshSystem))]
 public class MapGenerateMeshDataSystem : JobComponentSystem
 {
     EntityManager entityManager;
-    MapGenerateMeshDataBufferSystem bufferSystem;
+    MapGenerateMeshDataBufferSystem commandBufferSystem;
     
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        bufferSystem = World.Active.GetOrCreateManager<MapGenerateMeshDataBufferSystem>();
+        commandBufferSystem = World.Active.GetOrCreateManager<MapGenerateMeshDataBufferSystem>();
 
     }
 
     protected override JobHandle OnUpdate(JobHandle inputDependencies)
     {
         MeshDataJob meshDataJob = new MeshDataJob{
-            commandBuffer = bufferSystem.CreateCommandBuffer().ToConcurrent(),
+            commandBuffer = commandBufferSystem.CreateCommandBuffer().ToConcurrent(),
             topologyBuffers = GetBufferFromEntity<Topology>(),
-
+            blocksBuffers    = GetBufferFromEntity<Block>(),
+            facesBuffers    = GetBufferFromEntity<Faces>()
         };
+
+        JobHandle handle = meshDataJob.Schedule(this, inputDependencies);
+        commandBufferSystem.AddJobHandleForProducer(handle);
 
         return inputDependencies;
     }
@@ -35,19 +40,21 @@ public class MapGenerateMeshDataSystem : JobComponentSystem
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
-        public BufferFromEntity<Topology> topologyBuffers;
-        public BufferFromEntity<Faces> facesBuffers;
+        [ReadOnly] public BufferFromEntity<Topology> topologyBuffers;
+        [ReadOnly] public BufferFromEntity<Block> blocksBuffers;
+        [ReadOnly] public BufferFromEntity<Faces> facesBuffers;
 
         public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref FaceCounts counts)
         {
             DynamicBuffer<Topology> topology = topologyBuffers[entity];
+            DynamicBuffer<Block> blocks = blocksBuffers[entity];
             DynamicBuffer<Faces> faces = facesBuffers[entity];
 
             //	Determine vertex and triangle arrays using face count
-            NativeArray<float3> vertices 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
-            NativeArray<float3> normals 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);
-            NativeArray<int> 	triangles 	= new NativeArray<int>	 (counts.triCount, Allocator.TempJob);
-            NativeArray<float4> colors 		= new NativeArray<float4>(counts.vertCount, Allocator.TempJob);
+            NativeArray<float3> vertices 	= new NativeArray<float3>(counts.vertCount, Allocator.Temp);
+            NativeArray<float3> normals 	= new NativeArray<float3>(counts.vertCount, Allocator.Temp);
+            NativeArray<int> 	triangles 	= new NativeArray<int>	 (counts.triCount, Allocator.Temp);
+            NativeArray<float4> colors 		= new NativeArray<float4>(counts.vertCount, Allocator.Temp);
 
             MeshGenerator meshGenerator = new MeshGenerator{
                 vertices 	= vertices,
@@ -56,6 +63,8 @@ public class MapGenerateMeshDataSystem : JobComponentSystem
                 colors 		= colors,
 
                 mapSquare = mapSquare,
+
+                blocks = blocks,
                 faces = faces.AsNativeArray(),
 
                 util = new JobUtil(),
