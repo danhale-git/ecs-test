@@ -75,31 +75,18 @@ public class MapMeshSystem : ComponentSystem
 			NativeArray<AdjacentSquares>	adjacentSquares	= chunk.GetNativeArray(adjacentType);
 			BufferAccessor<Block> 			blockAccessor 	= chunk.GetBufferAccessor(blocksType);
 
-			//	Iterate over map square entities
 			//for(int e = 0; e < entities.Length; e++)
 			for(int e = 0; e < 1; e++)
 			{
 				Entity entity = entities[e];
 
-				//	Check block face exposure and count mesh arrays
 				FaceCounts counts;
 				NativeArray<Faces> faces = CheckBlockFaces(squares[e], blockAccessor[e], adjacentSquares[e], out counts);
 
 
-				//	If any faces are exposed, generate mesh and update entity Position component
 				if(counts.faceCount != 0)
 				{
 					GetMesh(entity, squares[e], faces, blockAccessor[e], counts, commandBuffer);
-
-					commandBuffer.AddComponent<Tags.ApplyMesh>(entity, new Tags.ApplyMesh());
-
-					/*SetMeshComponent(
-						redraw,
-						mapSquareMesh,
-						entity,
-						commandBuffer);					
-					
-					SetPosition(entity, squares[e], positions[e].Value, commandBuffer); */
 				}
 
 
@@ -114,7 +101,6 @@ public class MapMeshSystem : ComponentSystem
 		chunks.Dispose();
 	}
 
-	//	Generate structs with int values showing face exposure for each block
 	NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, DynamicBuffer<Block> blocks, AdjacentSquares adjacentSquares, out FaceCounts counts)
 	{
 		NativeArray<Faces> exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);

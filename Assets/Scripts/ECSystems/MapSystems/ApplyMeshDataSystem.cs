@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEditor;
 using MyComponents;
 
+[UpdateAfter(typeof(MapMeshSystem))]
 public class ApplyMeshDataSystem : ComponentSystem
 {
     EntityManager entityManager;
@@ -25,7 +26,7 @@ public class ApplyMeshDataSystem : ComponentSystem
 
         EntityArchetypeQuery applyMeshQuery = new EntityArchetypeQuery{
 			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer), typeof(Tags.InnerBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.ApplyMesh) }
+			All  	= new ComponentType[] { typeof(MapSquare), typeof(VertBuffer) }
 		};
         applyMeshGroup = GetComponentGroup(applyMeshQuery);
     }
@@ -37,10 +38,10 @@ public class ApplyMeshDataSystem : ComponentSystem
 
 		ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
 		ArchetypeChunkComponentType<MapSquare> squareType = GetArchetypeChunkComponentType<MapSquare>(true);
-        ArchetypeChunkBufferType<VertBuffer> vertType = GetArchetypeChunkBufferType<VertBuffer>();
-        ArchetypeChunkBufferType<NormBuffer> normType = GetArchetypeChunkBufferType<NormBuffer>();
-        ArchetypeChunkBufferType<TriBuffer> triType = GetArchetypeChunkBufferType<TriBuffer>();
-        ArchetypeChunkBufferType<ColorBuffer> colorType = GetArchetypeChunkBufferType<ColorBuffer>();
+        ArchetypeChunkBufferType<VertBuffer> vertType = GetArchetypeChunkBufferType<VertBuffer>(true);
+        ArchetypeChunkBufferType<NormBuffer> normType = GetArchetypeChunkBufferType<NormBuffer>(true);
+        ArchetypeChunkBufferType<TriBuffer> triType = GetArchetypeChunkBufferType<TriBuffer>(true);
+        ArchetypeChunkBufferType<ColorBuffer> colorType = GetArchetypeChunkBufferType<ColorBuffer>(true);
 
 
 		for(int c = 0; c < chunks.Length; c++)
@@ -65,7 +66,6 @@ public class ApplyMeshDataSystem : ComponentSystem
                 SetMeshComponent(redraw, mesh, entity, commandBuffer);
 
 				if(redraw) commandBuffer.RemoveComponent(entity, typeof(Tags.Redraw));
-				commandBuffer.RemoveComponent(entity, typeof(Tags.ApplyMesh));
 
 				commandBuffer.RemoveComponent(entity, typeof(VertBuffer));
 				commandBuffer.RemoveComponent(entity, typeof(NormBuffer));
