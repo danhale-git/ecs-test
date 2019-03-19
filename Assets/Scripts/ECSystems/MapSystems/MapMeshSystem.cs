@@ -28,10 +28,10 @@ public class MapMeshSystem : ComponentSystem
 	public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ShaderGraphTest.mat");
 	//public static Material material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Default.mat");
 
-	struct FaceCounts
+	struct FaceCountsOld
 	{
 		public readonly int faceCount, vertCount, triCount;
-		public FaceCounts(int faceCount, int vertCount, int triCount)
+		public FaceCountsOld(int faceCount, int vertCount, int triCount)
 		{
 			this.faceCount = faceCount;
 			this.vertCount = vertCount;
@@ -80,7 +80,7 @@ public class MapMeshSystem : ComponentSystem
 			{
 				Entity entity = entities[e];
 
-				FaceCounts counts;
+				FaceCountsOld counts;
 				NativeArray<Faces> faces = CheckBlockFaces(squares[e], blockAccessor[e], adjacentSquares[e], out counts);
 
 
@@ -101,7 +101,7 @@ public class MapMeshSystem : ComponentSystem
 		chunks.Dispose();
 	}
 
-	NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, DynamicBuffer<Block> blocks, AdjacentSquares adjacentSquares, out FaceCounts counts)
+	NativeArray<Faces> CheckBlockFaces(MapSquare mapSquare, DynamicBuffer<Block> blocks, AdjacentSquares adjacentSquares, out FaceCountsOld counts)
 	{
 		NativeArray<Faces> exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.TempJob);
 
@@ -135,7 +135,7 @@ public class MapMeshSystem : ComponentSystem
 		return exposedFaces;
 	}
 
-	FaceCounts CountExposedFaces(DynamicBuffer<Block> blocks, NativeArray<Faces> exposedFaces)
+	FaceCountsOld CountExposedFaces(DynamicBuffer<Block> blocks, NativeArray<Faces> exposedFaces)
 	{
 		//	Count vertices and triangles	
 		int faceCount 	= 0;
@@ -180,10 +180,10 @@ public class MapMeshSystem : ComponentSystem
 			}
 		}
 
-		return new FaceCounts(faceCount, vertCount, triCount);
+		return new FaceCountsOld(faceCount, vertCount, triCount);
 	}
 
-	void GetMesh(Entity entity/*DEBUG */, MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, FaceCounts counts, EntityCommandBuffer commandBuffer)
+	void GetMesh(Entity entity/*DEBUG */, MapSquare mapSquare, NativeArray<Faces> faces, DynamicBuffer<Block> blocks, FaceCountsOld counts, EntityCommandBuffer commandBuffer)
 	{
 		//	Determine vertex and triangle arrays using face count
 		NativeArray<float3> vertices 	= new NativeArray<float3>(counts.vertCount, Allocator.TempJob);

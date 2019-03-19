@@ -243,6 +243,16 @@ namespace MyComponents
 			}
 		}
 	}
+	public struct FaceCounts : IComponentData
+	{
+		public readonly int faceCount, vertCount, triCount;
+		public FaceCounts(int faceCount, int vertCount, int triCount)
+		{
+			this.faceCount = faceCount;
+			this.vertCount = vertCount;
+			this.triCount = triCount;
+		}
+	}
 
 	[InternalBufferCapacity(100)]
 	public struct PendingChange : IBufferElementData
