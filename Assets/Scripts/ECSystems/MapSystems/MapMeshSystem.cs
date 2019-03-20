@@ -32,7 +32,8 @@ public class MapMeshSystem : JobComponentSystem
 		BlockFacesJob blockFacesJob = new BlockFacesJob{
             commandBuffer = commandBufferSystem.CreateCommandBuffer().ToConcurrent(),
             blocksBuffers    = GetBufferFromEntity<Block>(),
-			mapSquares = GetComponentDataFromEntity<MapSquare>()
+			mapSquares = GetComponentDataFromEntity<MapSquare>(),
+			directions = Util.CardinalDirections(Allocator.TempJob)
 		};
 
 		JobHandle handle = blockFacesJob.Schedule(this, inputDependencies);
@@ -49,6 +50,9 @@ public class MapMeshSystem : JobComponentSystem
 
         [ReadOnly] public BufferFromEntity<Block> blocksBuffers;
 		[ReadOnly] public ComponentDataFromEntity<MapSquare> mapSquares;
+
+		[DeallocateOnJobCompletion]
+		[ReadOnly] public NativeArray<float3> directions;
 
         public void Execute(Entity entity, int jobIndex, ref AdjacentSquares adjacentSquares)
 		{
@@ -70,8 +74,6 @@ public class MapMeshSystem : JobComponentSystem
 			DynamicBuffer<Block> blocks = blocksBuffers[entity];
 
 			NativeArray<Faces> exposedFaces = new NativeArray<Faces>(blocks.Length, Allocator.Temp);
-
-			NativeArray<float3> directions = Util.CardinalDirections(Allocator.Temp);
 
 			NativeArray<int> adjacentLowestBlocks = new NativeArray<int>(8, Allocator.Temp);
 			for(int i = 0; i < 8; i++)
@@ -101,7 +103,6 @@ public class MapMeshSystem : JobComponentSystem
 				faceChecker.Execute(i);
 			}
 
-			directions.Dispose();
 			adjacentLowestBlocks.Dispose();
 
 			counts = CountExposedFaces(blocks, exposedFaces);
