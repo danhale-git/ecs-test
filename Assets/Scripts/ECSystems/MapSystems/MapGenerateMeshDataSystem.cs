@@ -41,7 +41,9 @@ public class MapGenerateMeshDataSystem : JobComponentSystem
 
         public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref FaceCounts counts)
         {
-            DynamicBuffer<Block> blocks = blocksBuffers[entity];
+            DebugTools.IncrementDebugCount("block data");
+				
+			DynamicBuffer<Block> blocks = blocksBuffers[entity];
             DynamicBuffer<Faces> faces = facesBuffers[entity];
 
             DynamicBuffer<VertBuffer> vertBuffer = commandBuffer.AddBuffer<VertBuffer>(jobIndex, entity);

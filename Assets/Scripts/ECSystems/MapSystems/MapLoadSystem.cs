@@ -45,6 +45,7 @@ public class MapLoadSystem : ComponentSystem
 
             for(int e = 0; e < entities.Length; e++)
             {
+
                 Entity entity = entities[e];
 
                 MapSaveSystem.SaveData data;

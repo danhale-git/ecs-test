@@ -58,6 +58,8 @@ public class MapVerticalDrawBufferSystem : ComponentSystem
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
+            	DebugTools.IncrementDebugCount("Vbuffer");
+
 				Entity 			entity 			= entities[e];
 				AdjacentSquares adjacentSquares = adjacent[e];
 

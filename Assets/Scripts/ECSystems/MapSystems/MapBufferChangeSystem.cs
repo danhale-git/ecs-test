@@ -51,6 +51,8 @@ public class MapBufferChangeSystem : ComponentSystem
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
+				DebugTools.IncrementDebugCount("buffer changed");
+				
 				Entity 					entity		= entities[e];
 				MapSquare 				mapSquare	= mapSquares[e];
 				DynamicBuffer<Block> 	blockBuffer = blockAccessor[e];

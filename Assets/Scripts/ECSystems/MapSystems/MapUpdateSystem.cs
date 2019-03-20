@@ -45,6 +45,8 @@ public class MapUpdateSystem : ComponentSystem
 
             for(int e = 0; e < entities.Length; e++)
             {
+                DebugTools.IncrementDebugCount("update");
+                
                 Entity                          entity          = entities[e];
                 MapSquare                       mapSquare       = mapSquares[e];
                 DynamicBuffer<Block>            blocks          = blockBuffers[e];

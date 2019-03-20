@@ -177,7 +177,6 @@ public class MapSquareSystem : ComponentSystem
                 float3 adjacentPosition = positionList[i] + (directions[d] * squareWidth);
                 if(!mapMatrix.ItemIsSet(adjacentPosition))
                 {
-                    DebugTools.IncrementDebugCount("squares created");
                     CreateMapSquareEntity(adjacentPosition);
                 }
             }
@@ -190,6 +189,8 @@ public class MapSquareSystem : ComponentSystem
 
     Entity CreateMapSquareEntity(float3 worldPosition)
     {
+        DebugTools.IncrementDebugCount("created");
+
         Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 		entityManager.SetComponentData<Translation>(entity, new Translation{ Value = worldPosition } );
 

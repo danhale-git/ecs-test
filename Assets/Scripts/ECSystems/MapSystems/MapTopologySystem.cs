@@ -62,6 +62,8 @@ public class MapTopologySystem : ComponentSystem
             
             for(int e = 0; e < entities.Length; e++)
             {
+                DebugTools.IncrementDebugCount("topology");
+                
                 Entity entity   = entities[e];
                 float3 position = positions[e].Value;
 

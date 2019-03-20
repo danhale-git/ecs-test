@@ -56,6 +56,7 @@ public class MapCellDiscoverySystem : JobComponentSystem
 
         public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare)
         {
+            DebugTools.IncrementDebugCount("discovered");
             DynamicBuffer<WorleyCell> uniqueCells = cellBufferArray[entity];
 
             int totalDiscovered = 0;

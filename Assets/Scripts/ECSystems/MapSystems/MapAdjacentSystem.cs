@@ -55,6 +55,8 @@ public class MapAdjacentSystem : ComponentSystem
 
 			for(int e = 0; e < entities.Length; e++)
 			{
+				DebugTools.IncrementDebugCount("adjacent");
+				
 				Entity entity 	= entities[e];
 				float3 position = positions[e].Value;
 

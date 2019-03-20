@@ -103,6 +103,8 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
         public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
+            DebugTools.IncrementDebugCount("buffer");
+
             bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
             DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, position.Value);
@@ -123,6 +125,8 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
         public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
+            DebugTools.IncrementDebugCount("buffer");
+
             bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
             DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, position.Value);
@@ -148,6 +152,8 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
         public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
+            DebugTools.IncrementDebugCount("buffer");
+
             bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
             DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, position.Value);
@@ -173,6 +179,8 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
         public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
+            DebugTools.IncrementDebugCount("buffer");
+
             bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
 
             DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, position.Value);

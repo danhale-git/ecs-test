@@ -58,6 +58,8 @@ public class ApplyMeshDataSystem : ComponentSystem
 		    
             for(int e = 0; e < entities.Length; e++)
 			{
+				DebugTools.IncrementDebugCount("mesh data");
+				
 				Entity entity = entities[e];
 
 				bool redraw = entityManager.HasComponent<Tags.Redraw>(entity);

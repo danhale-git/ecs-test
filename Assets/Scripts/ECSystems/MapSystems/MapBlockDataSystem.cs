@@ -51,6 +51,8 @@ public class MapBlockDataSystem : ComponentSystem
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
+				DebugTools.IncrementDebugCount("block data");
+
 				Entity entity 						= entities[e];
 				MapSquare mapSquare 				= mapSquares[e];
 				DynamicBuffer<Block> blockBuffer 	= blockAccessor[e];

@@ -66,6 +66,8 @@ public class MapWorleyNoiseSystem : JobComponentSystem
 
         public void Execute(Entity mapSquareEntity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
+            DebugTools.IncrementDebugCount("worley");
+
             NativeArray<WorleyNoise> worleyNoiseMap = GenerateNoiseMap(position.Value);
             worleyNoiseBufferFromEntity[mapSquareEntity].CopyFrom(worleyNoiseMap);
 
