@@ -91,11 +91,20 @@ namespace MyComponents
 		public Entity backRight;
 		public Entity backLeft;
 
-		public Entity this[int side]
+		/*public MapSquare rightSquare;
+		public MapSquare leftSquare;
+		public MapSquare frontSquare;
+		public MapSquare backSquare;
+		public MapSquare frontRightSquare;
+		public MapSquare frontLeftSquare;
+		public MapSquare backRightSquare;
+		public MapSquare backLeftSquare; */
+
+		public Entity this[int direction]
 		{
 			get
 			{
-				switch (side)
+				switch (direction)
 				{
 					case 0: return right;
 					case 1: return left;
@@ -106,10 +115,27 @@ namespace MyComponents
 					case 6: return backRight;
 					case 7: return backLeft;
 
-					default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + side);
+					default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + direction);
 				}
 			}
 		}
+
+		/*public MapSquare GetMapSquare(int direction)
+		{
+			switch(direction)
+			{
+				case 0: return rightSquare;
+				case 1: return leftSquare;
+				case 2: return frontSquare;
+				case 3: return backSquare;
+				case 4: return frontRightSquare;
+				case 5: return frontLeftSquare;
+				case 6: return backRightSquare;
+				case 7: return backLeftSquare;
+
+				default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + direction);
+			}
+		} */
 
 		public Entity GetByDirection(float3 dir)
 		{
@@ -124,7 +150,7 @@ namespace MyComponents
 			else throw new System.ArgumentOutOfRangeException("Index out of range 7: " + dir);
 		}
 
-		public NativeArray<int> GetLowestBlocks(Allocator label)
+		/*public NativeArray<int> GetLowestBlocks(Allocator label)
 		{
 			EntityManager entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
@@ -135,7 +161,7 @@ namespace MyComponents
 				lowestBlocks[i] = adjacentSquare.bottomBlockBuffer;
 			}
 			return lowestBlocks;
-		}
+		} */
 	}
 
 	[InternalBufferCapacity(0)]
@@ -303,7 +329,13 @@ namespace Tags
 	public struct EdgeBuffer : IComponentData { }
 
 	public struct PlayerEntity : IComponentData { }
+
+	namespace Debug
+	{
+		public struct MarkError : IComponentData { }
+	}
 }
+
 
 #endregion
 

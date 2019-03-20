@@ -74,6 +74,11 @@ public class DebugSystem : ComponentSystem
 
                 if(!entityManager.HasComponent<Tags.EdgeBuffer>(entity))
                     BlockBufferDebug(entity, position, mapSquare);
+
+                if(entityManager.HasComponent<Tags.Debug.MarkError>(entity))
+                {
+                    MarkError(entity, position, Color.red);
+                }
             }
         }
 

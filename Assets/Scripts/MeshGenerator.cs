@@ -5,15 +5,15 @@ using MyComponents;
 
 struct MeshGenerator
 {
-    public NativeArray<float3> vertices;
-	public NativeArray<float3> normals;
-	public NativeArray<int> triangles;
-	public NativeArray<float4> colors;
+    public DynamicBuffer<VertBuffer> vertices;
+	public DynamicBuffer<NormBuffer> normals;
+	public DynamicBuffer<TriBuffer> triangles;
+	public DynamicBuffer<ColorBuffer> colors;
 
 	public MapSquare mapSquare;
 	
 	public DynamicBuffer<Block> blocks;
-	public NativeArray<Faces> faces;
+	public DynamicBuffer<Faces> faces;
 
 	public JobUtil util;
 	public int squareWidth;
@@ -70,7 +70,7 @@ struct MeshGenerator
 
 		for(int v = 0; v < vertIndex; v++)
 		{
-			colors[v+vertOffset] = BlockTypes.color[blocks[i].type];
+			colors[v+vertOffset] = new ColorBuffer { color = BlockTypes.color[blocks[i].type] };
 		}
 	}
 
@@ -107,40 +107,40 @@ struct MeshGenerator
 		switch(side)
 		{
 			case 0:	//	Right
-				vertices[index+0] = baseVerts[5]+position;
-				vertices[index+1] = baseVerts[6]+position;
-				vertices[index+2] = baseVerts[2]+position;
-				vertices[index+3] = baseVerts[1]+position;
+				vertices[index+0] = new VertBuffer { vertex = baseVerts[5]+position };
+				vertices[index+1] = new VertBuffer { vertex = baseVerts[6]+position };
+				vertices[index+2] = new VertBuffer { vertex = baseVerts[2]+position };
+				vertices[index+3] = new VertBuffer { vertex = baseVerts[1]+position };
 				break;
 			case 1:	//	Left
-				vertices[index+0] = baseVerts[7]+position;
-				vertices[index+1] = baseVerts[4]+position;
-				vertices[index+2] = baseVerts[0]+position;
-				vertices[index+3] = baseVerts[3]+position;
+				vertices[index+0] = new VertBuffer { vertex = baseVerts[7]+position };
+				vertices[index+1] = new VertBuffer { vertex = baseVerts[4]+position };
+				vertices[index+2] = new VertBuffer { vertex = baseVerts[0]+position };
+				vertices[index+3] = new VertBuffer { vertex = baseVerts[3]+position };
 				break;
 			case 2:	//	Front
-				vertices[index+0] = baseVerts[4]+position;
-				vertices[index+1] = baseVerts[5]+position;
-				vertices[index+2] = baseVerts[1]+position;
-				vertices[index+3] = baseVerts[0]+position;
+				vertices[index+0] = new VertBuffer { vertex = baseVerts[4]+position };
+				vertices[index+1] = new VertBuffer { vertex = baseVerts[5]+position };
+				vertices[index+2] = new VertBuffer { vertex = baseVerts[1]+position };
+				vertices[index+3] = new VertBuffer { vertex = baseVerts[0]+position };
 				break;
 			case 3:	//	Back
-				vertices[index+0] = baseVerts[6]+position;
-				vertices[index+1] = baseVerts[7]+position;
-				vertices[index+2] = baseVerts[3]+position;
-				vertices[index+3] = baseVerts[2]+position;
+				vertices[index+0] = new VertBuffer { vertex = baseVerts[6]+position };
+				vertices[index+1] = new VertBuffer { vertex = baseVerts[7]+position };
+				vertices[index+2] = new VertBuffer { vertex = baseVerts[3]+position };
+				vertices[index+3] = new VertBuffer { vertex = baseVerts[2]+position };
 				break;
 			case 4:	//	Top
-				vertices[index+0] = baseVerts[7]+position;
-				vertices[index+1] = baseVerts[6]+position;
-				vertices[index+2] = baseVerts[5]+position;
-				vertices[index+3] = baseVerts[4]+position;
+				vertices[index+0] = new VertBuffer { vertex = baseVerts[7]+position };
+				vertices[index+1] = new VertBuffer { vertex = baseVerts[6]+position };
+				vertices[index+2] = new VertBuffer { vertex = baseVerts[5]+position };
+				vertices[index+3] = new VertBuffer { vertex = baseVerts[4]+position };
 				break;
 			case 5:	//	Bottom
-				vertices[index+0] = baseVerts[0]+position;
-				vertices[index+1] = baseVerts[1]+position;
-				vertices[index+2] = baseVerts[2]+position;
-				vertices[index+3] = baseVerts[3]+position;
+				vertices[index+0] = new VertBuffer { vertex = baseVerts[0]+position };
+				vertices[index+1] = new VertBuffer { vertex = baseVerts[1]+position };
+				vertices[index+2] = new VertBuffer { vertex = baseVerts[2]+position };
+				vertices[index+3] = new VertBuffer { vertex = baseVerts[3]+position };
 				break;
 			
 			default: throw new System.ArgumentOutOfRangeException("Index out of range 5: " + side);
@@ -150,12 +150,12 @@ struct MeshGenerator
 	//	Triangles for normal cube
 	void Triangles(int index, int vertIndex)
 	{
-		triangles[index+0] = 3 + vertIndex; 
-		triangles[index+1] = 1 + vertIndex; 
-		triangles[index+2] = 0 + vertIndex; 
-		triangles[index+3] = 3 + vertIndex; 
-		triangles[index+4] = 2 + vertIndex; 
-		triangles[index+5] = 1 + vertIndex;
+		triangles[index+0] = new TriBuffer { triangle = 3 + vertIndex }; 
+		triangles[index+1] = new TriBuffer { triangle = 1 + vertIndex }; 
+		triangles[index+2] = new TriBuffer { triangle = 0 + vertIndex }; 
+		triangles[index+3] = new TriBuffer { triangle = 3 + vertIndex }; 
+		triangles[index+4] = new TriBuffer { triangle = 2 + vertIndex }; 
+		triangles[index+5] = new TriBuffer { triangle = 1 + vertIndex };
 	}
 	
 	//	Vertices for sloped top face
@@ -166,20 +166,20 @@ struct MeshGenerator
 		switch(slope.slopeFacing)
 		{
 			case SlopeFacing.NWSE:
-				vertices[index+0] = baseVerts[7]+new float3(0, slope.backLeftSlope, 0)+position;	//	back Left
+				vertices[index+0] = new VertBuffer { vertex = baseVerts[7]+new float3(0, slope.backLeftSlope, 0)+position };	//	back Left
 				vertices[index+1] = vertices[index+0];
-				vertices[index+2] = baseVerts[6]+new float3(0, slope.backRightSlope, 0)+position;	//	back Right
-				vertices[index+3] = baseVerts[5]+new float3(0, slope.frontRightSlope, 0)+position;	//	front Right
+				vertices[index+2] = new VertBuffer { vertex = baseVerts[6]+new float3(0, slope.backRightSlope, 0)+position };	//	back Right
+				vertices[index+3] = new VertBuffer { vertex = baseVerts[5]+new float3(0, slope.frontRightSlope, 0)+position };	//	front Right
 				vertices[index+4] = vertices[index+3];
-				vertices[index+5] = baseVerts[4]+new float3(0, slope.frontLeftSlope, 0)+position;	//	front Left
+				vertices[index+5] = new VertBuffer { vertex = baseVerts[4]+new float3(0, slope.frontLeftSlope, 0)+position };	//	front Left
 				break;
 
 			case SlopeFacing.SWNE:
-				vertices[index+0] = baseVerts[7]+new float3(0, slope.backLeftSlope, 0)+position;	//	back Left
-				vertices[index+1] = baseVerts[6]+new float3(0, slope.backRightSlope, 0)+position;	//	back Right
+				vertices[index+0] = new VertBuffer { vertex = baseVerts[7]+new float3(0, slope.backLeftSlope, 0)+position };	//	back Left
+				vertices[index+1] = new VertBuffer { vertex = baseVerts[6]+new float3(0, slope.backRightSlope, 0)+position };	//	back Right
 				vertices[index+2] = vertices[index+1];
-				vertices[index+3] = baseVerts[5]+new float3(0, slope.frontRightSlope, 0)+position;	//	front Right
-				vertices[index+4] = baseVerts[4]+new float3(0, slope.frontLeftSlope, 0)+position;	//	front Left
+				vertices[index+3] = new VertBuffer { vertex = baseVerts[5]+new float3(0, slope.frontRightSlope, 0)+position };	//	front Right
+				vertices[index+4] = new VertBuffer { vertex = baseVerts[4]+new float3(0, slope.frontLeftSlope, 0)+position };	//	front Left
 				vertices[index+5] = vertices[index+4];
 				break;
 		}
@@ -193,21 +193,21 @@ struct MeshGenerator
 		switch(slope.slopeFacing)
 		{
 			case SlopeFacing.NWSE:
-				triangles[index+0] = 3 + vertIndex; 
-				triangles[index+1] = 0 + vertIndex; 
-				triangles[index+2] = 5 + vertIndex; 
-				triangles[index+3] = 1 + vertIndex; 
-				triangles[index+4] = 4 + vertIndex; 
-				triangles[index+5] = 2 + vertIndex;
+				triangles[index+0] = new TriBuffer { triangle = 3 + vertIndex }; 
+				triangles[index+1] = new TriBuffer { triangle = 0 + vertIndex }; 
+				triangles[index+2] = new TriBuffer { triangle = 5 + vertIndex }; 
+				triangles[index+3] = new TriBuffer { triangle = 1 + vertIndex }; 
+				triangles[index+4] = new TriBuffer { triangle = 4 + vertIndex }; 
+				triangles[index+5] = new TriBuffer { triangle = 2 + vertIndex };
 				break;
 
 			case SlopeFacing.SWNE:
-				triangles[index+0] = 4 + vertIndex; 
-				triangles[index+1] = 1 + vertIndex; 
-				triangles[index+2] = 0 + vertIndex; 
-				triangles[index+3] = 5 + vertIndex; 
-				triangles[index+4] = 3 + vertIndex; 
-				triangles[index+5] = 2 + vertIndex;
+				triangles[index+0] = new TriBuffer { triangle = 4 + vertIndex }; 
+				triangles[index+1] = new TriBuffer { triangle = 1 + vertIndex }; 
+				triangles[index+2] = new TriBuffer { triangle = 0 + vertIndex }; 
+				triangles[index+3] = new TriBuffer { triangle = 5 + vertIndex }; 
+				triangles[index+4] = new TriBuffer { triangle = 3 + vertIndex }; 
+				triangles[index+5] = new TriBuffer { triangle = 2 + vertIndex };
 				break;
 		}
 	}
@@ -224,23 +224,23 @@ struct MeshGenerator
 		if(exposure == Faces.Exp.HALFOUT)
 		{
 			//	Bottom two face vertices
-			vertices[index+0] = position + face[3];
-			vertices[index+1] = position + face[2];
+			vertices[index+0] = new VertBuffer { vertex = position + face[3] };
+			vertices[index+1] = new VertBuffer { vertex = position + face[2] };
 
 			//	Top left or right face vertex
-			if		(slopeVerts.x < 0) vertices[index+2] = position + face[1];
-			else if	(slopeVerts.y < 0) vertices[index+2] = position + face[0];
+			if		(slopeVerts.x < 0) vertices[index+2] = new VertBuffer { vertex = position + face[1] };
+			else if	(slopeVerts.y < 0) vertices[index+2] = new VertBuffer { vertex = position + face[0] };
 		}
 		//	Half face above slope
 		else if(exposure == Faces.Exp.HALFIN)
 		{
 			//	Top two face vertices
-			vertices[index+0] = position + face[0];
-			vertices[index+1] = position + face[1];
+			vertices[index+0] = new VertBuffer { vertex = position + face[0] };
+			vertices[index+1] = new VertBuffer { vertex = position + face[1] };
 
 			//	Bottom left or right face vertex
-			if		(slopeVerts.x < 0) vertices[index+2] = position + face[2];
-			else if	(slopeVerts.y < 0) vertices[index+2] = position + face[3];
+			if		(slopeVerts.x < 0) vertices[index+2] = new VertBuffer { vertex = position + face[2] };
+			else if	(slopeVerts.y < 0) vertices[index+2] = new VertBuffer { vertex = position + face[3] };
 		}
 	}
 
@@ -251,16 +251,16 @@ struct MeshGenerator
 		{
 			case 1:
 			case 2:
-				triangles[index+0] = 0 + vertIndex; 
-				triangles[index+1] = 1 + vertIndex; 
-				triangles[index+2] = 2 + vertIndex;
+				triangles[index+0] = new TriBuffer { triangle = 0 + vertIndex }; 
+				triangles[index+1] = new TriBuffer { triangle = 1 + vertIndex }; 
+				triangles[index+2] = new TriBuffer { triangle = 2 + vertIndex };
 				break; 
 
 			case 0:
 			case 3:
-				triangles[index+0] = 2 + vertIndex; 
-				triangles[index+1] = 1 + vertIndex; 
-				triangles[index+2] = 0 + vertIndex;
+				triangles[index+0] = new TriBuffer { triangle = 2 + vertIndex }; 
+				triangles[index+1] = new TriBuffer { triangle = 1 + vertIndex }; 
+				triangles[index+2] = new TriBuffer { triangle = 0 + vertIndex };
 				break;
 		}
 	}
