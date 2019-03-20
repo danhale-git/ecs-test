@@ -1,4 +1,4 @@
-﻿using Unity.Entities;
+﻿/*using Unity.Entities;
 using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -47,6 +47,8 @@ public class DebugSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
+        return;
+        
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
 		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);
 
@@ -145,3 +147,4 @@ public class DebugSystem : ComponentSystem
         );
     }
 }
+ */
