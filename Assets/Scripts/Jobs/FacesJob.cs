@@ -14,10 +14,15 @@ struct FacesJob : IJob
 	[ReadOnly] public MapSquare mapSquare;
 
 	//	Block data for this and adjacent map squares
+	[DeallocateOnJobCompletion]
 	[ReadOnly] public NativeArray<Block> blocks;
+	[DeallocateOnJobCompletion]
 	[ReadOnly] public NativeArray<Block> right;
+	[DeallocateOnJobCompletion]
 	[ReadOnly] public NativeArray<Block> left;
+	[DeallocateOnJobCompletion]
 	[ReadOnly] public NativeArray<Block> front;
+	[DeallocateOnJobCompletion]
 	[ReadOnly] public NativeArray<Block> back;
 
 	[DeallocateOnJobCompletion]
@@ -30,7 +35,6 @@ struct FacesJob : IJob
 
 	public void Execute()
 	{
-
 		FaceCounts counts;
 		NativeArray<Faces> faces = CheckBlockFaces(entity, adjacentLowestBlocks, out counts);
 
@@ -119,5 +123,4 @@ struct FacesJob : IJob
 
 		return new FaceCounts(faceCount, vertCount, triCount);
 	}
-
 }
