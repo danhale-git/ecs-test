@@ -24,6 +24,7 @@ public class DebugMonoB : MonoBehaviour
 
     void UpdateDebugPanel()
     {
+        Dictionary<string, string> stringsCopy = new Dictionary<string, string>(DebugTools.debugText);
         string newText = "";
         foreach(KeyValuePair<string, string> kvp in DebugTools.debugText)
         {

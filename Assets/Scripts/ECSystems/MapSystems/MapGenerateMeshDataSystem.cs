@@ -33,7 +33,6 @@ public class MapGenerateMeshDataSystem : ComponentSystem
     {
         if(runningJobHandle.IsCompleted)
 		{
-			UnityEngine.Debug.Log("data complete");
 			runningJobHandle.Complete();
 
 			runningCommandBuffer.Playback(entityManager);
@@ -41,7 +40,6 @@ public class MapGenerateMeshDataSystem : ComponentSystem
 		}
 		else
 		{
-			UnityEngine.Debug.Log("data running");
 			return;
 		}
 
@@ -119,8 +117,6 @@ public class MapGenerateMeshDataSystem : ComponentSystem
 
         public void Execute()
         {
-            DebugTools.IncrementDebugCount("block data");
-				
             DynamicBuffer<VertBuffer> vertBuffer = commandBuffer.AddBuffer<VertBuffer>(entity);
             vertBuffer.ResizeUninitialized(counts.vertCount);
             DynamicBuffer<NormBuffer> normBuffer = commandBuffer.AddBuffer<NormBuffer>(entity);

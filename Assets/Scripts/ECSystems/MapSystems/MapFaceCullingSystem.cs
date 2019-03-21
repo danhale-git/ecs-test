@@ -55,7 +55,6 @@ public class MapFaceCullingSystem : ComponentSystem
 	{
 		if(queuedJobHandle.IsCompleted)
 		{
-			Debug.Log("complete");
 			queuedJobHandle.Complete();
 
 			queuedCommandBuffer.Playback(entityManager);
@@ -63,7 +62,6 @@ public class MapFaceCullingSystem : ComponentSystem
 		}
 		else
 		{
-			Debug.Log("running");
 			return;
 		}
 
