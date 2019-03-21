@@ -5,55 +5,130 @@ using Unity.Collections;
 using Unity.Transforms;
 using MyComponents;
 
-[UpdateAfter(typeof(MapGenerateMeshDataSystem))]
-public class MapGenerateMeshDataBufferSystem : EntityCommandBufferSystem { }
 
 [UpdateAfter(typeof(MapFaceCullingSystem))]
-public class MapGenerateMeshDataSystem : JobComponentSystem
+public class MapGenerateMeshDataSystem : ComponentSystem
 {
-    MapGenerateMeshDataBufferSystem commandBufferSystem;
+    EntityManager entityManager;
+
+    ComponentGroup meshDataGroup;
+
+    JobHandle runningJobHandle;
+	EntityCommandBuffer runningCommandBuffer;
     
     protected override void OnCreateManager()
     {
-        commandBufferSystem = World.Active.GetOrCreateManager<MapGenerateMeshDataBufferSystem>();
-    }
+        entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
-    protected override JobHandle OnUpdate(JobHandle inputDependencies)
-    {
-        MeshDataJob meshDataJob = new MeshDataJob{
-            commandBuffer = commandBufferSystem.CreateCommandBuffer().ToConcurrent(),
-            blocksBuffers    = GetBufferFromEntity<Block>(),
-            facesBuffers    = GetBufferFromEntity<Faces>()
+        EntityArchetypeQuery meshDataQuery = new EntityArchetypeQuery{
+            All = new ComponentType[] { typeof(MapSquare), typeof(FaceCounts) }
         };
+        meshDataGroup = GetComponentGroup(meshDataQuery);
 
-        JobHandle handle = meshDataJob.Schedule(this, inputDependencies);
-        commandBufferSystem.AddJobHandleForProducer(handle);
-
-        return handle;
+        runningJobHandle = new JobHandle();
+		runningCommandBuffer = new EntityCommandBuffer(Allocator.TempJob);
     }
 
-    public struct MeshDataJob : IJobProcessComponentDataWithEntity<MapSquare, FaceCounts>
+    protected override void OnUpdate()
     {
-        public EntityCommandBuffer.Concurrent commandBuffer;
+        if(runningJobHandle.IsCompleted)
+		{
+			UnityEngine.Debug.Log("data complete");
+			runningJobHandle.Complete();
 
-        [ReadOnly] public BufferFromEntity<Block> blocksBuffers;
-        [ReadOnly] public BufferFromEntity<Faces> facesBuffers;
+			runningCommandBuffer.Playback(entityManager);
+			runningCommandBuffer.Dispose();
+		}
+		else
+		{
+			UnityEngine.Debug.Log("data running");
+			return;
+		}
 
-        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref FaceCounts counts)
+        EntityCommandBuffer 		commandBuffer 	= new EntityCommandBuffer(Allocator.TempJob);
+		JobHandle					allHandles		= new JobHandle();
+		JobHandle					previousHandle		= new JobHandle();
+        NativeArray<ArchetypeChunk> chunks = meshDataGroup.CreateArchetypeChunkArray(Allocator.TempJob);
+
+        ArchetypeChunkEntityType 						entityType 		= GetArchetypeChunkEntityType();
+		ArchetypeChunkComponentType<MapSquare> 			squareType		= GetArchetypeChunkComponentType<MapSquare>(true);
+		ArchetypeChunkComponentType<FaceCounts> 		faceCountsType	= GetArchetypeChunkComponentType<FaceCounts>(true);
+		ArchetypeChunkBufferType<Block> 				blocksType 		= GetArchetypeChunkBufferType<Block>(true);
+		ArchetypeChunkBufferType<Faces> 				facesType 		= GetArchetypeChunkBufferType<Faces>(true);
+
+		for(int c = 0; c < chunks.Length; c++)
+		{
+			ArchetypeChunk chunk = chunks[c];
+
+			//	Get chunk data
+			NativeArray<Entity> 			entities 		= chunk.GetNativeArray(entityType);
+			NativeArray<MapSquare>			squares			= chunk.GetNativeArray(squareType);
+			NativeArray<FaceCounts>		faceCounts		= chunk.GetNativeArray(faceCountsType);
+			BufferAccessor<Block> 			blockAccessor 	= chunk.GetBufferAccessor(blocksType);
+			BufferAccessor<Faces> 			facesAccessor 	= chunk.GetBufferAccessor(facesType);
+
+			for(int e = 0; e < entities.Length; e++)
+			{
+                Entity entity = entities[e];
+				MapSquare mapSquare = squares[e];
+                FaceCounts counts = faceCounts[e];
+
+                DynamicBuffer<Block> blocksBuffer = blockAccessor[e];
+                DynamicBuffer<Faces> facesBuffer = facesAccessor[e];
+
+                NativeArray<Block> blocksArray = new NativeArray<Block>(blocksBuffer.Length, Allocator.TempJob);
+                blocksArray.CopyFrom(blocksBuffer.AsNativeArray());
+                NativeArray<Faces> facesArray = new NativeArray<Faces>(facesBuffer.Length, Allocator.TempJob);
+                facesArray.CopyFrom(facesBuffer.AsNativeArray());
+
+                MeshDataJob meshDataJob = new MeshDataJob(){
+                    commandBuffer = commandBuffer,
+                    entity = entity,
+                    counts = counts,
+                    mapSquare = mapSquare,
+                    
+                    blocks = blocksArray,
+                    faces = facesArray
+                };
+
+                JobHandle thisHandle = meshDataJob.Schedule(previousHandle);
+				allHandles = JobHandle.CombineDependencies(thisHandle, allHandles);
+
+				previousHandle = thisHandle;
+			}
+		}
+
+		runningCommandBuffer = commandBuffer;
+		runningJobHandle = allHandles;
+
+		chunks.Dispose();
+	}
+
+    public struct MeshDataJob : IJob
+    {
+        public EntityCommandBuffer commandBuffer;
+
+        [ReadOnly] public Entity entity;
+        [ReadOnly] public FaceCounts counts;
+        [ReadOnly] public MapSquare mapSquare;
+
+        [DeallocateOnJobCompletion]
+        [ReadOnly] public NativeArray<Block> blocks;
+        [DeallocateOnJobCompletion]
+        [ReadOnly] public NativeArray<Faces> faces;
+
+        public void Execute()
         {
             DebugTools.IncrementDebugCount("block data");
 				
-			DynamicBuffer<Block> blocks = blocksBuffers[entity];
-            DynamicBuffer<Faces> faces = facesBuffers[entity];
-
-            DynamicBuffer<VertBuffer> vertBuffer = commandBuffer.AddBuffer<VertBuffer>(jobIndex, entity);
+            DynamicBuffer<VertBuffer> vertBuffer = commandBuffer.AddBuffer<VertBuffer>(entity);
             vertBuffer.ResizeUninitialized(counts.vertCount);
-            DynamicBuffer<NormBuffer> normBuffer = commandBuffer.AddBuffer<NormBuffer>(jobIndex, entity);
+            DynamicBuffer<NormBuffer> normBuffer = commandBuffer.AddBuffer<NormBuffer>(entity);
             normBuffer.ResizeUninitialized(counts.vertCount);
-            DynamicBuffer<ColorBuffer> colorBuffer = commandBuffer.AddBuffer<ColorBuffer>(jobIndex, entity);
+            DynamicBuffer<ColorBuffer> colorBuffer = commandBuffer.AddBuffer<ColorBuffer>(entity);
             colorBuffer.ResizeUninitialized(counts.vertCount);
 
-            DynamicBuffer<TriBuffer> triBuffer = commandBuffer.AddBuffer<TriBuffer>(jobIndex, entity);
+            DynamicBuffer<TriBuffer> triBuffer = commandBuffer.AddBuffer<TriBuffer>(entity);
             triBuffer.ResizeUninitialized(counts.triCount);
 
             MeshGenerator meshGenerator = new MeshGenerator{
@@ -78,10 +153,8 @@ public class MapGenerateMeshDataSystem : JobComponentSystem
                 meshGenerator.Execute(i);
             }
 
-            //commandBuffer.AddComponent(jobIndex, entity, new Tags.Debug.MarkError());
-
-            commandBuffer.RemoveComponent<FaceCounts>(jobIndex, entity);
-            commandBuffer.RemoveComponent<Faces>(jobIndex, entity);
+            commandBuffer.RemoveComponent<FaceCounts>(entity);
+            commandBuffer.RemoveComponent<Faces>(entity);
         }
     }
 }

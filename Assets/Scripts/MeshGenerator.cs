@@ -12,8 +12,8 @@ struct MeshGenerator
 
 	public MapSquare mapSquare;
 	
-	public DynamicBuffer<Block> blocks;
-	public DynamicBuffer<Faces> faces;
+	public NativeArray<Block> blocks;
+	public NativeArray<Faces> faces;
 
 	public JobUtil util;
 	public int squareWidth;
