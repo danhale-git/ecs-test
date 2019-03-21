@@ -8,9 +8,7 @@ using MyComponents;
 
 struct FacesJob : IJob
 {
-    public EntityCommandBuffer.Concurrent commandBuffer;
-
-	[ReadOnly] public int jobIndex;
+    public EntityCommandBuffer commandBuffer;
 
 	[ReadOnly] public Entity entity;
 	[ReadOnly] public MapSquare mapSquare;
@@ -36,11 +34,11 @@ struct FacesJob : IJob
 		FaceCounts counts;
 		NativeArray<Faces> faces = CheckBlockFaces(entity, adjacentLowestBlocks, out counts);
 
-		commandBuffer.AddComponent<FaceCounts>(jobIndex, entity, counts);
-		DynamicBuffer<Faces> facesBuffer = commandBuffer.AddBuffer<Faces>(jobIndex, entity);
+		commandBuffer.AddComponent<FaceCounts>(entity, counts);
+		DynamicBuffer<Faces> facesBuffer = commandBuffer.AddBuffer<Faces>(entity);
 		facesBuffer.CopyFrom(faces);
 
-		commandBuffer.RemoveComponent(jobIndex, entity, typeof(Tags.DrawMesh));
+		commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
 		
 		faces.Dispose();
 	}

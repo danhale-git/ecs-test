@@ -8,7 +8,7 @@ using MyComponents;
 [UpdateAfter(typeof(MapGenerateMeshDataSystem))]
 public class MapGenerateMeshDataBufferSystem : EntityCommandBufferSystem { }
 
-[UpdateAfter(typeof(MapMeshSystem))]
+[UpdateAfter(typeof(MapFaceCullingSystem))]
 public class MapGenerateMeshDataSystem : JobComponentSystem
 {
     MapGenerateMeshDataBufferSystem commandBufferSystem;
