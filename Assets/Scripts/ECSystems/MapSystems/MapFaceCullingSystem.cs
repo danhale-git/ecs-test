@@ -60,31 +60,6 @@ public class MapFaceCullingSystem : ComponentSystem
 		ScheduleMoreJobs();
 	}
 
-	NativeArray<Block> GetBlockArray(Entity entity)
-	{
-		DynamicBuffer<Block> buffer = entityManager.GetBuffer<Block>(entity);
-		NativeArray<Block> array = new NativeArray<Block>(buffer.Length, Allocator.TempJob);
-		array.CopyFrom(buffer.AsNativeArray());
-		return array;
-	}
-
-	NativeArray<int> GetAdjacentLowestBlocks(AdjacentSquares adjacentSquares)
-	{
-		NativeArray<int> adjacentLowestBlocks = new NativeArray<int>(8, Allocator.TempJob);
-		for(int i = 0; i < 8; i++)
-			adjacentLowestBlocks[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).bottomBlockBuffer;
-
-		return adjacentLowestBlocks;
-	}
-
-	void JobCompleteAndBufferPlayback()
-	{
-		runningJobHandle.Complete();
-
-		runningCommandBuffer.Playback(entityManager);
-		runningCommandBuffer.Dispose();
-	}
-
 	void ScheduleMoreJobs()
 	{
 		NativeArray<ArchetypeChunk> chunks 			= meshGroup.CreateArchetypeChunkArray(Allocator.TempJob);
@@ -142,5 +117,30 @@ public class MapFaceCullingSystem : ComponentSystem
 		runningJobHandle = allHandles;
 
 		chunks.Dispose();
+	}
+
+	NativeArray<Block> GetBlockArray(Entity entity)
+	{
+		DynamicBuffer<Block> buffer = entityManager.GetBuffer<Block>(entity);
+		NativeArray<Block> array = new NativeArray<Block>(buffer.Length, Allocator.TempJob);
+		array.CopyFrom(buffer.AsNativeArray());
+		return array;
+	}
+
+	NativeArray<int> GetAdjacentLowestBlocks(AdjacentSquares adjacentSquares)
+	{
+		NativeArray<int> adjacentLowestBlocks = new NativeArray<int>(8, Allocator.TempJob);
+		for(int i = 0; i < 8; i++)
+			adjacentLowestBlocks[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).bottomBlockBuffer;
+
+		return adjacentLowestBlocks;
+	}
+
+	void JobCompleteAndBufferPlayback()
+	{
+		runningJobHandle.Complete();
+
+		runningCommandBuffer.Playback(entityManager);
+		runningCommandBuffer.Dispose();
 	}
 } 
