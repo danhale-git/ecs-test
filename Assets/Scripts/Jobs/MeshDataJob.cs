@@ -11,10 +11,8 @@ public struct MeshDataJob : IJob
     [ReadOnly] public FaceCounts counts;
     [ReadOnly] public MapSquare mapSquare;
 
-    [DeallocateOnJobCompletion]
-    [ReadOnly] public NativeArray<Block> blocks;
-    [DeallocateOnJobCompletion]
-    [ReadOnly] public NativeArray<Faces> faces;
+    [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> blocks;
+    [DeallocateOnJobCompletion][ReadOnly] public NativeArray<Faces> faces;
 
     public void Execute()
     {
