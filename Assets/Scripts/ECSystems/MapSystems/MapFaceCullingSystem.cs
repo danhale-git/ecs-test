@@ -27,8 +27,8 @@ public class MapFaceCullingSystem : ComponentSystem
 
 	ComponentGroup meshGroup;
 
-	public JobHandle queuedJobHandle;
-	EntityCommandBuffer queuedCommandBuffer;
+	JobHandle runningJobHandle;
+	EntityCommandBuffer runningCommandBuffer;
 
 	protected override void OnCreateManager()
 	{
@@ -42,97 +42,92 @@ public class MapFaceCullingSystem : ComponentSystem
 		};
 		meshGroup = GetComponentGroup(squareQuery);
 
-		queuedJobHandle = new JobHandle();
-		queuedCommandBuffer = new EntityCommandBuffer(Allocator.TempJob);
+		runningJobHandle = new JobHandle();
+		runningCommandBuffer = new EntityCommandBuffer(Allocator.TempJob);
 	}
 
 	protected override void OnDestroyManager()
 	{
+		if(runningCommandBuffer.IsCreated) runningCommandBuffer.Dispose();
 	}
 
-	//	Query for meshes that need drawing
 	protected override void OnUpdate()
 	{
-		if(queuedJobHandle.IsCompleted)
-		{
-			queuedJobHandle.Complete();
-
-			queuedCommandBuffer.Playback(entityManager);
-			queuedCommandBuffer.Dispose();
-		}
-		else
-		{
+		if(!runningJobHandle.IsCompleted)
 			return;
-		}
+		
+		JobCompleteAndBufferPlayback();
+		ScheduleMoreJobs();
+	}
 
-		EntityCommandBuffer 		commandBuffer 	= new EntityCommandBuffer(Allocator.TempJob);
-		JobHandle					allHandles		= new JobHandle();
-		JobHandle					previousHandle		= new JobHandle();
+	NativeArray<Block> GetBlockArray(Entity entity)
+	{
+		DynamicBuffer<Block> buffer = entityManager.GetBuffer<Block>(entity);
+		NativeArray<Block> array = new NativeArray<Block>(buffer.Length, Allocator.TempJob);
+		array.CopyFrom(buffer.AsNativeArray());
+		return array;
+	}
+
+	NativeArray<int> GetAdjacentLowestBlocks(AdjacentSquares adjacentSquares)
+	{
+		NativeArray<int> adjacentLowestBlocks = new NativeArray<int>(8, Allocator.TempJob);
+		for(int i = 0; i < 8; i++)
+			adjacentLowestBlocks[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).bottomBlockBuffer;
+
+		return adjacentLowestBlocks;
+	}
+
+	void JobCompleteAndBufferPlayback()
+	{
+		runningJobHandle.Complete();
+
+		runningCommandBuffer.Playback(entityManager);
+		runningCommandBuffer.Dispose();
+	}
+
+	void ScheduleMoreJobs()
+	{
 		NativeArray<ArchetypeChunk> chunks 			= meshGroup.CreateArchetypeChunkArray(Allocator.TempJob);
+
+		EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.TempJob);
+		JobHandle allHandles		= new JobHandle();
+		JobHandle previousHandle	= new JobHandle();
 
 		ArchetypeChunkEntityType 						entityType 		= GetArchetypeChunkEntityType();
 		ArchetypeChunkComponentType<MapSquare> 			squareType		= GetArchetypeChunkComponentType<MapSquare>(true);
 		ArchetypeChunkComponentType<Translation> 		positionType	= GetArchetypeChunkComponentType<Translation>(true);
 		ArchetypeChunkComponentType<AdjacentSquares>	adjacentType	= GetArchetypeChunkComponentType<AdjacentSquares>(true);
-		ArchetypeChunkBufferType<Block> 				blocksType 		= GetArchetypeChunkBufferType<Block>(true);
 
 		for(int c = 0; c < chunks.Length; c++)
 		{
 			ArchetypeChunk chunk = chunks[c];
 
-			//	Get chunk data
 			NativeArray<Entity> 			entities 		= chunk.GetNativeArray(entityType);
-			NativeArray<MapSquare>			squares			= chunk.GetNativeArray(squareType);
+			NativeArray<MapSquare>			mapSquares		= chunk.GetNativeArray(squareType);
 			NativeArray<Translation>		positions		= chunk.GetNativeArray(positionType);
-			NativeArray<AdjacentSquares>	adjacentSquaresArray	= chunk.GetNativeArray(adjacentType);
-			BufferAccessor<Block> 			blockAccessor 	= chunk.GetBufferAccessor(blocksType);
+			NativeArray<AdjacentSquares>	adjacents		= chunk.GetNativeArray(adjacentType);
 
 			for(int e = 0; e < entities.Length; e++)
 			{
 				Entity entity = entities[e];
-				AdjacentSquares adjacentSquares = adjacentSquaresArray[e];
-				MapSquare mapSquare = squares[e];
+				AdjacentSquares adjacentSquares = adjacents[e];
 
-				NativeArray<float3> directions = Util.CardinalDirections(Allocator.TempJob);
-
-				NativeArray<int> adjacentLowestBlocks = new NativeArray<int>(8, Allocator.TempJob);
-				for(int i = 0; i < 8; i++)
-					adjacentLowestBlocks[i] = entityManager.GetComponentData<MapSquare>(adjacentSquares[i]).bottomBlockBuffer;
-
-
-				DynamicBuffer<Block> blocksBuffer 	= blockAccessor[e];
-				DynamicBuffer<Block> rightBuffer 	= entityManager.GetBuffer<Block>(adjacentSquares[0]);
-				DynamicBuffer<Block> leftBuffer 	= entityManager.GetBuffer<Block>(adjacentSquares[1]);
-				DynamicBuffer<Block> frontBuffer 	= entityManager.GetBuffer<Block>(adjacentSquares[2]);
-				DynamicBuffer<Block> backBuffer 	= entityManager.GetBuffer<Block>(adjacentSquares[3]);
-
-				NativeArray<Block> blocksArray = new NativeArray<Block>(blocksBuffer.Length, Allocator.TempJob);
-				blocksArray.CopyFrom(blocksBuffer.AsNativeArray());
-				NativeArray<Block> rightArray = new NativeArray<Block>(rightBuffer.Length, Allocator.TempJob);
-				rightArray.CopyFrom(rightBuffer.AsNativeArray());
-				NativeArray<Block> leftArray = new NativeArray<Block>(leftBuffer.Length, Allocator.TempJob);
-				leftArray.CopyFrom(leftBuffer.AsNativeArray());
-				NativeArray<Block> frontArray = new NativeArray<Block>(frontBuffer.Length, Allocator.TempJob);
-				frontArray.CopyFrom(frontBuffer.AsNativeArray());
-				NativeArray<Block> backArray = new NativeArray<Block>(backBuffer.Length, Allocator.TempJob);
-				backArray.CopyFrom(backBuffer.AsNativeArray());
-				
 				FacesJob job = new FacesJob(){
 					commandBuffer = commandBuffer,
 
 					entity = entity,
-					mapSquare 		= mapSquare,
+					mapSquare = mapSquares[e],
 
-					blocks 	= blocksArray,
-					right 	= rightArray,
-					left 	= leftArray,
-					front 	= frontArray,
-					back 	= backArray,
+					current 	= GetBlockArray(entity),
+					rightAdjacent 	= GetBlockArray(adjacentSquares[0]),
+					leftAdjacent 	= GetBlockArray(adjacentSquares[1]),
+					frontAdjacent 	= GetBlockArray(adjacentSquares[2]),
+					backAdjacent 	= GetBlockArray(adjacentSquares[3]),
 
-					adjacentLowestBlocks = adjacentLowestBlocks,
+					adjacentLowestBlocks = GetAdjacentLowestBlocks(adjacentSquares),
 					
 					squareWidth = squareWidth,
-					directions 	= directions, 
+					directions 	= Util.CardinalDirections(Allocator.TempJob), 
 					util 		= new JobUtil()
 				};
 				
@@ -143,11 +138,8 @@ public class MapFaceCullingSystem : ComponentSystem
 			}
 		}
 
-		//commandBuffer.Playback(entityManager);
-		//commandBuffer.Dispose();
-
-		queuedCommandBuffer = commandBuffer;
-		queuedJobHandle = allHandles;
+		runningCommandBuffer = commandBuffer;
+		runningJobHandle = allHandles;
 
 		chunks.Dispose();
 	}
