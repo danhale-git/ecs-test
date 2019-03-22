@@ -93,11 +93,11 @@ public class MapFaceCullingSystem : ComponentSystem
 					entity = entity,
 					mapSquare = mapSquares[e],
 
-					current 	= GetBlockArray(entity),
-					rightAdjacent 	= GetBlockArray(adjacentSquares[0]),
-					leftAdjacent 	= GetBlockArray(adjacentSquares[1]),
-					frontAdjacent 	= GetBlockArray(adjacentSquares[2]),
-					backAdjacent 	= GetBlockArray(adjacentSquares[3]),
+					current 		= new NativeArray<Block>(entityManager.GetBuffer<Block>(entity).AsNativeArray(), Allocator.TempJob),
+					rightAdjacent 	= new NativeArray<Block>(entityManager.GetBuffer<Block>(adjacentSquares[0]).AsNativeArray(), Allocator.TempJob),
+					leftAdjacent 	= new NativeArray<Block>(entityManager.GetBuffer<Block>(adjacentSquares[1]).AsNativeArray(), Allocator.TempJob),
+					frontAdjacent 	= new NativeArray<Block>(entityManager.GetBuffer<Block>(adjacentSquares[2]).AsNativeArray(), Allocator.TempJob),
+					backAdjacent 	= new NativeArray<Block>(entityManager.GetBuffer<Block>(adjacentSquares[3]).AsNativeArray(), Allocator.TempJob),
 
 					adjacentLowestBlocks = GetAdjacentLowestBlocks(adjacentSquares),
 					
@@ -117,14 +117,6 @@ public class MapFaceCullingSystem : ComponentSystem
 		runningJobHandle = allHandles;
 
 		chunks.Dispose();
-	}
-
-	NativeArray<Block> GetBlockArray(Entity entity)
-	{
-		DynamicBuffer<Block> buffer = entityManager.GetBuffer<Block>(entity);
-		NativeArray<Block> array = new NativeArray<Block>(buffer.Length, Allocator.TempJob);
-		array.CopyFrom(buffer.AsNativeArray());
-		return array;
 	}
 
 	NativeArray<int> GetAdjacentLowestBlocks(AdjacentSquares adjacentSquares)
