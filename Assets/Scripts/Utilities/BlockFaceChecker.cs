@@ -12,11 +12,11 @@ public struct BlockFaceChecker
 	public MapSquare mapSquare;
 
 	//	Block data for this and adjacent map squares
-	public NativeArray<Block> blocks;
-	public NativeArray<Block> right;
-	public NativeArray<Block> left;
-	public NativeArray<Block> front;
-	public NativeArray<Block> back;
+	public NativeArray<Block> current;
+	public NativeArray<Block> rightAdjacent;
+	public NativeArray<Block> leftAdjacent;
+	public NativeArray<Block> frontAdjacent;
+	public NativeArray<Block> backAdjacent;
 
 	public NativeArray<int> adjacentLowestBlocks;
 
@@ -29,7 +29,7 @@ public struct BlockFaceChecker
 		//	Offset to allow buffer of blocks
 		i += mapSquare.drawIndexOffset;
 
-		if(blocks[i].type == 0) return;
+		if(current[i].type == 0) return;
 
 		//	Local position in cube
 		float3 position = util.Unflatten(i, squareWidth);
@@ -47,14 +47,14 @@ public struct BlockFaceChecker
 			int exposed = BlockTypes.translucent[adjacentBlock.type];
 
 			//	Not a slope
-			if(blocks[i].isSloped == 0)
+			if(current[i].isSloped == 0)
 			{
 				faces[d] = exposed > 0 ? (int)Faces.Exp.FULL : (int)Faces.Exp.HIDDEN;
 				continue;
 			}
 			else
 			{
-				float2 slopeVerts = blocks[i].slope.GetSlopeVerts(d);
+				float2 slopeVerts = current[i].slope.GetSlopeVerts(d);
 
 				//	Base of a slope, face doesn't exist
 				if(slopeVerts.x + slopeVerts.y == -2)
@@ -82,11 +82,11 @@ public struct BlockFaceChecker
 	{
 		float3 edge = Util.EdgeOverlap(pos, squareWidth);
 
-		if		(edge.x > 0) return right[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 0)];
-		else if	(edge.x < 0) return left [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 1)];
-		else if	(edge.z > 0) return front[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 2)];
-		else if	(edge.z < 0) return back [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 3)];
-		else		    	return blocks[util.Flatten(pos.x, pos.y, pos.z, squareWidth)];
+		if		(edge.x > 0) return rightAdjacent[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 0)];
+		else if	(edge.x < 0) return leftAdjacent [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 1)];
+		else if	(edge.z > 0) return frontAdjacent[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 2)];
+		else if	(edge.z < 0) return backAdjacent [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 3)];
+		else		    	return current[util.Flatten(pos.x, pos.y, pos.z, squareWidth)];
 	}
 
 	int AdjacentBlockIndex(float3 pos, int lowest, int adjacentSquareIndex)

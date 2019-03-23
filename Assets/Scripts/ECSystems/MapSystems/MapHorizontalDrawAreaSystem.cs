@@ -93,7 +93,7 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
         return new SubMatrix(veiwSubMatrixRoot, veiwSubMatrixWidth);
     }
 
-    [RequireComponentTag(typeof(Tags.SetHorizontalDrawBuffer))]
+    [RequireComponentTag(typeof(Tags.SetHorizontalDrawBounds))]
     public struct SetNewSquaresJob : IJobProcessComponentDataWithEntity<MapSquare, Translation>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
@@ -111,7 +111,7 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
             drawBufferUtil.SetDrawBuffer(entity, buffer, commandBuffer, jobIndex);
 
-            commandBuffer.RemoveComponent<Tags.SetHorizontalDrawBuffer>(jobIndex, entity);
+            commandBuffer.RemoveComponent<Tags.SetHorizontalDrawBounds>(jobIndex, entity);
         }
     }
 

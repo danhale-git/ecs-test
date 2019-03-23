@@ -26,7 +26,7 @@ public class ApplyMeshDataSystem : ComponentSystem
 
         EntityArchetypeQuery applyMeshQuery = new EntityArchetypeQuery{
 			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer), typeof(Tags.InnerBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(VertBuffer) }
+			All  	= new ComponentType[] { typeof(MapSquare), typeof(MeshVertex) }
 		};
         applyMeshGroup = GetComponentGroup(applyMeshQuery);
     }
@@ -38,10 +38,10 @@ public class ApplyMeshDataSystem : ComponentSystem
 
 		ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
 		ArchetypeChunkComponentType<MapSquare> squareType = GetArchetypeChunkComponentType<MapSquare>(true);
-        ArchetypeChunkBufferType<VertBuffer> vertType = GetArchetypeChunkBufferType<VertBuffer>(true);
-        ArchetypeChunkBufferType<NormBuffer> normType = GetArchetypeChunkBufferType<NormBuffer>(true);
-        ArchetypeChunkBufferType<TriBuffer> triType = GetArchetypeChunkBufferType<TriBuffer>(true);
-        ArchetypeChunkBufferType<ColorBuffer> colorType = GetArchetypeChunkBufferType<ColorBuffer>(true);
+        ArchetypeChunkBufferType<MeshVertex> vertType = GetArchetypeChunkBufferType<MeshVertex>(true);
+        ArchetypeChunkBufferType<MeshNormal> normType = GetArchetypeChunkBufferType<MeshNormal>(true);
+        ArchetypeChunkBufferType<MeshTriangle> triType = GetArchetypeChunkBufferType<MeshTriangle>(true);
+        ArchetypeChunkBufferType<MeshVertColor> colorType = GetArchetypeChunkBufferType<MeshVertColor>(true);
 
 
 		for(int c = 0; c < chunks.Length; c++)
@@ -51,10 +51,10 @@ public class ApplyMeshDataSystem : ComponentSystem
 			NativeArray<Entity> entities = chunk.GetNativeArray(entityType);
 			NativeArray<MapSquare> squares = chunk.GetNativeArray(squareType);
 
-            BufferAccessor<VertBuffer> vertBuffers = chunk.GetBufferAccessor<VertBuffer>(vertType);
-            BufferAccessor<NormBuffer> triBuffers = chunk.GetBufferAccessor<NormBuffer>(normType);
-            BufferAccessor<TriBuffer> normBuffers = chunk.GetBufferAccessor<TriBuffer>(triType);
-            BufferAccessor<ColorBuffer> colorBuffers = chunk.GetBufferAccessor<ColorBuffer>(colorType);
+            BufferAccessor<MeshVertex> vertBuffers = chunk.GetBufferAccessor<MeshVertex>(vertType);
+            BufferAccessor<MeshNormal> triBuffers = chunk.GetBufferAccessor<MeshNormal>(normType);
+            BufferAccessor<MeshTriangle> normBuffers = chunk.GetBufferAccessor<MeshTriangle>(triType);
+            BufferAccessor<MeshVertColor> colorBuffers = chunk.GetBufferAccessor<MeshVertColor>(colorType);
 		    
             for(int e = 0; e < entities.Length; e++)
 			{
@@ -69,10 +69,10 @@ public class ApplyMeshDataSystem : ComponentSystem
 
 				if(redraw) commandBuffer.RemoveComponent(entity, typeof(Tags.Redraw));
 
-				commandBuffer.RemoveComponent(entity, typeof(VertBuffer));
-				commandBuffer.RemoveComponent(entity, typeof(NormBuffer));
-				commandBuffer.RemoveComponent(entity, typeof(TriBuffer));
-				commandBuffer.RemoveComponent(entity, typeof(ColorBuffer));
+				commandBuffer.RemoveComponent(entity, typeof(MeshVertex));
+				commandBuffer.RemoveComponent(entity, typeof(MeshNormal));
+				commandBuffer.RemoveComponent(entity, typeof(MeshTriangle));
+				commandBuffer.RemoveComponent(entity, typeof(MeshVertColor));
             }
         }
 
@@ -82,7 +82,7 @@ public class ApplyMeshDataSystem : ComponentSystem
         chunks.Dispose();
     }
 
-    Mesh MakeMesh(DynamicBuffer<VertBuffer> vertices, DynamicBuffer<NormBuffer> normals, DynamicBuffer<TriBuffer> triangles, DynamicBuffer<ColorBuffer> colors)
+    Mesh MakeMesh(DynamicBuffer<MeshVertex> vertices, DynamicBuffer<MeshNormal> normals, DynamicBuffer<MeshTriangle> triangles, DynamicBuffer<MeshVertColor> colors)
 	{
         //	Convert vertices and colors from float3/float4 to Vector3/Color
 		Vector3[] verticesArray = new Vector3[vertices.Length];

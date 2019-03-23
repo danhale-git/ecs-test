@@ -76,6 +76,12 @@ public class PhysicsSystem : ComponentSystem
                 //TODO: proper physics system
                 //  Get height of current block
                 DynamicBuffer<Topology> heightMap = entityManager.GetBuffer<Topology>(physicsComponent.currentMapSquare);
+                if(heightMap.Length == 0)
+                {
+                    chunks.Dispose();
+                    return;
+                }
+
                 float3 local = Util.LocalVoxel(nextPosition, squareWidth, true);
                 float yOffset = heightMap[Util.Flatten2D(local.x, local.z, squareWidth)].height;
 

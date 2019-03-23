@@ -8,7 +8,7 @@ using Unity.Transforms;
 using MyComponents;
 
 //	Get y buffer for mesh drawing based on adjacent top/bottom blocks
-[UpdateInGroup(typeof(UpdateGroups.NewMapSquareUpdateGroup))]
+[UpdateInGroup(typeof(InitializationSystemGroup))]
 public class MapAdjacentSystem : ComponentSystem
 {
     EntityManager entityManager;
@@ -26,7 +26,7 @@ public class MapAdjacentSystem : ComponentSystem
 		squareWidth = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery adjacentQuery = new EntityArchetypeQuery{
-            None 	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.SetHorizontalDrawBuffer) },
+            None 	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.SetHorizontalDrawBounds) },
 			All 	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GetAdjacentSquares) }
 		};
 		adjacentGroup = GetComponentGroup(adjacentQuery);

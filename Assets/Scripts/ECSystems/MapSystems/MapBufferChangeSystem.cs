@@ -8,7 +8,7 @@ using UnityEngine;
 using MyComponents;
 
 //	Increase size of block data array and fill gaps
-[UpdateAfter(typeof(MapVerticalDrawBufferSystem))]
+[UpdateAfter(typeof(MapVerticalDrawBoundsSystem))]
 public class MapBufferChangeSystem : ComponentSystem
 {
 	EntityManager entityManager;

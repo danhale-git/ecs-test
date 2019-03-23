@@ -13,24 +13,16 @@ struct FacesJob : IJob
 	[ReadOnly] public Entity entity;
 	[ReadOnly] public MapSquare mapSquare;
 
-	//	Block data for this and adjacent map squares
-	[DeallocateOnJobCompletion]
-	[ReadOnly] public NativeArray<Block> blocks;
-	[DeallocateOnJobCompletion]
-	[ReadOnly] public NativeArray<Block> right;
-	[DeallocateOnJobCompletion]
-	[ReadOnly] public NativeArray<Block> left;
-	[DeallocateOnJobCompletion]
-	[ReadOnly] public NativeArray<Block> front;
-	[DeallocateOnJobCompletion]
-	[ReadOnly] public NativeArray<Block> back;
+	[DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> current;
+	[DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> rightAdjacent;
+	[DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> leftAdjacent;
+	[DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> frontAdjacent;
+	[DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> backAdjacent;
 
-	[DeallocateOnJobCompletion]
-	[ReadOnly] public NativeArray<int> adjacentLowestBlocks;
+	[DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> adjacentLowestBlocks;
 
 	[ReadOnly] public int squareWidth;
-	[DeallocateOnJobCompletion]
-	[ReadOnly] public NativeArray<float3> directions;	
+	[DeallocateOnJobCompletion][ReadOnly] public NativeArray<float3> directions;	
 	[ReadOnly] public JobUtil util;
 
 	public void Execute()
@@ -43,21 +35,20 @@ struct FacesJob : IJob
 		facesBuffer.CopyFrom(faces);
 
 		commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
-		
 		faces.Dispose();
 	}
 
 	NativeArray<Faces> CheckBlockFaces(Entity entity, NativeArray<int> adjacentLowestBlocks, out FaceCounts counts)
 	{
 		BlockFaceChecker faceChecker = new BlockFaceChecker(){
-			exposedFaces 	= new NativeArray<Faces>(blocks.Length, Allocator.Temp),
+			exposedFaces 	= new NativeArray<Faces>(current.Length, Allocator.Temp),
 			mapSquare 		= mapSquare,
 
-			blocks 	= blocks,
-			right 	= right,
-			left 	= left,
-			front 	= front,
-			back 	= back,
+			current 	= current,
+			rightAdjacent 	= rightAdjacent,
+			leftAdjacent 	= leftAdjacent,
+			frontAdjacent 	= frontAdjacent,
+			backAdjacent 	= backAdjacent,
 
 			adjacentLowestBlocks = adjacentLowestBlocks,
 			
@@ -72,7 +63,7 @@ struct FacesJob : IJob
 		}
 
 
-		counts = CountExposedFaces(blocks, faceChecker.exposedFaces);
+		counts = CountExposedFaces(current, faceChecker.exposedFaces);
 		return faceChecker.exposedFaces;
 	}
 

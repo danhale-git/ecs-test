@@ -12,7 +12,6 @@ public class MapSquareSystem : ComponentSystem
 {
     EntityManager entityManager;
 
-    EntityUtil entityUtil;
     WorleyNoiseGenerator worleyNoiseGen;
 
     int squareWidth;
@@ -35,7 +34,6 @@ public class MapSquareSystem : ComponentSystem
     {
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
-        entityUtil = new EntityUtil(entityManager);
         worleyNoiseGen = new WorleyNoiseGenerator(
             TerrainSettings.seed,
             TerrainSettings.cellFrequency,
@@ -55,12 +53,11 @@ public class MapSquareSystem : ComponentSystem
             ComponentType.ReadWrite<Block>(),
 
             ComponentType.ReadWrite<Tags.GenerateWorleyNoise>(),
-            ComponentType.ReadWrite<Tags.SetHorizontalDrawBuffer>(),            
+            ComponentType.ReadWrite<Tags.SetHorizontalDrawBounds>(),            
             ComponentType.ReadWrite<Tags.GenerateTerrain>(),
             ComponentType.ReadWrite<Tags.GetAdjacentSquares>(),
             ComponentType.ReadWrite<Tags.LoadChanges>(),
-            ComponentType.ReadWrite<Tags.SetDrawBuffer>(),
-            ComponentType.ReadWrite<Tags.SetBlockBuffer>(),
+            ComponentType.ReadWrite<Tags.SetVerticalDrawBounds>(),
             ComponentType.ReadWrite<Tags.GenerateBlocks>(),
             ComponentType.ReadWrite<Tags.SetSlopes>(),
 			ComponentType.ReadWrite<Tags.DrawMesh>(),

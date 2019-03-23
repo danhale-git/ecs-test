@@ -91,15 +91,6 @@ namespace MyComponents
 		public Entity backRight;
 		public Entity backLeft;
 
-		/*public MapSquare rightSquare;
-		public MapSquare leftSquare;
-		public MapSquare frontSquare;
-		public MapSquare backSquare;
-		public MapSquare frontRightSquare;
-		public MapSquare frontLeftSquare;
-		public MapSquare backRightSquare;
-		public MapSquare backLeftSquare; */
-
 		public Entity this[int direction]
 		{
 			get
@@ -120,23 +111,6 @@ namespace MyComponents
 			}
 		}
 
-		/*public MapSquare GetMapSquare(int direction)
-		{
-			switch(direction)
-			{
-				case 0: return rightSquare;
-				case 1: return leftSquare;
-				case 2: return frontSquare;
-				case 3: return backSquare;
-				case 4: return frontRightSquare;
-				case 5: return frontLeftSquare;
-				case 6: return backRightSquare;
-				case 7: return backLeftSquare;
-
-				default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + direction);
-			}
-		} */
-
 		public Entity GetByDirection(float3 dir)
 		{
 			if	   (dir.x ==  1 && dir.y == 0 && dir.z ==  0) return right;
@@ -149,19 +123,6 @@ namespace MyComponents
 			else if(dir.x == -1 && dir.y == 0 && dir.z == -1) return backLeft;
 			else throw new System.ArgumentOutOfRangeException("Index out of range 7: " + dir);
 		}
-
-		/*public NativeArray<int> GetLowestBlocks(Allocator label)
-		{
-			EntityManager entityManager = World.Active.GetOrCreateManager<EntityManager>();
-
-			NativeArray<int> lowestBlocks = new NativeArray<int>(8, label);
-			for(int i = 0; i < 8; i++)
-			{
-				MapSquare adjacentSquare = entityManager.GetComponentData<MapSquare>(this[i]);
-				lowestBlocks[i] = adjacentSquare.bottomBlockBuffer;
-			}
-			return lowestBlocks;
-		} */
 	}
 
 	[InternalBufferCapacity(0)]
@@ -200,22 +161,22 @@ namespace MyComponents
 	}
 
 	[InternalBufferCapacity(0)]
-	public struct VertBuffer : IBufferElementData
+	public struct MeshVertex : IBufferElementData
 	{
 		public float3 vertex;
 	}
 	[InternalBufferCapacity(0)]
-	public struct NormBuffer : IBufferElementData
+	public struct MeshNormal : IBufferElementData
 	{
 		public float3 normal;
 	}
 	[InternalBufferCapacity(0)]
-	public struct TriBuffer : IBufferElementData
+	public struct MeshTriangle : IBufferElementData
 	{
 		public int triangle;
 	}
 	[InternalBufferCapacity(0)]
-	public struct ColorBuffer : IBufferElementData
+	public struct MeshVertColor : IBufferElementData
 	{
 		public float4 color;
 	}
@@ -309,12 +270,11 @@ namespace Tags
 	public struct GenerateWorleyNoise : IComponentData { }
 	public struct CreateAdjacentSquares : IComponentData { }
 
-	public struct SetHorizontalDrawBuffer : IComponentData { }
+	public struct SetHorizontalDrawBounds : IComponentData { }
 	public struct GenerateTerrain : IComponentData { }
 	public struct GetAdjacentSquares : IComponentData { }
 	public struct LoadChanges : IComponentData { }
-	public struct SetDrawBuffer : IComponentData { }
-	public struct SetBlockBuffer : IComponentData { }
+	public struct SetVerticalDrawBounds : IComponentData { }
 	public struct GenerateBlocks : IComponentData { }
 	public struct SetSlopes : IComponentData { }
 	public struct DrawMesh : IComponentData { }
@@ -338,10 +298,3 @@ namespace Tags
 
 
 #endregion
-
-namespace UpdateGroups
-{
-	//[UpdateAfter(typeof(MapHorizontalDrawBufferSystem))]
-	[UpdateAfter(typeof(MapHorizontalDrawAreaSystem))]
-	public class NewMapSquareUpdateGroup : ComponentSystemGroup { }
-}
