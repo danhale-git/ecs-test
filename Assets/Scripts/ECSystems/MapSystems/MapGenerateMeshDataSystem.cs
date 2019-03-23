@@ -31,7 +31,7 @@ public class MapGenerateMeshDataSystem : ComponentSystem
 
 	protected override void OnDestroyManager()
 	{
-		if(runningCommandBuffer.IsCreated) runningCommandBuffer.Dispose();
+		runningCommandBuffer.Dispose();
 	}
 
     protected override void OnUpdate()
