@@ -18,6 +18,10 @@ public static class TerrainSettings
 	public const float cellEdgeSmoothing = 10.0f;
 	public const float cellularJitter = 0.15f;
 
+	public const int levelHeight = 5;
+    public const float cliffDepth = 0.05f;
+    public const int levelCount = 5;
+
 	public static int BiomeIndex(float noise)
 	{
 		if(noise > 0.5f) return 1;
