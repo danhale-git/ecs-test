@@ -51,7 +51,7 @@ public class MapWorleyNoiseSystem : JobComponentSystem
     }
 
     [RequireComponentTag(typeof(Tags.GenerateWorleyNoise))]
-    public struct WorleyJob : IJobProcessComponentDataWithEntity<MapSquare, Translation>
+    struct WorleyJob : IJobProcessComponentDataWithEntity<MapSquare, Translation>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
         

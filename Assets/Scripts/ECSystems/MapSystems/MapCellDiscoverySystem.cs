@@ -44,7 +44,7 @@ public class MapCellDiscoverySystem : JobComponentSystem
     }
 
     [ExcludeComponent(typeof(Tags.AllCellsDiscovered), typeof(Tags.GenerateWorleyNoise))]
-    public struct DiscoveryJob : IJobProcessComponentDataWithEntity<MapSquare>
+    struct DiscoveryJob : IJobProcessComponentDataWithEntity<MapSquare>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
 
