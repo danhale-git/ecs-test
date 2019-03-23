@@ -4,8 +4,7 @@ using Unity.Collections;
 using MyComponents;
 
 [UpdateAfter(typeof(UpdateGroups.NewMapSquareUpdateGroup))]
-[UpdateAfter(typeof(MapUpdateSystem))]
-public class MapVerticalDrawBufferSystem : ComponentSystem
+public class MapVerticalDrawBoundsSystem : ComponentSystem
 {
     EntityManager entityManager;
 
@@ -35,11 +34,11 @@ public class MapVerticalDrawBufferSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        UpdateDrawBuffers();
-        UpdateBlockBuffers();
+        UpdateDrawBounds();
+        UpdateBlockBuffer();
     }
 
-    void UpdateDrawBuffers()
+    void UpdateDrawBounds()
     {
         EntityCommandBuffer 		commandBuffer 	= new EntityCommandBuffer(Allocator.Temp);
         NativeArray<ArchetypeChunk> chunks 			= drawBufferGroup.CreateArchetypeChunkArray(Allocator.TempJob);
@@ -99,7 +98,7 @@ public class MapVerticalDrawBufferSystem : ComponentSystem
 		commandBuffer.SetComponent<MapSquare>(entity, updateSquare);
 	}
 
-    void UpdateBlockBuffers()
+    void UpdateBlockBuffer()
     {
         EntityCommandBuffer 		commandBuffer 	= new EntityCommandBuffer(Allocator.Temp);
         NativeArray<ArchetypeChunk> chunks 			= blockBufferGroup.CreateArchetypeChunkArray(Allocator.TempJob);

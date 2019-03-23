@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using Unity.Rendering;
 using MyComponents;
 
+[UpdateInGroup(typeof(UpdateGroups.NewMapSquareUpdateGroup))]
 public class MapUpdateSystem : ComponentSystem
 {
     EntityManager entityManager;
