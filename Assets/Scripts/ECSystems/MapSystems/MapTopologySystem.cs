@@ -40,11 +40,6 @@ public class MapTopologySystem : ComponentSystem
         biomes.InitialiseBiomes();
     }
 
-    protected override void OnDestroyManager()
-    {
-        biomes.Dispose();
-    }
-
     protected override void OnUpdate()
     {
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);

@@ -28,13 +28,6 @@ public struct BiomeUtility
         index = new BiomeIndex();
     }
 
-    public void Dispose()
-    {
-        cliff.noise.Dispose();
-        hills.noise.Dispose();
-        flat.noise.Dispose();
-    }
-
     public float AddNoise(float cellNoise, int x, int z)
     {
         return AddNoise(index.GetIndex(cellNoise), x, z);
