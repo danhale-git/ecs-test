@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using MyComponents;
 
-[UpdateInGroup(typeof(UpdateGroups.NewMapSquareUpdateGroup))]
+[UpdateInGroup(typeof(UpdateGroups.CreateLoadUpdateGroup))]
 public class MapLoadSystem : ComponentSystem
 {
     EntityManager entityManager;
