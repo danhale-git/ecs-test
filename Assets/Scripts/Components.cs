@@ -270,12 +270,11 @@ namespace Tags
 	public struct GenerateWorleyNoise : IComponentData { }
 	public struct CreateAdjacentSquares : IComponentData { }
 
-	public struct SetHorizontalDrawBuffer : IComponentData { }
+	public struct SetHorizontalDrawBounds : IComponentData { }
 	public struct GenerateTerrain : IComponentData { }
 	public struct GetAdjacentSquares : IComponentData { }
 	public struct LoadChanges : IComponentData { }
-	public struct SetDrawBuffer : IComponentData { }
-	public struct SetBlockBuffer : IComponentData { }
+	public struct SetVerticalDrawBounds : IComponentData { }
 	public struct GenerateBlocks : IComponentData { }
 	public struct SetSlopes : IComponentData { }
 	public struct DrawMesh : IComponentData { }

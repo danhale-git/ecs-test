@@ -96,8 +96,7 @@ public class MapLoadSystem : ComponentSystem
         //  Apply saved map square
         commandBuffer.SetComponent<MapSquare>(entity, data.mapSquare);
 
-        commandBuffer.RemoveComponent<Tags.SetDrawBuffer>(entity);
-        commandBuffer.RemoveComponent<Tags.SetBlockBuffer>(entity);
+        commandBuffer.RemoveComponent<Tags.SetVerticalDrawBounds>(entity);
     }
 
     DynamicBuffer<LoadedChange> GetOrCreateLoadedChangeBuffer(Entity entity, EntityCommandBuffer commandBuffer)

@@ -22,13 +22,13 @@ public class MapVerticalDrawBufferSystem : ComponentSystem
 
 		EntityArchetypeQuery drawBufferQuery = new EntityArchetypeQuery{
             None 	= new ComponentType[] { typeof(Tags.EdgeBuffer) },
-			All 	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetDrawBuffer), typeof(AdjacentSquares) }
+			All 	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetVerticalDrawBounds), typeof(AdjacentSquares) }
 		};
 		drawBufferGroup = GetComponentGroup(drawBufferQuery);
 
         EntityArchetypeQuery blockBufferQuery = new EntityArchetypeQuery{
             None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer) },
-			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetBlockBuffer), typeof(AdjacentSquares) }
+			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.SetVerticalDrawBounds), typeof(AdjacentSquares) }
 		};
 		blockBufferGroup = GetComponentGroup(blockBufferQuery);
     }
@@ -65,9 +65,6 @@ public class MapVerticalDrawBufferSystem : ComponentSystem
 
                 //	Check top and bottom limits for drawing map square
 				DrawBuffer(entity, mapSquares[e], adjacentSquares, commandBuffer);
-
-				//  Set block buffer next
-                commandBuffer.RemoveComponent<Tags.SetDrawBuffer>(entity);
             }
         }
     
@@ -127,7 +124,7 @@ public class MapVerticalDrawBufferSystem : ComponentSystem
 				BlockBuffer(entity, mapSquares[e], adjacent[e], commandBuffer);
 
 				//  Set block buffer next
-                commandBuffer.RemoveComponent<Tags.SetBlockBuffer>(entity);
+                commandBuffer.RemoveComponent<Tags.SetVerticalDrawBounds>(entity);
             }
         }
     

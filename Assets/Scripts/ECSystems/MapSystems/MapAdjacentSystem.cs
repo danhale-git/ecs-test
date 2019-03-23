@@ -26,7 +26,7 @@ public class MapAdjacentSystem : ComponentSystem
 		squareWidth = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery adjacentQuery = new EntityArchetypeQuery{
-            None 	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.SetHorizontalDrawBuffer) },
+            None 	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.SetHorizontalDrawBounds) },
 			All 	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GetAdjacentSquares) }
 		};
 		adjacentGroup = GetComponentGroup(adjacentQuery);
