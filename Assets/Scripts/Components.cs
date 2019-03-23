@@ -298,10 +298,3 @@ namespace Tags
 
 
 #endregion
-
-namespace UpdateGroups
-{
-	//[UpdateAfter(typeof(MapHorizontalDrawBufferSystem))]
-	[UpdateAfter(typeof(MapHorizontalDrawAreaSystem))]
-	public class CreateLoadUpdateGroup : ComponentSystemGroup { }
-}

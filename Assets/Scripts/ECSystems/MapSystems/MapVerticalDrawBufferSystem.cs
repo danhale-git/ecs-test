@@ -3,7 +3,7 @@ using Unity.Entities;
 using Unity.Collections;
 using MyComponents;
 
-[UpdateAfter(typeof(UpdateGroups.CreateLoadUpdateGroup))]
+[UpdateAfter(typeof(InitializationSystemGroup))]
 public class MapVerticalDrawBoundsSystem : ComponentSystem
 {
     EntityManager entityManager;
