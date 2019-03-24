@@ -57,7 +57,7 @@ public class MapVerticalDrawBoundsSystem : ComponentSystem
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
-            	DebugTools.IncrementDebugCount("Vbuffer");
+            	DebugTools.IncrementDebugCount("VDrawbuffer");
 
 				Entity 			entity 			= entities[e];
 				AdjacentSquares adjacentSquares = adjacent[e];
@@ -117,6 +117,8 @@ public class MapVerticalDrawBoundsSystem : ComponentSystem
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
+            	DebugTools.IncrementDebugCount("VBlockbuffer");
+
 				Entity entity = entities[e];
 
                 //  Get adjacent map square entities
