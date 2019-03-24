@@ -271,7 +271,7 @@ namespace Tags
 	public struct CreateAdjacentSquares : IComponentData { }
 
 	public struct SetHorizontalDrawBounds : IComponentData { }
-	public struct GenerateTerrain : IComponentData { }
+	//public struct GenerateTerrain : IComponentData { }
 	public struct GetAdjacentSquares : IComponentData { }
 	public struct LoadChanges : IComponentData { }
 	public struct SetVerticalDrawBounds : IComponentData { }

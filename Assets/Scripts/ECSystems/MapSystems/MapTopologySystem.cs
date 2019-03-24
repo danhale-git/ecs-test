@@ -26,7 +26,8 @@ public class MapTopologySystem : ComponentSystem
         squareWidth     = TerrainSettings.mapSquareWidth;
 
         EntityArchetypeQuery terrainQuery = new EntityArchetypeQuery{
-            All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateTerrain) }
+            None    = new ComponentType[] { typeof(Topology) },
+            All     = new ComponentType[] { typeof(MapSquare) }
         };
         terrainGroup = GetComponentGroup(terrainQuery);
 
@@ -98,7 +99,7 @@ public class MapTopologySystem : ComponentSystem
             int highestBlock = 0;
             int lowestBlock = 0;
 
-            DynamicBuffer<Topology> heightBuffer = commandBuffer.SetBuffer<Topology>(entity);
+            DynamicBuffer<Topology> heightBuffer = commandBuffer.AddBuffer<Topology>(entity);
 			heightBuffer.ResizeUninitialized((int)math.pow(squareWidth, 2));
 
             for(int i = 0; i < heightBuffer.Length; i++)
@@ -125,7 +126,7 @@ public class MapTopologySystem : ComponentSystem
                 commandBuffer.SetComponent<MapSquare>(entity, mapSquareComponent);
 
             //  Set draw buffer next
-            commandBuffer.RemoveComponent<Tags.GenerateTerrain>(entity);
+            //commandBuffer.RemoveComponent<Tags.GenerateTerrain>(entity);
         }
 
         Topology GetHeight(WorleyNoise cell, int3 worldPosition)

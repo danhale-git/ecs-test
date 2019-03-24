@@ -59,7 +59,10 @@ public class PhysicsSystem : ComponentSystem
                     physicsComponent.currentMapSquare = managerSystem.mapMatrix.GetItem(nextPosition);
 
                 if(!entityManager.Exists(physicsComponent.currentMapSquare))
-                    continue;                
+                    continue;   
+
+                if(!entityManager.HasComponent<Topology>(physicsComponent.currentMapSquare))
+                    continue;             
 
                 //  Get vector describing next position's overlap from this map square
                 float3 currentSquarePosition = entityManager.GetComponentData<MapSquare>(physicsComponent.currentMapSquare).position;               

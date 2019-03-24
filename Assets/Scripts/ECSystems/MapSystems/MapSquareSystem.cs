@@ -49,12 +49,12 @@ public class MapSquareSystem : ComponentSystem
             ComponentType.ReadWrite<MapSquare>(),
             ComponentType.ReadWrite<WorleyNoise>(),
             ComponentType.ReadWrite<WorleyCell>(),
-            ComponentType.ReadWrite<Topology>(),
+            //ComponentType.ReadWrite<Topology>(),
             ComponentType.ReadWrite<Block>(),
 
             ComponentType.ReadWrite<Tags.GenerateWorleyNoise>(),
             ComponentType.ReadWrite<Tags.SetHorizontalDrawBounds>(),            
-            ComponentType.ReadWrite<Tags.GenerateTerrain>(),
+            //ComponentType.ReadWrite<Tags.GenerateTerrain>(),
             ComponentType.ReadWrite<Tags.GetAdjacentSquares>(),
             ComponentType.ReadWrite<Tags.LoadChanges>(),
             ComponentType.ReadWrite<Tags.SetVerticalDrawBounds>(),
@@ -123,6 +123,8 @@ public class MapSquareSystem : ComponentSystem
             previousMapSquare = currentMapSquare;
         }
 
+        DebugTools.IncrementDebugCount("map square changed");
+
         currentCellIndex = CurrentCellIndex();
         if(currentCellIndex.Equals(previousCellIndex))
         {
@@ -134,6 +136,8 @@ public class MapSquareSystem : ComponentSystem
             cellChanged = true;
             previousCellIndex = currentCellIndex;
         }
+
+        DebugTools.IncrementDebugCount("call changed");
     }
 
     void CreateNewSquares()
