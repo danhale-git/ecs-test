@@ -39,11 +39,15 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
         squareWidth = TerrainSettings.mapSquareWidth;
     }
-
+    
     protected override JobHandle OnUpdate(JobHandle inputDependencies)
     {
-        SubMatrix playerViewSubMatrix = ViewSubMatrix();
-        SubMatrix subMatrix = LargestDiscoveredGridAroundPlayer(squareSystem.mapMatrix, playerViewSubMatrix);
+        float3 currentPosition = MapSquareSystem.currentMapSquare;
+        int eligible = LargestEligibleSquareAroundPosition(squareSystem.mapMatrix, currentPosition);
+
+        float3 root = currentPosition - ((eligible) * squareWidth);
+        int width = (eligible * 2) + 1;
+        SubMatrix subMatrix = new SubMatrix(root, width);
 
         JobHandle newSquaresJob = new SetNewSquaresJob{
             commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
@@ -236,6 +240,48 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
         return new SubMatrix(finalGridRoot, finalGridWidth);
 	}
+
+    int LargestEligibleSquareAroundPosition(Matrix<Entity> matrix, float3 worldPosition)
+    {
+        for(int i = 1; i <= TerrainSettings.viewDistance; i++)
+        {
+            if(!CheckEligibleOffset(matrix, worldPosition, i))
+                return i-1;
+        }
+        return TerrainSettings.viewDistance;
+    }
+
+    bool CheckEligibleOffset(Matrix<Entity> matrix, float3 centerWorld, int offset)
+    {
+        if(offset == 0) return false;
+        float3 centerMatrix = matrix.WorldToMatrixPosition(centerWorld);
+        if(!SquareIsEligible(matrix, centerMatrix))
+            return false;
+
+        for(int xz = -offset; xz <= offset; xz++)
+        {
+            float3 topPosition = new float3(xz, 0, offset) + centerMatrix;
+            float3 bottomPosition = new float3(xz, 0, -offset) + centerMatrix;
+            float3 rightPosition = new float3(offset, 0, xz) + centerMatrix;
+            float3 leftPosition = new float3(-offset, 0, xz) + centerMatrix;
+
+            if( !SquareIsEligible(matrix, topPosition) ||
+                !SquareIsEligible(matrix, bottomPosition) ||
+                !SquareIsEligible(matrix, rightPosition) ||
+                !SquareIsEligible(matrix, leftPosition) )
+                {
+                    return false;
+                }
+        }
+        return true;
+    }
+
+    bool SquareIsEligible(Matrix<Entity> matrix, float3 matrixPosition)
+    {
+        int index = matrix.PositionToIndex(matrixPosition);
+        return (matrix.ItemIsSet(index) &&
+                entityManager.HasComponent<Tags.AllCellsDiscovered>(matrix.GetItem(index)));
+    }
 
     bool SquareIsEligible(Matrix<Entity> matrix, int index)
     {
