@@ -1,17 +1,16 @@
-﻿/*using Unity.Entities;
+﻿using Unity.Entities;
 using Unity.Collections;
 using Unity.Mathematics;
 using Unity.Transforms;
 using MyComponents;
 using UnityEngine;
 using System.Collections.Generic;
-[UpdateAfter(typeof(MapMeshSystem))]
+
+[UpdateAfter(typeof(ApplyMeshDataSystem))]
 public class DebugSystem : ComponentSystem
 {
     EntityManager entityManager;
     MapSquareSystem squareSystem;
-
-    EntityUtil entityUtil;
 
     int squareWidth;
 
@@ -32,8 +31,6 @@ public class DebugSystem : ComponentSystem
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         squareSystem = World.Active.GetOrCreateManager<MapSquareSystem>();
 
-        entityUtil = new EntityUtil(entityManager);
-
         squareWidth = TerrainSettings.mapSquareWidth;
 
         lineUtil = new DebugLineUtil(squareWidth);
@@ -47,8 +44,6 @@ public class DebugSystem : ComponentSystem
 
     protected override void OnUpdate()
     {
-        return;
-        
         EntityCommandBuffer         commandBuffer   = new EntityCommandBuffer(Allocator.Temp);
 		NativeArray<ArchetypeChunk> chunks          = allSquaresGroup.CreateArchetypeChunkArray(Allocator.Persistent);
 
@@ -147,4 +142,3 @@ public class DebugSystem : ComponentSystem
         );
     }
 }
- */

@@ -9,12 +9,12 @@ public class DebugMonoB : MonoBehaviour
     public Text debugPanelText;
     GameObject canvas;
 
-    //DebugSystem debugSystem;
+    DebugSystem debugSystem;
 
     void Start()
     {
         canvas = FindObjectOfType<Canvas>().gameObject;
-        //debugSystem = World.Active.GetOrCreateManager<DebugSystem>();
+        debugSystem = World.Active.GetOrCreateManager<DebugSystem>();
     }
 
     void Update()
@@ -37,7 +37,7 @@ public class DebugMonoB : MonoBehaviour
         debugPanelText.text = newText;
     }
 
-    /*void OnDrawGizmos()
+    void OnDrawGizmos()
     {
         if(!Application.isPlaying) return;
 
@@ -62,5 +62,5 @@ public class DebugMonoB : MonoBehaviour
 
             debugSystem.mapSquareLines[i] = dictCopy;
         }
-    } */
+    } 
 }
