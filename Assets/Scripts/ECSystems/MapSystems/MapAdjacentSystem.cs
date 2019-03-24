@@ -26,8 +26,8 @@ public class MapAdjacentSystem : ComponentSystem
 		squareWidth = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery adjacentQuery = new EntityArchetypeQuery{
-            None 	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.SetHorizontalDrawBounds) },
-			All 	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GetAdjacentSquares) }
+            None 	= new ComponentType[] { typeof(AdjacentSquares), typeof(Tags.EdgeBuffer), typeof(Tags.SetHorizontalDrawBounds) },
+			All 	= new ComponentType[] { typeof(MapSquare) }
 		};
 		adjacentGroup = GetComponentGroup(adjacentQuery);
     }
@@ -69,7 +69,6 @@ public class MapAdjacentSystem : ComponentSystem
 				Entity backRightEntity 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[6]);
 				Entity backLeftEntity 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[7]);
 
-				//	Get adjacent map squares from matrix in MapManagerSystem
 				AdjacentSquares adjacent = new AdjacentSquares{
 					right 		= rightEntity,
 					left 		= leftEntity,
@@ -78,16 +77,7 @@ public class MapAdjacentSystem : ComponentSystem
 					frontRight 	= frontRightEntity,
 					frontLeft 	= frontLeftEntity,
 					backRight 	= backRightEntity,
-					backLeft 	= backLeftEntity/*,
-
-					rightSquare = entityManager.GetComponentData<MapSquare>(rightEntity),
-					leftSquare = entityManager.GetComponentData<MapSquare>(leftEntity),
-					frontSquare = entityManager.GetComponentData<MapSquare>(frontEntity),
-					backSquare = entityManager.GetComponentData<MapSquare>(backEntity),
-					frontRightSquare = entityManager.GetComponentData<MapSquare>(frontRightEntity),
-					frontLeftSquare = entityManager.GetComponentData<MapSquare>(frontLeftEntity),
-					backRightSquare = entityManager.GetComponentData<MapSquare>(backRightEntity),
-					backLeftSquare = entityManager.GetComponentData<MapSquare>(backLeftEntity) */
+					backLeft 	= backLeftEntity
 				};
 
 				for(int i = 0; i < 8; i++)
@@ -101,12 +91,7 @@ public class MapAdjacentSystem : ComponentSystem
 					}
 				}
 
-				if(entityManager.HasComponent<AdjacentSquares>(entity))
-					commandBuffer.SetComponent<AdjacentSquares>(entity, adjacent);
-				else
-					commandBuffer.AddComponent<AdjacentSquares>(entity, adjacent);
-
-                commandBuffer.RemoveComponent<Tags.GetAdjacentSquares>(entity);
+				commandBuffer.AddComponent<AdjacentSquares>(entity, adjacent);
             }
         }
     
