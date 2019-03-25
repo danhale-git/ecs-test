@@ -2,5 +2,6 @@
 
 namespace MapUpdateGroups
 {
-    public class CellDiscoveryGroup : ComponentSystemGroup { }
+    [UpdateAfter(typeof(DiscoveryBarrier))]
+    public class InitialiseSquaresGroup : ComponentSystemGroup { }
 }

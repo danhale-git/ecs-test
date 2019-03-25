@@ -8,7 +8,6 @@ using MyComponents;
 [UpdateAfter(typeof(MapHorizontalDrawAreaSystem))]
 public class HorizontalDrawAreaBarrier : EntityCommandBufferSystem { }
 
-[UpdateAfter(typeof(MapCellDiscoverySystem))]
 public class MapHorizontalDrawAreaSystem : JobComponentSystem
 {
 	public enum DrawBufferType { NONE, INNER, OUTER, EDGE }

@@ -270,6 +270,8 @@ namespace Tags
 	public struct GenerateWorleyNoise : IComponentData { }
 	public struct CreateAdjacentSquares : IComponentData { }
 
+	public struct InitialiseStageComplete : IComponentData { }
+
 	public struct SetHorizontalDrawBounds : IComponentData { }
 	//public struct GenerateTerrain : IComponentData { }
 	//public struct GetAdjacentSquares : IComponentData { }
