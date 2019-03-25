@@ -50,6 +50,8 @@ public class MapSquareSystem : ComponentSystem
             ComponentType.ReadWrite<WorleyNoise>(),
             ComponentType.ReadWrite<WorleyCell>(),
             ComponentType.ReadWrite<Block>(),
+
+            ComponentType.ReadWrite<Tags.EdgeBuffer>(),
             
             ComponentType.ReadWrite<Tags.GenerateWorleyNoise>(),
             ComponentType.ReadWrite<Tags.SetHorizontalDrawBounds>(),            

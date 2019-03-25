@@ -43,17 +43,11 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
     {
         SubMatrix subMatrix = LargestVisibleArea(squareSystem.mapMatrix, MapSquareSystem.currentMapSquare);
 
-        JobHandle newSquaresJob = new SetNewSquaresJob{
-            commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
-            subMatrix = subMatrix,
-            drawBufferUtil = new DrawBufferUtil(squareWidth)
-        }.Schedule(this, inputDependencies);
-
         JobHandle innerSquaresJob = new CheckInnerSquaresJob{
             commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
             subMatrix = subMatrix,
             drawBufferUtil = new DrawBufferUtil(squareWidth)
-        }.Schedule(this, newSquaresJob);
+        }.Schedule(this, inputDependencies);
 
         JobHandle outerSquaresJob = new CheckOuterSquaresJob{
             commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
@@ -67,11 +61,10 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
             drawBufferUtil = new DrawBufferUtil(squareWidth)
         }.Schedule(this, outerSquaresJob);
 
-        NativeArray<JobHandle> jobHandles = new NativeArray<JobHandle>(4, Allocator.Temp);
-        jobHandles[0] = newSquaresJob;
-        jobHandles[1] = innerSquaresJob;
-        jobHandles[2] = outerSquaresJob;
-        jobHandles[3] = edgeSquaresJob;
+        NativeArray<JobHandle> jobHandles = new NativeArray<JobHandle>(3, Allocator.Temp);
+        jobHandles[0] = innerSquaresJob;
+        jobHandles[1] = outerSquaresJob;
+        jobHandles[2] = edgeSquaresJob;
 
         JobHandle dependencies = JobHandle.CombineDependencies(jobHandles);
         jobHandles.Dispose();
@@ -130,26 +123,6 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
         int index = matrix.PositionToIndex(matrixPosition);
         return (matrix.ItemIsSet(index) &&
                 entityManager.HasComponent<Tags.AllCellsDiscovered>(matrix.GetItem(index)));
-    }
-
-    [RequireComponentTag(typeof(Tags.SetHorizontalDrawBounds))]
-    public struct SetNewSquaresJob : IJobProcessComponentDataWithEntity<MapSquare, Translation>
-    {
-        public EntityCommandBuffer.Concurrent commandBuffer;
-
-        [ReadOnly] public SubMatrix subMatrix;
-        [ReadOnly] public DrawBufferUtil drawBufferUtil;
-
-        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
-        {
-            bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
-
-            DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, position.Value);
-
-            drawBufferUtil.SetDrawBuffer(entity, buffer, commandBuffer, jobIndex);
-
-            commandBuffer.RemoveComponent<Tags.SetHorizontalDrawBounds>(jobIndex, entity);
-        }
     }
 
     [RequireComponentTag(typeof(Tags.InnerBuffer))]
