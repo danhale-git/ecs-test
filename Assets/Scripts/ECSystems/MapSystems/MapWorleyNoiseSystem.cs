@@ -8,7 +8,7 @@ using MyComponents;
 [UpdateAfter(typeof(MapCellDiscoverySystem))]
 public class WorleyBarrier : EntityCommandBufferSystem { }
 
-[UpdateAfter(typeof(MapSquareSystem))]
+[UpdateInGroup(typeof(MapUpdateGroups.InitialiseSquaresGroup))]
 public class MapWorleyNoiseSystem : JobComponentSystem
 {
     EntityManager entityManager;

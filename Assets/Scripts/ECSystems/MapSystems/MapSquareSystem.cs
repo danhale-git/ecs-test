@@ -8,6 +8,7 @@ using Unity.Rendering;
 using MyComponents;
 
 [AlwaysUpdateSystem]
+[UpdateInGroup(typeof(MapUpdateGroups.InitialiseSquaresGroup))]
 public class MapSquareSystem : ComponentSystem
 {
     EntityManager entityManager;

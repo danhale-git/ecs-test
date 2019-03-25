@@ -26,7 +26,7 @@ public class MapTopologySystem : ComponentSystem
 
         EntityArchetypeQuery terrainQuery = new EntityArchetypeQuery{
             None    = new ComponentType[] { typeof(Topology) },
-            All     = new ComponentType[] { typeof(MapSquare) }
+            All     = new ComponentType[] { typeof(MapSquare), typeof(Tags.AllCellsDiscovered) }
         };
         terrainGroup = GetComponentGroup(terrainQuery);
 

@@ -6,13 +6,13 @@ using Unity.Transforms;
 using MyComponents;
 
 [UpdateAfter(typeof(MapCellDiscoverySystem))]
-public class DiscoveryBarrier : EntityCommandBufferSystem { }
+public class CellDiscoveryBarrier : EntityCommandBufferSystem { }
 
-[UpdateAfter(typeof(MapWorleyNoiseSystem))]
+[UpdateInGroup(typeof(MapUpdateGroups.InitialiseSquaresGroup))]
 public class MapCellDiscoverySystem : JobComponentSystem
 {
     EntityManager entityManager;
-    DiscoveryBarrier discoveryBarrier;
+    CellDiscoveryBarrier discoveryBarrier;
 
     int squareWidth;
     int cellDistance;
@@ -20,7 +20,7 @@ public class MapCellDiscoverySystem : JobComponentSystem
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        discoveryBarrier = World.Active.GetOrCreateManager<DiscoveryBarrier>();
+        discoveryBarrier = World.Active.GetOrCreateManager<CellDiscoveryBarrier>();
 
         squareWidth = TerrainSettings.mapSquareWidth;
         cellDistance = TerrainSettings.cellGenerateDistance;
