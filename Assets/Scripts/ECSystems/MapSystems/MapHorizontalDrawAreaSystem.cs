@@ -122,7 +122,7 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
     {
         int index = matrix.PositionToIndex(matrixPosition);
         return (matrix.ItemIsSet(index) &&
-                entityManager.HasComponent<Tags.AllCellsDiscovered>(matrix.GetItem(index)));
+                entityManager.HasComponent<Tags.InitialiseStageComplete>(matrix.GetItem(index)));
     }
 
     [RequireComponentTag(typeof(Tags.InnerBuffer))]
