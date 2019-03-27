@@ -8,7 +8,7 @@ using UnityEngine;
 using MyComponents;
 
 //	Generate 3D block data from 2D terrain data
-[UpdateAfter(typeof(MapVerticalDrawBufferSystem))]
+[UpdateAfter(typeof(MapVerticalDrawBoundsSystem))]
 public class MapBlockDataSystem : ComponentSystem
 {
 	EntityManager entityManager;
@@ -24,7 +24,7 @@ public class MapBlockDataSystem : ComponentSystem
 		squareWidth = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery mapSquareQuery = new EntityArchetypeQuery{
-			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer), typeof(Tags.SetDrawBuffer) },
+			None  	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.OuterBuffer), typeof(Tags.SetVerticalDrawBounds) },
 			All  	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GenerateBlocks) }
 		};
 		generateBlocksGroup = GetComponentGroup(mapSquareQuery);
@@ -51,6 +51,8 @@ public class MapBlockDataSystem : ComponentSystem
 			
 			for(int e = 0; e < entities.Length; e++)
 			{
+				DebugTools.IncrementDebugCount("block data");
+
 				Entity entity 						= entities[e];
 				MapSquare mapSquare 				= mapSquares[e];
 				DynamicBuffer<Block> blockBuffer 	= blockAccessor[e];

@@ -6,99 +6,112 @@ using Unity.Burst;
 using Unity.Entities;
 using MyComponents;
 
-struct FacesJob : IJobParallelFor
+struct FacesJob : IJob
 {
-	[NativeDisableParallelForRestriction] public NativeArray<Faces> exposedFaces;
+    public EntityCommandBuffer commandBuffer;
 
+	[ReadOnly] public Entity entity;
 	[ReadOnly] public MapSquare mapSquare;
 
-	//	Block data for this and adjacent map squares
-	[ReadOnly] public NativeArray<Block> blocks;
-	[ReadOnly] public NativeArray<Block> right;
-	[ReadOnly] public NativeArray<Block> left;
-	[ReadOnly] public NativeArray<Block> front;
-	[ReadOnly] public NativeArray<Block> back;
+	[DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> current;
+	[DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> rightAdjacent;
+	[DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> leftAdjacent;
+	[DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> frontAdjacent;
+	[DeallocateOnJobCompletion][ReadOnly] public NativeArray<Block> backAdjacent;
 
-	[ReadOnly] public NativeArray<int> adjacentLowestBlocks;
+	[DeallocateOnJobCompletion][ReadOnly] public NativeArray<int> adjacentLowestBlocks;
 
 	[ReadOnly] public int squareWidth;
-	[ReadOnly] public NativeArray<float3> directions;	
+	[DeallocateOnJobCompletion][ReadOnly] public NativeArray<float3> directions;	
 	[ReadOnly] public JobUtil util;
 
-	public void Execute(int i)
+	public void Execute()
 	{
-		//	Offset to allow buffer of blocks
-		i += mapSquare.drawIndexOffset;
+		FaceCounts counts;
+		NativeArray<Faces> faces = CheckBlockFaces(entity, adjacentLowestBlocks, out counts);
 
-		if(blocks[i].type == 0) return;
+		commandBuffer.AddComponent<FaceCounts>(entity, counts);
+		DynamicBuffer<Faces> facesBuffer = commandBuffer.AddBuffer<Faces>(entity);
+		facesBuffer.CopyFrom(faces);
 
-		//	Local position in cube
-		float3 position = util.Unflatten(i, squareWidth);
+		commandBuffer.RemoveComponent(entity, typeof(Tags.DrawMesh));
+		faces.Dispose();
+	}
+
+	NativeArray<Faces> CheckBlockFaces(Entity entity, NativeArray<int> adjacentLowestBlocks, out FaceCounts counts)
+	{
+		BlockFaceChecker faceChecker = new BlockFaceChecker(){
+			exposedFaces 	= new NativeArray<Faces>(current.Length, Allocator.Temp),
+			mapSquare 		= mapSquare,
+
+			current 	= current,
+			rightAdjacent 	= rightAdjacent,
+			leftAdjacent 	= leftAdjacent,
+			frontAdjacent 	= frontAdjacent,
+			backAdjacent 	= backAdjacent,
+
+			adjacentLowestBlocks = adjacentLowestBlocks,
+			
+			squareWidth = TerrainSettings.mapSquareWidth,
+			directions 	= directions, 
+			util 		= new JobUtil()
+		};
 		
-		Faces faces = new Faces();
-
-		//	Top and bottom faces never have slopes
-		faces.up 	= BlockTypes.translucent[GetBlock(position + new float3(0,  1, 0), mapSquare).type];
-		faces.down 	= BlockTypes.translucent[GetBlock(position + new float3(0, -1, 0), mapSquare).type];
-
-		//	Right, left, front, back faces might be sloped
-		for(int d = 0; d < 4; d++)
+		for(int i = 0; i < mapSquare.blockDrawArrayLength; i++)
 		{
-			Block adjacentBlock = GetBlock(position + directions[d], mapSquare);
-			int exposed = BlockTypes.translucent[adjacentBlock.type];
+			faceChecker.Execute(i);
+		}
 
-			//	Not a slope
-			if(blocks[i].isSloped == 0)
-			{
-				faces[d] = exposed > 0 ? (int)Faces.Exp.FULL : (int)Faces.Exp.HIDDEN;
-				continue;
-			}
-			else
-			{
-				float2 slopeVerts = blocks[i].slope.GetSlopeVerts(d);
 
-				//	Base of a slope, face doesn't exist
-				if(slopeVerts.x + slopeVerts.y == -2)
-					faces[d] = (int)Faces.Exp.HIDDEN;
-				//	No slope on this face, normal behaviour
-				else if(slopeVerts.x + slopeVerts.y == 0)
-					faces[d] = exposed > 0 ? (int)Faces.Exp.FULL : (int)Faces.Exp.HIDDEN;
-				// Slope perpendicular to this face, only half a face needed
-				else if(slopeVerts.x + slopeVerts.y == -1)
+		counts = CountExposedFaces(current, faceChecker.exposedFaces);
+		return faceChecker.exposedFaces;
+	}
+
+	FaceCounts CountExposedFaces(NativeArray<Block> blocks, NativeArray<Faces> exposedFaces)
+	{
+		//	Count vertices and triangles	
+		int faceCount 	= 0;
+		int vertCount 	= 0;
+		int triCount 	= 0;
+		for(int i = 0; i < exposedFaces.Length; i++)
+		{
+			int count = exposedFaces[i].count;
+			if(count > 0)
+			{
+				Faces blockFaces = exposedFaces[i];
+
+				//	Starting indices in mesh arrays
+				blockFaces.faceIndex 	= faceCount;
+				blockFaces.vertIndex 	= vertCount;
+				blockFaces.triIndex 	= triCount;
+
+				exposedFaces[i] = blockFaces;
+
+				for(int f = 0; f < 6; f++)
 				{
-					if(exposed > 0)
-						faces[d] = (int)Faces.Exp.HALFOUT;
-					else if(adjacentBlock.slope.slopeType == SlopeType.NOTSLOPED)
-						faces[d] = (int)Faces.Exp.HALFIN;
-				}
+					switch((Faces.Exp)blockFaces[f])
+					{
+						case Faces.Exp.HIDDEN: break;
+
+						case Faces.Exp.FULL:
+							vertCount 	+= 4;
+							triCount  	+= 6;
+							break;
+
+						case Faces.Exp.HALFOUT:
+						case Faces.Exp.HALFIN:
+							vertCount 	+= 3;
+							triCount 	+= 3;
+							break;
+					}
+				} 
+				//	Slopes always need two extra verts
+				if(blocks[i].isSloped > 0) vertCount += 2;
+
+				faceCount += count;
 			}
 		}
-	
-		faces.SetCount();
 
-		exposedFaces[i] = faces;
+		return new FaceCounts(faceCount, vertCount, triCount);
 	}
-
-	Block GetBlock(float3 pos, MapSquare mapSquare)
-	{
-		float3 edge = Util.EdgeOverlap(pos, squareWidth);
-
-		if		(edge.x > 0) return right[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 0)];
-		else if	(edge.x < 0) return left [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 1)];
-		else if	(edge.z > 0) return front[AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 2)];
-		else if	(edge.z < 0) return back [AdjacentBlockIndex(pos, mapSquare.bottomBlockBuffer, 3)];
-		else		    	return blocks[util.Flatten(pos.x, pos.y, pos.z, squareWidth)];
-	}
-
-	int AdjacentBlockIndex(float3 pos, int lowest, int adjacentSquareIndex)
-	{
-		return util.WrapAndFlatten(new int3(
-				(int)pos.x,
-				(int)pos.y + (lowest - adjacentLowestBlocks[adjacentSquareIndex]),
-				(int)pos.z
-			),
-			squareWidth
-		);
-	}
-
 }

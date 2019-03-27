@@ -8,11 +8,11 @@ using Unity.Rendering;
 using MyComponents;
 
 [AlwaysUpdateSystem]
+[UpdateInGroup(typeof(MapUpdateGroups.InitialiseSquaresGroup))]
 public class MapSquareSystem : ComponentSystem
 {
     EntityManager entityManager;
 
-    EntityUtil entityUtil;
     WorleyNoiseGenerator worleyNoiseGen;
 
     int squareWidth;
@@ -35,7 +35,6 @@ public class MapSquareSystem : ComponentSystem
     {
 		entityManager = World.Active.GetOrCreateManager<EntityManager>();
 
-        entityUtil = new EntityUtil(entityManager);
         worleyNoiseGen = new WorleyNoiseGenerator(
             TerrainSettings.seed,
             TerrainSettings.cellFrequency,
@@ -51,16 +50,14 @@ public class MapSquareSystem : ComponentSystem
             ComponentType.ReadWrite<MapSquare>(),
             ComponentType.ReadWrite<WorleyNoise>(),
             ComponentType.ReadWrite<WorleyCell>(),
-            ComponentType.ReadWrite<Topology>(),
             ComponentType.ReadWrite<Block>(),
 
+            ComponentType.ReadWrite<Tags.EdgeBuffer>(),
+            
             ComponentType.ReadWrite<Tags.GenerateWorleyNoise>(),
-            ComponentType.ReadWrite<Tags.SetHorizontalDrawBuffer>(),            
-            ComponentType.ReadWrite<Tags.GenerateTerrain>(),
-            ComponentType.ReadWrite<Tags.GetAdjacentSquares>(),
+            ComponentType.ReadWrite<Tags.SetHorizontalDrawBounds>(),            
             ComponentType.ReadWrite<Tags.LoadChanges>(),
-            ComponentType.ReadWrite<Tags.SetDrawBuffer>(),
-            ComponentType.ReadWrite<Tags.SetBlockBuffer>(),
+            ComponentType.ReadWrite<Tags.SetVerticalDrawBounds>(),
             ComponentType.ReadWrite<Tags.GenerateBlocks>(),
             ComponentType.ReadWrite<Tags.SetSlopes>(),
 			ComponentType.ReadWrite<Tags.DrawMesh>(),
@@ -126,6 +123,8 @@ public class MapSquareSystem : ComponentSystem
             previousMapSquare = currentMapSquare;
         }
 
+        DebugTools.IncrementDebugCount("map square changed");
+
         currentCellIndex = CurrentCellIndex();
         if(currentCellIndex.Equals(previousCellIndex))
         {
@@ -137,6 +136,8 @@ public class MapSquareSystem : ComponentSystem
             cellChanged = true;
             previousCellIndex = currentCellIndex;
         }
+
+        DebugTools.IncrementDebugCount("call changed");
     }
 
     void CreateNewSquares()
@@ -177,7 +178,6 @@ public class MapSquareSystem : ComponentSystem
                 float3 adjacentPosition = positionList[i] + (directions[d] * squareWidth);
                 if(!mapMatrix.ItemIsSet(adjacentPosition))
                 {
-                    DebugTools.IncrementDebugCount("squares created");
                     CreateMapSquareEntity(adjacentPosition);
                 }
             }
@@ -190,6 +190,8 @@ public class MapSquareSystem : ComponentSystem
 
     Entity CreateMapSquareEntity(float3 worldPosition)
     {
+        DebugTools.IncrementDebugCount("created");
+
         Entity entity = entityManager.CreateEntity(mapSquareArchetype);
 		entityManager.SetComponentData<Translation>(entity, new Translation{ Value = worldPosition } );
 

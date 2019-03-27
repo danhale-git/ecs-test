@@ -5,13 +5,12 @@ using Unity.Transforms;
 using MyComponents;
 using UnityEngine;
 using System.Collections.Generic;
-[UpdateAfter(typeof(MapMeshSystem))]
+
+[UpdateAfter(typeof(ApplyMeshDataSystem))]
 public class DebugSystem : ComponentSystem
 {
     EntityManager entityManager;
     MapSquareSystem squareSystem;
-
-    EntityUtil entityUtil;
 
     int squareWidth;
 
@@ -31,8 +30,6 @@ public class DebugSystem : ComponentSystem
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
         squareSystem = World.Active.GetOrCreateManager<MapSquareSystem>();
-
-        entityUtil = new EntityUtil(entityManager);
 
         squareWidth = TerrainSettings.mapSquareWidth;
 
@@ -74,6 +71,11 @@ public class DebugSystem : ComponentSystem
 
                 if(!entityManager.HasComponent<Tags.EdgeBuffer>(entity))
                     BlockBufferDebug(entity, position, mapSquare);
+
+                if(entityManager.HasComponent<Tags.Debug.MarkError>(entity))
+                {
+                    MarkError(entity, position, Color.red);
+                }
             }
         }
 

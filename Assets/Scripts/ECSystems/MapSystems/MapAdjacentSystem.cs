@@ -8,7 +8,7 @@ using Unity.Transforms;
 using MyComponents;
 
 //	Get y buffer for mesh drawing based on adjacent top/bottom blocks
-[UpdateInGroup(typeof(UpdateGroups.NewMapSquareUpdateGroup))]
+[UpdateAfter(typeof(MapUpdateGroups.InitialiseSquaresGroup))]
 public class MapAdjacentSystem : ComponentSystem
 {
     EntityManager entityManager;
@@ -26,8 +26,8 @@ public class MapAdjacentSystem : ComponentSystem
 		squareWidth = TerrainSettings.mapSquareWidth;
 
 		EntityArchetypeQuery adjacentQuery = new EntityArchetypeQuery{
-            None 	= new ComponentType[] { typeof(Tags.EdgeBuffer), typeof(Tags.SetHorizontalDrawBuffer) },
-			All 	= new ComponentType[] { typeof(MapSquare), typeof(Tags.GetAdjacentSquares) }
+            None 	= new ComponentType[] { typeof(AdjacentSquares), typeof(Tags.EdgeBuffer) },
+			All 	= new ComponentType[] { typeof(MapSquare), typeof(Tags.InitialiseStageComplete) }
 		};
 		adjacentGroup = GetComponentGroup(adjacentQuery);
     }
@@ -55,19 +55,29 @@ public class MapAdjacentSystem : ComponentSystem
 
 			for(int e = 0; e < entities.Length; e++)
 			{
+				DebugTools.IncrementDebugCount("adjacent");
+				
 				Entity entity 	= entities[e];
 				float3 position = positions[e].Value;
 
-				//	Get adjacent map squares from matrix in MapManagerSystem
+				Entity rightEntity 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[0]);
+				Entity leftEntity 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[1]);
+				Entity frontEntity 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[2]);
+				Entity backEntity 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[3]);
+				Entity frontRightEntity	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[4]);
+				Entity frontLeftEntity 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[5]);
+				Entity backRightEntity 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[6]);
+				Entity backLeftEntity 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[7]);
+
 				AdjacentSquares adjacent = new AdjacentSquares{
-					right 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[0]),
-					left 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[1]),
-					front 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[2]),
-					back 		= managerSystem.mapMatrix.GetItem(position + adjacentPositions[3]),
-					frontRight 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[4]),
-					frontLeft 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[5]),
-					backRight 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[6]),
-					backLeft 	= managerSystem.mapMatrix.GetItem(position + adjacentPositions[7])
+					right 		= rightEntity,
+					left 		= leftEntity,
+					front 		= frontEntity,
+					back 		= backEntity,
+					frontRight 	= frontRightEntity,
+					frontLeft 	= frontLeftEntity,
+					backRight 	= backRightEntity,
+					backLeft 	= backLeftEntity
 				};
 
 				for(int i = 0; i < 8; i++)
@@ -81,12 +91,7 @@ public class MapAdjacentSystem : ComponentSystem
 					}
 				}
 
-				if(entityManager.HasComponent<AdjacentSquares>(entity))
-					commandBuffer.SetComponent<AdjacentSquares>(entity, adjacent);
-				else
-					commandBuffer.AddComponent<AdjacentSquares>(entity, adjacent);
-
-                commandBuffer.RemoveComponent<Tags.GetAdjacentSquares>(entity);
+				commandBuffer.AddComponent<AdjacentSquares>(entity, adjacent);
             }
         }
     

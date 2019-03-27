@@ -8,7 +8,6 @@ using MyComponents;
 [UpdateAfter(typeof(MapHorizontalDrawAreaSystem))]
 public class HorizontalDrawAreaBarrier : EntityCommandBufferSystem { }
 
-[UpdateAfter(typeof(MapCellDiscoverySystem))]
 public class MapHorizontalDrawAreaSystem : JobComponentSystem
 {
 	public enum DrawBufferType { NONE, INNER, OUTER, EDGE }
@@ -39,23 +38,16 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
         squareWidth = TerrainSettings.mapSquareWidth;
     }
-
+    
     protected override JobHandle OnUpdate(JobHandle inputDependencies)
     {
-        SubMatrix playerViewSubMatrix = ViewSubMatrix();
-        SubMatrix subMatrix = LargestDiscoveredGridAroundPlayer(squareSystem.mapMatrix, playerViewSubMatrix);
-
-        JobHandle newSquaresJob = new SetNewSquaresJob{
-            commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
-            subMatrix = subMatrix,
-            drawBufferUtil = new DrawBufferUtil(squareWidth)
-        }.Schedule(this, inputDependencies);
+        SubMatrix subMatrix = LargestVisibleArea(squareSystem.mapMatrix, MapSquareSystem.currentMapSquare);
 
         JobHandle innerSquaresJob = new CheckInnerSquaresJob{
             commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
             subMatrix = subMatrix,
             drawBufferUtil = new DrawBufferUtil(squareWidth)
-        }.Schedule(this, newSquaresJob);
+        }.Schedule(this, inputDependencies);
 
         JobHandle outerSquaresJob = new CheckOuterSquaresJob{
             commandBuffer = drawAreaBarrier.CreateCommandBuffer().ToConcurrent(),
@@ -69,11 +61,10 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
             drawBufferUtil = new DrawBufferUtil(squareWidth)
         }.Schedule(this, outerSquaresJob);
 
-        NativeArray<JobHandle> jobHandles = new NativeArray<JobHandle>(4, Allocator.Temp);
-        jobHandles[0] = newSquaresJob;
-        jobHandles[1] = innerSquaresJob;
-        jobHandles[2] = outerSquaresJob;
-        jobHandles[3] = edgeSquaresJob;
+        NativeArray<JobHandle> jobHandles = new NativeArray<JobHandle>(3, Allocator.Temp);
+        jobHandles[0] = innerSquaresJob;
+        jobHandles[1] = outerSquaresJob;
+        jobHandles[2] = edgeSquaresJob;
 
         JobHandle dependencies = JobHandle.CombineDependencies(jobHandles);
         jobHandles.Dispose();
@@ -82,35 +73,56 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
         return dependencies;
     }
-    
-    SubMatrix ViewSubMatrix()
-    {
-        float3 center = MapSquareSystem.currentMapSquare;
-        int view = TerrainSettings.viewDistance;
 
-        float3 veiwSubMatrixRoot = new float3(center.x - (view * squareWidth), 0, center.z - (view * squareWidth));
-        int veiwSubMatrixWidth = (view * 2)+ 1;
-        return new SubMatrix(veiwSubMatrixRoot, veiwSubMatrixWidth);
+    SubMatrix LargestVisibleArea(Matrix<Entity> matrix, float3 worldPosition)
+    {
+        int eligibleRadius = LargestEligibleRadius(squareSystem.mapMatrix, worldPosition);
+
+        float3 root = worldPosition - ((eligibleRadius) * squareWidth);
+        int width = (eligibleRadius * 2) + 1;
+        return new SubMatrix(root, width);
+    }
+    
+    int LargestEligibleRadius(Matrix<Entity> matrix, float3 worldPosition)
+    {
+        for(int i = 1; i <= TerrainSettings.viewDistance; i++)
+        {
+            if(!AllSquaresInRadiusAreEligible(matrix, worldPosition, i))
+                return i-1;
+        }
+        return TerrainSettings.viewDistance;
     }
 
-    [RequireComponentTag(typeof(Tags.SetHorizontalDrawBuffer))]
-    public struct SetNewSquaresJob : IJobProcessComponentDataWithEntity<MapSquare, Translation>
+    bool AllSquaresInRadiusAreEligible(Matrix<Entity> matrix, float3 centerWorld, int offset)
     {
-        public EntityCommandBuffer.Concurrent commandBuffer;
+        if(offset == 0) return false;
+        float3 centerMatrix = matrix.WorldToMatrixPosition(centerWorld);
+        if(!SquareIsEligible(matrix, centerMatrix))
+            return false;
 
-        [ReadOnly] public SubMatrix subMatrix;
-        [ReadOnly] public DrawBufferUtil drawBufferUtil;
-
-        public void Execute(Entity entity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
+        for(int xz = -offset; xz <= offset; xz++)
         {
-            bool inRadius = !drawBufferUtil.IsOutsideSubMatrix(subMatrix, position.Value);
+            float3 topPosition = new float3(xz, 0, offset) + centerMatrix;
+            float3 bottomPosition = new float3(xz, 0, -offset) + centerMatrix;
+            float3 rightPosition = new float3(offset, 0, xz) + centerMatrix;
+            float3 leftPosition = new float3(-offset, 0, xz) + centerMatrix;
 
-            DrawBufferType buffer = drawBufferUtil.GetDrawBuffer(subMatrix, position.Value);
-
-            drawBufferUtil.SetDrawBuffer(entity, buffer, commandBuffer, jobIndex);
-
-            commandBuffer.RemoveComponent<Tags.SetHorizontalDrawBuffer>(jobIndex, entity);
+            if( !SquareIsEligible(matrix, topPosition) ||
+                !SquareIsEligible(matrix, bottomPosition) ||
+                !SquareIsEligible(matrix, rightPosition) ||
+                !SquareIsEligible(matrix, leftPosition) )
+                {
+                    return false;
+                }
         }
+        return true;
+    }
+
+    bool SquareIsEligible(Matrix<Entity> matrix, float3 matrixPosition)
+    {
+        int index = matrix.PositionToIndex(matrixPosition);
+        return (matrix.ItemIsSet(index) &&
+                entityManager.HasComponent<Tags.InitialiseStageComplete>(matrix.GetItem(index)));
     }
 
     [RequireComponentTag(typeof(Tags.InnerBuffer))]
@@ -187,69 +199,6 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
             //    drawBufferUtil.RedrawMapSquare(entity, commandBuffer);
         }
     }
-    
-    SubMatrix LargestDiscoveredGridAroundPlayer(Matrix<Entity> matrix, SubMatrix clampMatrix)
-	{
-        float3 clampTopRight = matrix.WorldToMatrixPosition(clampMatrix.rootPosition) + clampMatrix.width;
-
-        if(clampTopRight.x >= matrix.width) clampTopRight.x = matrix.width - 1;
-        if(clampTopRight.z >= matrix.width) clampTopRight.z = matrix.width - 1;
-
-        //	Copy original matix to cache so it defaults to original matrix values
-		NativeArray<int> cacheMatrix = new NativeArray<int>(matrix.Length, Allocator.Temp);
-        for(int i = 0; i < cacheMatrix.Length; i++)
-            cacheMatrix[i] = SquareIsEligible(matrix, i) ? 1 : 0;
-
-		int finalGridWidth = 0;
-        float3 finalGridRoot = float3.zero;
-
-		for(int x = (int)clampTopRight.x; x >= 0; x--)
-			for(int z = (int)clampTopRight.z; z >= 0; z--)
-			{
-				if(TopOrRightEdge(matrix.width, x, z))
-                    continue;
-
-                float3 matrixPosition = new float3(x, 0, z);
-                int index = matrix.PositionToIndex(matrixPosition);
-
-				if(cacheMatrix[index] > 0)
-                    cacheMatrix[index] = 1 + LowestAdjacentValue(matrix, cacheMatrix, x, z);
-
-				if(cacheMatrix[index] > finalGridWidth)
-				{
-					finalGridWidth = cacheMatrix[index];
-                    finalGridRoot = matrix.MatrixToWorldPosition(matrixPosition);
-
-                    if( finalGridRoot.x < clampMatrix.rootPosition.x ||
-                        finalGridRoot.z < clampMatrix.rootPosition.z)
-                        break;
-				}
-			}
-
-        return new SubMatrix(finalGridRoot, finalGridWidth);
-	}
-
-    bool SquareIsEligible(Matrix<Entity> matrix, int index)
-    {
-        return (matrix.ItemIsSet(index) &&
-                entityManager.HasComponent<Tags.AllCellsDiscovered>(matrix.GetItem(index)));
-    }
-
-    bool TopOrRightEdge(int width, int x, int z)
-    {
-        return (x == width-1 || z == width-1);
-    }
-
-    int LowestAdjacentValue(Matrix<Entity> matrix, NativeArray<int> cacheMatrix, int x, int z)
-    {
-        int forwardIndex    = matrix.PositionToIndex(new float3(x,   0, z+1));
-        int rightIndex      = matrix.PositionToIndex(new float3(x+1, 0, z  ));
-        int diagonalIndex   = matrix.PositionToIndex(new float3(x+1, 0, z+1));
-
-        return  math.min(cacheMatrix[forwardIndex],
-                    math.min(cacheMatrix[rightIndex],
-                                cacheMatrix[diagonalIndex]));
-    }
 
     public struct DrawBufferUtil
     {
@@ -292,6 +241,8 @@ public class MapHorizontalDrawAreaSystem : JobComponentSystem
 
         public void SetDrawBuffer(Entity entity, DrawBufferType buffer, EntityCommandBuffer.Concurrent commandBuffer, int jobIndex)
         {
+            DebugTools.IncrementDebugCount("buffer");
+
             switch(buffer)
             {
                 case DrawBufferType.INNER:

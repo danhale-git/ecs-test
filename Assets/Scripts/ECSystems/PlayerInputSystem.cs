@@ -9,7 +9,7 @@ using Unity.Mathematics;
 using Unity.Rendering;
 using MyComponents;
 
-[UpdateAfter(typeof(MapMeshSystem))]
+[UpdateAfter(typeof(ApplyMeshDataSystem))]
 public class PlayerInputSystem : ComponentSystem
 {
     EntityManager entityManager;
@@ -355,7 +355,7 @@ public class PlayerInputSystem : ComponentSystem
 
         RenderMesh renderer = new RenderMesh();
 		renderer.mesh = mesh;
-		renderer.material = MapMeshSystem.material;
+		renderer.material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ShaderGraphTest.mat");
 
 		entityManager.AddSharedComponentData(cubeEntity, renderer);
 	}

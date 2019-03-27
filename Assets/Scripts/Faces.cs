@@ -1,4 +1,4 @@
-﻿public struct Faces
+﻿/*public struct Faces
 {
 	public enum Exp { HIDDEN, FULL, HALFOUT, HALFIN }
 
@@ -46,4 +46,4 @@
 			}
 		}
 	}
-}
+} */

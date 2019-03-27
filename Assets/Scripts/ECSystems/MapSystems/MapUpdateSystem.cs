@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using Unity.Rendering;
 using MyComponents;
 
+[UpdateInGroup(typeof(MapUpdateGroups.InitialiseSquaresGroup))]
 public class MapUpdateSystem : ComponentSystem
 {
     EntityManager entityManager;
@@ -45,6 +46,8 @@ public class MapUpdateSystem : ComponentSystem
 
             for(int e = 0; e < entities.Length; e++)
             {
+                DebugTools.IncrementDebugCount("update");
+                
                 Entity                          entity          = entities[e];
                 MapSquare                       mapSquare       = mapSquares[e];
                 DynamicBuffer<Block>            blocks          = blockBuffers[e];
@@ -172,11 +175,8 @@ public class MapUpdateSystem : ComponentSystem
     void RecalculateVerticalBuffers(Entity entity, EntityCommandBuffer commandBuffer)
     {
         //  Tags needed to check buffers and resize block array
-        if(!entityManager.HasComponent<Tags.SetDrawBuffer>(entity))
-            commandBuffer.AddComponent<Tags.SetDrawBuffer>(entity, new Tags.SetDrawBuffer());
-
-        if(!entityManager.HasComponent<Tags.SetBlockBuffer>(entity))
-            commandBuffer.AddComponent<Tags.SetBlockBuffer>(entity, new Tags.SetBlockBuffer());
+        if(!entityManager.HasComponent<Tags.SetVerticalDrawBounds>(entity))
+            commandBuffer.AddComponent<Tags.SetVerticalDrawBounds>(entity, new Tags.SetVerticalDrawBounds());
 
         if(!entityManager.HasComponent<Tags.BufferChanged>(entity))
             commandBuffer.AddComponent<Tags.BufferChanged>(entity, new Tags.BufferChanged());

@@ -50,6 +50,8 @@ public class MapSlopeSystem : ComponentSystem
             
             for(int e = 0; e < entities.Length; e++)
             {
+	            DebugTools.IncrementDebugCount("slope");
+
                 Entity entity = entities[e];
 
 

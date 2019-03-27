@@ -8,7 +8,7 @@ using MyComponents;
 [UpdateAfter(typeof(MapCellDiscoverySystem))]
 public class WorleyBarrier : EntityCommandBufferSystem { }
 
-[UpdateAfter(typeof(MapSquareSystem))]
+[UpdateInGroup(typeof(MapUpdateGroups.InitialiseSquaresGroup))]
 public class MapWorleyNoiseSystem : JobComponentSystem
 {
     EntityManager entityManager;
@@ -51,7 +51,7 @@ public class MapWorleyNoiseSystem : JobComponentSystem
     }
 
     [RequireComponentTag(typeof(Tags.GenerateWorleyNoise))]
-    public struct WorleyJob : IJobProcessComponentDataWithEntity<MapSquare, Translation>
+    struct WorleyJob : IJobProcessComponentDataWithEntity<MapSquare, Translation>
     {
         public EntityCommandBuffer.Concurrent commandBuffer;
         
@@ -66,6 +66,8 @@ public class MapWorleyNoiseSystem : JobComponentSystem
 
         public void Execute(Entity mapSquareEntity, int jobIndex, ref MapSquare mapSquare, ref Translation position)
         {
+            DebugTools.IncrementDebugCount("worley");
+
             NativeArray<WorleyNoise> worleyNoiseMap = GenerateNoiseMap(position.Value);
             worleyNoiseBufferFromEntity[mapSquareEntity].CopyFrom(worleyNoiseMap);
 

@@ -91,11 +91,11 @@ namespace MyComponents
 		public Entity backRight;
 		public Entity backLeft;
 
-		public Entity this[int side]
+		public Entity this[int direction]
 		{
 			get
 			{
-				switch (side)
+				switch (direction)
 				{
 					case 0: return right;
 					case 1: return left;
@@ -106,7 +106,7 @@ namespace MyComponents
 					case 6: return backRight;
 					case 7: return backLeft;
 
-					default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + side);
+					default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + direction);
 				}
 			}
 		}
@@ -122,19 +122,6 @@ namespace MyComponents
 			else if(dir.x ==  1 && dir.y == 0 && dir.z == -1) return backRight;
 			else if(dir.x == -1 && dir.y == 0 && dir.z == -1) return backLeft;
 			else throw new System.ArgumentOutOfRangeException("Index out of range 7: " + dir);
-		}
-
-		public NativeArray<int> GetLowestBlocks(Allocator label)
-		{
-			EntityManager entityManager = World.Active.GetOrCreateManager<EntityManager>();
-
-			NativeArray<int> lowestBlocks = new NativeArray<int>(8, label);
-			for(int i = 0; i < 8; i++)
-			{
-				MapSquare adjacentSquare = entityManager.GetComponentData<MapSquare>(this[i]);
-				lowestBlocks[i] = adjacentSquare.bottomBlockBuffer;
-			}
-			return lowestBlocks;
 		}
 	}
 
@@ -173,6 +160,87 @@ namespace MyComponents
 		}
 	}
 
+	[InternalBufferCapacity(0)]
+	public struct MeshVertex : IBufferElementData
+	{
+		public float3 vertex;
+	}
+	[InternalBufferCapacity(0)]
+	public struct MeshNormal : IBufferElementData
+	{
+		public float3 normal;
+	}
+	[InternalBufferCapacity(0)]
+	public struct MeshTriangle : IBufferElementData
+	{
+		public int triangle;
+	}
+	[InternalBufferCapacity(0)]
+	public struct MeshVertColor : IBufferElementData
+	{
+		public float4 color;
+	}
+	[InternalBufferCapacity(0)]
+	public struct Faces : IBufferElementData
+	{
+		public enum Exp { HIDDEN, FULL, HALFOUT, HALFIN }
+
+		public int right, left, front, back, up, down;
+		public int count;
+		public int faceIndex, triIndex, vertIndex;
+		
+		public void SetCount()
+		{
+			if(right	> 0) count++;
+			if(left		> 0) count++;
+			if(front	> 0) count++;
+			if(back		> 0) count++;
+			if(up		> 0) count++;
+			if(down		> 0) count++;
+		}
+
+		public int this[int side]
+		{
+			get
+			{
+				switch(side)
+				{
+					case 0: return right;
+					case 1: return left;
+					case 2: return front;
+					case 3: return back;
+					case 4: return up;
+					case 5: return down;
+					default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + side);
+				}
+			}
+
+			set
+			{
+				switch(side)
+				{
+					case 0: right = value; break;
+					case 1: left = value; break;
+					case 2: front = value; break;
+					case 3: back = value; break;
+					case 4: up = value; break;
+					case 5: down = value; break;
+					default: throw new System.ArgumentOutOfRangeException("Index out of range 7: " + side);
+				}
+			}
+		}
+	}
+	public struct FaceCounts : IComponentData
+	{
+		public readonly int faceCount, vertCount, triCount;
+		public FaceCounts(int faceCount, int vertCount, int triCount)
+		{
+			this.faceCount = faceCount;
+			this.vertCount = vertCount;
+			this.triCount = triCount;
+		}
+	}
+
 	[InternalBufferCapacity(100)]
 	public struct PendingChange : IBufferElementData
 	{
@@ -202,12 +270,13 @@ namespace Tags
 	public struct GenerateWorleyNoise : IComponentData { }
 	public struct CreateAdjacentSquares : IComponentData { }
 
-	public struct SetHorizontalDrawBuffer : IComponentData { }
-	public struct GenerateTerrain : IComponentData { }
-	public struct GetAdjacentSquares : IComponentData { }
+	public struct InitialiseStageComplete : IComponentData { }
+
+	public struct SetHorizontalDrawBounds : IComponentData { }
+	//public struct GenerateTerrain : IComponentData { }
+	//public struct GetAdjacentSquares : IComponentData { }
 	public struct LoadChanges : IComponentData { }
-	public struct SetDrawBuffer : IComponentData { }
-	public struct SetBlockBuffer : IComponentData { }
+	public struct SetVerticalDrawBounds : IComponentData { }
 	public struct GenerateBlocks : IComponentData { }
 	public struct SetSlopes : IComponentData { }
 	public struct DrawMesh : IComponentData { }
@@ -222,13 +291,12 @@ namespace Tags
 	public struct EdgeBuffer : IComponentData { }
 
 	public struct PlayerEntity : IComponentData { }
+
+	namespace Debug
+	{
+		public struct MarkError : IComponentData { }
+	}
 }
+
 
 #endregion
-
-namespace UpdateGroups
-{
-	//[UpdateAfter(typeof(MapHorizontalDrawBufferSystem))]
-	[UpdateAfter(typeof(MapHorizontalDrawAreaSystem))]
-	public class NewMapSquareUpdateGroup : ComponentSystemGroup { }
-}

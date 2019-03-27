@@ -3,30 +3,18 @@ using Unity.Collections;
 
 public struct SimplexNoiseGenerator
 {
-    NativeArray<float2> GRAD_2D;
+    GRAD_2D GRAD_2D;
 
     int X_PRIME;
     int Y_PRIME;
 
     public SimplexNoiseGenerator(byte param)
     {
-        GRAD_2D = new NativeArray<float2>(8, Allocator.TempJob);
-        GRAD_2D[0] = new float2(-1,-1); 
-        GRAD_2D[1] = new float2( 1,-1); 
-        GRAD_2D[2] = new float2(-1, 1); 
-        GRAD_2D[3] = new float2( 1, 1);
-        GRAD_2D[4] = new float2( 0,-1); 
-        GRAD_2D[5] = new float2(-1, 0); 
-        GRAD_2D[6] = new float2( 0, 1); 
-        GRAD_2D[7] = new float2( 1, 0);
+        GRAD_2D = new GRAD_2D();
 
         X_PRIME = 1619;
         Y_PRIME = 31337;
     }
-    public void Dispose()
-    {
-        GRAD_2D.Dispose();
-    }  
 
     int FastFloor(float f) { return (f >= 0 ? (int)f : (int)f - 1); }
 

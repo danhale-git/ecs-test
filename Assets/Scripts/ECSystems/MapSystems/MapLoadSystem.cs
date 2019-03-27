@@ -5,7 +5,7 @@ using Unity.Mathematics;
 using Unity.Transforms;
 using MyComponents;
 
-[UpdateInGroup(typeof(UpdateGroups.NewMapSquareUpdateGroup))]
+[UpdateInGroup(typeof(MapUpdateGroups.InitialiseSquaresGroup))]
 public class MapLoadSystem : ComponentSystem
 {
     EntityManager entityManager;
@@ -45,6 +45,7 @@ public class MapLoadSystem : ComponentSystem
 
             for(int e = 0; e < entities.Length; e++)
             {
+
                 Entity entity = entities[e];
 
                 MapSaveSystem.SaveData data;
@@ -95,8 +96,7 @@ public class MapLoadSystem : ComponentSystem
         //  Apply saved map square
         commandBuffer.SetComponent<MapSquare>(entity, data.mapSquare);
 
-        commandBuffer.RemoveComponent<Tags.SetDrawBuffer>(entity);
-        commandBuffer.RemoveComponent<Tags.SetBlockBuffer>(entity);
+        commandBuffer.RemoveComponent<Tags.SetVerticalDrawBounds>(entity);
     }
 
     DynamicBuffer<LoadedChange> GetOrCreateLoadedChangeBuffer(Entity entity, EntityCommandBuffer commandBuffer)

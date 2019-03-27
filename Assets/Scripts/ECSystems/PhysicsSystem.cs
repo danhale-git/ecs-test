@@ -59,7 +59,10 @@ public class PhysicsSystem : ComponentSystem
                     physicsComponent.currentMapSquare = managerSystem.mapMatrix.GetItem(nextPosition);
 
                 if(!entityManager.Exists(physicsComponent.currentMapSquare))
-                    continue;                
+                    continue;   
+
+                if(!entityManager.HasComponent<Topology>(physicsComponent.currentMapSquare))
+                    continue;             
 
                 //  Get vector describing next position's overlap from this map square
                 float3 currentSquarePosition = entityManager.GetComponentData<MapSquare>(physicsComponent.currentMapSquare).position;               
@@ -76,6 +79,12 @@ public class PhysicsSystem : ComponentSystem
                 //TODO: proper physics system
                 //  Get height of current block
                 DynamicBuffer<Topology> heightMap = entityManager.GetBuffer<Topology>(physicsComponent.currentMapSquare);
+                if(heightMap.Length == 0)
+                {
+                    chunks.Dispose();
+                    return;
+                }
+
                 float3 local = Util.LocalVoxel(nextPosition, squareWidth, true);
                 float yOffset = heightMap[Util.Flatten2D(local.x, local.z, squareWidth)].height;
 
